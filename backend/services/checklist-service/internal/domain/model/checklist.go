@@ -34,10 +34,13 @@ func (t LocalizedText) Get(lang string) string {
 type TransportMode string
 
 const (
-	TransportModeFlight TransportMode = "flight"
-	TransportModeTrain  TransportMode = "train"
-	TransportModeBus    TransportMode = "bus"
-	TransportModeCar    TransportMode = "car"
+	TransportModeFlight     TransportMode = "flight"
+	TransportModeTrain      TransportMode = "train"
+	TransportModeBus        TransportMode = "bus"
+	TransportModeCar        TransportMode = "car"
+	TransportModeMotorcycle TransportMode = "motorcycle"
+	TransportModeFerry      TransportMode = "ferry"
+	TransportModeOther      TransportMode = "other"
 )
 
 type TripDestination struct {
@@ -47,8 +50,9 @@ type TripDestination struct {
 }
 
 type TravelerProfile struct {
-	HasChildren       bool   `json:"hasChildren"`
-	PreferredLanguage string `json:"preferredLanguage"`
+	HasChildren            bool   `json:"hasChildren"`
+	CitizenshipCountryCode string `json:"citizenshipCountryCode,omitempty"`
+	PreferredLanguage      string `json:"preferredLanguage"`
 }
 
 type ChecklistCategory string
@@ -129,6 +133,7 @@ type RuleCondition struct {
 	Month               time.Month
 	ActivitySlug        string
 	TravelerHasChildren bool
+	InternationalTrip   bool
 	TransportMode       TransportMode
 }
 

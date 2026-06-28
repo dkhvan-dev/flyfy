@@ -6,7 +6,6 @@ import '../../core/navigation/android_back_swipe_scope.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
-import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_language_sheet.dart';
 import '../../features/profile/models/user_profile_vm.dart';
@@ -36,7 +35,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final nextKey = [
       lang,
       profile?.countryCode ?? '',
-      profile?.timezone ?? '',
       profile?.currency ?? '',
     ].join('|');
 
@@ -62,20 +60,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     String lang,
   ) async {
     final countryCode = normalizeReferenceCountryCode(profile?.countryCode);
-    final timezoneId = normalizeReferenceTimezoneId(profile?.timezone);
     final currencyCode = normalizeReferenceCurrencyCode(profile?.currency);
 
     final labels = await Future.wait<String?>([
       _resolveCountryLabel(countryCode, lang),
-      _resolveTimezoneLabel(timezoneId, lang),
       _resolveCurrencyLabel(currencyCode, lang),
     ]);
 
-    return _ProfileReferenceLabels(
-      country: labels[0],
-      timezone: labels[1],
-      currency: labels[2],
-    );
+    return _ProfileReferenceLabels(country: labels[0], currency: labels[1]);
   }
 
   Future<String?> _resolveCountryLabel(String? countryCode, String lang) async {
@@ -89,33 +81,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       // Keep settings readable on poor networks.
       return countryCode;
     }
-  }
-
-  Future<String?> _resolveTimezoneLabel(String? timezoneId, String lang) async {
-    if (timezoneId == null) return null;
-
-    try {
-      final timezones = withDefaultReferenceTimezone(
-        await _referenceApi.listTimezones(lang: lang),
-        timezoneId,
-        lang: lang,
-      );
-      for (final timezone in timezones) {
-        if (normalizeReferenceTimezoneId(timezone.id) == timezoneId) {
-          return referenceTimezoneLabel(timezone, lang: lang);
-        }
-      }
-    } catch (_) {
-      // Fallback below keeps the profile usable on poor networks.
-    }
-
-    return referenceTimezoneLabel(
-      ReferenceTimezone(
-        id: timezoneId,
-        name: localizedReferenceTimezoneFallbackName(timezoneId, lang),
-      ),
-      lang: lang,
-    );
   }
 
   Future<String?> _resolveCurrencyLabel(
@@ -179,19 +144,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.logoutDialogTitle),
-          content: Text(l10n.logoutDialogMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.logoutConfirmButton),
-            ),
-          ],
+        return _LogoutConfirmDialog(
+          title: l10n.logoutDialogTitle,
+          message: l10n.logoutDialogMessage,
+          cancelLabel: l10n.cancelButton,
+          confirmLabel: l10n.logoutConfirmButton,
         );
       },
     );
@@ -379,11 +336,176 @@ class _SubpageTopBar extends StatelessWidget {
 }
 
 class _ProfileReferenceLabels {
-  const _ProfileReferenceLabels({this.country, this.timezone, this.currency});
+  const _ProfileReferenceLabels({this.country, this.currency});
 
   final String? country;
-  final String? timezone;
   final String? currency;
+}
+
+class _LogoutConfirmDialog extends StatelessWidget {
+  const _LogoutConfirmDialog({
+    required this.title,
+    required this.message,
+    required this.cancelLabel,
+    required this.confirmLabel,
+  });
+
+  final String title;
+  final String message;
+  final String cancelLabel;
+  final String confirmLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxDialogHeight = MediaQuery.sizeOf(context).height * 0.84;
+    final radius = BorderRadius.circular(
+      profileScaled(context, 28, min: 24, max: 30),
+    );
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: profileScaled(context, 18, min: 14, max: 24),
+        vertical: profileScaled(context, 24, min: 18, max: 28),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 390,
+            maxHeight: maxDialogHeight,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF3A210C), Color(0xFF201207)],
+              ),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.28),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.32),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
+                ),
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.14),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: radius,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(
+                  profileScaled(context, 22, min: 18, max: 24),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: profileScaled(context, 58, min: 52, max: 62),
+                        height: profileScaled(context, 58, min: 52, max: 62),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            profileScaled(context, 20, min: 18, max: 22),
+                          ),
+                          color: AppColors.accent.withValues(alpha: 0.14),
+                          border: Border.all(
+                            color: AppColors.accent.withValues(alpha: 0.28),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 18, min: 14, max: 20),
+                    ),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 24, min: 21, max: 26),
+                        height: 1.08,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 10, min: 8, max: 12),
+                    ),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: profileTextSoft,
+                        fontSize: profileScaled(context, 15, min: 14, max: 16),
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 22, min: 18, max: 24),
+                    ),
+                    Wrap(
+                      spacing: profileScaled(context, 10, min: 8, max: 12),
+                      runSpacing: profileScaled(context, 10, min: 8, max: 12),
+                      alignment: WrapAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: profileTextSoft,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.14),
+                            ),
+                            minimumSize: const Size(132, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: Text(
+                            cancelLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(132, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: Text(
+                            confirmLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProfileOverviewCard extends StatelessWidget {
@@ -407,10 +529,6 @@ class _ProfileOverviewCard extends StatelessWidget {
       (
         l10n.profileCountry,
         _resolvedValue(labels?.country, profile.countryCode, l10n.notSpecified),
-      ),
-      (
-        l10n.profileTimezone,
-        _resolvedValue(labels?.timezone, profile.timezone, l10n.notSpecified),
       ),
       (
         l10n.profileCurrency,

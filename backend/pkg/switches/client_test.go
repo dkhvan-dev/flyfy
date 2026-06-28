@@ -45,7 +45,7 @@ func TestHTTPClientHasActiveTechBreakSendsContract(t *testing.T) {
 		DomainCode: "ACTIVITY",
 		ScopeCodes: []string{"CREATE", "JOIN"},
 		Email:      "user@example.com",
-		Nickname:   "flyfy",
+		Nickname:   "inflap",
 	})
 	if err != nil {
 		t.Fatalf("HasActiveTechBreak() error = %v", err)
@@ -65,8 +65,8 @@ func TestHTTPClientHasActiveTechBreakSendsContract(t *testing.T) {
 	if gotEmail != "user@example.com" {
 		t.Fatalf("email = %q, want user@example.com", gotEmail)
 	}
-	if gotNickname != "flyfy" {
-		t.Fatalf("nickname = %q, want flyfy", gotNickname)
+	if gotNickname != "inflap" {
+		t.Fatalf("nickname = %q, want inflap", gotNickname)
 	}
 }
 

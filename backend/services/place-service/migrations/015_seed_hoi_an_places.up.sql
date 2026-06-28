@@ -6,7 +6,7 @@
 -- Selection policy:
 -- - country_code is always VN and city_id is hoi-an;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets, shows and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 WITH seed_base (
     id,
@@ -48,8 +48,12 @@ SELECT
     'VN',
     'hoi-an',
     seed_base.category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 100000::numeric
+        ELSE 50000::numeric
+    END,
+    'VND',
     seed_base.duration_value,
     seed_base.duration_unit,
     seed_base.rating,

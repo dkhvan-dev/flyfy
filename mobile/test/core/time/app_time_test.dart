@@ -51,7 +51,7 @@ void main() {
   test('calendar export keeps timezone id in DTSTART and DTEND', () {
     final ics = buildCalendarEventIcs(
       CalendarExportEvent(
-        uid: 'activity-1@flyfy',
+        uid: 'activity-1@inflap',
         title: 'Hanoi breakfast walk',
         startAt: DateTime.utc(2026, 6, 1, 3),
         endAt: DateTime.utc(2026, 6, 1, 5),

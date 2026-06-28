@@ -204,6 +204,7 @@ INSERT INTO places (
     status,
     duration_value,
     duration_unit,
+    price_amount,
     price_currency,
     rating,
     tags,
@@ -221,6 +222,11 @@ SELECT
     'PUBLISHED',
     duration_value,
     duration_unit,
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 20::numeric
+        ELSE 10::numeric
+    END,
     'EUR',
     rating,
     tags,
@@ -236,6 +242,7 @@ ON CONFLICT (id) DO UPDATE SET
     status = EXCLUDED.status,
     duration_value = EXCLUDED.duration_value,
     duration_unit = EXCLUDED.duration_unit,
+    price_amount = EXCLUDED.price_amount,
     price_currency = EXCLUDED.price_currency,
     rating = EXCLUDED.rating,
     tags = EXCLUDED.tags,

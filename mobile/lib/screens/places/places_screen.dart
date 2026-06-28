@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -11,11 +12,15 @@ import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
+import '../../features/help_center/data/help_center_api.dart';
+import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
 import '../../features/places/models/place_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/currency_rate_provider.dart';
 import '../../providers/home_location_provider.dart';
+import '../../providers/session_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
@@ -80,6 +85,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
   String? _error;
   PlaceFilterResult _filters = PlaceFilterResult.empty;
   Timer? _searchDebounce;
+  int _loadRequestId = 0;
   int _currentPage = 1;
   int _totalPlaces = 0;
   _PlaceSortField _sortField = _PlaceSortField.rating;
@@ -179,6 +185,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
 
   Future<void> _loadPlaces({int page = 1}) async {
     if (!mounted) return;
+    final requestId = ++_loadRequestId;
     final normalizedPage = page < 1 ? 1 : page;
     setState(() {
       _loading = _places.isEmpty;
@@ -204,15 +211,19 @@ class _PlacesScreenState extends State<PlacesScreen> {
         limit: _pageSize,
         offset: (normalizedPage - 1) * _pageSize,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _places = result.items;
         _totalPlaces = result.total;
         _currentPage = result.total == 0 ? 1 : normalizedPage;
         _loading = false;
       });
-    } catch (_) {
-      if (!mounted) return;
+    } catch (error, stackTrace) {
+      if (!mounted || requestId != _loadRequestId) return;
+      if (kDebugMode) {
+        debugPrint('Places load failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
       setState(() {
         _error = 'load_failed';
         _loading = false;
@@ -373,7 +384,10 @@ class _PlacesScreenState extends State<PlacesScreen> {
         filterTooltip: l10n.placesFiltersTitle,
         activeFilterCount: activeFilterCount,
         onFilterTap: _openFilters,
-        onSubmitted: (_) => _loadPlaces(page: 1),
+        onSubmitted: (_) {
+          _searchDebounce?.cancel();
+          _loadPlaces(page: 1);
+        },
       ),
     );
   }
@@ -414,6 +428,9 @@ class _PlacesScreenState extends State<PlacesScreen> {
     final currentCity = _currentCityValue(locationProvider);
     final mustVisitPlaces = _mustVisitPlaces(currentCity);
     final search = _searchController.text.trim();
+    final cityId = currentCity?.cityId?.trim();
+    final cityName = currentCity?.cityName?.trim();
+    final countryCode = currentCity?.countryCode?.trim();
     final shouldShowMustVisit =
         _filters.isEmpty &&
         search.isEmpty &&
@@ -455,6 +472,23 @@ class _PlacesScreenState extends State<PlacesScreen> {
                     selectedField: _sortField,
                     direction: _sortDirection,
                     onFieldSelected: _handleSortSelected,
+                  ),
+                  SizedBox(height: a.scale(18, minFactor: 0.72)),
+                  ContextualHelpSection(
+                    surface: HelpCenterSurface.places,
+                    tags: const ['places', 'tickets', 'opening_hours'],
+                    supportContext: {
+                      'screen': 'places',
+                      'locale': Localizations.localeOf(context).languageCode,
+                      'sort': _sortQueryParam,
+                      if (search.isNotEmpty) 'search_query': search,
+                      if (cityId != null && cityId.isNotEmpty)
+                        'city_id': cityId,
+                      if (cityName != null && cityName.isNotEmpty)
+                        'city_name': cityName,
+                      if (countryCode != null && countryCode.isNotEmpty)
+                        'country_code': countryCode,
+                    },
                   ),
                 ],
               ),
@@ -708,9 +742,9 @@ class _MustVisitCard extends StatelessWidget {
       minWidth: 360,
       maxWidth: 620,
     );
-    final coverUrl = coverMedia == null
-        ? null
-        : resolvePlaceMediaUrl(coverMedia, targetWidth: imageTargetWidth);
+    final coverUrls = coverMedia == null
+        ? const <String>[]
+        : resolvePlaceMediaUrls(coverMedia, targetWidth: imageTargetWidth);
 
     return GestureDetector(
       onTap: () => onTap(place),
@@ -728,22 +762,11 @@ class _MustVisitCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (coverUrl != null)
-                      Image.network(
-                        coverUrl,
-                        headers: placeImageRequestHeaders(coverUrl),
-                        fit: BoxFit.cover,
-                        cacheWidth: imageTargetWidth,
-                        filterQuality: FilterQuality.medium,
-                        gaplessPlayback: true,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return _placeholder();
-                        },
-                        errorBuilder: (_, _, _) => _placeholder(),
-                      )
-                    else
-                      _placeholder(),
+                    _RetryingPlaceCoverImage(
+                      imageUrls: coverUrls,
+                      cacheWidth: imageTargetWidth,
+                      placeholder: _placeholder,
+                    ),
                     Positioned.fill(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
@@ -801,9 +824,13 @@ class _MustVisitCard extends StatelessWidget {
   }
 
   String _secondaryLabel(BuildContext context) {
-    final duration = formatPlaceDurationLabel(l10n, place).trim();
-    if (duration.isNotEmpty) return duration;
-    return formatPlacePriceLabel(context, l10n, place);
+    return formatPlacePriceLabel(
+      context,
+      l10n,
+      place,
+      preferredCurrency: context.watch<SessionProvider>().profile?.currency,
+      currencyRates: context.watch<CurrencyRateProvider>(),
+    );
   }
 
   Widget _ratingBadge() {
@@ -853,6 +880,81 @@ class _MustVisitCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _RetryingPlaceCoverImage extends StatefulWidget {
+  const _RetryingPlaceCoverImage({
+    required this.imageUrls,
+    required this.cacheWidth,
+    required this.placeholder,
+  });
+
+  final List<String> imageUrls;
+  final int cacheWidth;
+  final Widget Function() placeholder;
+
+  @override
+  State<_RetryingPlaceCoverImage> createState() =>
+      _RetryingPlaceCoverImageState();
+}
+
+class _RetryingPlaceCoverImageState extends State<_RetryingPlaceCoverImage> {
+  static const int _maxRetryPerUrl = 1;
+
+  int _urlIndex = 0;
+  int _retry = 0;
+
+  @override
+  void didUpdateWidget(covariant _RetryingPlaceCoverImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.imageUrls, widget.imageUrls) ||
+        oldWidget.cacheWidth != widget.cacheWidth) {
+      _urlIndex = 0;
+      _retry = 0;
+    }
+  }
+
+  void onRetryNext() {
+    if (!mounted) return;
+    if (_urlIndex < widget.imageUrls.length - 1) {
+      setState(() {
+        _urlIndex += 1;
+        _retry = 0;
+      });
+      return;
+    }
+    if (_retry < _maxRetryPerUrl) {
+      setState(() => _retry += 1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.imageUrls.isEmpty) {
+      return widget.placeholder();
+    }
+
+    final imageUrl = widget.imageUrls[_urlIndex];
+    return Image.network(
+      imageUrl,
+      key: ValueKey('$imageUrl#$_retry'),
+      headers: placeImageRequestHeaders(imageUrl),
+      fit: BoxFit.cover,
+      cacheWidth: widget.cacheWidth,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return widget.placeholder();
+      },
+      errorBuilder: (_, _, _) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRetryNext();
+        });
+        return widget.placeholder();
+      },
+    );
+  }
 }
 
 class _PlaceSortBar extends StatelessWidget {
@@ -923,9 +1025,12 @@ class _DiscoverCard extends StatelessWidget {
             minWidth: 420,
             maxWidth: 720,
           );
-          final coverUrl = coverMedia == null
-              ? null
-              : resolvePlaceMediaUrl(coverMedia, targetWidth: imageTargetWidth);
+          final coverUrls = coverMedia == null
+              ? const <String>[]
+              : resolvePlaceMediaUrls(
+                  coverMedia,
+                  targetWidth: imageTargetWidth,
+                );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -938,24 +1043,11 @@ class _DiscoverCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (coverUrl != null)
-                        Image.network(
-                          coverUrl,
-                          headers: placeImageRequestHeaders(coverUrl),
-                          fit: BoxFit.cover,
-                          cacheWidth: imageTargetWidth,
-                          filterQuality: FilterQuality.medium,
-                          gaplessPlayback: true,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) {
-                              return child;
-                            }
-                            return _placeholder();
-                          },
-                          errorBuilder: (_, _, _) => _placeholder(),
-                        )
-                      else
-                        _placeholder(),
+                      _RetryingPlaceCoverImage(
+                        imageUrls: coverUrls,
+                        cacheWidth: imageTargetWidth,
+                        placeholder: _placeholder,
+                      ),
                       Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
@@ -1003,7 +1095,16 @@ class _DiscoverCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      formatPlacePriceLabel(context, l10n, place),
+                      formatPlacePriceLabel(
+                        context,
+                        l10n,
+                        place,
+                        preferredCurrency: context
+                            .watch<SessionProvider>()
+                            .profile
+                            ?.currency,
+                        currencyRates: context.watch<CurrencyRateProvider>(),
+                      ),
                       style: TextStyle(
                         color: const Color(0xFFC7B49F),
                         fontSize: adaptive.scale(17, minFactor: 0.82),

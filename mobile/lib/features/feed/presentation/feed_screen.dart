@@ -25,6 +25,7 @@ import '../../../shared/location/home_location_filter_defaults.dart';
 import '../data/feed_api.dart';
 import '../data/feed_subscriptions_api.dart';
 import '../models/feed_block_vm.dart';
+import '../../notifications/presentation/notification_unread_badge.dart';
 import '../widgets/community_discovery_sheet.dart';
 import '../widgets/community_display_helpers.dart';
 import '../widgets/feed_block_list.dart';
@@ -1273,15 +1274,17 @@ class _FeedScreenState extends State<FeedScreen>
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: IconButton.filledTonal(
-              key: const ValueKey('open-feed-notifications'),
-              tooltip: l10n.notificationsTitle,
-              onPressed: () => context.push('/notifications'),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.10),
-                foregroundColor: AppColors.accent,
+            child: NotificationUnreadBadge(
+              child: IconButton.filledTonal(
+                key: const ValueKey('open-feed-notifications'),
+                tooltip: l10n.notificationsTitle,
+                onPressed: () => context.push('/notifications'),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.10),
+                  foregroundColor: AppColors.accent,
+                ),
+                icon: const Icon(Icons.notifications_none_rounded),
               ),
-              icon: const Icon(Icons.notifications_none_rounded),
             ),
           ),
         ],

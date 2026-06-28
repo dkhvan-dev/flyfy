@@ -518,6 +518,50 @@ services:
       - inflap-network
 
   # ============================================
+  # Support Service PostgreSQL
+  # ============================================
+  support-postgres:
+    image: postgres:17-alpine
+    container_name: support-postgres
+    environment:
+      POSTGRES_DB: support_service_db
+      POSTGRES_USER: support_service
+      POSTGRES_PASSWORD: support_secret_dev
+    ports:
+      - "${SUPPORT_POSTGRES_HOST_PORT:-5454}:5432"
+    volumes:
+      - support_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/support-service/migrations:/migrations/support-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U support_service -d support_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  support-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: support-postgres-migrator
+    environment:
+      PGHOST: support-postgres
+      PGPORT: 5432
+      POSTGRES_DB: support_service_db
+      POSTGRES_USER: support_service
+      POSTGRES_PASSWORD: support_secret_dev
+    volumes:
+      - ./init-scripts/022_support_service_migrate.sh:/usr/local/bin/022_support_service_migrate.sh:ro
+      - ../backend/services/support-service/migrations:/migrations/support-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/022_support_service_migrate.sh"]
+    depends_on:
+      support-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # Switches Service PostgreSQL
   # ============================================
   switches-postgres:
@@ -1282,6 +1326,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      support-service:
+        condition: service_healthy
       switches-service:
         condition: service_healthy
     ports:
@@ -1316,6 +1362,8 @@ services:
       ANTI_FRAUD_SERVICE_TIMEOUT: 5s
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
+      SUPPORT_SERVICE_URL: http://support-service:8100
+      SUPPORT_SERVICE_TIMEOUT: 5s
       FEATURE_FLAG_SERVICE_URL: http://switches-service:8096
       FEATURE_FLAG_SERVICE_TIMEOUT: 5s
       TECH_BREAK_SERVICE_URL: http://switches-service:8096
@@ -1571,6 +1619,56 @@ services:
       - ../backend/services/notification-service/run/secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
       - ../backend/services/notification-service/run/secrets/notification-token-encryption-key-base64:/run/secrets/notification-token-encryption-key-base64:ro
       - ../backend/services/notification-service/run/secrets/notification-token-hash-key-base64:/run/secrets/notification-token-hash-key-base64:ro
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Support Service
+  # ============================================
+  support-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/support-service/Dockerfile
+    container_name: support-service
+    depends_on:
+      support-postgres:
+        condition: service_healthy
+      support-postgres-migrator:
+        condition: service_completed_successfully
+      chat-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      guide-service:
+        condition: service_started
+    ports:
+      - "8100:8100"
+    environment:
+      APP_NAME: support-service
+      APP_ENV: development
+
+      SUPPORT_SERVICE_HTTP_PORT: 8100
+      SUPPORT_SERVICE_HTTP_READ_TIMEOUT: 5s
+      SUPPORT_SERVICE_HTTP_WRITE_TIMEOUT: 10s
+      SUPPORT_SERVICE_HTTP_IDLE_TIMEOUT: 60s
+
+      SUPPORT_SERVICE_DATABASE_URL: postgres://support_service:support_secret_dev@support-postgres:5432/support_service_db?sslmode=disable
+      SUPPORT_SERVICE_CHAT_SERVICE_URL: http://chat-service:8088
+      SUPPORT_SERVICE_CHAT_SERVICE_TIMEOUT: 5s
+      SUPPORT_SERVICE_CHAT_SUPPORT_SUBJECT: support-service
+      SUPPORT_SERVICE_NOTIFICATION_SERVICE_URL: http://notification-service:8097
+      SUPPORT_SERVICE_NOTIFICATION_SERVICE_TIMEOUT: 3s
+      SUPPORT_SERVICE_SLA_ALERT_INTERVAL: 1m
+      SUPPORT_SERVICE_USER_SERVICE_URL: http://user-service:8084
+      SUPPORT_SERVICE_GUIDE_SERVICE_URL: http://guide-service:8085
+      SUPPORT_SERVICE_USER_CONTEXT_TIMEOUT: 3s
+      SUPPORT_SERVICE_SEGMENT_REFRESH_INTERVAL: 5m
+      SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+
+      LOG_LEVEL: debug
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2365,6 +2463,8 @@ services:
         condition: service_started
       chat-service:
         condition: service_started
+      support-service:
+        condition: service_healthy
       notification-service:
         condition: service_started
       sticker-service:
@@ -2413,6 +2513,7 @@ services:
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       FEED_SERVICE_HTTP_URL: http://feed-service:8087
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      SUPPORT_SERVICE_HTTP_URL: http://support-service:8100
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
@@ -2465,6 +2566,7 @@ volumes:
   feed_postgres_data:
   chat_postgres_data:
   notification_postgres_data:
+  support_postgres_data:
   switches_postgres_data:
   checklist_postgres_data:
   user_route_postgres_data:

@@ -22,7 +22,7 @@ void main() {
 
       final resolved = await provider.resolveCityReference(
         HomeLocationPreference(
-          source: HomeLocationSource.profile,
+          source: HomeLocationSource.detected,
           countryCode: 'KZ',
           cityName: 'Almaty',
           updatedAt: DateTime.utc(2026, 6, 3),
@@ -138,69 +138,36 @@ void main() {
   });
 
   test(
-    'load uses profile fallback when device location is unavailable',
+    'load falls back to device timezone when GPS city is unavailable',
     () async {
       SharedPreferences.setMockInitialValues({});
       final api = _FakeReferenceApi(
         cities: const [
-          ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
+          ReferenceCity(id: 'bishkek', countryCode: 'KG', name: 'Бишкек'),
         ],
       );
       final provider = HomeLocationProvider(
         referenceApi: api,
-        deviceContextService: _FakeDeviceContextService(suggestion: null),
-      );
-
-      await provider.load(
-        languageCode: 'ru',
-        profileFallback: HomeLocationPreference.fromProfile(
-          countryCode: 'KZ',
-          timezone: 'Asia/Almaty',
+        deviceContextService: _FakeDeviceContextService(
+          suggestion: null,
+          timezone: 'Asia/Bishkek',
         ),
       );
 
-      expect(provider.effectiveLocation.source, HomeLocationSource.profile);
-      expect(provider.effectiveLocation.countryCode, 'KZ');
-      expect(provider.effectiveLocation.cityId, 'almaty');
-      expect(provider.effectiveLocation.cityName, 'Алматы');
-      expect(api.queries, ['Almaty']);
-      expect(api.countryCodes, ['KZ']);
+      await provider.load(languageCode: 'ru');
+
+      expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+      expect(provider.effectiveLocation.timezone, 'Asia/Bishkek');
+      expect(provider.effectiveLocation.countryCode, 'KG');
+      expect(provider.effectiveLocation.cityId, 'bishkek');
+      expect(provider.effectiveLocation.cityName, 'Бишкек');
+      expect(api.queries, ['Bishkek']);
+      expect(api.countryCodes, [null]);
     },
   );
 
-  test('load prefers device timezone before profile fallback', () async {
-    SharedPreferences.setMockInitialValues({});
-    final api = _FakeReferenceApi(
-      cities: const [
-        ReferenceCity(id: 'bishkek', countryCode: 'KG', name: 'Бишкек'),
-      ],
-    );
-    final provider = HomeLocationProvider(
-      referenceApi: api,
-      deviceContextService: _FakeDeviceContextService(
-        suggestion: null,
-        timezone: 'Asia/Bishkek',
-      ),
-    );
-
-    await provider.load(
-      languageCode: 'ru',
-      profileFallback: HomeLocationPreference.fromProfile(
-        countryCode: 'KZ',
-        timezone: 'Asia/Almaty',
-      ),
-    );
-
-    expect(provider.effectiveLocation.source, HomeLocationSource.detected);
-    expect(provider.effectiveLocation.countryCode, 'KG');
-    expect(provider.effectiveLocation.cityId, 'bishkek');
-    expect(provider.effectiveLocation.cityName, 'Бишкек');
-    expect(api.queries, ['Bishkek']);
-    expect(api.countryCodes, [null]);
-  });
-
   test(
-    'load prefers saved home screen location before device and profile',
+    'load prefers saved home screen location before detected device location',
     () async {
       SharedPreferences.setMockInitialValues({
         HomeLocationProvider.storageKey: jsonEncode({
@@ -226,13 +193,7 @@ void main() {
         deviceContextService: deviceContext,
       );
 
-      await provider.load(
-        languageCode: 'ru',
-        profileFallback: HomeLocationPreference.fromProfile(
-          countryCode: 'KZ',
-          timezone: 'Asia/Almaty',
-        ),
-      );
+      await provider.load(languageCode: 'ru');
 
       expect(provider.effectiveLocation.source, HomeLocationSource.manual);
       expect(provider.effectiveLocation.countryCode, 'UZ');
@@ -246,7 +207,7 @@ void main() {
   test('load ignores stored profile-derived location preference', () async {
     SharedPreferences.setMockInitialValues({
       HomeLocationProvider.storageKey: jsonEncode({
-        'source': HomeLocationSource.profile.name,
+        'source': 'profile',
         'countryCode': 'VN',
         'cityName': 'Bishkek',
         'updatedAt': DateTime.utc(2026, 6, 3).toIso8601String(),
@@ -267,7 +228,7 @@ void main() {
   });
 
   test(
-    'clearSelection falls back to profile location before neutral fallback',
+    'clearSelection falls back to device timezone before neutral fallback',
     () async {
       SharedPreferences.setMockInitialValues({
         HomeLocationProvider.storageKey: jsonEncode({
@@ -284,19 +245,17 @@ void main() {
       );
       final provider = HomeLocationProvider(
         referenceApi: api,
-        deviceContextService: _FakeDeviceContextService(suggestion: null),
-      );
-      await provider.load(
-        languageCode: 'ru',
-        profileFallback: HomeLocationPreference.fromProfile(
-          countryCode: 'KZ',
+        deviceContextService: _FakeDeviceContextService(
+          suggestion: null,
           timezone: 'Asia/Almaty',
         ),
       );
+      await provider.load(languageCode: 'ru');
 
       await provider.clearSelection(languageCode: 'ru');
 
-      expect(provider.effectiveLocation.source, HomeLocationSource.profile);
+      expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+      expect(provider.effectiveLocation.timezone, 'Asia/Almaty');
       expect(provider.effectiveLocation.countryCode, 'KZ');
       expect(provider.effectiveLocation.cityId, 'almaty');
       expect(provider.effectiveLocation.cityName, 'Алматы');
@@ -337,6 +296,10 @@ class _FakeReferenceApi extends ReferenceApi {
   _FakeReferenceApi({required this.cities});
 
   final List<ReferenceCity> cities;
+  final List<ReferenceTimezone> timezones = const [
+    ReferenceTimezone(id: 'Asia/Almaty', name: 'Алматы'),
+    ReferenceTimezone(id: 'Asia/Bishkek', name: 'Бишкек'),
+  ];
   final List<String> queries = [];
   final List<String?> countryCodes = [];
   final List<String> languages = [];
@@ -352,6 +315,11 @@ class _FakeReferenceApi extends ReferenceApi {
     countryCodes.add(countryCode);
     languages.add(lang);
     return cities;
+  }
+
+  @override
+  Future<List<ReferenceTimezone>> listTimezones({String lang = 'en'}) async {
+    return timezones;
   }
 }
 

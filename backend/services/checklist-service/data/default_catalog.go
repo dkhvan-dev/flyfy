@@ -43,7 +43,7 @@ func DefaultCatalogSeed() model.CatalogSeed {
 				},
 				TrustLevel:               model.TrustLevelOfficialLinkRequired,
 				RequiresUserConfirmation: true,
-				AppliesTo:                model.RuleCondition{Always: true},
+				AppliesTo:                model.RuleCondition{InternationalTrip: true},
 			},
 			{
 				ID:       "documents.travel_insurance",
@@ -60,21 +60,21 @@ func DefaultCatalogSeed() model.CatalogSeed {
 					KK: "Полис нөмірі мен жедел көмек байланыстарын офлайн сақтаңыз.",
 				},
 				TrustLevel: model.TrustLevelGeneralAdvisory,
-				AppliesTo:  model.RuleCondition{Always: true},
+				AppliesTo:  model.RuleCondition{InternationalTrip: true},
 			},
 			{
 				ID:       "documents.bookings_offline",
 				Category: model.ChecklistCategoryDocuments,
-				Priority: model.ChecklistPriorityEssential,
+				Priority: model.ChecklistPriorityRecommended,
 				Title: model.LocalizedText{
-					EN: "Offline tickets and bookings",
-					RU: "Билеты и брони офлайн",
-					KK: "Билеттер мен броньдар офлайн",
+					EN: "Save tickets and bookings",
+					RU: "Сохранить билеты и брони",
+					KK: "Билеттер мен броньдарды сақтау",
 				},
 				Reason: model.LocalizedText{
-					EN: "Save tickets, accommodation, activity, and transfer confirmations for poor network moments.",
-					RU: "Сохраните билеты, жилье, активности и трансферы на случай плохой связи.",
-					KK: "Байланыс нашар кезде билеттерді, қонақүйді, белсенділіктерді және трансферлерді сақтаңыз.",
+					EN: "Download, add to Wallet, or print tickets, accommodation bookings, activity confirmations, and transfers for poor network moments.",
+					RU: "Скачайте, добавьте в Wallet или распечатайте билеты, брони жилья, активности и трансферы на случай плохой связи.",
+					KK: "Байланыс нашар болғанда қажет болуы үшін билеттерді, қонақүй броньдарын, белсенділік растауларын және трансферлерді жүктеп алыңыз, Wallet-ке қосыңыз немесе басып шығарыңыз.",
 				},
 				TrustLevel: model.TrustLevelGeneralAdvisory,
 				AppliesTo:  model.RuleCondition{Always: true},
@@ -100,7 +100,7 @@ func DefaultCatalogSeed() model.CatalogSeed {
 			{
 				ID:       "baggage.power_bank_carry_on",
 				Category: model.ChecklistCategoryBaggage,
-				Priority: model.ChecklistPriorityEssential,
+				Priority: model.ChecklistPriorityRecommended,
 				Title: model.LocalizedText{
 					EN: "Power bank in carry-on",
 					RU: "Power bank в ручную кладь",
@@ -118,7 +118,7 @@ func DefaultCatalogSeed() model.CatalogSeed {
 			{
 				ID:       "baggage.liquids_100ml",
 				Category: model.ChecklistCategoryBaggage,
-				Priority: model.ChecklistPriorityEssential,
+				Priority: model.ChecklistPriorityRecommended,
 				Title: model.LocalizedText{
 					EN: "Liquids in small containers",
 					RU: "Жидкости в небольших емкостях",
@@ -177,7 +177,7 @@ func DefaultCatalogSeed() model.CatalogSeed {
 			{
 				ID:       "money.esim_offline_map",
 				Category: model.ChecklistCategoryMoney,
-				Priority: model.ChecklistPriorityImportant,
+				Priority: model.ChecklistPriorityRecommended,
 				Title: model.LocalizedText{
 					EN: "Connectivity and offline maps",
 					RU: "Связь и офлайн-карты",

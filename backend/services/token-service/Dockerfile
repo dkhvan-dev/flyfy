@@ -5,16 +5,21 @@ FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates
 
-WORKDIR /repo
+ENV GOWORK=off
 
-# Копируем весь репозиторий
-COPY . .
+WORKDIR /app
 
-# Переходим в сервис
-WORKDIR /repo/backend/services/token-service
+COPY proto/go.mod proto/go.sum ./proto/
+COPY backend/services/token-service/go.mod backend/services/token-service/go.sum ./backend/services/token-service/
 
-# Скачиваем зависимости
+WORKDIR /app/backend/services/token-service
 RUN go mod download
+
+WORKDIR /app
+COPY proto ./proto
+COPY backend/services/token-service ./backend/services/token-service
+
+WORKDIR /app/backend/services/token-service
 
 # Собираем статический бинарь
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -34,7 +39,7 @@ RUN apk add --no-cache ca-certificates tzdata \
 WORKDIR /app
 
 COPY --from=builder /build/token-service .
-COPY --from=builder /repo/backend/services/token-service/migrations ./migrations
+COPY --from=builder /app/backend/services/token-service/migrations ./migrations
 
 USER appuser
 

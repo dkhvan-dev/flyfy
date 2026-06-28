@@ -600,6 +600,38 @@ func TestTripPreviewEndpointReturnsReadinessAndLocalizedItems(t *testing.T) {
 	}
 }
 
+func TestTripPreviewEndpointUsesCitizenshipForInternationalDocuments(t *testing.T) {
+	handler := NewHandler(app.NewChecklistUseCase(app.NewMemoryChecklistRepository(data.DefaultCatalogSeed())))
+	mux := http.NewServeMux()
+	handler.Register(mux)
+
+	body := []byte(`{
+		"tripId": "domestic-almaty",
+		"destination": {"countryCode": "KZ", "cityName": "Almaty"},
+		"startAt": "2026-07-11T10:00:00Z",
+		"endAt": "2026-07-18T10:00:00Z",
+		"transportModes": ["flight"],
+		"activitySlugs": ["hiking"],
+		"travelerProfile": {"citizenshipCountryCode": "KZ", "preferredLanguage": "ru"}
+	}`)
+	req := httptest.NewRequest(http.MethodPost, "/v1/checklists/trip-preview?lang=ru", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d with body %s", rec.Code, rec.Body.String())
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if status := responseItemStatus(resp["items"].([]any), "documents.travel_insurance"); status != "" {
+		t.Fatalf("domestic checklist should not include travel insurance, got status %q in %#v", status, resp["items"])
+	}
+}
+
 func TestCarryItemSearchEndpointReturnsPolicy(t *testing.T) {
 	handler := NewHandler(app.NewChecklistUseCase(app.NewMemoryChecklistRepository(data.DefaultCatalogSeed())))
 	mux := http.NewServeMux()

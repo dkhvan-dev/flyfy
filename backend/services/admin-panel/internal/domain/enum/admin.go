@@ -24,15 +24,20 @@ func (s StaffStatus) IsValid() bool {
 type StaffRole string
 
 const (
-	StaffRoleSuperAdmin         StaffRole = "SUPER_ADMIN"
-	StaffRoleAdmin              StaffRole = "ADMIN"
-	StaffRoleModerationLead     StaffRole = "MODERATION_LEAD"
-	StaffRoleExcursionModerator StaffRole = "EXCURSION_MODERATOR"
-	StaffRoleActivityModerator  StaffRole = "ACTIVITY_MODERATOR"
-	StaffRoleGuideModerator     StaffRole = "GUIDE_MODERATOR"
-	StaffRoleChatModerator      StaffRole = "CHAT_MODERATOR"
-	StaffRoleSupportViewer      StaffRole = "SUPPORT_VIEWER"
-	StaffRoleReadOnlyAuditor    StaffRole = "READ_ONLY_AUDITOR"
+	StaffRoleSuperAdmin           StaffRole = "SUPER_ADMIN"
+	StaffRoleAdmin                StaffRole = "ADMIN"
+	StaffRoleModerationLead       StaffRole = "MODERATION_LEAD"
+	StaffRoleExcursionModerator   StaffRole = "EXCURSION_MODERATOR"
+	StaffRoleActivityModerator    StaffRole = "ACTIVITY_MODERATOR"
+	StaffRoleGuideModerator       StaffRole = "GUIDE_MODERATOR"
+	StaffRoleChatModerator        StaffRole = "CHAT_MODERATOR"
+	StaffRoleSupportViewer        StaffRole = "SUPPORT_VIEWER"
+	StaffRoleSupportAgent         StaffRole = "SUPPORT_AGENT"
+	StaffRoleSupportLead          StaffRole = "SUPPORT_LEAD"
+	StaffRoleSupportAdmin         StaffRole = "SUPPORT_ADMIN"
+	StaffRoleHelpContentEditor    StaffRole = "HELP_CONTENT_EDITOR"
+	StaffRoleHelpContentPublisher StaffRole = "HELP_CONTENT_PUBLISHER"
+	StaffRoleReadOnlyAuditor      StaffRole = "READ_ONLY_AUDITOR"
 )
 
 func (r StaffRole) IsValid() bool {
@@ -45,6 +50,11 @@ func (r StaffRole) IsValid() bool {
 		StaffRoleGuideModerator,
 		StaffRoleChatModerator,
 		StaffRoleSupportViewer,
+		StaffRoleSupportAgent,
+		StaffRoleSupportLead,
+		StaffRoleSupportAdmin,
+		StaffRoleHelpContentEditor,
+		StaffRoleHelpContentPublisher,
 		StaffRoleReadOnlyAuditor:
 		return true
 	default:
@@ -70,6 +80,11 @@ const (
 	PermissionUsersModerate      Permission = "users.moderate"
 	PermissionUsersRestrict      Permission = "users.restrict"
 	PermissionUsersSensitiveRead Permission = "users.sensitive.read"
+	PermissionSupportRead        Permission = "support.read"
+	PermissionSupportReply       Permission = "support.reply"
+	PermissionSupportManage      Permission = "support.manage"
+	PermissionHelpContentEdit    Permission = "help_content.edit"
+	PermissionHelpContentPublish Permission = "help_content.publish"
 )
 
 type ModerationCaseStatus string

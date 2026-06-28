@@ -55,6 +55,9 @@ import '../../features/feed/presentation/community_discovery_screen.dart';
 import '../../features/feed/presentation/community_profile_screen.dart';
 import '../../features/feed/presentation/feed_screen.dart';
 import '../../features/feed/models/feed_block_vm.dart';
+import '../../features/help_center/models/help_center_models.dart';
+import '../../features/help_center/presentation/help_center_screen.dart';
+import '../../features/help_center/presentation/support_tickets_screen.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../features/user_routes/presentation/user_route_details_screen.dart';
@@ -687,6 +690,30 @@ class AppRouter {
               _withAndroidBackSwipe(const ServicesScreen()),
         ),
         GoRoute(
+          path: '/help',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const HelpCenterScreen()),
+        ),
+        GoRoute(
+          path: '/help/support',
+          builder: (context, state) {
+            final extra = state.extra;
+            return _withAndroidBackSwipe(
+              SupportTicketDetailScreen(
+                initialIntent: extra is SupportChatOpenIntent ? extra : null,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/help/support/:ticketId',
+          builder: (context, state) => _withAndroidBackSwipe(
+            SupportTicketDetailScreen(
+              ticketId: state.pathParameters['ticketId'] ?? '',
+            ),
+          ),
+        ),
+        GoRoute(
           path: '/currency-converter',
           builder: (context, state) =>
               _withAndroidBackSwipe(const CurrencyConverterScreen()),
@@ -804,6 +831,7 @@ class AppRouter {
         location == '/menu' ||
         location == '/map' ||
         location == '/services' ||
+        location == '/help' ||
         location == '/currency-converter' ||
         location == '/yandex-go' ||
         location == '/glovo' ||

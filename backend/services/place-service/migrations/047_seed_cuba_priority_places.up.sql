@@ -209,7 +209,11 @@ SELECT
     'CU',
     city_id,
     category,
-    NULL::numeric,
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 240::numeric
+        ELSE 120::numeric
+    END,
     'CUP',
     duration_value,
     duration_unit,

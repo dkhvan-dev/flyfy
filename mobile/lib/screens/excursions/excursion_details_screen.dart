@@ -30,6 +30,8 @@ import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../features/excursions/excursion_search.dart';
+import '../../features/help_center/data/help_center_api.dart';
+import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
@@ -60,6 +62,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   final PlaceApi _placeApi = PlaceApi();
   final ProfileApi _profileApi = ProfileApi();
   final ChatApi _chatApi = ChatApi();
+  final HelpCenterApi _helpCenterApi = HelpCenterApi();
   PlaceVm? _localizedLandmark;
   String? _localizedLandmarkId;
   String? _localizedLandmarkLocale;
@@ -176,6 +179,45 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
         setState(() => _isMessageGuideLoading = false);
       }
     }
+  }
+
+  Future<void> _handleContextualHelpAction(
+    HelpArticleVm article,
+    HelpArticleActionVm action,
+    String guideUserId,
+  ) async {
+    if (action.type == HelpArticleActionType.openChat) {
+      await _openGuideChat(guideUserId);
+      return;
+    }
+
+    if (action.type == HelpArticleActionType.openRoute &&
+        action.target.trim().startsWith('/')) {
+      context.push(action.target.trim());
+      return;
+    }
+
+    if (action.type != HelpArticleActionType.contactSupport) {
+      return;
+    }
+
+    final supportContext = {
+      'excursion_id': widget.excursionId,
+      'entity_id': widget.excursionId,
+      'article_id': article.id,
+      'screen': 'excursion_details',
+      'locale': Localizations.localeOf(context).languageCode,
+      'source_route': '/excursions/${widget.excursionId}',
+    };
+    context.push(
+      '/help/support',
+      extra: SupportChatOpenIntent(
+        category: SupportTicketCategory.excursions,
+        source: HelpCenterSurface.excursionDetails.wireValue,
+        intent: 'article:${article.id}',
+        context: supportContext,
+      ),
+    );
   }
 
   void _scheduleResolveGuideProfiles(
@@ -735,6 +777,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             isCurrentUserGuide: isCurrentUserGuide,
             enableRemoteOffers: true,
             offerProfiles: offerProfiles,
+            helpCenterApi: _helpCenterApi,
             activeChecklistBooking: activeChecklistBooking,
             isBuildingRoute: _isBuildingExcursionRoute,
             showMessageGuide: !isAuthor && guideUserId.isNotEmpty,
@@ -769,6 +812,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             onRoutePreviewTap: () =>
                 unawaited(_openExcursionRoutePreview(excursion)),
             onMessageGuideTap: () => _openGuideChat(guideUserId),
+            onHelpActionSelected: (article, action) =>
+                _handleContextualHelpAction(article, action, guideUserId),
             onOfferSelected: _selectOffer,
             onOffersChanged: (offers) =>
                 _replaceVisibleOffers(excursion.id, offers),
@@ -790,8 +835,9 @@ class ExcursionDetailsContent extends StatelessWidget {
     required this.onEditOfferTap,
     required this.onMessageGuideTap,
     required this.onOfferSelected,
-    required this.isBuildingRoute,
-    required this.onRoutePreviewTap,
+    this.onHelpActionSelected = _noopHelpActionSelected,
+    this.isBuildingRoute = false,
+    this.onRoutePreviewTap = _noopExcursionRoutePreview,
     this.offers,
     this.excursionReviews = const [],
     this.onOfferProfileTap,
@@ -812,6 +858,7 @@ class ExcursionDetailsContent extends StatelessWidget {
     this.onReviewLongPress,
     this.localizedLandmark,
     this.activeChecklistBooking,
+    this.helpCenterApi,
   });
 
   final ExcursionVm excursion;
@@ -820,10 +867,13 @@ class ExcursionDetailsContent extends StatelessWidget {
   final List<ExcursionReviewVm> excursionReviews;
   final ExcursionOfferVm? selectedOffer;
   final ExcursionBookingVm? activeChecklistBooking;
+  final HelpCenterApi? helpCenterApi;
   final Map<String, UserProfileVm> offerProfiles;
   final VoidCallback onBookTap;
   final VoidCallback onEditOfferTap;
   final VoidCallback onMessageGuideTap;
+  final void Function(HelpArticleVm article, HelpArticleActionVm action)
+  onHelpActionSelected;
   final ValueChanged<ExcursionOfferVm> onOfferSelected;
   final bool isBuildingRoute;
   final VoidCallback onRoutePreviewTap;
@@ -921,6 +971,25 @@ class ExcursionDetailsContent extends StatelessWidget {
                               ? (onChecklistPreviewTap ?? onBookTap)
                               : (onFullChecklistTap ?? onBookTap),
                         ),
+                        if (helpCenterApi != null) ...[
+                          const SizedBox(height: 24),
+                          ContextualHelpSection(
+                            api: helpCenterApi,
+                            surface: HelpCenterSurface.excursionDetails,
+                            tags: [
+                              'excursions',
+                              'guides',
+                              if (showCheckoutPrice) 'payments',
+                              if ((excursion.categorySlug ?? '')
+                                  .trim()
+                                  .isNotEmpty)
+                                excursion.categorySlug!.trim(),
+                            ],
+                            userState: showMessageGuide ? 'traveler' : 'guide',
+                            supportContext: {'excursion_id': excursion.id},
+                            onActionSelected: onHelpActionSelected,
+                          ),
+                        ],
                         const SizedBox(height: 40),
                         _ExcursionExperienceSection(
                           excursion: excursion,
@@ -981,6 +1050,13 @@ class ExcursionDetailsContent extends StatelessWidget {
     );
   }
 }
+
+void _noopExcursionRoutePreview() {}
+
+void _noopHelpActionSelected(
+  HelpArticleVm article,
+  HelpArticleActionVm action,
+) {}
 
 class _ExcursionDetailsTopBar extends StatelessWidget {
   const _ExcursionDetailsTopBar({

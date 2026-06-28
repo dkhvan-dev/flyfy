@@ -162,11 +162,13 @@
       "date": {}
     }
   },
-  "travelChecklistTransportFlight": "Ұшу",
+  "travelChecklistTransportFlight": "Ұшақ",
   "travelChecklistTransportTrain": "Пойыз",
   "travelChecklistTransportBus": "Автобус",
   "travelChecklistTransportCar": "Авто",
+  "travelChecklistTransportMotorcycle": "Мотоцикл",
   "travelChecklistTransportFerry": "Паром",
+  "travelChecklistTransportOther": "Басқа",
   "travelChecklistActivityWalking": "Жаяу серуен",
   "travelChecklistActivityHiking": "Хайкинг",
   "travelChecklistActivityCulture": "Мәдениет",
@@ -366,7 +368,7 @@
       "time": {}
     }
   },
-  "profileCountry": "Ел",
+  "profileCountry": "Азаматтығы",
   "profileCurrency": "Валюта",
   "profileCurrencySearchHint": "Валюта, код немесе таңба",
   "profileCurrencyNoResults": "Валюталар табылмады",
@@ -393,7 +395,7 @@
   "guideVerificationBirthDateHint": "КК.АА.ЖЖЖЖ",
   "guideVerificationNationalityLabel": "Азаматтығы",
   "guideVerificationSelectCountry": "Елді таңдаңыз",
-  "guideVerificationIdentityNotice": "Бұл деректер тек жеке басыңызды және гид мәртебесін растау үшін қолданылады.",
+  "guideVerificationIdentityNotice": "Бұл деректер тек жеке басыңызды және гид мәртебесін растау үшін қолданылады",
   "guideVerificationContinueToDocuments": "Құжаттарға өту",
   "guideVerificationDocumentTypeLabel": "Құжат түрі",
   "guideVerificationPassport": "Паспорт",
@@ -401,13 +403,14 @@
   "guideVerificationUploadPhotoTitle": "Жеке құжатты жүктеңіз",
   "guideVerificationUploadPhotoSubtitle": "Құжаттың алдыңғы жағының анық фотосын немесе сканын жүктеңіз.",
   "guideVerificationNoGlare": "Жарқылсыз",
-  "guideVerificationNoGlareHint": "Мәтін анық көрінуі үшін суретті біркелкі жарықта түсіріңіз.",
+  "guideVerificationNoGlareHint": "Мәтін анық көрінуі үшін суретті біркелкі жарықта түсіріңіз",
   "guideVerificationFullFrame": "Толық кадр",
-  "guideVerificationFullFrameHint": "Құжаттың барлық шеттері суретте анық көрінуі керек.",
+  "guideVerificationFullFrameHint": "Құжаттың барлық шеттері суретте анық көрінуі керек",
   "guideVerificationTapToCapturePassport": "Құжат файлын таңдау үшін басыңыз",
   "guideVerificationFileFormatsShort": "JPG, PNG, PDF, 10 МБ дейін",
   "guideVerificationChooseFile": "Файл таңдау",
-  "guideVerificationDocumentConfirm": "Бұл құжаттың жарамды екенін, мерзімі өтпегенін және ұсынылған фото автоматтандырылған тексеру жүйелері үшін анық оқылатынын растаймын.",
+  "guideVerificationReplaceFile": "Файлды ауыстыру",
+  "guideVerificationDocumentConfirm": "Бұл құжаттың жарамды екенін, мерзімі өтпегенін және ұсынылған фото автоматтандырылған тексеру жүйелері үшін анық оқылатынын растаймын",
   "guideVerificationVerifyContinue": "Тексеруді жалғастыру",
   "guideVerificationCredentialsTitle": "Біліктілік пен лицензия",
   "guideVerificationCredentialsSubtitle": "Тәжірибеңіз бен гид ретінде жұмыс істеу құқығын растайтын құжатты көрсетіңіз.",
@@ -417,16 +420,16 @@
   "guideVerificationCityGuidePermit": "Қалалық гид рұқсаты",
   "guideVerificationMuseumAccreditation": "Мұражай немесе нысан аккредитациясы",
   "guideVerificationUploadLicenseTitle": "Растайтын құжатты жүктеңіз",
-  "guideVerificationUploadLicenseSubtitle": "Мұнда сертификат, лицензия немесе басқа кәсіби құжат жарайды.",
+  "guideVerificationUploadLicenseSubtitle": "Мұнда сертификат, лицензия немесе басқа кәсіби құжат жарайды",
   "guideVerificationAdditionalCertifications": "Қосымша дағдылар",
   "guideVerificationUploadFirstAidTitle": "Алғашқы көмек сертификатын жүктеңіз",
   "guideVerificationUploadFirstAidSubtitle": "Міндетті емес: өтінімді күшейту үшін сертификат қоса аласыз.",
   "guideVerificationUploadLanguageTitle": "Тіл сертификатын жүктеңіз",
   "guideVerificationUploadLanguageSubtitle": "Міндетті емес: тіл білу деңгейін растайтын сертификат қоса аласыз.",
   "guideVerificationFirstAid": "Алғашқы көмек",
-  "guideVerificationFirstAidHint": "Сізде алғашқы көмек бойынша жарамды курс немесе сертификат бар.",
+  "guideVerificationFirstAidHint": "Сізде алғашқы көмек бойынша жарамды курс немесе сертификат бар",
   "guideVerificationLanguageProficiency": "Шет тілдері",
-  "guideVerificationLanguageProficiencyHint": "Сіз белсенділіктер мен экскурсияларды бірнеше тілде өткізе аласыз.",
+  "guideVerificationLanguageProficiencyHint": "Сіз белсенділіктер мен экскурсияларды бірнеше тілде өткізе аласыз",
   "guideVerificationTimelineTitle": "Қарау мерзімі",
   "guideVerificationTimelineText": "Әдетте өтінімдер 1–3 жұмыс күні ішінде қаралады. Қосымша ақпарат керек болса, оны профильде көрсетеміз.",
   "guideVerificationReviewHeroTitle": "Жіберер алдында деректерді тексеріңіз",
@@ -441,9 +444,9 @@
   "guideVerificationTermsTitle": "Растау",
   "guideVerificationTermsHeading": "Деректердің дұрыстығын растаймын",
   "guideVerificationTermsBody": "Егер ақпарат шындыққа сәйкес келмесе немесе құжаттар талапқа сай болмаса, Inflap өтінімді кері қайтара алатынын түсінемін.",
-  "guideVerificationAgreement": "Гид мәртебесін растау үшін құжаттарды тексеруге және деректерді өңдеуге келісемін.",
+  "guideVerificationAgreement": "Гид мәртебесін растау үшін құжаттарды тексеруге және деректерді өңдеуге келісемін",
   "guideVerificationSubmit": "Өтінімді жіберу",
-  "guideVerificationReviewNote": "Жібергеннен кейін өтінім мәртебесін профильден бақылай аласыз.",
+  "guideVerificationReviewNote": "Жібергеннен кейін өтінім мәртебесін профильден бақылай аласыз",
   "guideVerificationPendingTitle": "Өтінім тексеріліп жатыр",
   "guideVerificationPendingSubtitle": "Біз құжаттарыңызды алдық және қазір қарап жатырмыз. Мәртебе өзгерсе, ол профильде көрінеді.",
   "guideVerificationActiveTitle": "Гид мәртебесі әлдеқашан расталған",
@@ -478,7 +481,7 @@
   "userFallbackName": "дос",
   "notSpecified": "Көрсетілмеген",
   "profileIncompleteTitle": "Профиль толық толтырылмаған",
-  "profileIncompleteDescription": "Inflap мүмкіндіктерін толық пайдалану үшін никнеймді, атыңызды, тегіңізді және еліңізді толтырыңыз",
+  "profileIncompleteDescription": "Inflap мүмкіндіктерін толық пайдалану үшін никнеймді, атыңызды, тегіңізді және азаматтығыңызды толтырыңыз",
   "fillNowButton": "Толтыру",
   "appLanguageTitle": "Қолданба тілі",
   "saveProfileButton": "Сақтау",
@@ -496,15 +499,15 @@
   "bioLabel": "Өзі туралы",
   "firstNameRequired": "Атыңызды енгізіңіз",
   "lastNameRequired": "Тегіңізді енгізіңіз",
-  "profileCountryRequired": "Елді таңдаңыз",
+  "profileCountryRequired": "Азаматтығыңызды таңдаңыз",
   "profileRequiredTitle": "Профильді толтырыңыз",
-  "profileRequiredDescription": "Жалғастыру үшін профиліңізде никнеймді, атыңызды, тегіңізді және еліңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.",
+  "profileRequiredDescription": "Жалғастыру үшін профиліңізде никнеймді, атыңызды, тегіңізді және азаматтығыңызды көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.",
   "myProfileTitle": "Менің профилім",
   "profileLinkCopied": "Профиль сілтемесі көшірілді",
   "profileVerifiedExplorer": "РАСТАЛҒАН ГИД",
   "profileGuideTitle": "Inflap гиді",
   "profileGuideRatingLabel": "Гид рейтингі",
-  "profileEmptyBioPlaceholder": "Қазір мұнда сипаттама жоқ. Профиль толтырылған кезде қысқаша ақпарат осы жерде көрсетіледі.",
+  "profileEmptyBioPlaceholder": "Өзіңіз туралы бірнеше сөз басқаларға сізді жақсырақ тануға көмектеседі",
   "profileBecomeGuideTitle": "Гид болыңыз",
   "profileBecomeGuideSubtitle": "Жақында осы жерден өтінім беріп, кәсіби гид профилін аша аласыз.",
   "guideVerificationRevokedTitle": "Гид мәртебесі қайтарылды",
@@ -549,6 +552,7 @@
   "profileConnectionsFriendRequestsViewAll": "Барлық сұраулар",
   "profileConnectionsFriendRequestsEmptyTitle": "Сұраулар жоқ",
   "profileConnectionsFriendRequestsEmptySubtitle": "Жаңа кіріс достық сұраулары осы жерде көрсетіледі.",
+  "profileMyContentTitle": "Менің кеңістігім",
   "profileJourneyTitle": "Менің жолым",
   "profileUserRoutesTitle": "Менің маршруттарым",
   "profileUserRoutesSubtitle": "Сақталған серуендер, қала жоспарлары және саяхатшылар маршруттары",
@@ -559,9 +563,9 @@
   "profileMyActivitiesSubtitle": "Өз белсенділіктеріңізді басқарып, қатысуларыңызды бақылаңыз.",
   "profilePreferencesTitle": "Қалаулар",
   "profileNotificationsRowTitle": "Хабарландырулар",
-  "profileNotificationsRowSubtitle": "Белсенділіктерге қатысты push, email және SMS жаңартулары.",
+  "profileNotificationsRowSubtitle": "Белсенділіктерге қатысты push, email және SMS жаңартулары",
   "profileSecurityRowTitle": "Қауіпсіздік және деректер",
-  "profileSecurityRowSubtitle": "Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары.",
+  "profileSecurityRowSubtitle": "Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары",
   "profileHostedActivitiesTitle": "Автор белсенділіктері",
   "profileHostedActivitiesUnavailable": "Backend автордың ашық витринасын бергенде, жарияланған белсенділіктер осы жерде көрсетіледі.",
   "profileRecentActivitiesTitle": "Соңғы белсенділіктер",
@@ -623,7 +627,7 @@
   "profileSettingsServiceCitiesUnavailable": "Қызмет қалалары backend-та әлі қолдау таппаған, сондықтан бұл блок әзірге белсенді емес.",
   "profileSettingsAddNew": "Қосу",
   "profileAccountSectionTitle": "Аккаунт",
-  "profileSettingsEditSubtitle": "Атыңызды, фотоңызды, биоңызды және негізгі профиль деректерін өзгертіңіз.",
+  "profileSettingsEditSubtitle": "Атыңызды, фотоңызды, биоңызды және негізгі профиль деректерін өзгертіңіз",
   "profileOverviewSectionTitle": "Профиль шолуы",
   "profileMoreSectionTitle": "Қосымша",
   "profileGuideWorkspaceTitle": "Гид кабинеті",
@@ -671,7 +675,7 @@
   },
   "profileNotificationsQuietHoursStart": "Басталуы",
   "profileNotificationsQuietHoursEnd": "Аяқталуы",
-  "profileNotificationsQuietHoursTimezone": "Профиль уақыт белдеуі қолданылады: {timezone}",
+  "profileNotificationsQuietHoursTimezone": "Ағымдағы уақыт белдеуі қолданылады: {timezone}",
   "@profileNotificationsQuietHoursTimezone": {
     "placeholders": {
       "timezone": {}
@@ -906,7 +910,7 @@
   "homeTitle": "Inflap",
   "homeSubtitle": "Саяхаттап, белсенділіктерді тауып, жаңа әсерлер ашыңыз",
   "servicesSectionTitle": "Сервистер",
-  "servicesAllButton": "Барлығы",
+  "servicesAllButton": "Барлығын көру",
   "homeExcursionsTitle": "Экскурсиялар",
   "homeExcursionsSubtitle": "Қызықты бағыттар мен сапарларды таңдаңыз",
   "homeGuidesTitle": "Гидтер",
@@ -944,7 +948,7 @@
   "homeSmartPostsEmpty": "Сізге арналған посттар осы жерде пайда болады.",
   "homeFeaturedStays": "Ұсынылған тұру орындары",
   "homeCarRentals": "Көлік жалдау",
-  "homeRecommendedActivities": "Ұсынылатын белсенділіктер",
+  "homeRecommendedActivities": "Үздік белсенділіктер",
   "homeFilterButton": "Сүзгі",
   "homeMoreButton": "Көбірек",
   "homeServiceActivities": "Белсенділіктер",
@@ -1519,10 +1523,93 @@
   "placeStatDuration": "Ұзақтығы",
   "placeStatPrice": "Баға",
   "placeExperienceSection": "Әсер",
+  "placeFeeDetailsSection": "Шығындар",
+  "placeFeeDetailsTitle": "Шамамен шығындар",
+  "placeFeeDetailsNote": "Нақты тарифтер сапарға дейін өзгеруі мүмкін",
   "placeExpectSection": "Не күтуге болады",
   "placeVisitPlanSection": "Сапар жоспары",
+  "placeVisitOverviewTitle": "Қысқаша",
+  "placeVisitCostTitle": "Құны",
+  "placeVisitSeasonTitle": "Қашан барған дұрыс",
+  "placeVisitAccessTitle": "Қалай жетуге болады",
+  "placeVisitTimeTitle": "Қанша уақыт жоспарлау керек",
+  "placeVisitRecommendedItemsTitle": "Өзіңізбен не алу керек",
+  "placeVisitPracticalNotesTitle": "Практикалық кеңестер",
   "placeInflapTipTitle": "Inflap кеңесі",
   "placeVisitDurationLabel": "Орынға уақыт",
+  "placeVisitCarTimeLabel": "Көлікпен",
+  "placeVisitOpeningHoursLabel": "Жұмыс уақыты",
+  "placeVisitPriceNoteLabel": "Баға түсіндірмесі",
+  "placeVisitRoadConditionLabel": "Жол",
+  "placeVisitRouteHintLabel": "Бағдар",
+  "placeVisitParkingLabel": "Тұрақ",
+  "placeVisitLastSegmentLabel": "Соңғы бөлік",
+  "placeVisitRequires4x4": "4x4 қажет",
+  "placeVisitRequiredLabel": "Міндетті",
+  "placeVisitOptionalLabel": "Қосымша",
+  "placeVisitRecommendedLabel": "Ұсынылады",
+  "placeVisitItemWater": "Су",
+  "placeVisitItemShoes": "Ыңғайлы аяқ киім",
+  "placeVisitItemCash": "Қолма-қол ақша",
+  "placeVisitItemWarmClothes": "Жылы киім",
+  "placeVisitItemPowerbank": "Powerbank",
+  "placeVisitItemDocuments": "Құжаттар",
+  "placeVisitItemFood": "Тамақ",
+  "placeVisitItemSpf": "SPF және бас киім",
+  "placeVisitItemRain": "Жаңбырлық",
+  "placeVisitItemMap": "Офлайн-карта",
+  "placeVisitItemRepellent": "Репеллент",
+  "placeVisitItemFirstAid": "Дәрі қобдишасы",
+  "placeVisitItemOther": "Дайындық",
+  "placeVisitTransportCar": "Авто",
+  "placeVisitTransportWalk": "Жаяу",
+  "placeVisitTransportTaxi": "Такси",
+  "placeVisitTransportBus": "Автобус",
+  "placeVisitTransportCableCar": "Аспалы жол",
+  "placeVisitTransportShuttle": "Шаттл",
+  "placeVisitTransportHorse": "Ат",
+  "placeVisitTransportTrain": "Пойыз",
+  "placeVisitTransportBoat": "Қайық",
+  "placeVisitRoadPaved": "Асфальт",
+  "placeVisitRoadGravel": "Қара жол",
+  "placeVisitRoadMountain": "Тау жолы",
+  "placeVisitRoadMixed": "Аралас жол",
+  "placeVisitRoadOffroad": "Жолсыз жер",
+  "placeVisitMinutes": "{count} мин",
+  "@placeVisitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "placeVisitHoursOnly": "{hours} сағ",
+  "@placeVisitHoursOnly": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "placeVisitHoursMinutes": "{hours} сағ {minutes} мин",
+  "@placeVisitHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "placeVisitDistanceKm": "{distance} км",
+  "@placeVisitDistanceKm": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "placeVisitDurationFlexible": "Икемді",
   "placeVisitTicketsLabel": "Билеттер",
   "placeVisitFreeEntry": "Тегін немесе маусымға байланысты",
@@ -1547,7 +1634,14 @@
   "placeVisitTipNature": "Жолға шығар алдында көлік пен ауа райын тексеріңіз: гидпен бағыт әдетте қауіпсіз әрі болжамды.",
   "placeVisitTipCulture": "Ертерек келіңіз: фотоға ыңғайлырақ, әрі жақын мәдени орындарға уақыт қалады.",
   "placeVisitTipDefault": "Ағымдағы кестені тексеріп, жолға уақыт жоғалтпау үшін жақын белсенділіктермен біріктіріңіз.",
-  "placeReviewsSection": "Саяхатшылар пікірі",
+  "placeVisitPracticalGeneral": "Практикалық кеңес",
+  "placeVisitPracticalConnection": "Байланыс",
+  "placeVisitPracticalToilet": "Дәретхана",
+  "placeVisitPracticalCafe": "Кафе",
+  "placeVisitPracticalSafety": "Қауіпсіздік",
+  "placeVisitPracticalKids": "Балалармен",
+  "placeVisitPracticalWeather": "Ауа райы",
+  "placeReviewsSection": "Туристер пікірлері",
   "placeSeeAllReviews": "Барлық пікірлер ({count})",
   "@placeSeeAllReviews": {
     "placeholders": {
@@ -1585,7 +1679,7 @@
   "placeFindExcursions": "Экскурсиялар табу",
   "placeMapLink": "Картадан көру",
   "placeVerifiedNomad": "Тексерілген саяхатшы",
-  "placeReviewsTitle": "Пікірлер",
+  "placeReviewsTitle": "Туристер пікірлері",
   "placeTravelerFallback": "Саяхатшы",
   "profileGuideReviewsTitle": "Экскурсиялар бойынша үздік пікірлер",
   "profileGuideReviewsLatestTitle": "Экскурсиялар бойынша соңғы пікірлер",
@@ -1599,8 +1693,34 @@
   "profileActivityReviewsEmpty": "Белсенділік пікірлері аяқталған белсенділіктерден кейін қатысушылар бағалағанда осында шығады.",
   "profileGuideReviewsLoadFailed": "Пікірлерді жүктеу мүмкін болмады",
   "profileGuideReviewsLoadFailedHint": "Жаңарту үшін төмен тартыңыз немесе профильді қайта ашыңыз.",
-  "placePriceVaries": "Баға өзгеруі мүмкін",
-  "placePriceVariesShort": "Өзгеруі мүмкін",
+  "placePriceVaries": "баға нақтыланады",
+  "placePriceVariesShort": "нақтыланады",
+  "placeFreeEntry": "Тегін",
+  "placePriceFrom": "{price} бастап",
+  "@placePriceFrom": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "placeFeeApproxAmount": "~{amount}",
+  "@placeFeeApproxAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "placeFeePerUnit": "{amount} / {unit}",
+  "@placeFeePerUnit": {
+    "placeholders": {
+      "amount": {},
+      "unit": {}
+    }
+  },
+  "placeFeeUnitPerson": "адам",
+  "placeFeeUnitCar": "авто",
+  "placeFeeUnitMotorcycle": "мотоцикл",
+  "placeFeeUnitTicket": "билет",
+  "placeFeeUnitGroup": "топ",
+  "placeFeeUnitItem": "позиция",
   "placeDurationHours": "{hours} сағ",
   "@placeDurationHours": {
     "placeholders": {
@@ -2398,7 +2518,7 @@
   "guideDashboardReviewsTitle": "Пікірлер",
   "guideDashboardExcursionReviewsTab": "Экскурсиялар",
   "guideDashboardDirectGuideReviewsTab": "Гид",
-  "guideDashboardOffersStat": "Барлық ұсыныс",
+  "guideDashboardOffersStat": "Ұсыныстар",
   "guideDashboardBookingsStat": "Брондар",
   "guideDashboardRevenueStat": "Түсім",
   "guideDashboardRatingStat": "Рейтинг",
@@ -2492,7 +2612,7 @@
   "guideDashboardStatusArchived": "Архив",
   "guideDashboardStatusReview": "Тексеруде",
   "guideDashboardStatusRejected": "Қабылданбады",
-  "guideDashboardStatusBooked": "Брон",
+  "guideDashboardStatusBooked": "Белсенді",
   "guideDashboardStatusCompleted": "Өткізілді",
   "guideDashboardStatusCancelled": "Бас тартылды",
   "guideDashboardFlexibleGroup": "Икемді топ",
@@ -3348,6 +3468,7 @@
   "notificationsCategoryChat": "Хабарламалар",
   "notificationsCategoryContent": "Посттар мен хикаялар",
   "notificationsCategorySystem": "Жүйе",
+  "notificationsCategorySupport": "Қолдау",
   "notificationsCategoryGeneral": "Жалпы",
   "notificationsCategoryFallback": "{category} санаты",
   "@notificationsCategoryFallback": {
@@ -3392,6 +3513,10 @@
     }
   },
   "notificationsChatMessageBody": "Жауап беру үшін чаттарды ашыңыз.",
+  "notificationsSupportRepliedTitle": "Қолдау жауап берді",
+  "notificationsSupportRepliedBody": "Қолдау сұрауыңызға жауап берді.",
+  "notificationsSupportUpdatedTitle": "Қолдау сұрауы жаңартылды",
+  "notificationsSupportUpdatedBody": "Соңғы жаңартуды көру үшін қолдау чатын ашыңыз.",
   "notificationsActivityJoinedTitle": "{actor} белсенділігіңізге қосылды",
   "@notificationsActivityJoinedTitle": {
     "placeholders": {
@@ -3453,5 +3578,90 @@
     "placeholders": {
       "days": {}
     }
-  }
+  },
+  "helpCenterTitle": "Көмек орталығы",
+  "helpCenterSubtitle": "Брондау, гидтер, орындар, төлемдер, валюта және аккаунт қауіпсіздігі бойынша жауаптар",
+  "helpCenterSearchHint": "Сұрақтар, кеңестер, нұсқаулар",
+  "helpCenterCategoryAll": "Барлығы",
+  "helpCenterCategoryDocuments": "Құжаттар",
+  "helpCenterCategoryFlights": "Ұшулар",
+  "helpCenterCategoryAccommodation": "Тұру",
+  "helpCenterCategoryMoney": "Ақша",
+  "helpCenterCategorySafety": "Қауіпсіздік",
+  "helpCenterCategoryTransport": "Көлік",
+  "helpCenterCategoryPlanning": "Маршрут",
+  "helpCenterCategoryCulture": "Ережелер",
+  "helpCenterMoreCategories": "Тағы",
+  "helpCenterCategoriesTitle": "Санаттар",
+  "helpCenterPopularTitle": "Танымал жауаптар",
+  "helpCenterSearchResultsTitle": "Іздеу нәтижелері",
+  "helpCenterNoResultsTitle": "Жауап табылмады",
+  "helpCenterNoResultsMessage": "Басқа сұрау енгізіңіз немесе жауап әлі табылмаса, қолдау сұрауларын ашыңыз",
+  "helpCenterLoadFailedTitle": "Көмекті жүктеу мүмкін болмады",
+  "helpCenterRetry": "Қайталау",
+  "helpCenterLoadMore": "Тағы көрсету",
+  "helpCenterContactSupport": "Қолдауға жазу",
+  "helpCenterOpenChat": "Чатты ашу",
+  "helpCenterSupportChatButton": "Чат",
+  "helpCenterOpenRoute": "Ашу",
+  "helpCenterWasHelpful": "Бұл жауап пайдалы болды ма?",
+  "helpCenterHelpful": "Пайдалы",
+  "helpCenterNotHelpful": "Пайдалы емес",
+  "helpCenterFeedbackSaved": "Рақмет, пікіріңіз жауаптарды жақсартуға көмектеседі",
+  "supportRequestsSubtitle": "Inflap қолдауымен диалогтарды бақылап, қосымша ақпарат керек болғанда жауап беріңіз",
+  "supportRequestsLoadFailedTitle": "Сұрауларды жүктеу мүмкін болмады",
+  "supportTicketDetailTitle": "Қолдау чаты",
+  "supportTicketReplyHint": "Жауап жазыңыз",
+  "supportTicketClose": "Сұрауды жабу",
+  "supportTicketNoMessagesTitle": "Әзірге хабарлама жоқ",
+  "supportTicketNoMessagesMessage": "Қолдау жауаптары осы жерде пайда болады",
+  "supportReplyFailed": "Жауапты жіберу мүмкін болмады",
+  "supportTicketCSATTitle": "Қолдауды бағалаңыз",
+  "supportTicketCSATCommentHint": "Пікір қосыңыз",
+  "supportTicketCSATSubmit": "Бағаны жіберу",
+  "supportTicketCSATThanks": "Қолдауды бағалағаныңызға рақмет",
+  "supportTicketCSATFailed": "Бағаны сақтау мүмкін болмады",
+  "supportEventTicketClosedByUser": "Сұрауды пайдаланушы жапты",
+  "supportEventCSATSubmitted": "Қолдау бағасы жіберілді",
+  "supportEventTicketResolved": "Сұрау шешілді",
+  "supportEventSegmentCalculated": "Сұрау контексті жаңартылды",
+  "supportEventUserReplied": "Хабарлама жіберілді",
+  "supportEventAgentReplied": "Қолдау жауап берді",
+  "supportEventUpdated": "Қолдау сұрауы жаңартылды",
+  "supportStatusNew": "Қабылданды",
+  "supportStatusOpen": "Ашық",
+  "supportStatusAssigned": "Тағайындалды",
+  "supportStatusWaitingUser": "Жауабыңызды күтуде",
+  "supportStatusWaitingSupport": "Қолдау жауабын күтуде",
+  "supportStatusResolved": "Шешілді",
+  "supportStatusClosed": "Жабылды",
+  "supportStatusReopened": "Қайта ашылды",
+  "supportPreviewNew": "Сұрауыңызды алдық, осы чатта жауап береміз",
+  "supportPreviewWaitingUser": "Қолдауға сізден қосымша мәлімет керек",
+  "supportPreviewWaitingSupport": "Жауабыңыз жіберілді. Қолдау осы чатта жауап береді.",
+  "supportPreviewResolved": "Бұл сұрау аяқталды. Қолдауды бағалауға немесе жаңа сұрау жасауға болады.",
+  "supportExpectedResponseWithin": "Әдетте {time} ішінде жауап береміз",
+  "@supportExpectedResponseWithin": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "supportMessageSending": "Жіберілуде",
+  "supportMessageSent": "Жіберілді",
+  "supportMessageNotSent": "Жіберілмеді",
+  "supportMessageRetry": "Қайталау",
+  "supportEpisodeNewRequestCreated": "Жаңа сұрау жасалды",
+  "supportEpisodeStarted": "{date} күнгі сұрау",
+  "@supportEpisodeStarted": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "supportUserFallbackName": "Сіз",
+  "supportAgentFallbackName": "Қолдау",
+  "supportSystemFallbackName": "Жүйе",
+  "contextualHelpTitle": "Сұрақтар мен көмек",
+  "contextualHelpOpenAll": "Барлық көмек",
+  "contextualHelpLoadFailed": "Көмек уақытша қолжетімсіз",
+  "contextualHelpTryAgain": "Қайталау"
 }

@@ -417,6 +417,157 @@ func TestCurrencyRoutesProxyToCurrencyServicePublicly(t *testing.T) {
 	}
 }
 
+func TestHelpCenterReadRoutesProxyToSupportServicePublicly(t *testing.T) {
+	tests := map[string]struct {
+		path          string
+		rewritePrefix string
+	}{
+		"contextual": {
+			path:          "/api/v1/help/articles/contextual?surface=activity_details",
+			rewritePrefix: "/v1/help/articles",
+		},
+		"search": {
+			path:          "/api/v1/help/articles/search?q=refund",
+			rewritePrefix: "/v1/help/articles",
+		},
+		"categories": {
+			path:          "/api/v1/help/categories?locale=ru&surface=help_center",
+			rewritePrefix: "/v1/help/categories",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod("GET", tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected help route policy")
+			}
+			if policy.Upstream != "support" {
+				t.Fatalf("upstream = %q, want support", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthPublic {
+				t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+			}
+			if policy.RewritePrefix != tc.rewritePrefix {
+				t.Fatalf("rewrite prefix = %q, want %q", policy.RewritePrefix, tc.rewritePrefix)
+			}
+			if policy.Cacheable {
+				t.Fatal("help read routes must stay fresh because Q&A content is managed in the database")
+			}
+			assertRouteLimit(t, policy, 180)
+		})
+	}
+}
+
+func TestHelpFeedbackAndSupportTicketRoutesRequireAuthentication(t *testing.T) {
+	tests := map[string]struct {
+		path          string
+		rewritePrefix string
+	}{
+		"article feedback": {
+			path:          "/api/v1/help/articles/activity-cancel-paid/feedback",
+			rewritePrefix: "/v1/help/articles",
+		},
+		"support ticket": {
+			path:          "/api/v1/support/tickets",
+			rewritePrefix: "/v1/support/tickets",
+		},
+		"support ticket csat": {
+			path:          "/api/v1/support/tickets/ticket-user-123/csat",
+			rewritePrefix: "/v1/support/tickets",
+		},
+		"support ticket reply": {
+			path:          "/api/v1/support/tickets/ticket-user-123/reply",
+			rewritePrefix: "/v1/support/tickets",
+		},
+		"support ticket close": {
+			path:          "/api/v1/support/tickets/ticket-user-123/close",
+			rewritePrefix: "/v1/support/tickets",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod("POST", tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected support write route policy")
+			}
+			if policy.Upstream != "support" {
+				t.Fatalf("upstream = %q, want support", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated {
+				t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+			}
+			if policy.RewritePrefix != tc.rewritePrefix {
+				t.Fatalf("rewrite prefix = %q, want %q", policy.RewritePrefix, tc.rewritePrefix)
+			}
+			if policy.Cacheable {
+				t.Fatal("support write route must not be cacheable")
+			}
+			assertRouteLimit(t, policy, 60)
+		})
+	}
+
+	t.Run("article feedback upsert", func(t *testing.T) {
+		policy := matchRoutePolicyForMethod("PUT", "/api/v1/help/articles/activity-cancel-paid/feedback", "/api/v1")
+		if policy == nil {
+			t.Fatal("expected help article feedback upsert route policy")
+		}
+		if policy.Upstream != "support" {
+			t.Fatalf("upstream = %q, want support", policy.Upstream)
+		}
+		if policy.AuthMode != RouteAuthAuthenticated {
+			t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+		}
+		if policy.RewritePrefix != "/v1/help/articles" {
+			t.Fatalf("rewrite prefix = %q, want /v1/help/articles", policy.RewritePrefix)
+		}
+		assertRouteLimit(t, policy, 60)
+	})
+}
+
+func TestSupportTicketReadRoutesRequireAuthentication(t *testing.T) {
+	tests := map[string]struct {
+		path          string
+		rewritePrefix string
+	}{
+		"conversation": {
+			path:          "/api/v1/support/conversation",
+			rewritePrefix: "/v1/support/conversation",
+		},
+		"list": {
+			path:          "/api/v1/support/tickets",
+			rewritePrefix: "/v1/support/tickets",
+		},
+		"detail": {
+			path:          "/api/v1/support/tickets/ticket-user-123",
+			rewritePrefix: "/v1/support/tickets",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod("GET", tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected support read route policy")
+			}
+			if policy.Upstream != "support" {
+				t.Fatalf("upstream = %q, want support", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated {
+				t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+			}
+			if policy.RewritePrefix != tc.rewritePrefix {
+				t.Fatalf("rewrite prefix = %q, want %q", policy.RewritePrefix, tc.rewritePrefix)
+			}
+			if policy.Cacheable {
+				t.Fatal("support ticket reads must not be cacheable")
+			}
+			assertRouteLimit(t, policy, 180)
+		})
+	}
+}
+
 func TestRoutingRoutesProxyToRoutingService(t *testing.T) {
 	tests := map[string]struct {
 		method string

@@ -20,6 +20,7 @@ import (
 	userserviceadapter "kz/inflap/backend/services/place-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/place-service/internal/app"
 	"kz/inflap/backend/services/place-service/internal/config"
+	"kz/inflap/backend/services/place-service/internal/mediabackfill"
 )
 
 func main() {
@@ -69,7 +70,15 @@ func main() {
 
 	useCase := app.NewPlaceUseCase(repo, userClient, useCaseOptions...)
 
+	mediaBackfillRunner := mediabackfill.NewRunner(pool, mediabackfill.Config{
+		FileManagerURL:          cfg.MediaBackfill.FileManagerURL,
+		HTTPTimeout:             cfg.MediaBackfill.HTTPTimeout,
+		RowDelay:                cfg.MediaBackfill.RowDelay,
+		RunTimeout:              cfg.MediaBackfill.RunTimeout,
+		CommonsMinMediaPerPlace: cfg.MediaBackfill.CommonsMinMediaPerPlace,
+	})
 	handler := httpadapter.NewHandler(useCase)
+	handler.SetMediaBackfillStarter(mediaBackfillRunner)
 	mux := http.NewServeMux()
 	handler.Register(mux)
 

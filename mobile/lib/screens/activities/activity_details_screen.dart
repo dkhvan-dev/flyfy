@@ -27,6 +27,8 @@ import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/checklists/data/checklist_offline_cache.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
+import '../../features/help_center/data/help_center_api.dart';
+import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -36,6 +38,7 @@ import '../../features/routing/models/routing_models.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
@@ -102,8 +105,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadDeviceTimezone());
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_loadDeviceTimezone());
       _refreshScreen();
     });
   }
@@ -130,7 +133,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<void> _loadDeviceTimezone() async {
-    final timezone = await _deviceContextService.getLocalTimezone();
+    String? timezone;
+    try {
+      final locationProvider = context.read<HomeLocationProvider>();
+      if (!locationProvider.isLoaded && !locationProvider.isLoading) {
+        await locationProvider.load(
+          languageCode: Localizations.localeOf(context).languageCode,
+        );
+      }
+      timezone = locationProvider.effectiveLocation.timezone;
+    } catch (_) {
+      timezone = null;
+    }
+
+    timezone ??= await _deviceContextService.getLocalTimezone();
     if (!mounted) return;
 
     final normalized = _normalizeActivityScheduleTimezone(timezone);
@@ -310,6 +326,45 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context,
       title: l10n.error,
       message: _mapJoinError(provider.actionErrorMessage, l10n),
+    );
+  }
+
+  Future<void> _handleContextualHelpAction(
+    HelpArticleVm article,
+    HelpArticleActionVm action,
+  ) async {
+    if (action.type == HelpArticleActionType.openChat) {
+      final encodedActivityId = Uri.encodeComponent(widget.activityId);
+      context.push('/activities/$encodedActivityId/chat');
+      return;
+    }
+
+    if (action.type == HelpArticleActionType.openRoute &&
+        action.target.trim().startsWith('/')) {
+      context.push(action.target.trim());
+      return;
+    }
+
+    if (action.type != HelpArticleActionType.contactSupport) {
+      return;
+    }
+
+    final supportContext = {
+      'activity_id': widget.activityId,
+      'entity_id': widget.activityId,
+      'article_id': article.id,
+      'screen': 'activity_details',
+      'locale': Localizations.localeOf(context).languageCode,
+      'source_route': '/activities/${widget.activityId}',
+    };
+    context.push(
+      '/help/support',
+      extra: SupportChatOpenIntent(
+        category: SupportTicketCategory.activities,
+        source: HelpCenterSurface.activityDetails.wireValue,
+        intent: 'article:${article.id}',
+        context: supportContext,
+      ),
     );
   }
 
@@ -1434,7 +1489,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final currentUserId = (session.profile?.userId ?? '').trim();
     final scheduleUserTimezone = _resolveActivityScheduleUserTimezone(
       deviceTimezone: _deviceTimezone,
-      profileTimezone: session.profile?.timezone,
     );
 
     if ((_isInitialLoadPending || provider.state == ActivitiesState.loading) &&
@@ -1744,6 +1798,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             ),
                           ),
                         ],
+                        const SizedBox(height: 22),
+                        ContextualHelpSection(
+                          surface: HelpCenterSurface.activityDetails,
+                          tags: [
+                            'activities',
+                            if (activity.isFree) 'rules' else 'payments',
+                            if (status == 'CANCELLED') 'refunds',
+                            if (activity.categorySlug.trim().isNotEmpty)
+                              activity.categorySlug,
+                          ],
+                          userState: isOwner
+                              ? 'organizer'
+                              : isJoined
+                              ? 'joined'
+                              : 'guest',
+                          supportContext: {'activity_id': widget.activityId},
+                          onActionSelected: _handleContextualHelpAction,
+                        ),
                         const SizedBox(height: 22),
                         _ParticipantsSection(
                           l10n: l10n,
@@ -3604,10 +3676,8 @@ String _formatRating(double value) {
 
 String? _resolveActivityScheduleUserTimezone({
   required String? deviceTimezone,
-  required String? profileTimezone,
 }) {
-  return _normalizeActivityScheduleTimezone(deviceTimezone) ??
-      _normalizeActivityScheduleTimezone(profileTimezone);
+  return _normalizeActivityScheduleTimezone(deviceTimezone);
 }
 
 String? _normalizeActivityScheduleTimezone(String? timezone) {

@@ -10,7 +10,7 @@
 -- - city_id stores the practical tourist hub for filtering and guide departures;
 -- - existing imported anchors from earlier Vietnam migrations are not duplicated;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets, tours and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 DROP TABLE IF EXISTS seed_vietnam_priority_places;
 
@@ -139,8 +139,12 @@ SELECT
     'VN',
     city_id,
     category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 100000::numeric
+        ELSE 50000::numeric
+    END,
+    'VND',
     duration_value,
     duration_unit,
     rating,

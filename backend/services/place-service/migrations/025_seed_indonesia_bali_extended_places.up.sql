@@ -154,8 +154,12 @@ SELECT
     'ID',
     city_id,
     category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 50000::numeric
+        ELSE 25000::numeric
+    END,
+    'IDR',
     duration_value,
     duration_unit,
     rating,

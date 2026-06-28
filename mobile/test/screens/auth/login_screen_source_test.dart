@@ -39,4 +39,40 @@ void main() {
     expect(buttonSource, contains('label: label'));
     expect(buttonSource, contains('ExcludeSemantics('));
   });
+
+  test(
+    'authenticated entry keeps previous route under protected target',
+    () async {
+      final source = await File(
+        'lib/screens/auth/login_screen.dart',
+      ).readAsString();
+      final otpSource = await File(
+        'lib/screens/auth/otp_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf('void _finishAuthenticatedNavigation');
+
+      expect(helperStart, isNonNegative);
+
+      final helperEnd = source.indexOf('enum _OAuthProvider', helperStart);
+      expect(helperEnd, greaterThan(helperStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+
+      expect(
+        source,
+        contains('_finishAuthenticatedNavigation(ctx, widget.from)'),
+      );
+      expect(helperSource, contains('ctx.pushReplacement(target)'));
+      expect(helperSource, contains("ctx.go('/')"));
+      expect(helperSource, isNot(contains('ctx.go(target)')));
+      expect(source, contains('ctx.pushReplacement(uri.toString())'));
+      expect(source, isNot(contains('ctx.go(widget.from ??')));
+      expect(
+        otpSource,
+        contains('_finishOtpAuthenticatedNavigation(ctx, widget.from)'),
+      );
+      expect(otpSource, contains('ctx.pushReplacement(target)'));
+      expect(otpSource, isNot(contains('ctx.go(widget.from?.isNotEmpty')));
+    },
+  );
 }

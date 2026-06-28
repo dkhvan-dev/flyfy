@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (widget.from?.isNotEmpty == true) 'from': widget.from!,
         },
       );
-      ctx.push(uri.toString());
+      ctx.pushReplacement(uri.toString());
       return;
     }
 
@@ -780,8 +780,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!ctx.mounted) return;
 
-    ctx.go(widget.from ?? '/');
+    _finishAuthenticatedNavigation(ctx, widget.from);
   }
+}
+
+void _finishAuthenticatedNavigation(BuildContext ctx, String? from) {
+  final target = from?.trim();
+  if (target == null || target.isEmpty || target == '/') {
+    ctx.go('/');
+    return;
+  }
+
+  ctx.pushReplacement(target);
 }
 
 enum _OAuthProvider { google, apple }

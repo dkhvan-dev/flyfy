@@ -7,7 +7,7 @@
 -- - country_code is always VN;
 -- - city_id stores a practical departure/search hub inside Vietnam;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 WITH seed_base (
     id,
@@ -65,8 +65,12 @@ SELECT
     'VN',
     seed_base.city_id,
     seed_base.category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 100000::numeric
+        ELSE 50000::numeric
+    END,
+    'VND',
     seed_base.duration_value,
     seed_base.duration_unit,
     seed_base.rating,

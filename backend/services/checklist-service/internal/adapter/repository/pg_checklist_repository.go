@@ -57,6 +57,7 @@ func (r *PGChecklistRepository) FindTripChecklistInstance(
 		       COALESCE(to_jsonb(transport_modes), '[]'::jsonb),
 		       COALESCE(to_jsonb(activity_slugs), '[]'::jsonb),
 		       COALESCE(has_children, false),
+		       COALESCE(citizenship_country_code, ''),
 		       readiness, COALESCE(seasonal_profile, 'null'::jsonb),
 		       trust_notice, generated_at, updated_at
 		FROM checklist_instances
@@ -80,6 +81,7 @@ func (r *PGChecklistRepository) FindTripChecklistInstance(
 		&transportModesRaw,
 		&activitySlugsRaw,
 		&checklist.TravelerProfile.HasChildren,
+		&checklist.TravelerProfile.CitizenshipCountryCode,
 		&readinessRaw,
 		&seasonalRaw,
 		&trustRaw,
@@ -164,12 +166,12 @@ func (r *PGChecklistRepository) SaveTripChecklistInstance(ctx context.Context, c
 	const upsertInstance = `
 		INSERT INTO checklist_instances (
 			id, user_id, trip_id, destination, start_at, end_at,
-			transport_modes, activity_slugs, has_children,
+			transport_modes, activity_slugs, has_children, citizenship_country_code,
 			readiness, seasonal_profile, trust_notice, generated_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6,
-			$7, $8, $9,
-			$10, $11, $12, $13, $14
+			$7, $8, $9, $10,
+			$11, $12, $13, $14, $15
 		)
 		ON CONFLICT (user_id, trip_id) DO UPDATE
 		SET
@@ -179,6 +181,7 @@ func (r *PGChecklistRepository) SaveTripChecklistInstance(ctx context.Context, c
 			transport_modes = EXCLUDED.transport_modes,
 			activity_slugs = EXCLUDED.activity_slugs,
 			has_children = EXCLUDED.has_children,
+			citizenship_country_code = EXCLUDED.citizenship_country_code,
 			readiness = EXCLUDED.readiness,
 			seasonal_profile = EXCLUDED.seasonal_profile,
 			trust_notice = EXCLUDED.trust_notice,
@@ -198,6 +201,7 @@ func (r *PGChecklistRepository) SaveTripChecklistInstance(ctx context.Context, c
 		transportModes,
 		checklist.ActivitySlugs,
 		checklist.TravelerProfile.HasChildren,
+		strings.ToUpper(strings.TrimSpace(checklist.TravelerProfile.CitizenshipCountryCode)),
 		readinessRaw,
 		seasonalRaw,
 		trustRaw,
@@ -236,6 +240,7 @@ func (r *PGChecklistRepository) ListTripChecklistInstances(
 		       COALESCE(to_jsonb(transport_modes), '[]'::jsonb),
 		       COALESCE(to_jsonb(activity_slugs), '[]'::jsonb),
 		       COALESCE(has_children, false),
+		       COALESCE(citizenship_country_code, ''),
 		       readiness, COALESCE(seasonal_profile, 'null'::jsonb),
 		       trust_notice, generated_at, updated_at
 		FROM checklist_instances
@@ -267,6 +272,7 @@ func (r *PGChecklistRepository) ListTripChecklistInstances(
 			&transportModesRaw,
 			&activitySlugsRaw,
 			&checklist.TravelerProfile.HasChildren,
+			&checklist.TravelerProfile.CitizenshipCountryCode,
 			&readinessRaw,
 			&seasonalRaw,
 			&trustRaw,
@@ -333,6 +339,7 @@ func (r *PGChecklistRepository) ListTripChecklistInstancesByUser(
 		       COALESCE(to_jsonb(transport_modes), '[]'::jsonb),
 		       COALESCE(to_jsonb(activity_slugs), '[]'::jsonb),
 		       COALESCE(has_children, false),
+		       COALESCE(citizenship_country_code, ''),
 		       readiness, COALESCE(seasonal_profile, 'null'::jsonb),
 		       trust_notice, generated_at, updated_at
 		FROM checklist_instances
@@ -365,6 +372,7 @@ func (r *PGChecklistRepository) ListTripChecklistInstancesByUser(
 			&transportModesRaw,
 			&activitySlugsRaw,
 			&checklist.TravelerProfile.HasChildren,
+			&checklist.TravelerProfile.CitizenshipCountryCode,
 			&readinessRaw,
 			&seasonalRaw,
 			&trustRaw,

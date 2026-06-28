@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
+import '../../core/network/reference_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/guide_api.dart';
@@ -21,6 +24,22 @@ import 'profile_style.dart';
 enum _GuideVerificationStep { identity, identityDocument, professional, review }
 
 enum _GuideDocumentKind { identity, professional, firstAid, language }
+
+const Color _guideAmberGold = Color(0xFFFFC56D);
+const Color _guideAmberInk = Color(0xFF241407);
+const Color _guideExcursionAmberStatusAccent = AppColors.accent;
+const Color _guideExcursionAmberStatusInk = Color(0xFF7A3602);
+const List<Color> _guideAmberHeroGradientColors = [
+  Color(0xFFFFC56D),
+  AppColors.accent,
+  Color(0xFF4A2305),
+];
+const List<Color> _guideExcursionAmberStatusGradientColors = [
+  Color(0xFFFFBD5A),
+  Color(0xFFFFAD3F),
+  Color(0xFFFF9C1E),
+  AppColors.accent,
+];
 
 class GuideVerificationScreen extends StatefulWidget {
   const GuideVerificationScreen({super.key});
@@ -332,97 +351,6 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     }
   }
 
-  Future<void> _selectCountry() async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      isDismissible: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final l10n = AppLocalizations.of(sheetContext)!;
-        final localeCode = Localizations.localeOf(sheetContext).languageCode;
-        return SafeArea(
-          child: Container(
-            margin: EdgeInsets.all(
-              profileScaled(sheetContext, 16, min: 12, max: 18),
-            ),
-            decoration: profileCardDecoration(
-              sheetContext,
-              highlighted: true,
-              radius: profileScaled(sheetContext, 26, min: 22, max: 28),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    profileScaled(sheetContext, 20, min: 16, max: 22),
-                    profileScaled(sheetContext, 18, min: 16, max: 20),
-                    profileScaled(sheetContext, 20, min: 16, max: 22),
-                    profileScaled(sheetContext, 12, min: 10, max: 14),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.guideVerificationSelectCountry,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: profileScaled(
-                              sheetContext,
-                              18,
-                              min: 16,
-                              max: 20,
-                            ),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: _countryOptions
-                        .map((item) {
-                          final isSelected = item.code == _countryCode;
-                          return ListTile(
-                            onTap: () =>
-                                Navigator.of(sheetContext).pop(item.code),
-                            title: Text(
-                              item.labelFor(localeCode),
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
-                              ),
-                            ),
-                            trailing: isSelected
-                                ? const Icon(
-                                    Icons.check_circle,
-                                    color: AppColors.accent,
-                                  )
-                                : null,
-                          );
-                        })
-                        .toList(growable: false),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!mounted || selected == null) return;
-    setState(() {
-      _countryCode = selected;
-      _countryError = null;
-    });
-  }
-
   bool _validateCurrentStep() {
     final l10n = AppLocalizations.of(context)!;
     var isValid = true;
@@ -580,7 +508,6 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           avatarFileId: profile.avatarFileId,
           countryCode: _countryCode,
           locale: profile.locale,
-          timezone: profile.timezone,
           currency: profile.currency,
         ),
       );
@@ -742,7 +669,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 child: Text(
                   l10n.guideVerificationTitle,
                   style: TextStyle(
-                    color: AppColors.accent,
+                    color: AppColors.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -811,10 +738,6 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   Widget _buildIdentityStep(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeCode = Localizations.localeOf(context).languageCode;
-    final selectedCountry = _countryOptions.firstWhere(
-      (item) => item.code == _countryCode,
-      orElse: () => _countryOptions.first,
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,10 +783,18 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 key: _countryKey,
                 label: l10n.guideVerificationNationalityLabel,
                 errorText: _countryError,
-                child: _DarkTappableField(
-                  icon: Icons.expand_more_rounded,
-                  value: selectedCountry.labelFor(localeCode),
-                  onTap: _selectCountry,
+                child: _GuideCountrySearchField(
+                  countries: _countryOptions,
+                  selectedCode: _countryCode,
+                  localeCode: localeCode,
+                  searchHint: l10n.activitiesFilterCountrySearchHint,
+                  noResultsText: l10n.activitiesFilterCountryNoResults,
+                  onChanged: (countryCode) {
+                    setState(() {
+                      _countryCode = countryCode;
+                      _countryError = null;
+                    });
+                  },
                 ),
               ),
             ],
@@ -930,7 +861,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                     l10n.guideVerificationTapToCapturePassport)
               : l10n.guideVerificationTapToCapturePassport,
           subtitle: l10n.guideVerificationFileFormatsShort,
-          buttonLabel: l10n.guideVerificationChooseFile,
+          buttonLabel: _guideDocumentButtonLabel(_identityDocument, l10n),
           isUploading: _identityDocument.isUploading,
           onTap: () => _pickGuideDocument(_GuideDocumentKind.identity),
           errorText: _identityDocumentError ?? _identityDocument.errorText,
@@ -994,7 +925,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                     l10n.guideVerificationUploadLicenseTitle)
               : l10n.guideVerificationUploadLicenseTitle,
           subtitle: l10n.guideVerificationUploadLicenseSubtitle,
-          buttonLabel: l10n.guideVerificationChooseFile,
+          buttonLabel: _guideDocumentButtonLabel(_professionalDocument, l10n),
           isUploading: _professionalDocument.isUploading,
           onTap: () => _pickGuideDocument(_GuideDocumentKind.professional),
           errorText:
@@ -1026,7 +957,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                       l10n.guideVerificationUploadFirstAidTitle)
                 : l10n.guideVerificationUploadFirstAidTitle,
             subtitle: l10n.guideVerificationUploadFirstAidSubtitle,
-            buttonLabel: l10n.guideVerificationChooseFile,
+            buttonLabel: _guideDocumentButtonLabel(_firstAidDocument, l10n),
             isUploading: _firstAidDocument.isUploading,
             onTap: () => _pickGuideDocument(_GuideDocumentKind.firstAid),
             errorText: _firstAidDocument.errorText,
@@ -1054,7 +985,10 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                       l10n.guideVerificationUploadLanguageTitle)
                 : l10n.guideVerificationUploadLanguageTitle,
             subtitle: l10n.guideVerificationUploadLanguageSubtitle,
-            buttonLabel: l10n.guideVerificationChooseFile,
+            buttonLabel: _guideDocumentButtonLabel(
+              _languageCertificateDocument,
+              l10n,
+            ),
             isUploading: _languageCertificateDocument.isUploading,
             onTap: () => _pickGuideDocument(_GuideDocumentKind.language),
             errorText: _languageCertificateDocument.errorText,
@@ -1127,22 +1061,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             title: _documentLabel('LANGUAGE_PROFICIENCY_CERTIFICATE'),
           ),
         ],
-        SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-        Text(
-          l10n.guideVerificationTermsTitle,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: profileScaled(context, 24, min: 22, max: 28),
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.8,
-          ),
-        ),
-        SizedBox(height: profileScaled(context, 16, min: 14, max: 18)),
-        _TermsCard(
-          title: l10n.guideVerificationTermsHeading,
-          body: l10n.guideVerificationTermsBody,
-        ),
-        SizedBox(height: profileScaled(context, 18, min: 16, max: 20)),
+        SizedBox(height: profileScaled(context, 24, min: 20, max: 28)),
         _ConfirmCard(
           key: _termsKey,
           value: _termsAccepted,
@@ -1306,6 +1225,15 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   }
 }
 
+String _guideDocumentButtonLabel(
+  _UploadedGuideDocument document,
+  AppLocalizations l10n,
+) {
+  return document.hasFile
+      ? l10n.guideVerificationReplaceFile
+      : l10n.guideVerificationChooseFile;
+}
+
 class _UploadedGuideDocument {
   const _UploadedGuideDocument({
     this.fileId,
@@ -1398,6 +1326,113 @@ const List<_GuideCountry> _countryOptions = [
   _GuideCountry(code: 'FR', ru: 'Франция', en: 'France', kk: 'Франция'),
 ];
 
+BoxDecoration _guideAmberGlassDecoration(
+  BuildContext context, {
+  bool strong = false,
+  double? radius,
+}) {
+  final effectiveRadius =
+      radius ?? profileScaled(context, 22, min: 18, max: 28);
+  return BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: strong
+          ? [
+              const Color(0xFF3A210C).withValues(alpha: 0.96),
+              const Color(0xFF241307).withValues(alpha: 0.98),
+            ]
+          : [
+              AppColors.accent.withValues(alpha: 0.08),
+              Colors.white.withValues(alpha: 0.018),
+            ],
+    ),
+    borderRadius: BorderRadius.circular(effectiveRadius),
+    border: Border.all(
+      color: AppColors.accent.withValues(alpha: strong ? 0.28 : 0.18),
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.26),
+        blurRadius: profileScaled(context, 26, min: 18, max: 32),
+        offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
+      ),
+      BoxShadow(
+        color: AppColors.accent.withValues(alpha: strong ? 0.18 : 0.1),
+        blurRadius: profileScaled(context, 24, min: 14, max: 30),
+        offset: Offset(0, profileScaled(context, 8, min: 4, max: 10)),
+      ),
+    ],
+  );
+}
+
+BoxDecoration _guideAmberGradientButtonDecoration(
+  BuildContext context, {
+  required bool enabled,
+}) {
+  final radius = BorderRadius.circular(999);
+  return BoxDecoration(
+    borderRadius: radius,
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: enabled
+          ? const [_guideAmberGold, AppColors.accent]
+          : [
+              profileSurfaceMuted.withValues(alpha: 0.84),
+              profileSurface.withValues(alpha: 0.84),
+            ],
+    ),
+    border: Border.all(
+      color: enabled
+          ? _guideAmberGold.withValues(alpha: 0.58)
+          : profileBorderSoft,
+    ),
+    boxShadow: enabled
+        ? [
+            BoxShadow(
+              color: AppColors.accent.withValues(alpha: 0.3),
+              blurRadius: profileScaled(context, 28, min: 18, max: 34),
+              offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
+            ),
+          ]
+        : null,
+  );
+}
+
+IconData _guideHeroIconForVariant(int variant) {
+  switch (variant.clamp(0, 3)) {
+    case 0:
+      return Icons.workspace_premium_rounded;
+    case 1:
+      return Icons.badge_outlined;
+    case 2:
+      return Icons.verified_user_outlined;
+    case 3:
+    default:
+      return Icons.fact_check_outlined;
+  }
+}
+
+Widget _guideHeroAccentIcon(BuildContext context, IconData icon) {
+  return Container(
+    width: profileScaled(context, 58, min: 48, max: 64),
+    height: profileScaled(context, 58, min: 48, max: 64),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(
+        profileScaled(context, 18, min: 16, max: 20),
+      ),
+      color: Colors.white.withValues(alpha: 0.13),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+    ),
+    child: Icon(
+      icon,
+      color: const Color(0xFFFFF4DE),
+      size: profileScaled(context, 28, min: 24, max: 32),
+    ),
+  );
+}
+
 class _ProgressMeta extends StatelessWidget {
   const _ProgressMeta({
     required this.stepLabel,
@@ -1411,47 +1446,66 @@ class _ProgressMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Text(
-              stepLabel,
-              style: TextStyle(
-                color: AppColors.accent,
-                fontSize: profileScaled(context, 12, min: 11, max: 12),
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.4,
-              ),
-            ),
-            const Spacer(),
-            Flexible(
-              child: Text(
-                stageLabel.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: profileTextSoft,
-                  fontSize: profileScaled(context, 12, min: 11, max: 12),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+    return Container(
+      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+      decoration: _guideAmberGlassDecoration(context, strong: true),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: profileScaled(context, 10, min: 8, max: 12),
+                  vertical: profileScaled(context, 6, min: 5, max: 7),
+                ),
+                decoration: BoxDecoration(
+                  color: _guideAmberGold.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _guideAmberGold.withValues(alpha: 0.24),
+                  ),
+                ),
+                child: Text(
+                  stepLabel,
+                  style: TextStyle(
+                    color: _guideAmberGold,
+                    fontSize: profileScaled(context, 12, min: 11, max: 12),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: profileScaled(context, 6, min: 5, max: 7),
-            backgroundColor: Colors.white.withValues(alpha: 0.08),
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+              SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
+              Flexible(
+                child: Text(
+                  stageLabel.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: profileTextSoft,
+                    fontSize: profileScaled(context, 12, min: 11, max: 12),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: profileScaled(context, 8, min: 6, max: 9),
+              backgroundColor: AppColors.accent.withValues(alpha: 0.14),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFFFC56D),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1462,12 +1516,22 @@ class _HeroBanner extends StatelessWidget {
     required this.subtitle,
     required this.variant,
     this.compact = false,
+    this.gradientColors,
+    this.accentColor,
+    this.overlayInkColor,
+    this.overlayMidAlpha,
+    this.overlayEndAlpha,
   });
 
   final String title;
   final String subtitle;
   final int variant;
   final bool compact;
+  final List<Color>? gradientColors;
+  final Color? accentColor;
+  final Color? overlayInkColor;
+  final double? overlayMidAlpha;
+  final double? overlayEndAlpha;
 
   @override
   Widget build(BuildContext context) {
@@ -1475,31 +1539,69 @@ class _HeroBanner extends StatelessWidget {
         ? profileScaled(context, 150, min: 120, max: 170)
         : profileScaled(context, 190, min: 150, max: 230);
 
-    final gradientSets = [
-      const [Color(0xFFC9EDF6), Color(0xFF6AA2AE), Color(0xFF1A1008)],
-      const [Color(0xFF6A2F12), Color(0xFFF1A13E), Color(0xFF20140B)],
-      const [Color(0xFF723819), Color(0xFFB76828), Color(0xFF22140C)],
-      const [Color(0xFF6B2F15), Color(0xFFEF9943), Color(0xFF1F120A)],
-    ];
-    final colors = gradientSets[variant.clamp(0, gradientSets.length - 1)];
     final borderRadius = BorderRadius.circular(
       profileScaled(context, 24, min: 18, max: 28),
     );
+    final effectiveAccentColor = accentColor ?? AppColors.accent;
+    final effectiveOverlayInkColor = overlayInkColor ?? _guideAmberInk;
+    final effectiveOverlayMidAlpha = overlayMidAlpha ?? 0.16;
+    final effectiveOverlayEndAlpha = overlayEndAlpha ?? 0.52;
 
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
       decoration: BoxDecoration(
         borderRadius: borderRadius,
+        border: Border.all(color: effectiveAccentColor.withValues(alpha: 0.34)),
+        boxShadow: [
+          BoxShadow(
+            color: effectiveAccentColor.withValues(alpha: 0.24),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 34,
+            offset: const Offset(0, 20),
+          ),
+        ],
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: colors,
+          colors: gradientColors ?? _guideAmberHeroGradientColors,
+          stops: gradientColors == null ? const [0, 0.58, 1] : null,
         ),
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
         child: Stack(
           children: [
+            Positioned(
+              top: profileScaled(context, 16, min: 12, max: 18),
+              right: profileScaled(context, 16, min: 12, max: 18),
+              child: _guideHeroAccentIcon(
+                context,
+                _guideHeroIconForVariant(variant),
+              ),
+            ),
+            Positioned(
+              right: profileScaled(context, -42, min: -48, max: -36),
+              bottom: profileScaled(context, -72, min: -82, max: -58),
+              child: Transform.rotate(
+                angle: -0.28,
+                child: Container(
+                  width: profileScaled(context, 154, min: 120, max: 176),
+                  height: profileScaled(context, 214, min: 172, max: 236),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      profileScaled(context, 42, min: 32, max: 48),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.13),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Positioned.fill(
               child: Align(
                 alignment: Alignment.bottomCenter,
@@ -1512,8 +1614,12 @@ class _HeroBanner extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.16),
-                          Colors.black.withValues(alpha: 0.52),
+                          effectiveOverlayInkColor.withValues(
+                            alpha: effectiveOverlayMidAlpha,
+                          ),
+                          effectiveOverlayInkColor.withValues(
+                            alpha: effectiveOverlayEndAlpha,
+                          ),
                         ],
                       ),
                     ),
@@ -1574,10 +1680,28 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: AppColors.accent,
-          size: profileScaled(context, 24, min: 20, max: 26),
+        Container(
+          width: profileScaled(context, 42, min: 36, max: 46),
+          height: profileScaled(context, 42, min: 36, max: 46),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(
+              profileScaled(context, 14, min: 12, max: 16),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _guideAmberGold.withValues(alpha: 0.18),
+                AppColors.accent.withValues(alpha: 0.06),
+              ],
+            ),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+          ),
+          child: Icon(
+            icon,
+            color: _guideAmberGold,
+            size: profileScaled(context, 22, min: 19, max: 24),
+          ),
         ),
         SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
         Expanded(
@@ -1660,7 +1784,7 @@ class _PanelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-      decoration: profileCardDecoration(context, highlighted: true),
+      decoration: _guideAmberGlassDecoration(context, strong: true),
       child: child,
     );
   }
@@ -1730,6 +1854,8 @@ class _DarkInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = _guideDropdownBorderRadius(context);
+
     return TextField(
       controller: controller,
       textCapitalization: textCapitalization,
@@ -1747,12 +1873,18 @@ class _DarkInput extends StatelessWidget {
           fontSize: profileScaled(context, 15, min: 14, max: 16),
         ),
         filled: true,
-        fillColor: const Color(0xFF1F140D),
+        fillColor: _guideAmberInk,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            profileScaled(context, 16, min: 14, max: 18),
-          ),
-          borderSide: BorderSide.none,
+          borderRadius: borderRadius,
+          borderSide: _guideAmberDropdownBorderSide(),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: _guideAmberDropdownBorderSide(),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: _guideAmberDropdownBorderSide(),
         ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -1761,6 +1893,17 @@ class _DarkInput extends StatelessWidget {
       ),
     );
   }
+}
+
+BorderRadius _guideDropdownBorderRadius(BuildContext context) {
+  return BorderRadius.circular(profileScaled(context, 18, min: 16, max: 20));
+}
+
+BorderSide _guideAmberDropdownBorderSide() {
+  return BorderSide(
+    color: AppColors.accent.withValues(alpha: 0.34),
+    width: 1.6,
+  );
 }
 
 class _DateTextInputFormatter extends TextInputFormatter {
@@ -1790,51 +1933,393 @@ class _DateTextInputFormatter extends TextInputFormatter {
   }
 }
 
-class _DarkTappableField extends StatelessWidget {
-  const _DarkTappableField({
-    required this.value,
-    required this.onTap,
-    this.icon = Icons.expand_more_rounded,
+class _GuideCountrySearchField extends StatefulWidget {
+  const _GuideCountrySearchField({
+    required this.countries,
+    required this.selectedCode,
+    required this.localeCode,
+    required this.searchHint,
+    required this.noResultsText,
+    required this.onChanged,
   });
 
-  final String value;
-  final VoidCallback onTap;
-  final IconData icon;
+  final List<_GuideCountry> countries;
+  final String? selectedCode;
+  final String localeCode;
+  final String searchHint;
+  final String noResultsText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_GuideCountrySearchField> createState() =>
+      _GuideCountrySearchFieldState();
+}
+
+class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
+  late final ReferenceApi _api;
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  Timer? _searchDebounce;
+  List<ReferenceCountry> _visibleCountries = const [];
+  ReferenceCountry? _selectedReferenceCountry;
+  String _countrySearchQuery = '';
+  bool _isSearching = false;
+  bool _isOpen = false;
+
+  ReferenceCountry? get _selectedCountry {
+    final selectedCode = widget.selectedCode?.trim().toUpperCase();
+    if (selectedCode == null || selectedCode.isEmpty) return null;
+    final selectedReferenceCountry = _selectedReferenceCountry;
+    if (selectedReferenceCountry != null &&
+        selectedReferenceCountry.code.trim().toUpperCase() == selectedCode) {
+      return selectedReferenceCountry;
+    }
+    for (final country in widget.countries) {
+      if (country.code == selectedCode) {
+        return ReferenceCountry(
+          code: country.code,
+          name: country.labelFor(widget.localeCode),
+        );
+      }
+    }
+    return null;
+  }
+
+  String get _selectedLabel {
+    final selectedCountry = _selectedCountry;
+    if (selectedCountry == null) return '';
+    final name = selectedCountry.name.trim();
+    return name.isNotEmpty ? name : selectedCountry.code.trim().toUpperCase();
+  }
+
+  List<ReferenceCountry> get _fallbackCountries {
+    return widget.countries
+        .map(
+          (country) => ReferenceCountry(
+            code: country.code,
+            name: country.labelFor(widget.localeCode),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ReferenceApi();
+    _controller = TextEditingController(text: _selectedLabel)
+      ..addListener(_handleSearchChanged);
+    _focusNode = FocusNode()..addListener(_handleFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _GuideCountrySearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedCode != widget.selectedCode ||
+        oldWidget.localeCode != widget.localeCode) {
+      if (_selectedReferenceCountry?.code.trim().toUpperCase() !=
+          widget.selectedCode?.trim().toUpperCase()) {
+        _selectedReferenceCountry = null;
+      }
+      _syncSelectedLabel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _controller
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    _focusNode
+      ..removeListener(_handleFocusChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (!mounted) return;
+    setState(() {
+      _isOpen = _focusNode.hasFocus;
+    });
+    if (!_focusNode.hasFocus) {
+      _syncSelectedLabel();
+    }
+  }
+
+  void _handleSearchChanged() {
+    if (!mounted || !_focusNode.hasFocus) return;
+    final query = _controller.text.trim();
+    if (query == _countrySearchQuery) return;
+    _countrySearchQuery = query;
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 260), _runSearch);
+    setState(() => _isOpen = true);
+  }
+
+  Future<void> _runSearch() async {
+    final query = _countrySearchQuery;
+    if (query.length < 2) {
+      if (!mounted) return;
+      setState(() {
+        _visibleCountries = const [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    try {
+      final countries = await _api.searchCountries(
+        query,
+        lang: widget.localeCode,
+        limit: 24,
+      );
+      if (!mounted || _countrySearchQuery != query) return;
+      setState(() {
+        _visibleCountries = countries;
+        _isSearching = false;
+      });
+    } catch (_) {
+      if (!mounted || _countrySearchQuery != query) return;
+      setState(() {
+        _visibleCountries = const [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _syncSelectedLabel() {
+    final selectedLabel = _selectedLabel;
+    if (_controller.text == selectedLabel) return;
+    _controller.value = TextEditingValue(
+      text: selectedLabel,
+      selection: TextSelection.collapsed(offset: selectedLabel.length),
+    );
+  }
+
+  void _selectCountry(ReferenceCountry country) {
+    final nextLabel = country.name.trim().isNotEmpty
+        ? country.name.trim()
+        : country.code.trim().toUpperCase();
+    _controller.value = TextEditingValue(
+      text: nextLabel,
+      selection: TextSelection.collapsed(offset: nextLabel.length),
+    );
+    _searchDebounce?.cancel();
+    widget.onChanged(country.code.trim().toUpperCase());
+    setState(() {
+      _selectedReferenceCountry = country;
+      _countrySearchQuery = '';
+      _visibleCountries = const [];
+      _isSearching = false;
+      _isOpen = false;
+    });
+    _focusNode.unfocus();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF1F140D),
-      borderRadius: BorderRadius.circular(
-        profileScaled(context, 16, min: 14, max: 18),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(
-          profileScaled(context, 16, min: 14, max: 18),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: profileScaled(context, 18, min: 16, max: 20),
-            vertical: profileScaled(context, 18, min: 16, max: 18),
+    final borderRadius = _guideDropdownBorderRadius(context);
+    final queryHasEnoughText = _countrySearchQuery.trim().length >= 2;
+    final displayCountries = queryHasEnoughText
+        ? _visibleCountries
+        : _fallbackCountries;
+    final selectedCode = widget.selectedCode?.trim().toUpperCase();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          cursorColor: AppColors.accent,
+          textInputAction: TextInputAction.search,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: profileScaled(context, 16, min: 15, max: 17),
+            fontWeight: FontWeight.w700,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: profileScaled(context, 16, min: 15, max: 17),
-                    fontWeight: FontWeight.w600,
+          decoration: InputDecoration(
+            hintText: widget.searchHint,
+            hintStyle: TextStyle(
+              color: profileTextMuted.withValues(alpha: 0.72),
+              fontSize: profileScaled(context, 15, min: 14, max: 16),
+              fontWeight: FontWeight.w600,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.accent,
+            ),
+            suffixIcon: Icon(
+              _isOpen
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              color: profileTextSoft,
+            ),
+            filled: true,
+            fillColor: _guideAmberInk,
+            border: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: _guideAmberDropdownBorderSide(),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: _guideAmberDropdownBorderSide(),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: _guideAmberDropdownBorderSide(),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: profileScaled(context, 18, min: 16, max: 20),
+              vertical: profileScaled(context, 18, min: 16, max: 18),
+            ),
+          ),
+        ),
+        if (_isOpen) ...[
+          SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
+          Container(
+            constraints: BoxConstraints(
+              maxHeight: profileScaled(context, 224, min: 176, max: 260),
+            ),
+            decoration: BoxDecoration(
+              color: _guideAmberInk,
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.34),
+                width: 1.6,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: profileScaled(context, 18, min: 12, max: 24),
+                  offset: Offset(
+                    0,
+                    profileScaled(context, 10, min: 6, max: 12),
                   ),
                 ),
-              ),
-              Icon(icon, color: profileTextSoft),
-            ],
+              ],
+            ),
+            child: _isSearching
+                ? Padding(
+                    padding: EdgeInsets.all(
+                      profileScaled(context, 16, min: 14, max: 18),
+                    ),
+                    child: const Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  )
+                : displayCountries.isEmpty
+                ? Padding(
+                    padding: EdgeInsets.all(
+                      profileScaled(context, 16, min: 14, max: 18),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.flag_circle_rounded,
+                          color: AppColors.accent,
+                          size: 18,
+                        ),
+                        SizedBox(
+                          width: profileScaled(context, 8, min: 6, max: 10),
+                        ),
+                        Expanded(
+                          child: Text(
+                            widget.noResultsText,
+                            style: TextStyle(
+                              color: AppColors.accent,
+                              fontSize: profileScaled(
+                                context,
+                                13,
+                                min: 12,
+                                max: 14,
+                              ),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: EdgeInsets.symmetric(
+                      vertical: profileScaled(context, 6, min: 4, max: 8),
+                    ),
+                    shrinkWrap: true,
+                    itemCount: displayCountries.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      color: AppColors.accent.withValues(alpha: 0.08),
+                    ),
+                    itemBuilder: (context, index) {
+                      final country = displayCountries[index];
+                      final isSelected =
+                          country.code.trim().toUpperCase() == selectedCode;
+                      return InkWell(
+                        onTap: () => _selectCountry(country),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                            vertical: profileScaled(
+                              context,
+                              12,
+                              min: 10,
+                              max: 14,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  country.name.trim().isNotEmpty
+                                      ? country.name.trim()
+                                      : country.code.trim().toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: profileScaled(
+                                      context,
+                                      15,
+                                      min: 14,
+                                      max: 16,
+                                    ),
+                                    fontWeight: isSelected
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.accent,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
-        ),
-      ),
+        ],
+      ],
     );
   }
 }
@@ -1850,16 +2335,32 @@ class _NoticeCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
       decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.05),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.accent.withValues(alpha: 0.14),
+            AppColors.accent.withValues(alpha: 0.04),
+          ],
+        ),
         borderRadius: BorderRadius.circular(
           profileScaled(context, 20, min: 18, max: 24),
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.accent),
+          Container(
+            width: profileScaled(context, 40, min: 36, max: 44),
+            height: profileScaled(context, 40, min: 36, max: 44),
+            decoration: BoxDecoration(
+              color: _guideAmberGold.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _guideAmberGold.withValues(alpha: 0.2)),
+            ),
+            child: Icon(icon, color: _guideAmberGold),
+          ),
           SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
           Expanded(
             child: Text(
@@ -1899,6 +2400,8 @@ class _DarkDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = _guideDropdownBorderRadius(context);
+
     return _FieldBlock(
       label: label,
       child: DropdownButtonFormField<String>(
@@ -1912,12 +2415,18 @@ class _DarkDropdown extends StatelessWidget {
         ),
         decoration: InputDecoration(
           filled: true,
-          fillColor: profileSurface,
+          fillColor: _guideAmberInk,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(
-              profileScaled(context, 18, min: 16, max: 20),
-            ),
-            borderSide: BorderSide.none,
+            borderRadius: borderRadius,
+            borderSide: _guideAmberDropdownBorderSide(),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: borderRadius,
+            borderSide: _guideAmberDropdownBorderSide(),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: borderRadius,
+            borderSide: _guideAmberDropdownBorderSide(),
           ),
           contentPadding: EdgeInsets.symmetric(
             horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -1996,7 +2505,7 @@ class _TipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-      decoration: profileCardDecoration(context),
+      decoration: _guideAmberGlassDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2074,12 +2583,19 @@ class _UploadCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                   profileScaled(context, 26, min: 22, max: 28),
                 ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.accent.withValues(alpha: 0.12),
+                    Colors.white.withValues(alpha: 0.018),
+                  ],
+                ),
                 border: Border.all(
                   color: AppColors.accent.withValues(alpha: 0.34),
                   width: 1.6,
                   strokeAlign: BorderSide.strokeAlignInside,
                 ),
-                color: Colors.white.withValues(alpha: 0.02),
               ),
               child: Column(
                 children: [
@@ -2248,7 +2764,7 @@ class _ConfirmCard extends StatelessWidget {
                         ),
                       ],
                     )
-                  : profileCardDecoration(context),
+                  : _guideAmberGlassDecoration(context),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2379,7 +2895,7 @@ class _OptionalCertificateCard extends StatelessWidget {
         borderRadius: borderRadius,
         child: Container(
           padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-          decoration: profileCardDecoration(context),
+          decoration: _guideAmberGlassDecoration(context),
           child: Row(
             children: [
               Container(
@@ -2461,7 +2977,7 @@ class _TimelineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
-      decoration: profileCardDecoration(context, highlighted: true),
+      decoration: _guideAmberGlassDecoration(context, strong: true),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2507,7 +3023,7 @@ class _ReviewDocumentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
-      decoration: profileCardDecoration(context),
+      decoration: _guideAmberGlassDecoration(context),
       child: Row(
         children: [
           Container(
@@ -2598,55 +3114,6 @@ class _ReviewDocumentCard extends StatelessWidget {
   }
 }
 
-class _TermsCard extends StatelessWidget {
-  const _TermsCard({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: (screenHeight * 0.3).clamp(180, 280),
-      ),
-      padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(
-          profileScaled(context, 22, min: 18, max: 24),
-        ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: profileScaled(context, 18, min: 16, max: 20),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
-            Text(
-              body,
-              style: TextStyle(
-                color: profileTextSoft,
-                fontSize: profileScaled(context, 15, min: 14, max: 16),
-                height: 1.55,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.label,
@@ -2665,31 +3132,7 @@ class _BottomActionBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FilledButton(
-          onPressed: onPressed,
-          style: FilledButton.styleFrom(
-            minimumSize: Size.fromHeight(
-              profileScaled(context, 60, min: 50, max: 68),
-            ),
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
-            textStyle: TextStyle(
-              fontSize: profileScaled(context, 16, min: 14, max: 17),
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.6,
-            ),
-          ),
-          child: busy
-              ? SizedBox(
-                  width: profileScaled(context, 22, min: 20, max: 24),
-                  height: profileScaled(context, 22, min: 20, max: 24),
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(label.toUpperCase()),
-        ),
+        _GuideSolidActionButton(label: label, onPressed: onPressed, busy: busy),
         if ((note ?? '').trim().isNotEmpty)
           Padding(
             padding: EdgeInsets.only(
@@ -2719,6 +3162,150 @@ class _BottomActionBar extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _GuideSolidActionButton extends StatelessWidget {
+  const _GuideSolidActionButton({
+    required this.label,
+    required this.onPressed,
+    required this.busy,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: busy ? null : onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        minimumSize: Size(
+          double.infinity,
+          profileScaled(context, 56, min: 50, max: 58),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            profileScaled(context, 18, min: 16, max: 20),
+          ),
+        ),
+      ),
+      child: busy
+          ? SizedBox(
+              width: profileScaled(context, 18, min: 16, max: 18),
+              height: profileScaled(context, 18, min: 16, max: 18),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: profileScaled(context, 15, min: 14, max: 16),
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+    );
+  }
+}
+
+class _AmberGradientButton extends StatelessWidget {
+  const _AmberGradientButton({
+    required this.label,
+    required this.onPressed,
+    required this.busy,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null && !busy;
+    final height = profileScaled(context, 60, min: 50, max: 68);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: SizedBox(
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: _guideAmberGradientButtonDecoration(
+            context,
+            enabled: enabled,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            child: InkWell(
+              onTap: enabled ? onPressed : null,
+              borderRadius: BorderRadius.circular(999),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: height),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: profileScaled(context, 18, min: 16, max: 20),
+                    vertical: profileScaled(context, 14, min: 12, max: 16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (busy)
+                        SizedBox(
+                          width: profileScaled(context, 22, min: 20, max: 24),
+                          height: profileScaled(context, 22, min: 20, max: 24),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      else ...[
+                        Flexible(
+                          child: Text(
+                            label.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: profileScaled(
+                                context,
+                                15,
+                                min: 14,
+                                max: 16,
+                              ),
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: profileScaled(context, 8, min: 6, max: 8),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2758,7 +3345,7 @@ class _StatusScreen extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.guideVerificationTitle,
                   style: TextStyle(
-                    color: AppColors.accent,
+                    color: AppColors.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -2774,18 +3361,21 @@ class _StatusScreen extends StatelessWidget {
             padding: EdgeInsets.all(padding),
             child: Column(
               children: [
-                _HeroBanner(title: title, subtitle: subtitle, variant: 3),
+                _HeroBanner(
+                  title: title,
+                  subtitle: subtitle,
+                  variant: 3,
+                  gradientColors: _guideExcursionAmberStatusGradientColors,
+                  accentColor: _guideExcursionAmberStatusAccent,
+                  overlayInkColor: _guideExcursionAmberStatusInk,
+                  overlayMidAlpha: 0.08,
+                  overlayEndAlpha: 0.32,
+                ),
                 const Spacer(),
-                FilledButton(
+                _AmberGradientButton(
+                  label: buttonLabel,
                   onPressed: () => context.pop(),
-                  style: FilledButton.styleFrom(
-                    minimumSize: Size.fromHeight(
-                      profileScaled(context, 60, min: 50, max: 68),
-                    ),
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(buttonLabel),
+                  busy: false,
                 ),
               ],
             ),

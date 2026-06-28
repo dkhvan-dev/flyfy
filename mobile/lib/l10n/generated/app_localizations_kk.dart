@@ -463,7 +463,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get travelChecklistTransportFlight => 'Ұшу';
+  String get travelChecklistTransportFlight => 'Ұшақ';
 
   @override
   String get travelChecklistTransportTrain => 'Пойыз';
@@ -475,7 +475,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get travelChecklistTransportCar => 'Авто';
 
   @override
+  String get travelChecklistTransportMotorcycle => 'Мотоцикл';
+
+  @override
   String get travelChecklistTransportFerry => 'Паром';
+
+  @override
+  String get travelChecklistTransportOther => 'Басқа';
 
   @override
   String get travelChecklistActivityWalking => 'Жаяу серуен';
@@ -957,7 +963,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get profileCountry => 'Ел';
+  String get profileCountry => 'Азаматтығы';
 
   @override
   String get profileCurrency => 'Валюта';
@@ -1024,7 +1030,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationIdentityNotice =>
-      'Бұл деректер тек жеке басыңызды және гид мәртебесін растау үшін қолданылады.';
+      'Бұл деректер тек жеке басыңызды және гид мәртебесін растау үшін қолданылады';
 
   @override
   String get guideVerificationContinueToDocuments => 'Құжаттарға өту';
@@ -1050,14 +1056,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationNoGlareHint =>
-      'Мәтін анық көрінуі үшін суретті біркелкі жарықта түсіріңіз.';
+      'Мәтін анық көрінуі үшін суретті біркелкі жарықта түсіріңіз';
 
   @override
   String get guideVerificationFullFrame => 'Толық кадр';
 
   @override
   String get guideVerificationFullFrameHint =>
-      'Құжаттың барлық шеттері суретте анық көрінуі керек.';
+      'Құжаттың барлық шеттері суретте анық көрінуі керек';
 
   @override
   String get guideVerificationTapToCapturePassport =>
@@ -1070,8 +1076,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideVerificationChooseFile => 'Файл таңдау';
 
   @override
+  String get guideVerificationReplaceFile => 'Файлды ауыстыру';
+
+  @override
   String get guideVerificationDocumentConfirm =>
-      'Бұл құжаттың жарамды екенін, мерзімі өтпегенін және ұсынылған фото автоматтандырылған тексеру жүйелері үшін анық оқылатынын растаймын.';
+      'Бұл құжаттың жарамды екенін, мерзімі өтпегенін және ұсынылған фото автоматтандырылған тексеру жүйелері үшін анық оқылатынын растаймын';
 
   @override
   String get guideVerificationVerifyContinue => 'Тексеруді жалғастыру';
@@ -1106,7 +1115,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationUploadLicenseSubtitle =>
-      'Мұнда сертификат, лицензия немесе басқа кәсіби құжат жарайды.';
+      'Мұнда сертификат, лицензия немесе басқа кәсіби құжат жарайды';
 
   @override
   String get guideVerificationAdditionalCertifications => 'Қосымша дағдылар';
@@ -1132,14 +1141,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationFirstAidHint =>
-      'Сізде алғашқы көмек бойынша жарамды курс немесе сертификат бар.';
+      'Сізде алғашқы көмек бойынша жарамды курс немесе сертификат бар';
 
   @override
   String get guideVerificationLanguageProficiency => 'Шет тілдері';
 
   @override
   String get guideVerificationLanguageProficiencyHint =>
-      'Сіз белсенділіктер мен экскурсияларды бірнеше тілде өткізе аласыз.';
+      'Сіз белсенділіктер мен экскурсияларды бірнеше тілде өткізе аласыз';
 
   @override
   String get guideVerificationTimelineTitle => 'Қарау мерзімі';
@@ -1191,14 +1200,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationAgreement =>
-      'Гид мәртебесін растау үшін құжаттарды тексеруге және деректерді өңдеуге келісемін.';
+      'Гид мәртебесін растау үшін құжаттарды тексеруге және деректерді өңдеуге келісемін';
 
   @override
   String get guideVerificationSubmit => 'Өтінімді жіберу';
 
   @override
   String get guideVerificationReviewNote =>
-      'Жібергеннен кейін өтінім мәртебесін профильден бақылай аласыз.';
+      'Жібергеннен кейін өтінім мәртебесін профильден бақылай аласыз';
 
   @override
   String get guideVerificationPendingTitle => 'Өтінім тексеріліп жатыр';
@@ -1304,7 +1313,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Inflap мүмкіндіктерін толық пайдалану үшін никнеймді, атыңызды, тегіңізді және еліңізді толтырыңыз';
+      'Inflap мүмкіндіктерін толық пайдалану үшін никнеймді, атыңызды, тегіңізді және азаматтығыңызды толтырыңыз';
 
   @override
   String get fillNowButton => 'Толтыру';
@@ -1361,14 +1370,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get lastNameRequired => 'Тегіңізді енгізіңіз';
 
   @override
-  String get profileCountryRequired => 'Елді таңдаңыз';
+  String get profileCountryRequired => 'Азаматтығыңызды таңдаңыз';
 
   @override
   String get profileRequiredTitle => 'Профильді толтырыңыз';
 
   @override
   String get profileRequiredDescription =>
-      'Жалғастыру үшін профиліңізде никнеймді, атыңызды, тегіңізді және еліңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
+      'Жалғастыру үшін профиліңізде никнеймді, атыңызды, тегіңізді және азаматтығыңызды көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
 
   @override
   String get myProfileTitle => 'Менің профилім';
@@ -1387,7 +1396,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileEmptyBioPlaceholder =>
-      'Қазір мұнда сипаттама жоқ. Профиль толтырылған кезде қысқаша ақпарат осы жерде көрсетіледі.';
+      'Өзіңіз туралы бірнеше сөз басқаларға сізді жақсырақ тануға көмектеседі';
 
   @override
   String get profileBecomeGuideTitle => 'Гид болыңыз';
@@ -1519,6 +1528,9 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жаңа кіріс достық сұраулары осы жерде көрсетіледі.';
 
   @override
+  String get profileMyContentTitle => 'Менің кеңістігім';
+
+  @override
   String get profileJourneyTitle => 'Менің жолым';
 
   @override
@@ -1554,14 +1566,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNotificationsRowSubtitle =>
-      'Белсенділіктерге қатысты push, email және SMS жаңартулары.';
+      'Белсенділіктерге қатысты push, email және SMS жаңартулары';
 
   @override
   String get profileSecurityRowTitle => 'Қауіпсіздік және деректер';
 
   @override
   String get profileSecurityRowSubtitle =>
-      'Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары.';
+      'Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары';
 
   @override
   String get profileHostedActivitiesTitle => 'Автор белсенділіктері';
@@ -1769,7 +1781,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSettingsEditSubtitle =>
-      'Атыңызды, фотоңызды, биоңызды және негізгі профиль деректерін өзгертіңіз.';
+      'Атыңызды, фотоңызды, биоңызды және негізгі профиль деректерін өзгертіңіз';
 
   @override
   String get profileOverviewSectionTitle => 'Профиль шолуы';
@@ -1913,7 +1925,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String profileNotificationsQuietHoursTimezone(Object timezone) {
-    return 'Профиль уақыт белдеуі қолданылады: $timezone';
+    return 'Ағымдағы уақыт белдеуі қолданылады: $timezone';
   }
 
   @override
@@ -2563,7 +2575,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get servicesSectionTitle => 'Сервистер';
 
   @override
-  String get servicesAllButton => 'Барлығы';
+  String get servicesAllButton => 'Барлығын көру';
 
   @override
   String get homeExcursionsTitle => 'Экскурсиялар';
@@ -2668,7 +2680,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeCarRentals => 'Көлік жалдау';
 
   @override
-  String get homeRecommendedActivities => 'Ұсынылатын белсенділіктер';
+  String get homeRecommendedActivities => 'Үздік белсенділіктер';
 
   @override
   String get homeFilterButton => 'Сүзгі';
@@ -4105,16 +4117,181 @@ class AppLocalizationsKk extends AppLocalizations {
   String get placeExperienceSection => 'Әсер';
 
   @override
+  String get placeFeeDetailsSection => 'Шығындар';
+
+  @override
+  String get placeFeeDetailsTitle => 'Шамамен шығындар';
+
+  @override
+  String get placeFeeDetailsNote =>
+      'Нақты тарифтер сапарға дейін өзгеруі мүмкін';
+
+  @override
   String get placeExpectSection => 'Не күтуге болады';
 
   @override
   String get placeVisitPlanSection => 'Сапар жоспары';
 
   @override
+  String get placeVisitOverviewTitle => 'Қысқаша';
+
+  @override
+  String get placeVisitCostTitle => 'Құны';
+
+  @override
+  String get placeVisitSeasonTitle => 'Қашан барған дұрыс';
+
+  @override
+  String get placeVisitAccessTitle => 'Қалай жетуге болады';
+
+  @override
+  String get placeVisitTimeTitle => 'Қанша уақыт жоспарлау керек';
+
+  @override
+  String get placeVisitRecommendedItemsTitle => 'Өзіңізбен не алу керек';
+
+  @override
+  String get placeVisitPracticalNotesTitle => 'Практикалық кеңестер';
+
+  @override
   String get placeInflapTipTitle => 'Inflap кеңесі';
 
   @override
   String get placeVisitDurationLabel => 'Орынға уақыт';
+
+  @override
+  String get placeVisitCarTimeLabel => 'Көлікпен';
+
+  @override
+  String get placeVisitOpeningHoursLabel => 'Жұмыс уақыты';
+
+  @override
+  String get placeVisitPriceNoteLabel => 'Баға түсіндірмесі';
+
+  @override
+  String get placeVisitRoadConditionLabel => 'Жол';
+
+  @override
+  String get placeVisitRouteHintLabel => 'Бағдар';
+
+  @override
+  String get placeVisitParkingLabel => 'Тұрақ';
+
+  @override
+  String get placeVisitLastSegmentLabel => 'Соңғы бөлік';
+
+  @override
+  String get placeVisitRequires4x4 => '4x4 қажет';
+
+  @override
+  String get placeVisitRequiredLabel => 'Міндетті';
+
+  @override
+  String get placeVisitOptionalLabel => 'Қосымша';
+
+  @override
+  String get placeVisitRecommendedLabel => 'Ұсынылады';
+
+  @override
+  String get placeVisitItemWater => 'Су';
+
+  @override
+  String get placeVisitItemShoes => 'Ыңғайлы аяқ киім';
+
+  @override
+  String get placeVisitItemCash => 'Қолма-қол ақша';
+
+  @override
+  String get placeVisitItemWarmClothes => 'Жылы киім';
+
+  @override
+  String get placeVisitItemPowerbank => 'Powerbank';
+
+  @override
+  String get placeVisitItemDocuments => 'Құжаттар';
+
+  @override
+  String get placeVisitItemFood => 'Тамақ';
+
+  @override
+  String get placeVisitItemSpf => 'SPF және бас киім';
+
+  @override
+  String get placeVisitItemRain => 'Жаңбырлық';
+
+  @override
+  String get placeVisitItemMap => 'Офлайн-карта';
+
+  @override
+  String get placeVisitItemRepellent => 'Репеллент';
+
+  @override
+  String get placeVisitItemFirstAid => 'Дәрі қобдишасы';
+
+  @override
+  String get placeVisitItemOther => 'Дайындық';
+
+  @override
+  String get placeVisitTransportCar => 'Авто';
+
+  @override
+  String get placeVisitTransportWalk => 'Жаяу';
+
+  @override
+  String get placeVisitTransportTaxi => 'Такси';
+
+  @override
+  String get placeVisitTransportBus => 'Автобус';
+
+  @override
+  String get placeVisitTransportCableCar => 'Аспалы жол';
+
+  @override
+  String get placeVisitTransportShuttle => 'Шаттл';
+
+  @override
+  String get placeVisitTransportHorse => 'Ат';
+
+  @override
+  String get placeVisitTransportTrain => 'Пойыз';
+
+  @override
+  String get placeVisitTransportBoat => 'Қайық';
+
+  @override
+  String get placeVisitRoadPaved => 'Асфальт';
+
+  @override
+  String get placeVisitRoadGravel => 'Қара жол';
+
+  @override
+  String get placeVisitRoadMountain => 'Тау жолы';
+
+  @override
+  String get placeVisitRoadMixed => 'Аралас жол';
+
+  @override
+  String get placeVisitRoadOffroad => 'Жолсыз жер';
+
+  @override
+  String placeVisitMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String placeVisitHoursOnly(int hours) {
+    return '$hours сағ';
+  }
+
+  @override
+  String placeVisitHoursMinutes(int hours, int minutes) {
+    return '$hours сағ $minutes мин';
+  }
+
+  @override
+  String placeVisitDistanceKm(String distance) {
+    return '$distance км';
+  }
 
   @override
   String get placeVisitDurationFlexible => 'Икемді';
@@ -4192,7 +4369,28 @@ class AppLocalizationsKk extends AppLocalizations {
       'Ағымдағы кестені тексеріп, жолға уақыт жоғалтпау үшін жақын белсенділіктермен біріктіріңіз.';
 
   @override
-  String get placeReviewsSection => 'Саяхатшылар пікірі';
+  String get placeVisitPracticalGeneral => 'Практикалық кеңес';
+
+  @override
+  String get placeVisitPracticalConnection => 'Байланыс';
+
+  @override
+  String get placeVisitPracticalToilet => 'Дәретхана';
+
+  @override
+  String get placeVisitPracticalCafe => 'Кафе';
+
+  @override
+  String get placeVisitPracticalSafety => 'Қауіпсіздік';
+
+  @override
+  String get placeVisitPracticalKids => 'Балалармен';
+
+  @override
+  String get placeVisitPracticalWeather => 'Ауа райы';
+
+  @override
+  String get placeReviewsSection => 'Туристер пікірлері';
 
   @override
   String placeSeeAllReviews(int count) {
@@ -4269,7 +4467,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get placeVerifiedNomad => 'Тексерілген саяхатшы';
 
   @override
-  String get placeReviewsTitle => 'Пікірлер';
+  String get placeReviewsTitle => 'Туристер пікірлері';
 
   @override
   String get placeTravelerFallback => 'Саяхатшы';
@@ -4319,10 +4517,46 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жаңарту үшін төмен тартыңыз немесе профильді қайта ашыңыз.';
 
   @override
-  String get placePriceVaries => 'Баға өзгеруі мүмкін';
+  String get placePriceVaries => 'баға нақтыланады';
 
   @override
-  String get placePriceVariesShort => 'Өзгеруі мүмкін';
+  String get placePriceVariesShort => 'нақтыланады';
+
+  @override
+  String get placeFreeEntry => 'Тегін';
+
+  @override
+  String placePriceFrom(Object price) {
+    return '$price бастап';
+  }
+
+  @override
+  String placeFeeApproxAmount(Object amount) {
+    return '~$amount';
+  }
+
+  @override
+  String placeFeePerUnit(Object amount, Object unit) {
+    return '$amount / $unit';
+  }
+
+  @override
+  String get placeFeeUnitPerson => 'адам';
+
+  @override
+  String get placeFeeUnitCar => 'авто';
+
+  @override
+  String get placeFeeUnitMotorcycle => 'мотоцикл';
+
+  @override
+  String get placeFeeUnitTicket => 'билет';
+
+  @override
+  String get placeFeeUnitGroup => 'топ';
+
+  @override
+  String get placeFeeUnitItem => 'позиция';
 
   @override
   String placeDurationHours(int hours) {
@@ -6330,7 +6564,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardDirectGuideReviewsTab => 'Гид';
 
   @override
-  String get guideDashboardOffersStat => 'Барлық ұсыныс';
+  String get guideDashboardOffersStat => 'Ұсыныстар';
 
   @override
   String get guideDashboardBookingsStat => 'Брондар';
@@ -6589,7 +6823,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardStatusRejected => 'Қабылданбады';
 
   @override
-  String get guideDashboardStatusBooked => 'Брон';
+  String get guideDashboardStatusBooked => 'Белсенді';
 
   @override
   String get guideDashboardStatusCompleted => 'Өткізілді';
@@ -8840,6 +9074,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notificationsCategorySystem => 'Жүйе';
 
   @override
+  String get notificationsCategorySupport => 'Қолдау';
+
+  @override
   String get notificationsCategoryGeneral => 'Жалпы';
 
   @override
@@ -8894,6 +9131,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get notificationsChatMessageBody => 'Жауап беру үшін чаттарды ашыңыз.';
+
+  @override
+  String get notificationsSupportRepliedTitle => 'Қолдау жауап берді';
+
+  @override
+  String get notificationsSupportRepliedBody =>
+      'Қолдау сұрауыңызға жауап берді.';
+
+  @override
+  String get notificationsSupportUpdatedTitle => 'Қолдау сұрауы жаңартылды';
+
+  @override
+  String get notificationsSupportUpdatedBody =>
+      'Соңғы жаңартуды көру үшін қолдау чатын ашыңыз.';
 
   @override
   String notificationsActivityJoinedTitle(Object actor) {
@@ -9036,4 +9287,242 @@ class AppLocalizationsKk extends AppLocalizations {
   String notificationsDaysAgo(Object days) {
     return '$days күн бұрын';
   }
+
+  @override
+  String get helpCenterTitle => 'Көмек орталығы';
+
+  @override
+  String get helpCenterSubtitle =>
+      'Брондау, гидтер, орындар, төлемдер, валюта және аккаунт қауіпсіздігі бойынша жауаптар';
+
+  @override
+  String get helpCenterSearchHint => 'Сұрақтар, кеңестер, нұсқаулар';
+
+  @override
+  String get helpCenterCategoryAll => 'Барлығы';
+
+  @override
+  String get helpCenterCategoryDocuments => 'Құжаттар';
+
+  @override
+  String get helpCenterCategoryFlights => 'Ұшулар';
+
+  @override
+  String get helpCenterCategoryAccommodation => 'Тұру';
+
+  @override
+  String get helpCenterCategoryMoney => 'Ақша';
+
+  @override
+  String get helpCenterCategorySafety => 'Қауіпсіздік';
+
+  @override
+  String get helpCenterCategoryTransport => 'Көлік';
+
+  @override
+  String get helpCenterCategoryPlanning => 'Маршрут';
+
+  @override
+  String get helpCenterCategoryCulture => 'Ережелер';
+
+  @override
+  String get helpCenterMoreCategories => 'Тағы';
+
+  @override
+  String get helpCenterCategoriesTitle => 'Санаттар';
+
+  @override
+  String get helpCenterPopularTitle => 'Танымал жауаптар';
+
+  @override
+  String get helpCenterSearchResultsTitle => 'Іздеу нәтижелері';
+
+  @override
+  String get helpCenterNoResultsTitle => 'Жауап табылмады';
+
+  @override
+  String get helpCenterNoResultsMessage =>
+      'Басқа сұрау енгізіңіз немесе жауап әлі табылмаса, қолдау сұрауларын ашыңыз';
+
+  @override
+  String get helpCenterLoadFailedTitle => 'Көмекті жүктеу мүмкін болмады';
+
+  @override
+  String get helpCenterRetry => 'Қайталау';
+
+  @override
+  String get helpCenterLoadMore => 'Тағы көрсету';
+
+  @override
+  String get helpCenterContactSupport => 'Қолдауға жазу';
+
+  @override
+  String get helpCenterOpenChat => 'Чатты ашу';
+
+  @override
+  String get helpCenterSupportChatButton => 'Чат';
+
+  @override
+  String get helpCenterOpenRoute => 'Ашу';
+
+  @override
+  String get helpCenterWasHelpful => 'Бұл жауап пайдалы болды ма?';
+
+  @override
+  String get helpCenterHelpful => 'Пайдалы';
+
+  @override
+  String get helpCenterNotHelpful => 'Пайдалы емес';
+
+  @override
+  String get helpCenterFeedbackSaved =>
+      'Рақмет, пікіріңіз жауаптарды жақсартуға көмектеседі';
+
+  @override
+  String get supportRequestsSubtitle =>
+      'Inflap қолдауымен диалогтарды бақылап, қосымша ақпарат керек болғанда жауап беріңіз';
+
+  @override
+  String get supportRequestsLoadFailedTitle =>
+      'Сұрауларды жүктеу мүмкін болмады';
+
+  @override
+  String get supportTicketDetailTitle => 'Қолдау чаты';
+
+  @override
+  String get supportTicketReplyHint => 'Жауап жазыңыз';
+
+  @override
+  String get supportTicketClose => 'Сұрауды жабу';
+
+  @override
+  String get supportTicketNoMessagesTitle => 'Әзірге хабарлама жоқ';
+
+  @override
+  String get supportTicketNoMessagesMessage =>
+      'Қолдау жауаптары осы жерде пайда болады';
+
+  @override
+  String get supportReplyFailed => 'Жауапты жіберу мүмкін болмады';
+
+  @override
+  String get supportTicketCSATTitle => 'Қолдауды бағалаңыз';
+
+  @override
+  String get supportTicketCSATCommentHint => 'Пікір қосыңыз';
+
+  @override
+  String get supportTicketCSATSubmit => 'Бағаны жіберу';
+
+  @override
+  String get supportTicketCSATThanks => 'Қолдауды бағалағаныңызға рақмет';
+
+  @override
+  String get supportTicketCSATFailed => 'Бағаны сақтау мүмкін болмады';
+
+  @override
+  String get supportEventTicketClosedByUser => 'Сұрауды пайдаланушы жапты';
+
+  @override
+  String get supportEventCSATSubmitted => 'Қолдау бағасы жіберілді';
+
+  @override
+  String get supportEventTicketResolved => 'Сұрау шешілді';
+
+  @override
+  String get supportEventSegmentCalculated => 'Сұрау контексті жаңартылды';
+
+  @override
+  String get supportEventUserReplied => 'Хабарлама жіберілді';
+
+  @override
+  String get supportEventAgentReplied => 'Қолдау жауап берді';
+
+  @override
+  String get supportEventUpdated => 'Қолдау сұрауы жаңартылды';
+
+  @override
+  String get supportStatusNew => 'Қабылданды';
+
+  @override
+  String get supportStatusOpen => 'Ашық';
+
+  @override
+  String get supportStatusAssigned => 'Тағайындалды';
+
+  @override
+  String get supportStatusWaitingUser => 'Жауабыңызды күтуде';
+
+  @override
+  String get supportStatusWaitingSupport => 'Қолдау жауабын күтуде';
+
+  @override
+  String get supportStatusResolved => 'Шешілді';
+
+  @override
+  String get supportStatusClosed => 'Жабылды';
+
+  @override
+  String get supportStatusReopened => 'Қайта ашылды';
+
+  @override
+  String get supportPreviewNew => 'Сұрауыңызды алдық, осы чатта жауап береміз';
+
+  @override
+  String get supportPreviewWaitingUser =>
+      'Қолдауға сізден қосымша мәлімет керек';
+
+  @override
+  String get supportPreviewWaitingSupport =>
+      'Жауабыңыз жіберілді. Қолдау осы чатта жауап береді.';
+
+  @override
+  String get supportPreviewResolved =>
+      'Бұл сұрау аяқталды. Қолдауды бағалауға немесе жаңа сұрау жасауға болады.';
+
+  @override
+  String supportExpectedResponseWithin(Object time) {
+    return 'Әдетте $time ішінде жауап береміз';
+  }
+
+  @override
+  String get supportMessageSending => 'Жіберілуде';
+
+  @override
+  String get supportMessageSent => 'Жіберілді';
+
+  @override
+  String get supportMessageNotSent => 'Жіберілмеді';
+
+  @override
+  String get supportMessageRetry => 'Қайталау';
+
+  @override
+  String get supportEpisodeNewRequestCreated => 'Жаңа сұрау жасалды';
+
+  @override
+  String supportEpisodeStarted(Object date) {
+    return '$date күнгі сұрау';
+  }
+
+  @override
+  String get supportUserFallbackName => 'Сіз';
+
+  @override
+  String get supportAgentFallbackName => 'Қолдау';
+
+  @override
+  String get supportSystemFallbackName => 'Жүйе';
+
+  @override
+  String get contextualHelpTitle => 'Сұрақтар мен көмек';
+
+  @override
+  String get contextualHelpOpenAll => 'Барлық көмек';
+
+  @override
+  String get contextualHelpLoadFailed => 'Көмек уақытша қолжетімсіз';
+
+  @override
+  String get contextualHelpTryAgain => 'Қайталау';
 }

@@ -13,15 +13,25 @@ import (
 
 	"kz/inflap/backend/services/place-service/internal/app"
 	"kz/inflap/backend/services/place-service/internal/domain/model"
+	"kz/inflap/backend/services/place-service/internal/mediabackfill"
 	"kz/inflap/backend/services/place-service/internal/transport/dto"
 )
 
+type mediaBackfillStarter interface {
+	StartCountry(countryCode string) (string, error)
+}
+
 type Handler struct {
-	useCase *app.PlaceUseCase
+	useCase       *app.PlaceUseCase
+	mediaBackfill mediaBackfillStarter
 }
 
 func NewHandler(useCase *app.PlaceUseCase) *Handler {
 	return &Handler{useCase: useCase}
+}
+
+func (h *Handler) SetMediaBackfillStarter(starter mediaBackfillStarter) {
+	h.mediaBackfill = starter
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -42,6 +52,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /internal/v1/admin/places", h.ListPlaces)
 	mux.HandleFunc("POST /internal/v1/admin/places", h.AdminCreatePlace)
+	mux.HandleFunc("POST /internal/v1/admin/places/media/backfill", h.StartPlaceMediaBackfill)
 	mux.HandleFunc("GET /internal/v1/admin/places/{id}", h.GetPlace)
 	mux.HandleFunc("PUT /internal/v1/admin/places/{id}", h.AdminUpdatePlace)
 	mux.HandleFunc("PUT /internal/v1/admin/places/{id}/media", h.AdminReplacePlaceMedia)
@@ -401,6 +412,46 @@ func (h *Handler) AdminReplacePlaceMedia(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) StartPlaceMediaBackfill(w http.ResponseWriter, r *http.Request) {
+	if h.mediaBackfill == nil {
+		writeError(w, http.StatusServiceUnavailable, "media backfill runner is not configured")
+		return
+	}
+
+	var req struct {
+		CountryCode string `json:"countryCode"`
+	}
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	countryCode := strings.ToUpper(strings.TrimSpace(req.CountryCode))
+	if countryCode == "" {
+		writeError(w, http.StatusBadRequest, mediabackfill.ErrInvalidCountryCode.Error())
+		return
+	}
+
+	jobID, err := h.mediaBackfill.StartCountry(countryCode)
+	if err != nil {
+		switch {
+		case errors.Is(err, mediabackfill.ErrInvalidCountryCode):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, mediabackfill.ErrAlreadyRunning):
+			writeError(w, http.StatusConflict, err.Error())
+		default:
+			writeError(w, http.StatusServiceUnavailable, "failed to start media backfill")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, map[string]string{
+		"jobId":       jobID,
+		"countryCode": countryCode,
+		"status":      "STARTED",
+	})
+}
+
 func (h *Handler) parseReplaceMediaRequest(w http.ResponseWriter, r *http.Request) ([]app.ReplaceMediaInput, bool) {
 	var req dto.ReplaceMediaRequest
 	if err := decodeBody(r, &req); err != nil {
@@ -682,6 +733,7 @@ func toPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
 		Category:          string(a.Category),
 		PriceAmount:       a.PriceAmount,
 		PriceCurrency:     a.PriceCurrency,
+		PriceSummaryLabel: placePriceSummaryLabel(a),
 		DurationValue:     a.DurationValue,
 		DurationUnit:      durationUnit,
 		Rating:            a.Rating,
@@ -690,7 +742,7 @@ func toPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
 		Source:            string(a.Source),
 		Status:            string(a.Status),
 		Tags:              a.Tags,
-		VisitInfo:         toVisitInfoResponse(a.VisitInfo),
+		VisitInfo:         toVisitInfoResponse(a.VisitInfo, a.Locale, a.DefaultLocale),
 		Translations:      toTranslationResponses(a.Translations),
 		Media:             media,
 		Author: dto.AuthorResponse{
@@ -701,6 +753,155 @@ func toPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
 		CreatedAt: a.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: a.UpdatedAt.UTC().Format(time.RFC3339),
 		DeletedAt: deletedAt,
+	}
+}
+
+func placePriceSummaryLabel(place *model.Place) string {
+	if place == nil {
+		return ""
+	}
+	amount, currency, isFree, ok := placePriceSummaryValue(place)
+	locale := app.NormalizePlaceLocale(place.Locale)
+	if isFree {
+		return localizedPriceSummaryFree(locale)
+	}
+	if !ok {
+		return localizedPriceSummaryUnknown(locale)
+	}
+	formatted := formatPriceSummaryAmount(amount, currency)
+	if formatted == "" {
+		return localizedPriceSummaryUnknown(locale)
+	}
+	return localizedPriceSummaryFrom(locale, formatted)
+}
+
+func placePriceSummaryValue(place *model.Place) (amount float64, currency string, isFree bool, ok bool) {
+	if place.PriceAmount != nil {
+		if *place.PriceAmount <= 0 {
+			return 0, "", true, true
+		}
+		return *place.PriceAmount, priceSummaryCurrency(place.PriceCurrency, ""), false, true
+	}
+	if amount, currency, ok := placeFeeItemSummaryValue(place.VisitInfo.FeeItems, true); ok {
+		if amount <= 0 {
+			return 0, "", true, true
+		}
+		return amount, currency, false, true
+	}
+	if amount, currency, ok := placeFeeItemSummaryValue(place.VisitInfo.FeeItems, false); ok {
+		if amount <= 0 {
+			return 0, "", true, true
+		}
+		return amount, currency, false, true
+	}
+	if amount, currency, ok := placeFeeDetailSummaryValue(place.VisitInfo.FeeDetails); ok {
+		if amount <= 0 {
+			return 0, "", true, true
+		}
+		return amount, currency, false, true
+	}
+	return 0, "", false, false
+}
+
+func placeFeeItemSummaryValue(items []model.PlaceFeeItem, requiredOnly bool) (float64, string, bool) {
+	var bestAmount float64
+	var bestCurrency string
+	found := false
+	for _, item := range items {
+		if requiredOnly && !item.Required {
+			continue
+		}
+		amount := item.MinAmount
+		if amount == nil {
+			amount = item.Amount
+		}
+		if amount == nil || item.Currency == "" {
+			continue
+		}
+		if !found || *amount < bestAmount {
+			bestAmount = *amount
+			bestCurrency = item.Currency
+			found = true
+		}
+	}
+	return bestAmount, bestCurrency, found
+}
+
+func placeFeeDetailSummaryValue(items []model.PlaceFeeDetail) (float64, string, bool) {
+	var bestAmount float64
+	var bestCurrency string
+	found := false
+	for _, item := range items {
+		if item.Amount == nil || item.Currency == "" {
+			continue
+		}
+		if !found || *item.Amount < bestAmount {
+			bestAmount = *item.Amount
+			bestCurrency = item.Currency
+			found = true
+		}
+	}
+	return bestAmount, bestCurrency, found
+}
+
+func priceSummaryCurrency(primary *string, fallback string) string {
+	if primary != nil && strings.TrimSpace(*primary) != "" {
+		return strings.ToUpper(strings.TrimSpace(*primary))
+	}
+	return strings.ToUpper(strings.TrimSpace(fallback))
+}
+
+func formatPriceSummaryAmount(amount float64, currency string) string {
+	currency = strings.ToUpper(strings.TrimSpace(currency))
+	if currency == "" {
+		return ""
+	}
+	amountText := strconv.FormatFloat(amount, 'f', 2, 64)
+	amountText = strings.TrimRight(strings.TrimRight(amountText, "0"), ".")
+	switch currency {
+	case "USD":
+		return "$" + amountText
+	case "EUR":
+		return amountText + " €"
+	case "KZT":
+		return amountText + " ₸"
+	case "RUB":
+		return amountText + " ₽"
+	default:
+		return amountText + " " + currency
+	}
+}
+
+func localizedPriceSummaryFree(locale string) string {
+	switch app.NormalizePlaceLocale(locale) {
+	case "ru":
+		return "Бесплатно"
+	case "kk":
+		return "Тегін"
+	default:
+		return "Free"
+	}
+}
+
+func localizedPriceSummaryUnknown(locale string) string {
+	switch app.NormalizePlaceLocale(locale) {
+	case "ru":
+		return "цена уточняется"
+	case "kk":
+		return "баға нақтыланады"
+	default:
+		return "price to confirm"
+	}
+}
+
+func localizedPriceSummaryFrom(locale string, amount string) string {
+	switch app.NormalizePlaceLocale(locale) {
+	case "ru":
+		return "от " + amount
+	case "kk":
+		return amount + " бастап"
+	default:
+		return "from " + amount
 	}
 }
 
@@ -854,13 +1055,139 @@ func toAppVisitInfoInput(input *dto.PlaceVisitInfoRequest) *app.PlaceVisitInfoIn
 		BestTime:        input.BestTime,
 		Accessibility:   input.Accessibility,
 		BookingRequired: input.BookingRequired,
-		OpeningHours:    input.OpeningHours,
+		OpeningHours:    toModelOpeningHours(input.OpeningHours),
 		Amenities:       input.Amenities,
 		Audience:        input.Audience,
 		SafetyNotes:     input.SafetyNotes,
 		NearbyIDs:       input.NearbyIDs,
 		LocalizedTips:   input.LocalizedTips,
+		Season:          toModelSeason(input.Season),
+		GettingThere:    model.LocalizedText(input.GettingThere),
+		Included:        toModelLocalizedList(input.Included),
+		Excluded:        toModelLocalizedList(input.Excluded),
+		Links:           toModelLinks(input.Links),
+		FeeDetails:      toAppFeeDetailInputs(input.FeeDetails),
+		PriceNote:       model.LocalizedText(input.PriceNote),
+		TimeOnSite:      toModelVisitDuration(input.TimeOnSite),
+		CarTravelTime:   toModelVisitDuration(input.CarTravelTime),
+		RoadCondition:   input.RoadCondition,
+		FeeItems:        toAppFeeDetailInputs(input.FeeItems),
+		AccessOptions:   toModelAccessOptions(input.AccessOptions),
+		PracticalNotes:  toModelPracticalNotes(input.PracticalNotes),
+		RecommendedItems: toModelRecommendedItems(
+			input.RecommendedItems,
+		),
 	}
+}
+
+func toModelOpeningHours(in *dto.OpeningHoursRequest) *model.PlaceOpeningHours {
+	if in == nil {
+		return nil
+	}
+	return &model.PlaceOpeningHours{
+		Is24Hours: in.Is24Hours,
+		Days:      in.Days,
+		Seasonal:  model.LocalizedText(in.Seasonal),
+		Summary:   model.LocalizedText(in.Summary),
+	}
+}
+
+func toModelSeason(in *dto.SeasonRequest) *model.PlaceSeason {
+	if in == nil {
+		return nil
+	}
+	return &model.PlaceSeason{Months: in.Months, Note: model.LocalizedText(in.Note)}
+}
+
+func toModelVisitDuration(in *dto.VisitDurationRequest) *model.PlaceVisitDuration {
+	if in == nil {
+		return nil
+	}
+	return &model.PlaceVisitDuration{
+		MinMinutes: in.MinMinutes,
+		MaxMinutes: in.MaxMinutes,
+		Note:       model.LocalizedText(in.Note),
+	}
+}
+
+func toModelAccessOptions(in []dto.AccessOptionRequest) []model.PlaceAccessOption {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]model.PlaceAccessOption, 0, len(in))
+	for _, item := range in {
+		result = append(result, model.PlaceAccessOption{
+			TransportType:      item.TransportType,
+			DurationMinMinutes: item.DurationMinMinutes,
+			DurationMaxMinutes: item.DurationMaxMinutes,
+			DistanceKm:         item.DistanceKm,
+			RouteHint:          model.LocalizedText(item.RouteHint),
+			RoadCondition:      item.RoadCondition,
+			Requires4x4:        item.Requires4x4,
+			ParkingNote:        model.LocalizedText(item.ParkingNote),
+			LastSegmentNote:    model.LocalizedText(item.LastSegmentNote),
+			Note:               model.LocalizedText(item.Note),
+			SortOrder:          item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toModelPracticalNotes(in []dto.PracticalNoteRequest) []model.PlacePracticalNote {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]model.PlacePracticalNote, 0, len(in))
+	for _, item := range in {
+		result = append(result, model.PlacePracticalNote{
+			NoteType:  item.NoteType,
+			Title:     model.LocalizedText(item.Title),
+			Body:      model.LocalizedText(item.Body),
+			Priority:  item.Priority,
+			SortOrder: item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toModelRecommendedItems(in []dto.RecommendedItemRequest) []model.PlaceRecommendedItem {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]model.PlaceRecommendedItem, 0, len(in))
+	for _, item := range in {
+		result = append(result, model.PlaceRecommendedItem{
+			ItemType:   item.ItemType,
+			Title:      model.LocalizedText(item.Title),
+			Note:       model.LocalizedText(item.Note),
+			Importance: item.Importance,
+			Season:     item.Season,
+			SortOrder:  item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toModelLocalizedList(in []map[string]string) []model.LocalizedText {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]model.LocalizedText, 0, len(in))
+	for _, item := range in {
+		result = append(result, model.LocalizedText(item))
+	}
+	return result
+}
+
+func toModelLinks(in []dto.LinkDTO) []model.PlaceLink {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]model.PlaceLink, 0, len(in))
+	for _, item := range in {
+		result = append(result, model.PlaceLink{Kind: item.Kind, URL: item.URL})
+	}
+	return result
 }
 
 func toCityLinkResponses(input []model.PlaceCityLink) []dto.PlaceCityLinkResponse {
@@ -891,7 +1218,7 @@ func toTranslationResponses(input map[string]model.PlaceTranslation) map[string]
 	return result
 }
 
-func toVisitInfoResponse(input model.PlaceVisitInfo) dto.PlaceVisitInfoResponse {
+func toVisitInfoResponse(input model.PlaceVisitInfo, locale string, defaultLocale string) dto.PlaceVisitInfoResponse {
 	nearbyIDs := make([]string, 0, len(input.NearbyIDs))
 	for _, id := range input.NearbyIDs {
 		nearbyIDs = append(nearbyIDs, id.String())
@@ -900,13 +1227,287 @@ func toVisitInfoResponse(input model.PlaceVisitInfo) dto.PlaceVisitInfoResponse 
 		BestTime:        input.BestTime,
 		Accessibility:   input.Accessibility,
 		BookingRequired: input.BookingRequired,
-		OpeningHours:    input.OpeningHours,
+		OpeningHours:    toOpeningHoursResponse(input.OpeningHours, locale, defaultLocale),
 		Amenities:       input.Amenities,
 		Audience:        input.Audience,
 		SafetyNotes:     input.SafetyNotes,
 		NearbyIDs:       nearbyIDs,
 		LocalizedTips:   input.LocalizedTips,
+		Season:          toSeasonResponse(input.Season, locale, defaultLocale),
+		GettingThere:    localizedFeeDetailText(input.GettingThere, locale, defaultLocale),
+		Included:        localizedTextList(input.Included, locale, defaultLocale),
+		Excluded:        localizedTextList(input.Excluded, locale, defaultLocale),
+		Links:           toLinkResponses(input.Links),
+		FeeDetails:      toFeeDetailResponses(input.FeeDetails, locale, defaultLocale),
+		PriceNote:       localizedFeeDetailText(input.PriceNote, locale, defaultLocale),
+		TimeOnSite:      toVisitDurationResponse(input.TimeOnSite, locale, defaultLocale),
+		CarTravelTime:   toVisitDurationResponse(input.CarTravelTime, locale, defaultLocale),
+		RoadCondition:   input.RoadCondition,
+		FeeItems:        toFeeItemResponses(input.FeeItems, locale, defaultLocale),
+		AccessOptions:   toAccessOptionResponses(input.AccessOptions, locale, defaultLocale),
+		PracticalNotes:  toPracticalNoteResponses(input.PracticalNotes, locale, defaultLocale),
+		RecommendedItems: toRecommendedItemResponses(
+			input.RecommendedItems,
+			locale,
+			defaultLocale,
+		),
 	}
+}
+
+func toOpeningHoursResponse(in *model.PlaceOpeningHours, locale, defaultLocale string) *dto.OpeningHoursResponse {
+	if in == nil {
+		return nil
+	}
+	return &dto.OpeningHoursResponse{
+		Is24Hours: in.Is24Hours,
+		Days:      in.Days,
+		Seasonal:  localizedFeeDetailText(in.Seasonal, locale, defaultLocale),
+		Summary:   localizedFeeDetailText(in.Summary, locale, defaultLocale),
+	}
+}
+
+func toSeasonResponse(in *model.PlaceSeason, locale, defaultLocale string) *dto.SeasonResponse {
+	if in == nil {
+		return nil
+	}
+	return &dto.SeasonResponse{
+		Months: in.Months,
+		Note:   localizedFeeDetailText(in.Note, locale, defaultLocale),
+	}
+}
+
+func toVisitDurationResponse(in *model.PlaceVisitDuration, locale, defaultLocale string) *dto.VisitDurationResponse {
+	if in == nil {
+		return nil
+	}
+	return &dto.VisitDurationResponse{
+		MinMinutes: in.MinMinutes,
+		MaxMinutes: in.MaxMinutes,
+		Note:       localizedFeeDetailText(in.Note, locale, defaultLocale),
+	}
+}
+
+func localizedTextList(in []model.LocalizedText, locale, defaultLocale string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(in))
+	for _, item := range in {
+		text := localizedFeeDetailText(item, locale, defaultLocale)
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		result = append(result, text)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func toLinkResponses(in []model.PlaceLink) []dto.LinkDTO {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.LinkDTO, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.LinkDTO{Kind: item.Kind, URL: item.URL})
+	}
+	return result
+}
+
+func toAppFeeDetailInputs(input []dto.FeeDetailRequest) []app.PlaceFeeDetailInput {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]app.PlaceFeeDetailInput, 0, len(input))
+	for _, item := range input {
+		result = append(result, app.PlaceFeeDetailInput{
+			Title:         item.Title,
+			Description:   item.Description,
+			Amount:        item.Amount,
+			Type:          item.Type,
+			MinAmount:     item.MinAmount,
+			MaxAmount:     item.MaxAmount,
+			Currency:      item.Currency,
+			Unit:          item.Unit,
+			Required:      item.Required,
+			IsApproximate: item.IsApproximate,
+			Note:          item.Note,
+			SortOrder:     item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toFeeDetailResponses(input []model.PlaceFeeDetail, locale string, defaultLocale string) []dto.FeeDetailResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.FeeDetailResponse, 0, len(input))
+	for _, item := range input {
+		title := localizedFeeDetailText(item.Title, locale, defaultLocale)
+		description := localizedFeeDetailText(item.Description, locale, defaultLocale)
+		if strings.TrimSpace(title) == "" && strings.TrimSpace(description) == "" {
+			continue
+		}
+		result = append(result, dto.FeeDetailResponse{
+			Title:         title,
+			Description:   description,
+			Amount:        item.Amount,
+			Currency:      item.Currency,
+			Unit:          item.Unit,
+			IsApproximate: item.IsApproximate,
+			SortOrder:     item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toFeeItemResponses(input []model.PlaceFeeItem, locale string, defaultLocale string) []dto.FeeDetailResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.FeeDetailResponse, 0, len(input))
+	for _, item := range input {
+		title := localizedFeeDetailText(item.Title, locale, defaultLocale)
+		description := localizedFeeDetailText(item.Description, locale, defaultLocale)
+		note := localizedFeeDetailText(item.Note, locale, defaultLocale)
+		if strings.TrimSpace(title) == "" &&
+			strings.TrimSpace(description) == "" &&
+			strings.TrimSpace(note) == "" &&
+			item.Amount == nil &&
+			item.MinAmount == nil &&
+			item.MaxAmount == nil {
+			continue
+		}
+		result = append(result, dto.FeeDetailResponse{
+			Title:         title,
+			Description:   description,
+			Amount:        item.Amount,
+			Type:          item.Type,
+			MinAmount:     item.MinAmount,
+			MaxAmount:     item.MaxAmount,
+			Currency:      item.Currency,
+			Unit:          item.Unit,
+			Required:      item.Required,
+			IsApproximate: item.IsApproximate,
+			Note:          note,
+			SortOrder:     item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toAccessOptionResponses(input []model.PlaceAccessOption, locale string, defaultLocale string) []dto.AccessOptionResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.AccessOptionResponse, 0, len(input))
+	for _, item := range input {
+		resp := dto.AccessOptionResponse{
+			TransportType:      item.TransportType,
+			DurationMinMinutes: item.DurationMinMinutes,
+			DurationMaxMinutes: item.DurationMaxMinutes,
+			DistanceKm:         item.DistanceKm,
+			RouteHint:          localizedFeeDetailText(item.RouteHint, locale, defaultLocale),
+			RoadCondition:      item.RoadCondition,
+			Requires4x4:        item.Requires4x4,
+			ParkingNote:        localizedFeeDetailText(item.ParkingNote, locale, defaultLocale),
+			LastSegmentNote:    localizedFeeDetailText(item.LastSegmentNote, locale, defaultLocale),
+			Note:               localizedFeeDetailText(item.Note, locale, defaultLocale),
+			SortOrder:          item.SortOrder,
+		}
+		if resp.TransportType == "" &&
+			resp.DurationMinMinutes == nil &&
+			resp.DurationMaxMinutes == nil &&
+			resp.DistanceKm == nil &&
+			resp.RouteHint == "" &&
+			resp.RoadCondition == "" &&
+			!resp.Requires4x4 &&
+			resp.ParkingNote == "" &&
+			resp.LastSegmentNote == "" &&
+			resp.Note == "" {
+			continue
+		}
+		result = append(result, resp)
+	}
+	return result
+}
+
+func toPracticalNoteResponses(input []model.PlacePracticalNote, locale string, defaultLocale string) []dto.PracticalNoteResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.PracticalNoteResponse, 0, len(input))
+	for _, item := range input {
+		resp := dto.PracticalNoteResponse{
+			NoteType:  item.NoteType,
+			Title:     localizedFeeDetailText(item.Title, locale, defaultLocale),
+			Body:      localizedFeeDetailText(item.Body, locale, defaultLocale),
+			Priority:  item.Priority,
+			SortOrder: item.SortOrder,
+		}
+		if resp.NoteType == "" && resp.Title == "" && resp.Body == "" {
+			continue
+		}
+		result = append(result, resp)
+	}
+	return result
+}
+
+func toRecommendedItemResponses(input []model.PlaceRecommendedItem, locale string, defaultLocale string) []dto.RecommendedItemResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.RecommendedItemResponse, 0, len(input))
+	for _, item := range input {
+		resp := dto.RecommendedItemResponse{
+			ItemType:   item.ItemType,
+			Title:      localizedFeeDetailText(item.Title, locale, defaultLocale),
+			Note:       localizedFeeDetailText(item.Note, locale, defaultLocale),
+			Importance: item.Importance,
+			Season:     item.Season,
+			SortOrder:  item.SortOrder,
+		}
+		if resp.ItemType == "" && resp.Title == "" && resp.Note == "" {
+			continue
+		}
+		result = append(result, resp)
+	}
+	return result
+}
+
+func localizedFeeDetailText(values map[string]string, locale string, defaultLocale string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	candidates := []string{
+		app.NormalizePlaceLocale(locale),
+		app.NormalizePlaceLocale(defaultLocale),
+		"en",
+		"ru",
+		"kk",
+	}
+	seen := make(map[string]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		if text := strings.TrimSpace(values[candidate]); text != "" {
+			return text
+		}
+	}
+	for _, text := range values {
+		if text = strings.TrimSpace(text); text != "" {
+			return text
+		}
+	}
+	return ""
 }
 
 func decodeBody(r *http.Request, target any) error {

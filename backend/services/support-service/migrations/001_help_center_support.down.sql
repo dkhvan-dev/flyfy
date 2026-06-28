@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS support_ticket_events;
+DROP TABLE IF EXISTS support_tickets;
+DROP TABLE IF EXISTS help_article_feedback;
+DROP TABLE IF EXISTS help_article_related_articles;
+DROP TABLE IF EXISTS help_article_actions;
+DROP TABLE IF EXISTS help_article_tags;
+DROP TABLE IF EXISTS help_article_surfaces;
+DROP TABLE IF EXISTS help_article_translations;
+DROP TABLE IF EXISTS help_articles;
+DROP TABLE IF EXISTS help_categories;

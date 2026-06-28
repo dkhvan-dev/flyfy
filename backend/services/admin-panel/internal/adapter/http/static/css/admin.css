@@ -289,6 +289,19 @@ h3 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 12px;
+}
+
+.check-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
 .localized-fields {
   display: grid;
   gap: 12px;
@@ -617,6 +630,12 @@ h3 {
   font-weight: 600;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
 .span-two {
   grid-column: 1 / -1;
 }
@@ -648,6 +667,25 @@ textarea:focus {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 500;
+}
+
+.checkline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.checkline input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.checkline span {
+  display: grid;
+  gap: 4px;
 }
 
 .field-error {
@@ -691,6 +729,149 @@ textarea:focus {
 
 .filter-grid.compact {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.support-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.support-ticket-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.support-ticket-summary-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.support-ticket-summary-head p {
+  margin: 4px 0 0;
+}
+
+.support-side-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.support-saved-reply-list {
+  display: grid;
+  gap: 10px;
+}
+
+.support-saved-reply-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.support-saved-reply-card:hover,
+.support-saved-reply-card:focus {
+  border-color: rgba(23, 107, 87, 0.38);
+  background: rgba(23, 107, 87, 0.06);
+  outline: none;
+}
+
+.support-saved-reply-card span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.support-chat-card {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.support-chat {
+  display: grid;
+  gap: 12px;
+}
+
+.support-chat-bubble {
+  display: grid;
+  max-width: min(72ch, 82%);
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px 14px;
+  overflow-wrap: anywhere;
+}
+
+.support-chat-bubble-user {
+  justify-self: start;
+  background: #fff;
+}
+
+.support-chat-bubble-agent {
+  justify-self: end;
+  border-color: rgba(23, 107, 87, 0.22);
+  background: rgba(23, 107, 87, 0.08);
+}
+
+.support-chat-bubble-system {
+  max-width: 100%;
+  justify-self: center;
+  background: var(--surface-soft);
+}
+
+.support-chat-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.support-chat-author span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.support-chat-bubble p {
+  margin: 0;
+}
+
+.support-chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.support-chat-attachments .block {
+  flex-basis: 100%;
+}
+
+.support-chat-attachment {
+  padding: 7px 10px;
+  font-size: 0.84rem;
+}
+
+.support-chat-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.support-chat-composer textarea {
+  min-height: 72px;
 }
 
 .filters {
@@ -774,6 +955,69 @@ textarea:focus {
   font-size: 0.74rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.support-language-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 44px;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+}
+
+.support-language-dropdown > summary {
+  list-style: none;
+}
+
+.support-language-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.support-language-dropdown[open] .support-language-button {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(23, 107, 87, 0.12);
+}
+
+.support-language-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.support-language-options .filter-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.support-language-option input {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.support-timezone-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-timezone-suggestion span {
+  flex: 1 1 auto;
+}
+
+.support-timezone-suggestion small {
+  max-width: 58%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-actions {
@@ -1470,7 +1714,8 @@ tr:last-child td {
   }
 
   .section-head,
-  .split {
+  .split,
+  .support-detail-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1494,6 +1739,18 @@ tr:last-child td {
 
   .dashboard-item > .button,
   .dashboard-panel-head > .button {
+    width: fit-content;
+  }
+
+  .support-chat-bubble {
+    max-width: 100%;
+  }
+
+  .support-chat-composer {
+    grid-template-columns: 1fr;
+  }
+
+  .support-chat-composer button {
     width: fit-content;
   }
 

@@ -76,6 +76,17 @@ void main() {
       );
     },
   );
+
+  test('connectWebSocket does not start duplicate in-flight connections', () {
+    final ws = _DelayedConnectChatWsService();
+    final provider = ChatProvider(chatApi: _FakeChatApi(), wsService: ws);
+    addTearDown(provider.dispose);
+
+    provider.connectWebSocket();
+    provider.connectWebSocket();
+
+    expect(ws.connectCalls, 1);
+  });
 }
 
 class _FakeChatApi extends ChatApi {
@@ -175,5 +186,30 @@ class _FakeChatWsService extends ChatWsService {
 
   void addEvent(ChatEvent event) {
     _controller.add(event);
+  }
+}
+
+class _DelayedConnectChatWsService extends ChatWsService {
+  final _controller = StreamController<ChatEvent>.broadcast();
+  var connectCalls = 0;
+
+  @override
+  Stream<ChatEvent> get events => _controller.stream;
+
+  @override
+  bool get isConnected => false;
+
+  @override
+  Future<void> connect() {
+    connectCalls += 1;
+    return Completer<void>().future;
+  }
+
+  @override
+  void disconnect() {}
+
+  @override
+  void dispose() {
+    _controller.close();
   }
 }

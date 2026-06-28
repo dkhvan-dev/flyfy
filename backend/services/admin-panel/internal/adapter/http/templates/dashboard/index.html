@@ -51,6 +51,41 @@
         {{end}}
       </article>
     {{end}}
+    {{if .Data.Support}}
+      <article class="dashboard-panel card">
+        <div class="dashboard-panel-head">
+          <div>
+            <p class="eyebrow">{{t $.Locale "dashboard.latestIncoming"}}</p>
+            <h2>{{t $.Locale .Data.Support.TitleKey}}</h2>
+          </div>
+          <a class="button" href="{{.Data.Support.ViewAllURL}}">{{t $.Locale "action.viewAll"}}</a>
+        </div>
+
+        {{if .Data.Support.Error}}
+          <div class="empty">{{.Data.Support.Error}}</div>
+        {{else if .Data.Support.Items}}
+          <div class="dashboard-items">
+            {{range .Data.Support.Items}}
+              <div class="dashboard-item">
+                <div class="dashboard-item-main">
+                  <a class="dashboard-item-title" href="{{.DetailURL}}">{{.UserLabel}}</a>
+                  {{if .LastMessagePreview}}{{if ne .LastMessagePreview "-"}}<span class="muted block">{{.LastMessagePreview}}</span>{{end}}{{end}}
+                  <div class="meta-row compact">
+                    <span class="{{.BadgeClass}}">{{t $.Locale (printf "support.status.%s" .Item.Status)}}</span>
+                    <span>{{t $.Locale "support.priority"}} {{t $.Locale (printf "support.priority.%s" .Item.Priority)}}</span>
+                    {{if .SLA.DisplayLabel}}<span>{{.SLA.DisplayLabel}}</span>{{end}}
+                    <span>{{formatTime .Item.LastMessageAt (staffTimezone $.Staff)}}</span>
+                  </div>
+                </div>
+                <a class="button" href="{{.DetailURL}}">{{t $.Locale "action.open"}}</a>
+              </div>
+            {{end}}
+          </div>
+        {{else}}
+          <div class="empty">{{t $.Locale .Data.Support.EmptyKey}}</div>
+        {{end}}
+      </article>
+    {{end}}
   </div>
 </section>
 {{template "pageEnd" .}}

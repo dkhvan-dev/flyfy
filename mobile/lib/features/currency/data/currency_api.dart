@@ -55,6 +55,32 @@ class CurrencyApi {
     return currencies;
   }
 
+  Future<CurrencyRateSnapshot> latestRates({
+    required String baseCurrency,
+    required Iterable<String> quoteCurrencies,
+  }) async {
+    final base = baseCurrency.trim().toUpperCase();
+    final quotes = quoteCurrencies
+        .map((currency) => currency.trim().toUpperCase())
+        .where((currency) => currency.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+
+    final response = await _apiClient.dio.get(
+      '/exchange-rates/latest',
+      queryParameters: {
+        'base': base,
+        if (quotes.isNotEmpty) 'quotes': quotes.join(','),
+      },
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    return CurrencyRateSnapshot.fromJson(
+      data is Map<String, dynamic> ? data : const <String, dynamic>{},
+    );
+  }
+
   String? _referenceLocale(String? locale) {
     final normalized = locale?.trim().toLowerCase().split(RegExp('[-_]')).first;
     return switch (normalized) {

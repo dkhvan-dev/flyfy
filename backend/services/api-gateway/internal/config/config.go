@@ -76,6 +76,7 @@ type DownstreamsConfig struct {
 	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	StickerService      string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	NotificationService string `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	SupportService      string `env:"SUPPORT_SERVICE_HTTP_URL, default=http://support-service:8100"`
 	AdminPanelService   string `env:"ADMIN_PANEL_SERVICE_HTTP_URL, default=http://admin-panel:8095"`
 }
 

@@ -90,6 +90,21 @@ func (c *Client) GetPublicContent(ctx context.Context, fileID uuid.UUID) (*model
 	return &model.FileContent{ContentType: contentType, Content: raw}, nil
 }
 
+func (c *Client) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (model.FileDownloadURL, error) {
+	var response createDownloadURLResponse
+	if err := c.doJSON(ctx, http.MethodPost, "/v1/files/"+fileID.String()+"/download-url", nil, &response); err != nil {
+		return model.FileDownloadURL{}, err
+	}
+	expiresAt, err := time.Parse(time.RFC3339, strings.TrimSpace(response.ExpiresAt))
+	if err != nil {
+		return model.FileDownloadURL{}, fmt.Errorf("file-manager returned invalid download expiry: %w", err)
+	}
+	return model.FileDownloadURL{
+		URL:       strings.TrimSpace(response.URL),
+		ExpiresAt: expiresAt,
+	}, nil
+}
+
 func (c *Client) doJSON(ctx context.Context, method string, path string, body any, dest any) error {
 	var reader io.Reader
 	if body != nil {
@@ -174,4 +189,9 @@ type createUploadRequest struct {
 
 type createUploadResponse struct {
 	FileID string `json:"fileId"`
+}
+
+type createDownloadURLResponse struct {
+	URL       string `json:"url"`
+	ExpiresAt string `json:"expiresAt"`
 }

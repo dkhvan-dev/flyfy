@@ -25,11 +25,9 @@ void main() {
 
       expect(source, contains('ReferenceApi'));
       expect(source, contains('getCountry('));
-      expect(source, contains('listTimezones('));
       expect(source, contains('listCurrencies('));
       expect(source, contains('normalizeReferenceCountryCode('));
       expect(source, contains('normalizeReferenceCurrencyCode('));
-      expect(source, contains('referenceTimezoneLabel('));
       expect(source, contains('withDefaultReferenceCurrency('));
       expect(source, contains('_currencyCodeWithSymbol('));
       expect(source, contains(r"'$code ($symbol)'"));
@@ -49,7 +47,8 @@ void main() {
       expect(overviewSource, contains('profile.primaryPhoneDisplay'));
       expect(overviewSource, contains('l10n.profileCountry'));
       expect(overviewSource, contains('labels?.country'));
-      expect(overviewSource, contains('l10n.profileTimezone'));
+      expect(overviewSource, isNot(contains('l10n.profileTimezone')));
+      expect(overviewSource, isNot(contains('profile.timezone')));
       expect(overviewSource, contains('l10n.profileCurrency'));
       expect(overviewSource, contains('labels?.currency'));
       expect(overviewSource, isNot(contains('l10n.profileLocale')));
@@ -118,6 +117,90 @@ void main() {
       expect(languageTileSource, contains('onTap: _openAppLanguageSettings'));
     },
   );
+
+  test('profile settings action subtitles do not end with periods', () async {
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(
+      ruArb,
+      contains(
+        '"profileSettingsEditSubtitle": "Измените имя, фото, описание и базовые данные профиля"',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"profileNotificationsRowSubtitle": "Push, email и SMS-уведомления по вашим активностям"',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"profileSecurityRowSubtitle": "Защита аккаунта, экспорт данных и настройки приватности"',
+      ),
+    );
+
+    expect(
+      enArb,
+      contains(
+        '"profileSettingsEditSubtitle": "Update your name, photo, bio, and core profile details"',
+      ),
+    );
+    expect(
+      enArb,
+      contains(
+        '"profileNotificationsRowSubtitle": "Push, email, and SMS updates for your activity flow"',
+      ),
+    );
+    expect(
+      enArb,
+      contains(
+        '"profileSecurityRowSubtitle": "Account protection, data export, and privacy controls"',
+      ),
+    );
+
+    expect(
+      kkArb,
+      contains(
+        '"profileSettingsEditSubtitle": "Атыңызды, фотоңызды, биоңызды және негізгі профиль деректерін өзгертіңіз"',
+      ),
+    );
+    expect(
+      kkArb,
+      contains(
+        '"profileNotificationsRowSubtitle": "Белсенділіктерге қатысты push, email және SMS жаңартулары"',
+      ),
+    );
+    expect(
+      kkArb,
+      contains(
+        '"profileSecurityRowSubtitle": "Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары"',
+      ),
+    );
+  });
+
+  test('profile settings logout dialog uses amber branded chrome', () async {
+    final source = await File(
+      'lib/screens/profile/profile_settings_screen.dart',
+    ).readAsString();
+    final dialogStart = source.indexOf('class _LogoutConfirmDialog');
+
+    expect(dialogStart, isNonNegative);
+
+    final dialogSource = source.substring(dialogStart);
+
+    expect(source, contains('_LogoutConfirmDialog('));
+    expect(source, isNot(contains('return AlertDialog(')));
+    expect(dialogSource, contains('Dialog('));
+    expect(dialogSource, contains('AppColors.accent'));
+    expect(dialogSource, contains('LinearGradient('));
+    expect(dialogSource, contains('Icons.logout_rounded'));
+    expect(dialogSource, contains('profileScaled(context'));
+    expect(dialogSource, contains('SafeArea('));
+    expect(dialogSource, contains('ConstrainedBox('));
+  });
 }
 
 int _headingIndex(String source, String titleExpression) {

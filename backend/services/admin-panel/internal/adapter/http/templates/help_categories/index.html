@@ -1,0 +1,92 @@
+{{define "help_categories/index"}}
+{{template "pageStart" .}}
+{{$input := .Data.Input}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "help.eyebrow"}}</p>
+      <h1>{{t .Locale "help.categoriesTitle"}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="/admin/help/articles">{{t .Locale "nav.helpContent"}}</a>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "help.categoryId"}}</th>
+            <th>{{t .Locale "field.slug"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "help.sortOrder"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td><code>{{.Item.ID}}</code></td>
+              <td>{{.Item.Slug}}</td>
+              <td><span class="{{.BadgeClass}}">{{t $.Locale (printf "help.status.%s" .Item.Status)}}</span></td>
+              <td>{{.Item.SortOrder}}</td>
+              <td>{{formatTime .Item.UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "help.categoriesEmpty"}}</div>
+  {{end}}
+
+  {{if .Data.CanEdit}}
+    <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "help.categoryFormTitle"}}</h2>
+      <div class="grid four">
+        <label>
+          <span>{{t .Locale "help.categoryId"}}</span>
+          <input name="category_id" value="{{$input.CategoryID}}" required maxlength="80" placeholder="payments">
+        </label>
+        <label>
+          <span>{{t .Locale "field.slug"}}</span>
+          <input name="slug" value="{{$input.Slug}}" maxlength="120" placeholder="payments">
+        </label>
+        <label>
+          <span>{{t .Locale "field.status"}}</span>
+          <select name="status" required>
+            {{range .Data.FormStatusOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          <span>{{t .Locale "help.sortOrder"}}</span>
+          <input name="sort_order" type="number" value="{{$input.SortOrder}}" min="0" step="1">
+        </label>
+      </div>
+      <button class="primary" type="submit">{{t .Locale "help.saveCategory"}}</button>
+    </form>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

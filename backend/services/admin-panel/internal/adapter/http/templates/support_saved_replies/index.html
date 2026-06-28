@@ -1,0 +1,154 @@
+{{define "support_saved_replies/index"}}
+{{template "pageStart" .}}
+{{$input := .Data.Input}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "support.eyebrow"}}</p>
+      <h1>{{t .Locale "support.savedRepliesTitle"}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="/admin/support/tickets">{{t .Locale "nav.support"}}</a>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "support.category"}}</span>
+        <select name="category">
+          {{range .Data.CategoryOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "support.replyId"}}</th>
+            <th>{{t .Locale "support.savedReplyTitle"}}</th>
+            <th>{{t .Locale "support.savedReplyBody"}}</th>
+            <th>{{t .Locale "support.category"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "field.tags"}}</th>
+            <th>{{t .Locale "help.translations"}}</th>
+            <th>{{t .Locale "help.sortOrder"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td><code>{{.Item.ID}}</code></td>
+              <td><strong>{{.Title}}</strong></td>
+              <td>{{.BodyPreview}}</td>
+              <td>{{t $.Locale (printf "support.category.%s" .Item.Category)}}</td>
+              <td><span class="{{.BadgeClass}}">{{t $.Locale (printf "help.status.%s" .Item.Status)}}</span></td>
+              <td>{{if .Tags}}{{.Tags}}{{else}}-{{end}}</td>
+              <td>{{.Translations}}</td>
+              <td>{{.Item.SortOrder}}</td>
+              <td>{{formatTime .Item.UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "support.savedRepliesEmpty"}}</div>
+  {{end}}
+
+  {{if .Data.CanManage}}
+    <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "support.savedReplyFormTitle"}}</h2>
+      <div class="grid four">
+        <label>
+          <span>{{t .Locale "support.replyId"}}</span>
+          <input name="reply_id" value="{{$input.ReplyID}}" required maxlength="120" placeholder="meeting-point">
+          <span class="muted">{{t .Locale "support.replyIdHint"}}</span>
+        </label>
+        <label>
+          <span>{{t .Locale "support.category"}}</span>
+          <select name="category" required>
+            {{range .Data.FormCategoryOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          <span>{{t .Locale "field.status"}}</span>
+          <select name="status" required>
+            {{range .Data.FormStatusOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          <span>{{t .Locale "help.sortOrder"}}</span>
+          <input name="sort_order" type="number" value="{{$input.SortOrder}}" min="0" step="1">
+        </label>
+      </div>
+      <label>
+        <span>{{t .Locale "field.tags"}}</span>
+        <input name="tags" value="{{$input.Tags}}" placeholder="{{t .Locale "placeholder.helpTags"}}">
+      </label>
+
+      <h3>EN</h3>
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "support.savedReplyTitle"}}</span>
+          <input name="title_en" value="{{$input.EN.Title}}" required>
+        </label>
+        <label>
+          <span>{{t .Locale "support.savedReplyBody"}}</span>
+          <textarea name="body_en" rows="3" required>{{$input.EN.Body}}</textarea>
+        </label>
+      </div>
+
+      <h3>RU</h3>
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "support.savedReplyTitle"}}</span>
+          <input name="title_ru" value="{{$input.RU.Title}}">
+        </label>
+        <label>
+          <span>{{t .Locale "support.savedReplyBody"}}</span>
+          <textarea name="body_ru" rows="3">{{$input.RU.Body}}</textarea>
+        </label>
+      </div>
+
+      <h3>KK</h3>
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "support.savedReplyTitle"}}</span>
+          <input name="title_kk" value="{{$input.KK.Title}}">
+        </label>
+        <label>
+          <span>{{t .Locale "support.savedReplyBody"}}</span>
+          <textarea name="body_kk" rows="3">{{$input.KK.Body}}</textarea>
+        </label>
+      </div>
+
+      <button class="primary" type="submit">{{t .Locale "support.saveSavedReply"}}</button>
+    </form>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

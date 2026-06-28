@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inflap/features/notifications/data/notification_api.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/session_provider.dart';
@@ -7,6 +10,18 @@ import 'package:inflap/screens/notifications/notifications_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test('notifications do not use profile timezone as user timezone', () async {
+    final source = await File(
+      'lib/screens/notifications/notifications_screen.dart',
+    ).readAsString();
+
+    expect(source, isNot(contains('profile?.timezone')));
+    expect(
+      source,
+      isNot(contains('userTimezoneId = context.read<SessionProvider>()')),
+    );
+  });
+
   testWidgets('localizes latest category preview text', (tester) async {
     final latest = _storyLikeNotification();
     final api = _FakeNotificationInboxClient(
@@ -39,6 +54,37 @@ void main() {
       find.byKey(const ValueKey('notification-category-story')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('caps notification category unread badge at 99 plus', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      categories: [
+        NotificationCategorySummary(
+          category: 'support',
+          unreadCount: 150,
+          totalCount: 150,
+          latest: _supportReplyNotification(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationsOverviewScreen(notificationApi: api),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('99+'), findsOneWidget);
+    expect(find.textContaining('150'), findsNothing);
   });
 
   testWidgets('localizes activity and excursion cancellation previews', (
@@ -84,6 +130,201 @@ void main() {
     expect(find.text('A traveler cancelled this excursion.'), findsNothing);
   });
 
+  testWidgets('shows support replies as a dedicated support category', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      categories: [
+        NotificationCategorySummary(
+          category: 'support',
+          unreadCount: 1,
+          totalCount: 1,
+          latest: _supportReplyNotification(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationsOverviewScreen(notificationApi: api),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Поддержка'), findsOneWidget);
+    expect(find.text('Поддержка ответила'), findsOneWidget);
+    expect(find.text('Поддержка ответила в вашем обращении.'), findsOneWidget);
+    expect(find.text('Категория support'), findsNothing);
+    expect(find.text('Support replied'), findsNothing);
+    expect(find.text('Open support chat'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('notification-category-support')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hides chat message notifications from notification center', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      categories: [
+        NotificationCategorySummary(
+          category: 'chat',
+          unreadCount: 8,
+          totalCount: 8,
+          latest: _chatMessageNotification(),
+        ),
+        NotificationCategorySummary(
+          category: 'support',
+          unreadCount: 1,
+          totalCount: 1,
+          latest: _supportReplyNotification(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationsOverviewScreen(notificationApi: api),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('notification-category-chat')),
+      findsNothing,
+    );
+    expect(find.text('Новое сообщение от devdone'), findsNothing);
+    expect(find.text('Поддержка'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('notification-category-support')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hides chat messages from notification category details', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      notifications: [_chatMessageNotification()],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationCategoryScreen(
+            category: 'chat',
+            notificationApi: api,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('notification-card-chat-message')),
+      findsNothing,
+    );
+    expect(find.text('Новое сообщение от devdone'), findsNothing);
+    expect(find.text('В этой категории пока нет уведомлений'), findsOneWidget);
+  });
+
+  testWidgets('marks notification read before opening deep link', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      notifications: [_supportReplyNotification()],
+    );
+    final router = GoRouter(
+      initialLocation: '/notifications/support',
+      routes: [
+        GoRoute(
+          path: '/notifications/:category',
+          builder: (_, state) => NotificationCategoryScreen(
+            category: state.pathParameters['category'] ?? 'support',
+            notificationApi: api,
+          ),
+        ),
+        GoRoute(
+          path: '/help/support',
+          builder: (_, _) => const Scaffold(body: Text('Support destination')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp.router(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('notification-card-support-replied')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.markedNotificationIds, ['support-replied']);
+    expect(find.text('Support destination'), findsOneWidget);
+  });
+
+  testWidgets('marks unread notifications read when they become visible', (
+    tester,
+  ) async {
+    final notifications = List<UserNotification>.generate(
+      10,
+      (index) => _longContentNotification(index),
+    );
+    final api = _FakeNotificationInboxClient(notifications: notifications);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationCategoryScreen(
+            category: 'content',
+            notificationApi: api,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.markedNotificationIds, contains('content-visible-0'));
+    expect(api.markedNotificationIds, isNot(contains('content-visible-9')));
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+
+    expect(api.markedNotificationIds, contains('content-visible-9'));
+  });
+
   testWidgets('localizes templated notification text', (tester) async {
     final api = _FakeNotificationInboxClient(
       notifications: [_storyLikeNotification()],
@@ -109,6 +350,37 @@ void main() {
     expect(find.text('devdone likes your story'), findsNothing);
     expect(
       find.byKey(const ValueKey('notification-card-notification-1')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('localizes support reply notification text', (tester) async {
+    final api = _FakeNotificationInboxClient(
+      notifications: [_supportReplyNotification()],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationCategoryScreen(
+            category: 'support',
+            notificationApi: api,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Поддержка ответила'), findsOneWidget);
+    expect(find.text('Поддержка ответила в вашем обращении.'), findsOneWidget);
+    expect(find.text('Support replied'), findsNothing);
+    expect(find.text('Open support chat'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('notification-card-support-replied')),
       findsOneWidget,
     );
   });
@@ -159,14 +431,66 @@ UserNotification _storyLikeNotification() {
   );
 }
 
+UserNotification _supportReplyNotification() {
+  return UserNotification(
+    id: 'support-replied',
+    category: 'support',
+    priority: 'normal',
+    title: 'Support replied',
+    body: 'Open support chat',
+    imageUrl: '',
+    deepLink: '/help/support',
+    data: const {'event': 'support_ticket_replied'},
+    createdAt: DateTime.now().toUtc(),
+    readAt: null,
+  );
+}
+
+UserNotification _chatMessageNotification() {
+  return UserNotification(
+    id: 'chat-message',
+    category: 'chat',
+    priority: 'normal',
+    title: 'New message from devdone',
+    body: 'Open chat',
+    imageUrl: '',
+    deepLink: '/chats/conversation-1',
+    data: const {
+      'event': 'chat_message',
+      'actorNickname': 'devdone',
+      'conversationId': 'conversation-1',
+    },
+    createdAt: DateTime.now().toUtc(),
+    readAt: null,
+  );
+}
+
+UserNotification _longContentNotification(int index) {
+  return UserNotification(
+    id: 'content-visible-$index',
+    category: 'content',
+    priority: 'normal',
+    title: 'Story like $index',
+    body:
+        'Long notification body $index. This keeps each notification card tall '
+        'enough so only part of the list is visible at once in widget tests.',
+    imageUrl: '',
+    deepLink: '',
+    data: {'type': 'story_like', 'actorNickname': 'devdone$index'},
+    createdAt: DateTime.now().toUtc().subtract(Duration(minutes: index)),
+    readAt: null,
+  );
+}
+
 class _FakeNotificationInboxClient implements NotificationInboxClient {
-  const _FakeNotificationInboxClient({
+  _FakeNotificationInboxClient({
     this.categories = const [],
     this.notifications = const [],
   });
 
   final List<NotificationCategorySummary> categories;
   final List<UserNotification> notifications;
+  final List<String> markedNotificationIds = [];
 
   @override
   Future<List<NotificationCategorySummary>> listNotificationCategories({
@@ -189,6 +513,14 @@ class _FakeNotificationInboxClient implements NotificationInboxClient {
     required String category,
   }) async {
     return const NotificationReadResult(updatedCount: 0);
+  }
+
+  @override
+  Future<NotificationReadResult> markNotificationRead({
+    required String notificationId,
+  }) async {
+    markedNotificationIds.add(notificationId);
+    return const NotificationReadResult(updatedCount: 1);
   }
 
   @override

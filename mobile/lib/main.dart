@@ -18,9 +18,11 @@ import 'features/notifications/data/push_registration_service.dart';
 import 'features/notifications/presentation/push_notification_banner.dart';
 import 'features/notifications/presentation/push_notification_coordinator.dart';
 import 'providers/auth_provider.dart';
+import 'providers/currency_rate_provider.dart';
 import 'providers/home_location_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/notification_badge_provider.dart';
 import 'providers/routing_provider.dart';
 import 'providers/user_routes_provider.dart';
 import 'core/router/app_router.dart';
@@ -116,32 +118,15 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
-        ChangeNotifierProxyProvider2<
-          SessionProvider,
-          LocaleProvider,
-          HomeLocationProvider
-        >(
-          create: (_) => HomeLocationProvider(),
-          update: (_, session, localeProvider, provider) {
-            final homeLocationProvider = provider ?? HomeLocationProvider();
-            unawaited(
-              homeLocationProvider.setProfileFallback(
-                HomeLocationPreference.fromProfile(
-                  countryCode: session.profile?.countryCode,
-                  timezone: session.profile?.timezone,
-                ),
-                languageCode: localeProvider.locale.languageCode,
-              ),
-            );
-            return homeLocationProvider;
-          },
-        ),
+        ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+        ChangeNotifierProvider(create: (_) => CurrencyRateProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionScheduleProvider()),
         ChangeNotifierProvider(create: (_) => RoutingProvider()),
         ChangeNotifierProvider(create: (_) => UserRoutesProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationBadgeProvider()),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],
       child: Consumer<LocaleProvider>(

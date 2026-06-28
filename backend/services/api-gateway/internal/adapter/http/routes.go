@@ -53,6 +53,8 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	checklistLimit := 180
 	routingLimit := 240
 	userRouteLimit := 180
+	helpReadLimit := 180
+	supportWriteLimit := 60
 
 	return []RoutePolicy{
 		{
@@ -681,6 +683,71 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "currency",
 			RateLimitPerMinute: &currencyLimit,
 			RewritePrefix:      "/v1/exchange-rates",
+		},
+		{
+			Name:               "help-article-feedback-upsert",
+			Method:             "PUT",
+			Prefix:             apiPrefix + "/help/articles/",
+			PathSuffix:         "/feedback",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "support",
+			RateLimitPerMinute: &supportWriteLimit,
+			RewritePrefix:      "/v1/help/articles",
+		},
+		{
+			Name:               "help-article-feedback-legacy-create",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/help/articles/",
+			PathSuffix:         "/feedback",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "support",
+			RateLimitPerMinute: &supportWriteLimit,
+			RewritePrefix:      "/v1/help/articles",
+		},
+		{
+			Name:               "help-articles-read",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/help/articles",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "support",
+			RateLimitPerMinute: &helpReadLimit,
+			RewritePrefix:      "/v1/help/articles",
+		},
+		{
+			Name:               "help-categories-read",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/help/categories",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "support",
+			RateLimitPerMinute: &helpReadLimit,
+			RewritePrefix:      "/v1/help/categories",
+		},
+		{
+			Name:               "support-conversation-read",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/support/conversation",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "support",
+			RateLimitPerMinute: &helpReadLimit,
+			RewritePrefix:      "/v1/support/conversation",
+		},
+		{
+			Name:               "support-tickets-create",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/support/tickets",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "support",
+			RateLimitPerMinute: &supportWriteLimit,
+			RewritePrefix:      "/v1/support/tickets",
+		},
+		{
+			Name:               "support-tickets-read",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/support/tickets",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "support",
+			RateLimitPerMinute: &helpReadLimit,
+			RewritePrefix:      "/v1/support/tickets",
 		},
 		{
 			Name:               "routing",

@@ -63,10 +63,11 @@ func (r *PGStaffRepository) List(ctx context.Context, limit int, offset int) ([]
 		if err != nil {
 			return nil, err
 		}
-		_, roles, err := r.GetPermissions(ctx, item.ID)
+		permissions, roles, err := r.GetPermissions(ctx, item.ID)
 		if err != nil {
 			return nil, err
 		}
+		item.Permissions = permissions
 		item.Roles = roles
 		items = append(items, item)
 	}

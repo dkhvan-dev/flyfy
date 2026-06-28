@@ -57,16 +57,99 @@ type PlaceCityLinkRequest struct {
 	CityID      string `json:"cityId"`
 }
 
+type LinkDTO struct {
+	Kind string `json:"kind"`
+	URL  string `json:"url"`
+}
+
+type OpeningHoursRequest struct {
+	Is24Hours bool              `json:"is24Hours"`
+	Days      map[string]any    `json:"days,omitempty"`
+	Seasonal  map[string]string `json:"seasonal,omitempty"`
+	Summary   map[string]string `json:"summary,omitempty"`
+}
+
+type SeasonRequest struct {
+	Months []int             `json:"months,omitempty"`
+	Note   map[string]string `json:"note,omitempty"`
+}
+
+type VisitDurationRequest struct {
+	MinMinutes *int              `json:"minMinutes,omitempty"`
+	MaxMinutes *int              `json:"maxMinutes,omitempty"`
+	Note       map[string]string `json:"note,omitempty"`
+}
+
+type AccessOptionRequest struct {
+	TransportType      string            `json:"transportType,omitempty"`
+	DurationMinMinutes *int              `json:"durationMinMinutes,omitempty"`
+	DurationMaxMinutes *int              `json:"durationMaxMinutes,omitempty"`
+	DistanceKm         *float64          `json:"distanceKm,omitempty"`
+	RouteHint          map[string]string `json:"routeHint,omitempty"`
+	RoadCondition      string            `json:"roadCondition,omitempty"`
+	Requires4x4        bool              `json:"requires4x4,omitempty"`
+	ParkingNote        map[string]string `json:"parkingNote,omitempty"`
+	LastSegmentNote    map[string]string `json:"lastSegmentNote,omitempty"`
+	Note               map[string]string `json:"note,omitempty"`
+	SortOrder          int               `json:"sortOrder,omitempty"`
+}
+
+type PracticalNoteRequest struct {
+	NoteType  string            `json:"noteType,omitempty"`
+	Title     map[string]string `json:"title,omitempty"`
+	Body      map[string]string `json:"body,omitempty"`
+	Priority  string            `json:"priority,omitempty"`
+	SortOrder int               `json:"sortOrder,omitempty"`
+}
+
+type RecommendedItemRequest struct {
+	ItemType   string            `json:"itemType,omitempty"`
+	Title      map[string]string `json:"title,omitempty"`
+	Note       map[string]string `json:"note,omitempty"`
+	Importance string            `json:"importance,omitempty"`
+	Season     string            `json:"season,omitempty"`
+	SortOrder  int               `json:"sortOrder,omitempty"`
+}
+
 type PlaceVisitInfoRequest struct {
-	BestTime        string            `json:"bestTime"`
-	Accessibility   string            `json:"accessibility"`
-	BookingRequired *bool             `json:"bookingRequired"`
-	OpeningHours    string            `json:"openingHours"`
-	Amenities       []string          `json:"amenities"`
-	Audience        []string          `json:"audience"`
-	SafetyNotes     []string          `json:"safetyNotes"`
-	NearbyIDs       []string          `json:"nearbyIds"`
-	LocalizedTips   map[string]string `json:"localizedTips"`
+	BestTime         string                   `json:"bestTime"`
+	Accessibility    string                   `json:"accessibility"`
+	BookingRequired  *bool                    `json:"bookingRequired"`
+	OpeningHours     *OpeningHoursRequest     `json:"openingHours,omitempty"`
+	Amenities        []string                 `json:"amenities"`
+	Audience         []string                 `json:"audience"`
+	SafetyNotes      []string                 `json:"safetyNotes"`
+	NearbyIDs        []string                 `json:"nearbyIds"`
+	LocalizedTips    map[string]string        `json:"localizedTips"`
+	Season           *SeasonRequest           `json:"season,omitempty"`
+	GettingThere     map[string]string        `json:"gettingThere,omitempty"`
+	Included         []map[string]string      `json:"included,omitempty"`
+	Excluded         []map[string]string      `json:"excluded,omitempty"`
+	Links            []LinkDTO                `json:"links,omitempty"`
+	FeeDetails       []FeeDetailRequest       `json:"feeDetails,omitempty"`
+	PriceNote        map[string]string        `json:"priceNote,omitempty"`
+	TimeOnSite       *VisitDurationRequest    `json:"timeOnSite,omitempty"`
+	CarTravelTime    *VisitDurationRequest    `json:"carTravelTime,omitempty"`
+	RoadCondition    string                   `json:"roadCondition,omitempty"`
+	FeeItems         []FeeDetailRequest       `json:"feeItems,omitempty"`
+	AccessOptions    []AccessOptionRequest    `json:"accessOptions,omitempty"`
+	PracticalNotes   []PracticalNoteRequest   `json:"practicalNotes,omitempty"`
+	RecommendedItems []RecommendedItemRequest `json:"recommendedItems,omitempty"`
+}
+
+type FeeDetailRequest struct {
+	Title         map[string]string `json:"title"`
+	Description   map[string]string `json:"description"`
+	Amount        *float64          `json:"amount"`
+	Type          string            `json:"type,omitempty"`
+	MinAmount     *float64          `json:"minAmount,omitempty"`
+	MaxAmount     *float64          `json:"maxAmount,omitempty"`
+	Currency      string            `json:"currency"`
+	Unit          string            `json:"unit"`
+	Required      bool              `json:"required,omitempty"`
+	IsApproximate bool              `json:"isApproximate"`
+	Note          map[string]string `json:"note,omitempty"`
+	SortOrder     int               `json:"sortOrder"`
 }
 
 type MediaItemRequest struct {
@@ -122,6 +205,7 @@ type PlaceResponse struct {
 	Category          string                              `json:"category"`
 	PriceAmount       *float64                            `json:"priceAmount,omitempty"`
 	PriceCurrency     *string                             `json:"priceCurrency,omitempty"`
+	PriceSummaryLabel string                              `json:"priceSummaryLabel,omitempty"`
 	DurationValue     *int                                `json:"durationValue,omitempty"`
 	DurationUnit      *string                             `json:"durationUnit,omitempty"`
 	Rating            float64                             `json:"rating"`
@@ -149,16 +233,94 @@ type PlaceTranslationResponse struct {
 	Description string `json:"description"`
 }
 
+type OpeningHoursResponse struct {
+	Is24Hours bool           `json:"is24Hours,omitempty"`
+	Days      map[string]any `json:"days,omitempty"`
+	Seasonal  string         `json:"seasonal,omitempty"`
+	Summary   string         `json:"summary,omitempty"`
+}
+
+type SeasonResponse struct {
+	Months []int  `json:"months,omitempty"`
+	Note   string `json:"note,omitempty"`
+}
+
+type VisitDurationResponse struct {
+	MinMinutes *int   `json:"minMinutes,omitempty"`
+	MaxMinutes *int   `json:"maxMinutes,omitempty"`
+	Note       string `json:"note,omitempty"`
+}
+
+type AccessOptionResponse struct {
+	TransportType      string   `json:"transportType,omitempty"`
+	DurationMinMinutes *int     `json:"durationMinMinutes,omitempty"`
+	DurationMaxMinutes *int     `json:"durationMaxMinutes,omitempty"`
+	DistanceKm         *float64 `json:"distanceKm,omitempty"`
+	RouteHint          string   `json:"routeHint,omitempty"`
+	RoadCondition      string   `json:"roadCondition,omitempty"`
+	Requires4x4        bool     `json:"requires4x4,omitempty"`
+	ParkingNote        string   `json:"parkingNote,omitempty"`
+	LastSegmentNote    string   `json:"lastSegmentNote,omitempty"`
+	Note               string   `json:"note,omitempty"`
+	SortOrder          int      `json:"sortOrder,omitempty"`
+}
+
+type PracticalNoteResponse struct {
+	NoteType  string `json:"noteType,omitempty"`
+	Title     string `json:"title,omitempty"`
+	Body      string `json:"body,omitempty"`
+	Priority  string `json:"priority,omitempty"`
+	SortOrder int    `json:"sortOrder,omitempty"`
+}
+
+type RecommendedItemResponse struct {
+	ItemType   string `json:"itemType,omitempty"`
+	Title      string `json:"title,omitempty"`
+	Note       string `json:"note,omitempty"`
+	Importance string `json:"importance,omitempty"`
+	Season     string `json:"season,omitempty"`
+	SortOrder  int    `json:"sortOrder,omitempty"`
+}
+
 type PlaceVisitInfoResponse struct {
-	BestTime        string            `json:"bestTime,omitempty"`
-	Accessibility   string            `json:"accessibility,omitempty"`
-	BookingRequired *bool             `json:"bookingRequired,omitempty"`
-	OpeningHours    string            `json:"openingHours,omitempty"`
-	Amenities       []string          `json:"amenities,omitempty"`
-	Audience        []string          `json:"audience,omitempty"`
-	SafetyNotes     []string          `json:"safetyNotes,omitempty"`
-	NearbyIDs       []string          `json:"nearbyIds,omitempty"`
-	LocalizedTips   map[string]string `json:"localizedTips,omitempty"`
+	BestTime         string                    `json:"bestTime,omitempty"`
+	Accessibility    string                    `json:"accessibility,omitempty"`
+	BookingRequired  *bool                     `json:"bookingRequired,omitempty"`
+	OpeningHours     *OpeningHoursResponse     `json:"openingHours,omitempty"`
+	Amenities        []string                  `json:"amenities,omitempty"`
+	Audience         []string                  `json:"audience,omitempty"`
+	SafetyNotes      []string                  `json:"safetyNotes,omitempty"`
+	NearbyIDs        []string                  `json:"nearbyIds,omitempty"`
+	LocalizedTips    map[string]string         `json:"localizedTips,omitempty"`
+	Season           *SeasonResponse           `json:"season,omitempty"`
+	GettingThere     string                    `json:"gettingThere,omitempty"`
+	Included         []string                  `json:"included,omitempty"`
+	Excluded         []string                  `json:"excluded,omitempty"`
+	Links            []LinkDTO                 `json:"links,omitempty"`
+	FeeDetails       []FeeDetailResponse       `json:"feeDetails,omitempty"`
+	PriceNote        string                    `json:"priceNote,omitempty"`
+	TimeOnSite       *VisitDurationResponse    `json:"timeOnSite,omitempty"`
+	CarTravelTime    *VisitDurationResponse    `json:"carTravelTime,omitempty"`
+	RoadCondition    string                    `json:"roadCondition,omitempty"`
+	FeeItems         []FeeDetailResponse       `json:"feeItems,omitempty"`
+	AccessOptions    []AccessOptionResponse    `json:"accessOptions,omitempty"`
+	PracticalNotes   []PracticalNoteResponse   `json:"practicalNotes,omitempty"`
+	RecommendedItems []RecommendedItemResponse `json:"recommendedItems,omitempty"`
+}
+
+type FeeDetailResponse struct {
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Amount        *float64 `json:"amount,omitempty"`
+	Type          string   `json:"type,omitempty"`
+	MinAmount     *float64 `json:"minAmount,omitempty"`
+	MaxAmount     *float64 `json:"maxAmount,omitempty"`
+	Currency      string   `json:"currency,omitempty"`
+	Unit          string   `json:"unit,omitempty"`
+	Required      bool     `json:"required,omitempty"`
+	IsApproximate bool     `json:"isApproximate,omitempty"`
+	Note          string   `json:"note,omitempty"`
+	SortOrder     int      `json:"sortOrder,omitempty"`
 }
 
 type PlaceListResponse struct {

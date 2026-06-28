@@ -937,7 +937,7 @@ abstract class AppLocalizations {
   /// No description provided for @travelChecklistTransportFlight.
   ///
   /// In en, this message translates to:
-  /// **'Flight'**
+  /// **'Airplane'**
   String get travelChecklistTransportFlight;
 
   /// No description provided for @travelChecklistTransportTrain.
@@ -958,11 +958,23 @@ abstract class AppLocalizations {
   /// **'Car'**
   String get travelChecklistTransportCar;
 
+  /// No description provided for @travelChecklistTransportMotorcycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Motorcycle'**
+  String get travelChecklistTransportMotorcycle;
+
   /// No description provided for @travelChecklistTransportFerry.
   ///
   /// In en, this message translates to:
   /// **'Ferry'**
   String get travelChecklistTransportFerry;
+
+  /// No description provided for @travelChecklistTransportOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get travelChecklistTransportOther;
 
   /// No description provided for @travelChecklistActivityWalking.
   ///
@@ -1843,7 +1855,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileCountry.
   ///
   /// In en, this message translates to:
-  /// **'Country'**
+  /// **'Citizenship'**
   String get profileCountry;
 
   /// No description provided for @profileCurrency.
@@ -1969,7 +1981,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationIdentityNotice.
   ///
   /// In en, this message translates to:
-  /// **'We use these details only to verify your identity and guide status.'**
+  /// **'We use these details only to verify your identity and guide status'**
   String get guideVerificationIdentityNotice;
 
   /// No description provided for @guideVerificationContinueToDocuments.
@@ -2017,7 +2029,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationNoGlareHint.
   ///
   /// In en, this message translates to:
-  /// **'Take the photo in even light so every detail remains readable.'**
+  /// **'Take the photo in even light so every detail remains readable'**
   String get guideVerificationNoGlareHint;
 
   /// No description provided for @guideVerificationFullFrame.
@@ -2029,7 +2041,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationFullFrameHint.
   ///
   /// In en, this message translates to:
-  /// **'All edges of the document should be visible in the image.'**
+  /// **'All edges of the document should be visible in the image'**
   String get guideVerificationFullFrameHint;
 
   /// No description provided for @guideVerificationTapToCapturePassport.
@@ -2050,10 +2062,16 @@ abstract class AppLocalizations {
   /// **'Choose file'**
   String get guideVerificationChooseFile;
 
+  /// No description provided for @guideVerificationReplaceFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace file'**
+  String get guideVerificationReplaceFile;
+
   /// No description provided for @guideVerificationDocumentConfirm.
   ///
   /// In en, this message translates to:
-  /// **'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems.'**
+  /// **'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems'**
   String get guideVerificationDocumentConfirm;
 
   /// No description provided for @guideVerificationVerifyContinue.
@@ -2113,7 +2131,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationUploadLicenseSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'A certificate, license, or other professional document works here.'**
+  /// **'A certificate, license, or other professional document works here'**
   String get guideVerificationUploadLicenseSubtitle;
 
   /// No description provided for @guideVerificationAdditionalCertifications.
@@ -2155,7 +2173,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationFirstAidHint.
   ///
   /// In en, this message translates to:
-  /// **'You have current first aid training or a valid certificate.'**
+  /// **'You have current first aid training or a valid certificate'**
   String get guideVerificationFirstAidHint;
 
   /// No description provided for @guideVerificationLanguageProficiency.
@@ -2167,7 +2185,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationLanguageProficiencyHint.
   ///
   /// In en, this message translates to:
-  /// **'You can host activities and excursions in more than one language.'**
+  /// **'You can host activities and excursions in more than one language'**
   String get guideVerificationLanguageProficiencyHint;
 
   /// No description provided for @guideVerificationTimelineTitle.
@@ -2257,7 +2275,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationAgreement.
   ///
   /// In en, this message translates to:
-  /// **'I agree to document review and data processing for guide status verification.'**
+  /// **'I agree to document review and data processing for guide status verification'**
   String get guideVerificationAgreement;
 
   /// No description provided for @guideVerificationSubmit.
@@ -2269,7 +2287,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationReviewNote.
   ///
   /// In en, this message translates to:
-  /// **'After submission, you can track the application status in your profile.'**
+  /// **'After submission, you can track the application status in your profile'**
   String get guideVerificationReviewNote;
 
   /// No description provided for @guideVerificationPendingTitle.
@@ -2449,7 +2467,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileIncompleteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Fill in your nickname, first name, last name, and country to unlock all Inflap features'**
+  /// **'Fill in your nickname, first name, last name, and citizenship to unlock all Inflap features'**
   String get profileIncompleteDescription;
 
   /// No description provided for @fillNowButton.
@@ -2557,7 +2575,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileCountryRequired.
   ///
   /// In en, this message translates to:
-  /// **'Select your country'**
+  /// **'Select your citizenship'**
   String get profileCountryRequired;
 
   /// No description provided for @profileRequiredTitle.
@@ -2569,7 +2587,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileRequiredDescription.
   ///
   /// In en, this message translates to:
-  /// **'To continue, enter your nickname, first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.'**
+  /// **'To continue, enter your nickname, first name, last name, and citizenship in your profile. This helps reduce fake accounts and increases trust between users.'**
   String get profileRequiredDescription;
 
   /// No description provided for @myProfileTitle.
@@ -2605,7 +2623,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileEmptyBioPlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'There is no public description yet. Once the profile is filled in, a short bio will appear here.'**
+  /// **'A few words about yourself help others get to know you better'**
   String get profileEmptyBioPlaceholder;
 
   /// No description provided for @profileBecomeGuideTitle.
@@ -2842,6 +2860,12 @@ abstract class AppLocalizations {
   /// **'New incoming friend requests will appear here.'**
   String get profileConnectionsFriendRequestsEmptySubtitle;
 
+  /// No description provided for @profileMyContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My space'**
+  String get profileMyContentTitle;
+
   /// No description provided for @profileJourneyTitle.
   ///
   /// In en, this message translates to:
@@ -2905,7 +2929,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsRowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Push, email, and SMS updates for your activity flow.'**
+  /// **'Push, email, and SMS updates for your activity flow'**
   String get profileNotificationsRowSubtitle;
 
   /// No description provided for @profileSecurityRowTitle.
@@ -2917,7 +2941,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSecurityRowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Account protection, data export, and privacy controls.'**
+  /// **'Account protection, data export, and privacy controls'**
   String get profileSecurityRowSubtitle;
 
   /// No description provided for @profileHostedActivitiesTitle.
@@ -3289,7 +3313,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSettingsEditSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Update your name, photo, bio, and core profile details.'**
+  /// **'Update your name, photo, bio, and core profile details'**
   String get profileSettingsEditSubtitle;
 
   /// No description provided for @profileOverviewSectionTitle.
@@ -3541,7 +3565,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsQuietHoursTimezone.
   ///
   /// In en, this message translates to:
-  /// **'Using profile timezone: {timezone}'**
+  /// **'Using current timezone: {timezone}'**
   String profileNotificationsQuietHoursTimezone(Object timezone);
 
   /// No description provided for @profileNotificationsQuietHoursEnabledStatus.
@@ -4705,7 +4729,7 @@ abstract class AppLocalizations {
   /// No description provided for @servicesAllButton.
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'See all'**
   String get servicesAllButton;
 
   /// No description provided for @homeExcursionsTitle.
@@ -4903,7 +4927,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeRecommendedActivities.
   ///
   /// In en, this message translates to:
-  /// **'Recommended Activities'**
+  /// **'Top activities'**
   String get homeRecommendedActivities;
 
   /// No description provided for @homeFilterButton.
@@ -7516,6 +7540,24 @@ abstract class AppLocalizations {
   /// **'The experience'**
   String get placeExperienceSection;
 
+  /// No description provided for @placeFeeDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs'**
+  String get placeFeeDetailsSection;
+
+  /// No description provided for @placeFeeDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approximate expenses'**
+  String get placeFeeDetailsTitle;
+
+  /// No description provided for @placeFeeDetailsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual tariffs may change before your visit'**
+  String get placeFeeDetailsNote;
+
   /// No description provided for @placeExpectSection.
   ///
   /// In en, this message translates to:
@@ -7528,6 +7570,48 @@ abstract class AppLocalizations {
   /// **'Plan your visit'**
   String get placeVisitPlanSection;
 
+  /// No description provided for @placeVisitOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'At a glance'**
+  String get placeVisitOverviewTitle;
+
+  /// No description provided for @placeVisitCostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get placeVisitCostTitle;
+
+  /// No description provided for @placeVisitSeasonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When to go'**
+  String get placeVisitSeasonTitle;
+
+  /// No description provided for @placeVisitAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to get there'**
+  String get placeVisitAccessTitle;
+
+  /// No description provided for @placeVisitTimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to plan'**
+  String get placeVisitTimeTitle;
+
+  /// No description provided for @placeVisitRecommendedItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What to take'**
+  String get placeVisitRecommendedItemsTitle;
+
+  /// No description provided for @placeVisitPracticalNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Practical tips'**
+  String get placeVisitPracticalNotesTitle;
+
   /// No description provided for @placeInflapTipTitle.
   ///
   /// In en, this message translates to:
@@ -7539,6 +7623,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time needed'**
   String get placeVisitDurationLabel;
+
+  /// No description provided for @placeVisitCarTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'By car'**
+  String get placeVisitCarTimeLabel;
+
+  /// No description provided for @placeVisitOpeningHoursLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening hours'**
+  String get placeVisitOpeningHoursLabel;
+
+  /// No description provided for @placeVisitPriceNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price note'**
+  String get placeVisitPriceNoteLabel;
+
+  /// No description provided for @placeVisitRoadConditionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get placeVisitRoadConditionLabel;
+
+  /// No description provided for @placeVisitRouteHintLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark'**
+  String get placeVisitRouteHintLabel;
+
+  /// No description provided for @placeVisitParkingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking'**
+  String get placeVisitParkingLabel;
+
+  /// No description provided for @placeVisitLastSegmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last segment'**
+  String get placeVisitLastSegmentLabel;
+
+  /// No description provided for @placeVisitRequires4x4.
+  ///
+  /// In en, this message translates to:
+  /// **'4x4 needed'**
+  String get placeVisitRequires4x4;
+
+  /// No description provided for @placeVisitRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get placeVisitRequiredLabel;
+
+  /// No description provided for @placeVisitOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get placeVisitOptionalLabel;
+
+  /// No description provided for @placeVisitRecommendedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get placeVisitRecommendedLabel;
+
+  /// No description provided for @placeVisitItemWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get placeVisitItemWater;
+
+  /// No description provided for @placeVisitItemShoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfortable shoes'**
+  String get placeVisitItemShoes;
+
+  /// No description provided for @placeVisitItemCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get placeVisitItemCash;
+
+  /// No description provided for @placeVisitItemWarmClothes.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm clothes'**
+  String get placeVisitItemWarmClothes;
+
+  /// No description provided for @placeVisitItemPowerbank.
+  ///
+  /// In en, this message translates to:
+  /// **'Power bank'**
+  String get placeVisitItemPowerbank;
+
+  /// No description provided for @placeVisitItemDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get placeVisitItemDocuments;
+
+  /// No description provided for @placeVisitItemFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get placeVisitItemFood;
+
+  /// No description provided for @placeVisitItemSpf.
+  ///
+  /// In en, this message translates to:
+  /// **'SPF and hat'**
+  String get placeVisitItemSpf;
+
+  /// No description provided for @placeVisitItemRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain jacket'**
+  String get placeVisitItemRain;
+
+  /// No description provided for @placeVisitItemMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline map'**
+  String get placeVisitItemMap;
+
+  /// No description provided for @placeVisitItemRepellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Repellent'**
+  String get placeVisitItemRepellent;
+
+  /// No description provided for @placeVisitItemFirstAid.
+  ///
+  /// In en, this message translates to:
+  /// **'First aid kit'**
+  String get placeVisitItemFirstAid;
+
+  /// No description provided for @placeVisitItemOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparation'**
+  String get placeVisitItemOther;
+
+  /// No description provided for @placeVisitTransportCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get placeVisitTransportCar;
+
+  /// No description provided for @placeVisitTransportWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get placeVisitTransportWalk;
+
+  /// No description provided for @placeVisitTransportTaxi.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxi'**
+  String get placeVisitTransportTaxi;
+
+  /// No description provided for @placeVisitTransportBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get placeVisitTransportBus;
+
+  /// No description provided for @placeVisitTransportCableCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Cable car'**
+  String get placeVisitTransportCableCar;
+
+  /// No description provided for @placeVisitTransportShuttle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuttle'**
+  String get placeVisitTransportShuttle;
+
+  /// No description provided for @placeVisitTransportHorse.
+  ///
+  /// In en, this message translates to:
+  /// **'Horse'**
+  String get placeVisitTransportHorse;
+
+  /// No description provided for @placeVisitTransportTrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Train'**
+  String get placeVisitTransportTrain;
+
+  /// No description provided for @placeVisitTransportBoat.
+  ///
+  /// In en, this message translates to:
+  /// **'Boat'**
+  String get placeVisitTransportBoat;
+
+  /// No description provided for @placeVisitRoadPaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Paved'**
+  String get placeVisitRoadPaved;
+
+  /// No description provided for @placeVisitRoadGravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gravel'**
+  String get placeVisitRoadGravel;
+
+  /// No description provided for @placeVisitRoadMountain.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain road'**
+  String get placeVisitRoadMountain;
+
+  /// No description provided for @placeVisitRoadMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed road'**
+  String get placeVisitRoadMixed;
+
+  /// No description provided for @placeVisitRoadOffroad.
+  ///
+  /// In en, this message translates to:
+  /// **'Off-road'**
+  String get placeVisitRoadOffroad;
+
+  /// No description provided for @placeVisitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String placeVisitMinutes(int count);
+
+  /// No description provided for @placeVisitHoursOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String placeVisitHoursOnly(int hours);
+
+  /// No description provided for @placeVisitHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String placeVisitHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @placeVisitDistanceKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} km'**
+  String placeVisitDistanceKm(String distance);
 
   /// No description provided for @placeVisitDurationFlexible.
   ///
@@ -7684,10 +8020,52 @@ abstract class AppLocalizations {
   /// **'Check current hours and combine this stop with nearby activities to avoid losing time in transit.'**
   String get placeVisitTipDefault;
 
+  /// No description provided for @placeVisitPracticalGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'Practical tip'**
+  String get placeVisitPracticalGeneral;
+
+  /// No description provided for @placeVisitPracticalConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get placeVisitPracticalConnection;
+
+  /// No description provided for @placeVisitPracticalToilet.
+  ///
+  /// In en, this message translates to:
+  /// **'Toilets'**
+  String get placeVisitPracticalToilet;
+
+  /// No description provided for @placeVisitPracticalCafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Cafe'**
+  String get placeVisitPracticalCafe;
+
+  /// No description provided for @placeVisitPracticalSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety'**
+  String get placeVisitPracticalSafety;
+
+  /// No description provided for @placeVisitPracticalKids.
+  ///
+  /// In en, this message translates to:
+  /// **'With kids'**
+  String get placeVisitPracticalKids;
+
+  /// No description provided for @placeVisitPracticalWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get placeVisitPracticalWeather;
+
   /// No description provided for @placeReviewsSection.
   ///
   /// In en, this message translates to:
-  /// **'Explorer\'s voice'**
+  /// **'Tourist reviews'**
   String get placeReviewsSection;
 
   /// No description provided for @placeSeeAllReviews.
@@ -7831,7 +8209,7 @@ abstract class AppLocalizations {
   /// No description provided for @placeReviewsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reviews'**
+  /// **'Tourist reviews'**
   String get placeReviewsTitle;
 
   /// No description provided for @placeTravelerFallback.
@@ -7915,14 +8293,74 @@ abstract class AppLocalizations {
   /// No description provided for @placePriceVaries.
   ///
   /// In en, this message translates to:
-  /// **'Price varies'**
+  /// **'price to confirm'**
   String get placePriceVaries;
 
   /// No description provided for @placePriceVariesShort.
   ///
   /// In en, this message translates to:
-  /// **'Varies'**
+  /// **'to confirm'**
   String get placePriceVariesShort;
+
+  /// No description provided for @placeFreeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get placeFreeEntry;
+
+  /// No description provided for @placePriceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from {price}'**
+  String placePriceFrom(Object price);
+
+  /// No description provided for @placeFeeApproxAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'~{amount}'**
+  String placeFeeApproxAmount(Object amount);
+
+  /// No description provided for @placeFeePerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} per {unit}'**
+  String placeFeePerUnit(Object amount, Object unit);
+
+  /// No description provided for @placeFeeUnitPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'person'**
+  String get placeFeeUnitPerson;
+
+  /// No description provided for @placeFeeUnitCar.
+  ///
+  /// In en, this message translates to:
+  /// **'car'**
+  String get placeFeeUnitCar;
+
+  /// No description provided for @placeFeeUnitMotorcycle.
+  ///
+  /// In en, this message translates to:
+  /// **'motorcycle'**
+  String get placeFeeUnitMotorcycle;
+
+  /// No description provided for @placeFeeUnitTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'ticket'**
+  String get placeFeeUnitTicket;
+
+  /// No description provided for @placeFeeUnitGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'group'**
+  String get placeFeeUnitGroup;
+
+  /// No description provided for @placeFeeUnitItem.
+  ///
+  /// In en, this message translates to:
+  /// **'item'**
+  String get placeFeeUnitItem;
 
   /// No description provided for @placeDurationHours.
   ///
@@ -11485,7 +11923,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideDashboardOffersStat.
   ///
   /// In en, this message translates to:
-  /// **'Total offers'**
+  /// **'Offers'**
   String get guideDashboardOffersStat;
 
   /// No description provided for @guideDashboardBookingsStat.
@@ -11951,7 +12389,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideDashboardStatusBooked.
   ///
   /// In en, this message translates to:
-  /// **'Booked'**
+  /// **'Active'**
   String get guideDashboardStatusBooked;
 
   /// No description provided for @guideDashboardStatusCompleted.
@@ -15926,6 +16364,12 @@ abstract class AppLocalizations {
   /// **'System'**
   String get notificationsCategorySystem;
 
+  /// No description provided for @notificationsCategorySupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get notificationsCategorySupport;
+
   /// No description provided for @notificationsCategoryGeneral.
   ///
   /// In en, this message translates to:
@@ -16009,6 +16453,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open chats to reply.'**
   String get notificationsChatMessageBody;
+
+  /// No description provided for @notificationsSupportRepliedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support replied'**
+  String get notificationsSupportRepliedTitle;
+
+  /// No description provided for @notificationsSupportRepliedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Support replied to your ticket.'**
+  String get notificationsSupportRepliedBody;
+
+  /// No description provided for @notificationsSupportUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request updated'**
+  String get notificationsSupportUpdatedTitle;
+
+  /// No description provided for @notificationsSupportUpdatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open support chat to see the latest update.'**
+  String get notificationsSupportUpdatedBody;
 
   /// No description provided for @notificationsActivityJoinedTitle.
   ///
@@ -16231,6 +16699,456 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days} d ago'**
   String notificationsDaysAgo(Object days);
+
+  /// No description provided for @helpCenterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Center'**
+  String get helpCenterTitle;
+
+  /// No description provided for @helpCenterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers for bookings, guides, places, payments, currency, and account safety'**
+  String get helpCenterSubtitle;
+
+  /// No description provided for @helpCenterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions, tips, instructions'**
+  String get helpCenterSearchHint;
+
+  /// No description provided for @helpCenterCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get helpCenterCategoryAll;
+
+  /// No description provided for @helpCenterCategoryDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get helpCenterCategoryDocuments;
+
+  /// No description provided for @helpCenterCategoryFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights'**
+  String get helpCenterCategoryFlights;
+
+  /// No description provided for @helpCenterCategoryAccommodation.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get helpCenterCategoryAccommodation;
+
+  /// No description provided for @helpCenterCategoryMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get helpCenterCategoryMoney;
+
+  /// No description provided for @helpCenterCategorySafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety'**
+  String get helpCenterCategorySafety;
+
+  /// No description provided for @helpCenterCategoryTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get helpCenterCategoryTransport;
+
+  /// No description provided for @helpCenterCategoryPlanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning'**
+  String get helpCenterCategoryPlanning;
+
+  /// No description provided for @helpCenterCategoryCulture.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture'**
+  String get helpCenterCategoryCulture;
+
+  /// No description provided for @helpCenterMoreCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get helpCenterMoreCategories;
+
+  /// No description provided for @helpCenterCategoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get helpCenterCategoriesTitle;
+
+  /// No description provided for @helpCenterPopularTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular answers'**
+  String get helpCenterPopularTitle;
+
+  /// No description provided for @helpCenterSearchResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search results'**
+  String get helpCenterSearchResultsTitle;
+
+  /// No description provided for @helpCenterNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer found'**
+  String get helpCenterNoResultsTitle;
+
+  /// No description provided for @helpCenterNoResultsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another phrase or open Support requests if the answer is still missing'**
+  String get helpCenterNoResultsMessage;
+
+  /// No description provided for @helpCenterLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load help'**
+  String get helpCenterLoadFailedTitle;
+
+  /// No description provided for @helpCenterRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get helpCenterRetry;
+
+  /// No description provided for @helpCenterLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get helpCenterLoadMore;
+
+  /// No description provided for @helpCenterContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get helpCenterContactSupport;
+
+  /// No description provided for @helpCenterOpenChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get helpCenterOpenChat;
+
+  /// No description provided for @helpCenterSupportChatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get helpCenterSupportChatButton;
+
+  /// No description provided for @helpCenterOpenRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get helpCenterOpenRoute;
+
+  /// No description provided for @helpCenterWasHelpful.
+  ///
+  /// In en, this message translates to:
+  /// **'Was this helpful?'**
+  String get helpCenterWasHelpful;
+
+  /// No description provided for @helpCenterHelpful.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpful'**
+  String get helpCenterHelpful;
+
+  /// No description provided for @helpCenterNotHelpful.
+  ///
+  /// In en, this message translates to:
+  /// **'Not helpful'**
+  String get helpCenterNotHelpful;
+
+  /// No description provided for @helpCenterFeedbackSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, your feedback helps improve answers'**
+  String get helpCenterFeedbackSaved;
+
+  /// No description provided for @supportRequestsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track conversations with Inflap support and reply when we need more details'**
+  String get supportRequestsSubtitle;
+
+  /// No description provided for @supportRequestsLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load requests'**
+  String get supportRequestsLoadFailedTitle;
+
+  /// No description provided for @supportTicketDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support chat'**
+  String get supportTicketDetailTitle;
+
+  /// No description provided for @supportTicketReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a reply'**
+  String get supportTicketReplyHint;
+
+  /// No description provided for @supportTicketClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close request'**
+  String get supportTicketClose;
+
+  /// No description provided for @supportTicketNoMessagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get supportTicketNoMessagesTitle;
+
+  /// No description provided for @supportTicketNoMessagesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages from support will appear here'**
+  String get supportTicketNoMessagesMessage;
+
+  /// No description provided for @supportReplyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send your reply'**
+  String get supportReplyFailed;
+
+  /// No description provided for @supportTicketCSATTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate support'**
+  String get supportTicketCSATTitle;
+
+  /// No description provided for @supportTicketCSATCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment'**
+  String get supportTicketCSATCommentHint;
+
+  /// No description provided for @supportTicketCSATSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send rating'**
+  String get supportTicketCSATSubmit;
+
+  /// No description provided for @supportTicketCSATThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for rating support'**
+  String get supportTicketCSATThanks;
+
+  /// No description provided for @supportTicketCSATFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your rating'**
+  String get supportTicketCSATFailed;
+
+  /// No description provided for @supportEventTicketClosedByUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Request closed by user'**
+  String get supportEventTicketClosedByUser;
+
+  /// No description provided for @supportEventCSATSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Support rating submitted'**
+  String get supportEventCSATSubmitted;
+
+  /// No description provided for @supportEventTicketResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Request resolved'**
+  String get supportEventTicketResolved;
+
+  /// No description provided for @supportEventSegmentCalculated.
+  ///
+  /// In en, this message translates to:
+  /// **'Support context updated'**
+  String get supportEventSegmentCalculated;
+
+  /// No description provided for @supportEventUserReplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Message sent'**
+  String get supportEventUserReplied;
+
+  /// No description provided for @supportEventAgentReplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Support replied'**
+  String get supportEventAgentReplied;
+
+  /// No description provided for @supportEventUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request updated'**
+  String get supportEventUpdated;
+
+  /// No description provided for @supportStatusNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get supportStatusNew;
+
+  /// No description provided for @supportStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get supportStatusOpen;
+
+  /// No description provided for @supportStatusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get supportStatusAssigned;
+
+  /// No description provided for @supportStatusWaitingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your reply'**
+  String get supportStatusWaitingUser;
+
+  /// No description provided for @supportStatusWaitingSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for support'**
+  String get supportStatusWaitingSupport;
+
+  /// No description provided for @supportStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supportStatusResolved;
+
+  /// No description provided for @supportStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get supportStatusClosed;
+
+  /// No description provided for @supportStatusReopened.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened'**
+  String get supportStatusReopened;
+
+  /// No description provided for @supportPreviewNew.
+  ///
+  /// In en, this message translates to:
+  /// **'We received your request and will answer in this chat'**
+  String get supportPreviewNew;
+
+  /// No description provided for @supportPreviewWaitingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Support needs more details from you'**
+  String get supportPreviewWaitingUser;
+
+  /// No description provided for @supportPreviewWaitingSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reply was sent. Support will get back to you here.'**
+  String get supportPreviewWaitingSupport;
+
+  /// No description provided for @supportPreviewResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'This request is finished. You can rate support or create a new request.'**
+  String get supportPreviewResolved;
+
+  /// No description provided for @supportExpectedResponseWithin.
+  ///
+  /// In en, this message translates to:
+  /// **'We usually answer within {time}'**
+  String supportExpectedResponseWithin(Object time);
+
+  /// No description provided for @supportMessageSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get supportMessageSending;
+
+  /// No description provided for @supportMessageSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get supportMessageSent;
+
+  /// No description provided for @supportMessageNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent'**
+  String get supportMessageNotSent;
+
+  /// No description provided for @supportMessageRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get supportMessageRetry;
+
+  /// No description provided for @supportEpisodeNewRequestCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created new request'**
+  String get supportEpisodeNewRequestCreated;
+
+  /// No description provided for @supportEpisodeStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request from {date}'**
+  String supportEpisodeStarted(Object date);
+
+  /// No description provided for @supportUserFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get supportUserFallbackName;
+
+  /// No description provided for @supportAgentFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supportAgentFallbackName;
+
+  /// No description provided for @supportSystemFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get supportSystemFallbackName;
+
+  /// No description provided for @contextualHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions and help'**
+  String get contextualHelpTitle;
+
+  /// No description provided for @contextualHelpOpenAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All help'**
+  String get contextualHelpOpenAll;
+
+  /// No description provided for @contextualHelpLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Help is temporarily unavailable'**
+  String get contextualHelpLoadFailed;
+
+  /// No description provided for @contextualHelpTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get contextualHelpTryAgain;
 }
 
 class _AppLocalizationsDelegate

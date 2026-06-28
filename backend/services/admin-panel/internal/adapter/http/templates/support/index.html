@@ -1,0 +1,107 @@
+{{define "support/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "support.eyebrow"}}</p>
+      <h1>{{t .Locale "support.title"}}</h1>
+    </div>
+    <div class="section-actions">
+      {{if .Data.CanManage}}<a class="button" href="/admin/support/agents">{{t .Locale "support.agentsTitle"}}</a>{{end}}
+      <a class="button" href="/admin/support/saved-replies">{{t .Locale "support.savedRepliesTitle"}}</a>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "support.priority"}}</span>
+        <select name="priority">
+          {{range .Data.PriorityOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "support.sla"}}</span>
+        <select name="sla">
+          {{range .Data.SLAOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "support.assignee"}}</span>
+        <input type="search" name="assigneeId" value="{{.Data.Filters.AssigneeID}}" placeholder="{{t .Locale "support.assigneePlaceholder"}}">
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "support.ticket"}}</th>
+            <th>{{t .Locale "support.user"}}</th>
+            <th>{{t .Locale "support.priority"}}</th>
+            <th>{{t .Locale "support.sla"}}</th>
+            <th>{{t .Locale "support.responsible"}}</th>
+            <th>{{t .Locale "support.context"}}</th>
+            <th>{{t .Locale "support.lastMessage"}}</th>
+            <th>{{t .Locale "support.lastActivity"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td>
+                <strong><code>{{.DisplayID}}</code></strong>
+                {{if .RelatedEntityID}}<span class="muted block"><code>{{.RelatedEntityID}}</code></span>{{end}}
+                <span class="{{.BadgeClass}}">{{t $.Locale (printf "support.status.%s" .Item.Status)}}</span>
+              </td>
+              <td>
+                <strong>{{.UserLabel}}</strong>
+              </td>
+              <td>
+                {{t $.Locale (printf "support.priority.%s" .Item.Priority)}}
+                {{if .PriorityReasonLabels}}<span class="muted block">{{join .PriorityReasonLabels ", "}}</span>{{end}}
+              </td>
+              <td>
+                {{if .SLA.LabelKey}}
+                  <span class="{{.SLA.BadgeClass}}">{{if .SLA.DisplayLabel}}{{.SLA.DisplayLabel}}{{else}}{{t $.Locale .SLA.StateKey}}{{end}}</span>
+                {{else}}
+                  -
+                {{end}}
+              </td>
+              <td>
+                <strong>{{.AssigneeLabel}}</strong>
+              </td>
+              <td>{{.ContextSummary}}</td>
+              <td>{{.LastMessagePreview}}</td>
+              <td>{{formatTime .Item.LastMessageAt (staffTimezone $.Staff)}}</td>
+              <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.open"}}</a></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "support.empty"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

@@ -1,0 +1,69 @@
+{{define "help_articles/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "help.eyebrow"}}</p>
+      <h1>{{t .Locale "help.title"}}</h1>
+    </div>
+    {{if .Data.CanEdit}}
+      <div class="section-actions">
+        <a class="button primary" href="{{.Data.CreateURL}}">{{t .Locale "action.createHelpArticle"}}</a>
+      </div>
+    {{end}}
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "help.article"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "help.categoryId"}}</th>
+            <th>{{t .Locale "help.translations"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td>
+                <strong>{{.Title}}</strong>
+                <span class="muted block">{{.ShortAnswer}}</span>
+                <span class="muted block"><code>{{.Item.ID}}</code>{{if .Tags}} · {{.Tags}}{{end}}</span>
+              </td>
+              <td><span class="{{.BadgeClass}}">{{t $.Locale (printf "help.status.%s" .Item.Status)}}</span></td>
+              <td>{{.Category}}</td>
+              <td>{{.Translations}}</td>
+              <td>{{formatTime .Item.UpdatedAt (staffTimezone $.Staff)}}</td>
+              <td class="right"><a class="button" href="{{.EditURL}}">{{t $.Locale "action.edit"}}</a></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "help.empty"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

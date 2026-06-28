@@ -1369,6 +1369,53 @@ func TestRendererLocalizesDashboardModerationContext(t *testing.T) {
 	}
 }
 
+func TestRendererRendersDashboardSupportSection(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Date(2026, 6, 27, 11, 0, 0, 0, time.UTC)
+	staff := adminTemplateActor()
+	staff.Permissions = []enum.Permission{enum.PermissionSupportRead}
+	data := NewDashboardViewDataWithSupport(nil, nil, nil, nil, []model.SupportTicket{{
+		ID:                   "support-dashboard-ticket",
+		Status:               model.SupportTicketStatusWaitingSupport,
+		Priority:             model.SupportTicketPriorityHigh,
+		UserNicknameSnapshot: "akashimo",
+		LastMessagePreview:   "Не проходит оплата",
+		LastMessageAt:        now,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+	}}, staff, localeRU)
+	pageData := PageData{
+		Title:     "Панель",
+		Locale:    localeRU,
+		Path:      "/admin",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+		Data:      data,
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "dashboard/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		"Обращения в поддержку",
+		"akashimo",
+		"Не проходит оплата",
+		"Ждет поддержку",
+		"/admin/support/tickets?status=waiting_support",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("dashboard did not render support section content %q: %s", expected, body)
+		}
+	}
+}
+
 func TestRendererRendersModerationQueueSignalDropdownFilters(t *testing.T) {
 	t.Parallel()
 
@@ -7827,6 +7874,91 @@ func TestRendererHidesPlaceCityFilterUntilCountrySelected(t *testing.T) {
 	}
 }
 
+func TestRendererRendersPlaceCountryBackfillActionWhenCountrySelected(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Places",
+		Locale: localeRU,
+		Path:   "/admin/places",
+		Staff:  superAdminTemplateActor(),
+		Data: NewPlaceListViewData(nil, 0, PlaceFilterViewData{
+			CountryCode: "KZ",
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		`method="post" action="/admin/places/media/backfill"`,
+		`name="country" value="KZ"`,
+		`Запустить backfill по стране`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("place list did not render country backfill action %q: %s", expected, body)
+		}
+	}
+}
+
+func TestRendererHidesPlaceCountryBackfillActionForNonSuperAdmin(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Places",
+		Locale: localeRU,
+		Path:   "/admin/places",
+		Staff:  adminTemplateActor(),
+		Data: NewPlaceListViewData(nil, 0, PlaceFilterViewData{
+			CountryCode: "KZ",
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	if strings.Contains(body, `/admin/places/media/backfill`) {
+		t.Fatalf("place list rendered country backfill action for non-superadmin: %s", body)
+	}
+}
+
+func TestRendererHidesPlaceCountryBackfillActionUntilCountrySelected(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Places",
+		Locale: localeRU,
+		Path:   "/admin/places",
+		Staff:  adminTemplateActor(),
+		Data:   NewPlaceListViewData(nil, 0, PlaceFilterViewData{}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	if strings.Contains(body, `/admin/places/media/backfill`) {
+		t.Fatalf("place list rendered country backfill action without a country filter: %s", body)
+	}
+}
+
 func TestAdminStylesKeepHiddenElementsInvisible(t *testing.T) {
 	t.Parallel()
 
@@ -7893,6 +8025,27 @@ func TestAdminJSPlaceFilterDoesNotAutoSelectSearchSuggestions(t *testing.T) {
 	} {
 		if !strings.Contains(js, expected) {
 			t.Fatalf("admin place filter should keep explicit suggestion selection behavior, missing %q", expected)
+		}
+	}
+}
+
+func TestAdminJSInitializesSupportRoutingComboboxesUnderCSP(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, expected := range []string{
+		`document.querySelectorAll("[data-support-agent-staff-combobox]")`,
+		`document.querySelectorAll("[data-support-agent-timezone-combobox]")`,
+		`[data-support-agent-timezone-option]`,
+		`replace(/ё/g, "е")`,
+		`input.reportValidity();`,
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("admin js must initialize support routing comboboxes under strict CSP, missing %q", expected)
 		}
 	}
 }
@@ -8893,7 +9046,7 @@ func TestRendererRendersStaffManagementTemplates(t *testing.T) {
 	staff := &model.StaffUser{
 		ID:          staffID,
 		Email:       "moderator@inflap.local",
-		DisplayName: "Moderator",
+		DisplayName: "Нурланова Айгерим Сапаровна",
 		Status:      enum.StaffStatusActive,
 		Roles:       []enum.StaffRole{enum.StaffRoleExcursionModerator},
 	}
@@ -8924,6 +9077,18 @@ func TestRendererRendersStaffManagementTemplates(t *testing.T) {
 	if !strings.Contains(body, "Staff list") {
 		t.Fatal("staff list section title is missing")
 	}
+	for _, expected := range []string{
+		`name="last_name"`,
+		`name="first_name"`,
+		`name="middle_name"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("staff create template did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, `name="display_name"`) {
+		t.Fatalf("staff create template still renders display_name: %s", body)
+	}
 
 	pageData.Path = "/admin/staff/" + staffID.String() + "/edit"
 	pageData.Data = StaffEditViewData{
@@ -8944,10 +9109,41 @@ func TestRendererRendersStaffManagementTemplates(t *testing.T) {
 		`name="reason"`,
 		`required`,
 		`value="EXCURSION_MODERATOR" checked`,
+		`name="last_name"`,
+		`value="Нурланова"`,
+		`name="first_name"`,
+		`value="Айгерим"`,
+		`name="middle_name"`,
+		`value="Сапаровна"`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("staff edit template did not render %q: %s", expected, body)
 		}
+	}
+	if strings.Contains(body, `name="display_name"`) {
+		t.Fatalf("staff edit template still renders display_name: %s", body)
+	}
+}
+
+func TestStaffDisplayNameFromFormBuildsRequiredFullName(t *testing.T) {
+	t.Parallel()
+
+	form := url.Values{}
+	form.Set("last_name", "  Нурланова ")
+	form.Set("first_name", " Айгерим ")
+	form.Set("middle_name", " Сапаровна ")
+
+	displayName, ok := staffDisplayNameFromForm(form)
+	if !ok {
+		t.Fatal("staffDisplayNameFromForm() returned ok=false")
+	}
+	if displayName != "Нурланова Айгерим Сапаровна" {
+		t.Fatalf("displayName = %q", displayName)
+	}
+
+	form.Del("last_name")
+	if _, ok = staffDisplayNameFromForm(form); ok {
+		t.Fatal("staffDisplayNameFromForm() accepted missing last_name")
 	}
 }
 
@@ -9094,6 +9290,13 @@ func adminTemplateActor() *model.StaffUser {
 		Roles:       []enum.StaffRole{enum.StaffRoleAdmin},
 		Permissions: []enum.Permission{enum.PermissionStaffManage},
 	}
+}
+
+func superAdminTemplateActor() *model.StaffUser {
+	staff := adminTemplateActor()
+	staff.Roles = []enum.StaffRole{enum.StaffRoleSuperAdmin}
+	staff.Permissions = append(staff.Permissions, enum.PermissionPlaceManage)
+	return staff
 }
 
 func intPtr(value int) *int {

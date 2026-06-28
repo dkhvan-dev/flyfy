@@ -6,12 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/device/device_context_service.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
-import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -39,7 +37,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _profileApi = ProfileApi();
   final _fileApi = FileApi();
   final _referenceApi = ReferenceApi();
-  final _deviceContextService = const DeviceContextService();
   final _imagePicker = ImagePicker();
 
   late final TextEditingController _firstNameController;
@@ -50,8 +47,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _bioController;
   late final TextEditingController _countryCodeController;
   late final TextEditingController _countrySearchController;
-  late final TextEditingController _timezoneController;
-  late final TextEditingController _timezoneSearchController;
   late final TextEditingController _currencyController;
   late final TextEditingController _currencySearchController;
 
@@ -59,25 +54,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final String _initialNickname;
   List<ReferenceCountry> _countries = const [];
   Map<String, Set<String>> _countrySearchAliases = const {};
-  List<ReferenceTimezone> _timezones = const [];
-  Map<String, Set<String>> _timezoneSearchAliases = const {};
   List<ReferenceCurrency> _currencies = const [];
   Map<String, Set<String>> _currencySearchAliases = const {};
   Future<void>? _countriesLoadFuture;
-  Future<void>? _timezonesLoadFuture;
   Future<void>? _currenciesLoadFuture;
   String _countrySearchQuery = '';
-  String _timezoneSearchQuery = '';
   String _currencySearchQuery = '';
   String? _avatarFileId;
 
   Future<String?>? _avatarFuture;
   Uint8List? _avatarPreviewBytes;
   bool _isCountriesLoading = false;
-  bool _isTimezonesLoading = false;
   bool _isCurrenciesLoading = false;
   bool _isSaving = false;
-  bool _isResolvingLocation = false;
   bool _isUploadingAvatar = false;
   bool _isCheckingNickname = false;
   bool _isNicknameTaken = false;
@@ -123,11 +112,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     _countrySearchController = TextEditingController()
       ..addListener(_handleCountrySearchChanged);
-    _timezoneController = TextEditingController(
-      text: profile?.timezone ?? 'Asia/Almaty',
-    );
-    _timezoneSearchController = TextEditingController()
-      ..addListener(_handleTimezoneSearchChanged);
     _currencyController = TextEditingController(
       text: profile?.currency ?? 'KZT',
     );
@@ -148,9 +132,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _isPhoneVerificationConfirmed = profile?.primaryPhoneVerified == true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_prefillTimezoneFromDevice());
       unawaited(_loadCountries());
-      unawaited(_loadTimezones());
       unawaited(_loadCurrencies());
     });
   }
@@ -168,10 +150,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _countryCodeController.dispose();
     _countrySearchController
       ..removeListener(_handleCountrySearchChanged)
-      ..dispose();
-    _timezoneController.dispose();
-    _timezoneSearchController
-      ..removeListener(_handleTimezoneSearchChanged)
       ..dispose();
     _currencyController.dispose();
     _currencySearchController
@@ -312,13 +290,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (nextQuery == _countrySearchQuery) return;
 
     setState(() => _countrySearchQuery = nextQuery);
-  }
-
-  void _handleTimezoneSearchChanged() {
-    final nextQuery = _timezoneSearchController.text.trim();
-    if (nextQuery == _timezoneSearchQuery) return;
-
-    setState(() => _timezoneSearchQuery = nextQuery);
   }
 
   void _handleCurrencySearchChanged() {
@@ -758,55 +729,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _loadTimezones() {
-    if (_timezones.isNotEmpty) return Future.value();
-    final inFlight = _timezonesLoadFuture;
-    if (inFlight != null) return inFlight;
-
-    final future = _loadTimezonesInner();
-    _timezonesLoadFuture = future;
-    return future.whenComplete(() => _timezonesLoadFuture = null);
-  }
-
-  Future<void> _loadTimezonesInner() async {
-    if (!mounted) return;
-
-    setState(() => _isTimezonesLoading = true);
-    final lang = Localizations.localeOf(context).languageCode;
-    final selectedTimezoneId = normalizeReferenceTimezoneId(
-      _timezoneController.text,
-    );
-
-    try {
-      final timezones = withDefaultReferenceTimezone(
-        await _referenceApi.listTimezones(lang: lang),
-        selectedTimezoneId,
-        lang: lang,
-      );
-      final aliases = await _loadTimezoneSearchAliases(timezones, lang);
-      if (!mounted) return;
-
-      setState(() {
-        _timezones = timezones;
-        _timezoneSearchAliases = aliases;
-        _isTimezonesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      final timezones = withDefaultReferenceTimezone(
-        const [],
-        selectedTimezoneId,
-        lang: lang,
-      );
-
-      setState(() {
-        _timezones = timezones;
-        _timezoneSearchAliases = timezoneSearchAliasMap(timezones);
-        _isTimezonesLoading = false;
-      });
-    }
-  }
-
   Future<void> _loadCurrencies() {
     if (_currencies.isNotEmpty) return Future.value();
     final inFlight = _currenciesLoadFuture;
@@ -875,27 +797,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ]);
   }
 
-  Future<Map<String, Set<String>>> _loadTimezoneSearchAliases(
-    List<ReferenceTimezone> timezones,
-    String currentLang,
-  ) async {
-    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
-    final localizedLists = await Future.wait(
-      languages.map((lang) async {
-        try {
-          return await _referenceApi.listTimezones(lang: lang);
-        } catch (_) {
-          return const <ReferenceTimezone>[];
-        }
-      }),
-    );
-
-    return timezoneSearchAliasMap([
-      ...timezones,
-      for (final localizedTimezones in localizedLists) ...localizedTimezones,
-    ]);
-  }
-
   Future<Map<String, Set<String>>> _loadCurrencySearchAliases(
     List<ReferenceCurrency> currencies,
     String currentLang,
@@ -931,17 +832,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  String? _selectedCountryLabel() {
-    final country = _selectedCountry();
-    if (country == null) {
-      return normalizeReferenceCountryCode(_countryCodeController.text);
-    }
-
-    final name = country.name.trim();
-    if (name.isNotEmpty) return name;
-    return normalizeReferenceCountryCode(country.code) ?? country.code.trim();
-  }
-
   List<ReferenceCountry> _visibleCountries() {
     final query = normalizeCountrySearchText(_countrySearchQuery);
     if (query.isEmpty) return const [];
@@ -955,40 +845,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         )
         .take(24)
         .toList(growable: false);
-  }
-
-  ReferenceTimezone? _selectedTimezone() {
-    final timezoneId = normalizeReferenceTimezoneId(_timezoneController.text);
-    if (timezoneId == null) return null;
-
-    for (final timezone in _timezones) {
-      if (normalizeReferenceTimezoneId(timezone.id) == timezoneId) {
-        return timezone;
-      }
-    }
-    return null;
-  }
-
-  List<ReferenceTimezone> _visibleTimezones() {
-    final query = normalizeCountrySearchText(_timezoneSearchQuery);
-    if (query.isEmpty) return const [];
-
-    return _timezones
-        .where(
-          (timezone) => timezoneFilterSearchHaystack(
-            timezone,
-            _timezoneSearchAliases,
-          ).contains(query),
-        )
-        .take(24)
-        .toList(growable: false);
-  }
-
-  List<ReferenceTimezone> _recommendedTimezonesForSelectedCountry() {
-    return recommendedReferenceTimezonesForCountry(
-      timezones: _timezones,
-      countryCode: _countryCodeController.text,
-    ).take(8).toList(growable: false);
   }
 
   ReferenceCurrency? _selectedCurrency() {
@@ -1039,17 +895,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
-  void _selectTimezone(ReferenceTimezone timezone) {
-    final normalized = normalizeReferenceTimezoneId(timezone.id);
-    if (normalized == null) return;
-
-    setState(() {
-      _timezoneController.text = normalized;
-      _timezoneSearchController.clear();
-      _timezoneSearchQuery = '';
-    });
-  }
-
   void _selectCurrency(ReferenceCurrency currency) {
     final normalized = normalizeReferenceCurrencyCode(currency.code);
     if (normalized == null) return;
@@ -1067,130 +912,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return null;
     }
     return _fileApi.publicContentUrl(trimmed);
-  }
-
-  Future<void> _prefillTimezoneFromDevice() async {
-    final currentValue = _timezoneController.text.trim();
-    final shouldReplace = currentValue.isEmpty || currentValue == 'Asia/Almaty';
-
-    if (!shouldReplace) return;
-
-    final timezone = await _deviceContextService.getLocalTimezone();
-    if (!mounted || timezone == null || timezone.trim().isEmpty) return;
-
-    setState(() {
-      _timezoneController.text = timezone;
-    });
-  }
-
-  Future<void> _resolveLocationFromDevice() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    setState(() {
-      _isResolvingLocation = true;
-    });
-
-    try {
-      final suggestion = await _deviceContextService.detectLocationSuggestion();
-      if (!mounted || suggestion == null) return;
-
-      final confirmed = await _showLocationConfirmDialog(suggestion);
-      if (!mounted || confirmed != true) return;
-
-      await _loadTimezones();
-      if (!mounted) return;
-
-      final detectedTimezone = await _deviceContextService.getLocalTimezone();
-      if (!mounted) return;
-
-      final resolvedTimezone = resolveReferenceTimezoneForLocation(
-        timezones: _timezones,
-        aliases: _timezoneSearchAliases,
-        cityName: suggestion.cityName,
-        countryCode: suggestion.countryCode,
-        deviceTimezoneId: detectedTimezone,
-      );
-      final resolvedTimezoneId =
-          normalizeReferenceTimezoneId(resolvedTimezone?.id) ??
-          normalizeReferenceTimezoneId(detectedTimezone);
-
-      setState(() {
-        if ((suggestion.countryCode ?? '').isNotEmpty) {
-          _countryCodeController.text =
-              normalizeReferenceCountryCode(suggestion.countryCode) ??
-              suggestion.countryCode!;
-        }
-        if (resolvedTimezoneId != null) {
-          final lang = Localizations.localeOf(context).languageCode;
-          _timezones = withDefaultReferenceTimezone(
-            _timezones,
-            resolvedTimezoneId,
-            lang: lang,
-          );
-          _timezoneSearchAliases = timezoneSearchAliasMap(_timezones);
-          _timezoneController.text = resolvedTimezoneId;
-          _timezoneSearchController.clear();
-          _timezoneSearchQuery = '';
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      final code = e.toString();
-      String message = l10n.locationDetectFailed;
-
-      if (code.contains('location_services_disabled')) {
-        message = l10n.locationServicesDisabled;
-      } else if (code.contains('location_permission_denied_forever')) {
-        message = l10n.locationPermissionDeniedForever;
-      } else if (code.contains('location_permission_denied')) {
-        message = l10n.locationPermissionDenied;
-      }
-
-      await showErrorDialog(context, title: l10n.error, message: message);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isResolvingLocation = false;
-        });
-      }
-    }
-  }
-
-  Future<bool?> _showLocationConfirmDialog(
-    DeviceLocationSuggestion suggestion,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-
-    final locationText = [
-      if ((suggestion.cityName ?? '').isNotEmpty) suggestion.cityName,
-      if ((suggestion.countryName ?? '').isNotEmpty) suggestion.countryName,
-      if ((suggestion.countryCode ?? '').isNotEmpty) suggestion.countryCode,
-    ].whereType<String>().join(', ');
-
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.useDetectedLocationTitle),
-          content: Text(
-            locationText.isEmpty
-                ? l10n.locationDetectFailed
-                : l10n.useDetectedLocationDescription(locationText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.useButton),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> _save() async {
@@ -1218,7 +939,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           avatarFileId: _avatarFileId,
           countryCode: _countryCodeController.text,
           locale: _localeCode,
-          timezone: _timezoneController.text,
           currency: _currencyController.text,
         ),
       );
@@ -1993,32 +1713,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 16, min: 14, max: 18),
                         ),
                         _LabeledInput(
-                          label: l10n.profileTimezone,
-                          child: _ProfileTimezoneSearchField(
-                            selectedTimezone: _selectedTimezone(),
-                            selectedTimezoneId: normalizeReferenceTimezoneId(
-                              _timezoneController.text,
-                            ),
-                            searchController: _timezoneSearchController,
-                            visibleTimezones: _visibleTimezones(),
-                            recommendedTimezones:
-                                _recommendedTimezonesForSelectedCountry(),
-                            isLoading: _isTimezonesLoading,
-                            searchQuery: _timezoneSearchQuery,
-                            searchHint: l10n.profileTimezoneSearchHint,
-                            emptyLabel: l10n.profileTimezoneNoResults,
-                            recommendedLabel: _selectedCountryLabel() == null
-                                ? null
-                                : l10n.profileTimezoneRecommendedForCountry(
-                                    _selectedCountryLabel()!,
-                                  ),
-                            onTimezoneSelected: _selectTimezone,
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 16, min: 14, max: 18),
-                        ),
-                        _LabeledInput(
                           label: l10n.profileCurrency,
                           child: _ProfileCurrencySearchField(
                             selectedCurrency: _selectedCurrency(),
@@ -2033,60 +1727,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             searchHint: l10n.profileCurrencySearchHint,
                             emptyLabel: l10n.profileCurrencyNoResults,
                             onCurrencySelected: _selectCurrency,
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 18, min: 16, max: 20),
-                        ),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: OutlinedButton.icon(
-                            onPressed: _isResolvingLocation
-                                ? null
-                                : _resolveLocationFromDevice,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.accent,
-                              side: BorderSide(
-                                color: AppColors.accent.withValues(alpha: 0.2),
-                              ),
-                              backgroundColor: AppColors.accent.withValues(
-                                alpha: 0.05,
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: profileScaled(
-                                  context,
-                                  16,
-                                  min: 14,
-                                  max: 18,
-                                ),
-                                vertical: profileScaled(
-                                  context,
-                                  12,
-                                  min: 10,
-                                  max: 12,
-                                ),
-                              ),
-                            ),
-                            icon: _isResolvingLocation
-                                ? SizedBox(
-                                    width: profileScaled(
-                                      context,
-                                      18,
-                                      min: 16,
-                                      max: 18,
-                                    ),
-                                    height: profileScaled(
-                                      context,
-                                      18,
-                                      min: 16,
-                                      max: 18,
-                                    ),
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.my_location_outlined),
-                            label: Text(l10n.detectLocationButton),
                           ),
                         ),
                       ],
@@ -2739,267 +2379,6 @@ class _ProfileCountrySearchField extends StatelessWidget {
     final name = country.name.trim();
     if (name.isNotEmpty) return name;
     return normalizeReferenceCountryCode(country.code) ?? country.code.trim();
-  }
-}
-
-class _ProfileTimezoneSearchField extends StatelessWidget {
-  const _ProfileTimezoneSearchField({
-    required this.selectedTimezone,
-    required this.selectedTimezoneId,
-    required this.searchController,
-    required this.visibleTimezones,
-    required this.recommendedTimezones,
-    required this.isLoading,
-    required this.searchQuery,
-    required this.searchHint,
-    required this.emptyLabel,
-    required this.recommendedLabel,
-    required this.onTimezoneSelected,
-  });
-
-  final ReferenceTimezone? selectedTimezone;
-  final String? selectedTimezoneId;
-  final TextEditingController searchController;
-  final List<ReferenceTimezone> visibleTimezones;
-  final List<ReferenceTimezone> recommendedTimezones;
-  final bool isLoading;
-  final String searchQuery;
-  final String searchHint;
-  final String emptyLabel;
-  final String? recommendedLabel;
-  final ValueChanged<ReferenceTimezone> onTimezoneSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final timezoneLabelLang = Localizations.localeOf(context).languageCode;
-    final hasSelection = selectedTimezoneId != null;
-    final selectedLabel = selectedTimezone == null
-        ? selectedTimezoneId ?? searchHint
-        : referenceTimezoneLabel(selectedTimezone!, lang: timezoneLabelLang);
-    final hasSearchQuery = searchQuery.trim().isNotEmpty;
-    final displayedTimezones = hasSearchQuery
-        ? visibleTimezones
-        : recommendedTimezones;
-    final showsRecommendations =
-        !hasSearchQuery && recommendedTimezones.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (hasSelection) ...[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(
-                profileScaled(context, 18, min: 16, max: 20),
-              ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: profileScaled(context, 14, min: 12, max: 16),
-                vertical: profileScaled(context, 11, min: 10, max: 12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.schedule_rounded,
-                    color: AppColors.accent,
-                    size: profileScaled(context, 20, min: 18, max: 21),
-                  ),
-                  SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
-                  Expanded(
-                    child: Text(
-                      selectedLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: profileScaled(context, 15, min: 14, max: 16),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
-        ],
-        TextField(
-          controller: searchController,
-          enabled: !isLoading,
-          cursorColor: AppColors.accent,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: profileScaled(context, 14, min: 13, max: 15),
-            fontWeight: FontWeight.w700,
-          ),
-          decoration: InputDecoration(
-            hintText: searchHint,
-            hintStyle: TextStyle(
-              color: profileTextMuted,
-              fontSize: profileScaled(context, 14, min: 13, max: 15),
-              fontWeight: FontWeight.w600,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppColors.accent,
-            ),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: profileScaled(context, 14, min: 12, max: 16),
-              vertical: profileScaled(context, 13, min: 11, max: 14),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                profileScaled(context, 16, min: 14, max: 18),
-              ),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                profileScaled(context, 16, min: 14, max: 18),
-              ),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                profileScaled(context, 16, min: 14, max: 18),
-              ),
-              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-            ),
-          ),
-        ),
-        if (isLoading) ...[
-          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              width: profileScaled(context, 22, min: 20, max: 24),
-              height: profileScaled(context, 22, min: 20, max: 24),
-              child: const CircularProgressIndicator(
-                strokeWidth: 2.2,
-                color: AppColors.accent,
-              ),
-            ),
-          ),
-        ] else if (hasSearchQuery || displayedTimezones.isNotEmpty) ...[
-          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
-          if (hasSearchQuery && visibleTimezones.isEmpty)
-            Text(
-              emptyLabel,
-              style: TextStyle(
-                color: profileTextMuted,
-                fontSize: profileScaled(context, 13, min: 12, max: 13),
-                fontWeight: FontWeight.w600,
-              ),
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showsRecommendations && recommendedLabel != null) ...[
-                  Text(
-                    recommendedLabel!,
-                    style: TextStyle(
-                      color: profileTextMuted,
-                      fontSize: profileScaled(context, 12, min: 11, max: 12),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: profileScaled(context, 8, min: 7, max: 8)),
-                ],
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: profileScaled(context, 224, min: 180, max: 240),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: displayedTimezones.length,
-                    separatorBuilder: (_, _) => SizedBox(
-                      height: profileScaled(context, 8, min: 7, max: 8),
-                    ),
-                    itemBuilder: (context, index) {
-                      final timezone = displayedTimezones[index];
-                      final timezoneId =
-                          normalizeReferenceTimezoneId(timezone.id) ??
-                          timezone.id.trim();
-                      final selected = selectedTimezoneId == timezoneId;
-
-                      return InkWell(
-                        onTap: () => onTimezoneSelected(timezone),
-                        borderRadius: BorderRadius.circular(
-                          profileScaled(context, 14, min: 12, max: 16),
-                        ),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.accent.withValues(alpha: 0.16)
-                                : Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(
-                              profileScaled(context, 14, min: 12, max: 16),
-                            ),
-                            border: Border.all(
-                              color: selected
-                                  ? AppColors.accent
-                                  : Colors.white.withValues(alpha: 0.05),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: profileScaled(
-                                context,
-                                13,
-                                min: 11,
-                                max: 14,
-                              ),
-                              vertical: profileScaled(
-                                context,
-                                11,
-                                min: 10,
-                                max: 12,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    referenceTimezoneLabel(
-                                      timezone,
-                                      lang: timezoneLabelLang,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: profileScaled(
-                                        context,
-                                        14,
-                                        min: 13,
-                                        max: 15,
-                                      ),
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ],
-    );
   }
 }
 

@@ -44,6 +44,55 @@ void main() {
   );
 
   test(
+    'own profile exposes personal workspace actions moved from drawer',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final bodyStart = source.indexOf('class _ProfileBody');
+      final sectionsStart = source.indexOf('class _OwnProfileSections');
+      final quickActionsStart = source.indexOf('class _OwnProfileQuickActions');
+      final quickActionsEnd = source.indexOf('class _ProfileQuickActionTile');
+
+      expect(bodyStart, isNonNegative);
+      expect(sectionsStart, greaterThan(bodyStart));
+      expect(quickActionsStart, greaterThan(sectionsStart));
+      expect(quickActionsEnd, greaterThan(quickActionsStart));
+
+      final bodySource = source.substring(bodyStart, sectionsStart);
+      final sectionsSource = source.substring(sectionsStart, quickActionsStart);
+      final quickActionsSource = source.substring(
+        quickActionsStart,
+        quickActionsEnd,
+      );
+      final workspaceIndex = sectionsSource.indexOf(
+        '_OwnProfileQuickActions()',
+      );
+      final journeyIndex = sectionsSource.indexOf('l10n.profileJourneyTitle');
+
+      expect(bodySource, isNot(contains('_OwnProfileQuickActions()')));
+      expect(workspaceIndex, isNonNegative);
+      expect(journeyIndex, isNonNegative);
+      expect(workspaceIndex, lessThan(journeyIndex));
+      expect(quickActionsSource, contains('l10n.profileMyContentTitle'));
+      expect(quickActionsSource, contains('Column('));
+      expect(quickActionsSource, isNot(contains('Wrap(')));
+      expect(quickActionsSource, isNot(contains('LayoutBuilder(')));
+      expect(quickActionsSource, isNot(contains('itemWidth')));
+      expect(quickActionsSource, contains('l10n.myActivitiesTitle'));
+      expect(quickActionsSource, contains("context.push('/me/activities')"));
+      expect(quickActionsSource, contains('l10n.myExcursionsTitle'));
+      expect(quickActionsSource, contains("context.push('/me/excursions')"));
+      expect(quickActionsSource, contains('l10n.travelChecklistRecentTitle'));
+      expect(quickActionsSource, contains("context.push('/me/checklists')"));
+      expect(quickActionsSource, contains('l10n.myStoriesTitle'));
+      expect(quickActionsSource, contains("context.push('/me/posts')"));
+      expect(quickActionsSource, contains('l10n.myStoryArchiveTitle'));
+      expect(quickActionsSource, contains("context.push('/me/stories')"));
+    },
+  );
+
+  test(
     'profile stats keep loading state instead of showing false zeroes',
     () async {
       final source = await File(
@@ -99,6 +148,35 @@ void main() {
       expect(source, contains('scrollDirection: Axis.horizontal'));
     },
   );
+
+  test('empty profile bio prompt is warm and localized', () async {
+    final source = await File(
+      'lib/screens/profile/profile_screen.dart',
+    ).readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('l10n.profileEmptyBioPlaceholder'));
+    expect(
+      ruArb,
+      contains(
+        '"profileEmptyBioPlaceholder": "Несколько слов о себе помогут другим узнать вас лучше"',
+      ),
+    );
+    expect(
+      enArb,
+      contains(
+        '"profileEmptyBioPlaceholder": "A few words about yourself help others get to know you better"',
+      ),
+    );
+    expect(
+      kkArb,
+      contains(
+        '"profileEmptyBioPlaceholder": "Өзіңіз туралы бірнеше сөз басқаларға сізді жақсырақ тануға көмектеседі"',
+      ),
+    );
+  });
 
   test(
     'empty foreign review sections do not render placeholder cards',

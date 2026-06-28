@@ -166,6 +166,29 @@ void main() {
     expect(request.headers['Authorization'], 'Bearer access-token');
   });
 
+  test('markNotificationRead posts encoded notification id', () async {
+    final adapter = _RecordingAdapter(
+      response: const _JsonResponse(200, {'updatedCount': 1}),
+    );
+    final api = NotificationApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _MemorySecureStorage(accessToken: 'access-token'),
+      ),
+    );
+
+    final result = await api.markNotificationRead(
+      notificationId: 'support reply/1',
+    );
+
+    expect(result.updatedCount, 1);
+    final request = adapter.requests.single;
+    expect(request.method, 'POST');
+    expect(request.uri.path, '/api/v1/notifications/support%20reply%2F1/read');
+    expect(request.headers['Authorization'], 'Bearer access-token');
+  });
+
   test(
     'getNotificationPreferences parses production delivery settings',
     () async {

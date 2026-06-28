@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../features/chat/models/conversation_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/chat_provider.dart';
 import 'app_colors.dart';
 
 enum AppBottomNavItem { home, feed, qr, map, services, chats }
@@ -120,12 +125,16 @@ class CommonBottomNavigationBar extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: _BottomNavButton(
-                layout: layout,
-                label: l10n.homeNavChats,
-                icon: Icons.chat_bubble_outline_rounded,
-                active: activeItem == AppBottomNavItem.chats,
-                onTap: onChatsTap,
+              child: _ChatUnreadCountBuilder(
+                builder: (context, unreadConversationCount) => _BottomNavButton(
+                  layout: layout,
+                  label: l10n.homeNavChats,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  active: activeItem == AppBottomNavItem.chats,
+                  onTap: onChatsTap,
+                  badgeCount: unreadConversationCount,
+                  badgeKey: const ValueKey('bottom-nav-chats-badge'),
+                ),
               ),
             ),
           ],
@@ -228,12 +237,16 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: _BottomNavButton(
-                layout: layout,
-                label: l10n.homeNavChats,
-                icon: Icons.chat_bubble_outline_rounded,
-                active: activeItem == AppBottomNavItem.chats,
-                onTap: onChatsTap,
+              child: _ChatUnreadCountBuilder(
+                builder: (context, unreadConversationCount) => _BottomNavButton(
+                  layout: layout,
+                  label: l10n.homeNavChats,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  active: activeItem == AppBottomNavItem.chats,
+                  onTap: onChatsTap,
+                  badgeCount: unreadConversationCount,
+                  badgeKey: const ValueKey('bottom-nav-chats-badge'),
+                ),
               ),
             ),
           ],
@@ -278,6 +291,8 @@ class _BottomNavButton extends StatelessWidget {
     required this.icon,
     required this.active,
     required this.onTap,
+    this.badgeCount = 0,
+    this.badgeKey,
   });
 
   final _BottomNavLayout layout;
@@ -285,6 +300,8 @@ class _BottomNavButton extends StatelessWidget {
   final IconData icon;
   final bool active;
   final VoidCallback onTap;
+  final int badgeCount;
+  final Key? badgeKey;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +324,26 @@ class _BottomNavButton extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: color, size: layout.iconSize),
+                  SizedBox(
+                    width: layout.iconSize + 18,
+                    height: layout.iconSize,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(icon, color: color, size: layout.iconSize),
+                        if (badgeCount > 0)
+                          Positioned(
+                            key: badgeKey,
+                            top: -5,
+                            right: 0,
+                            child: _BottomNavBadge(
+                              label: _bottomNavBadgeLabel(badgeCount),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                   SizedBox(height: layout.itemGap),
                   SizedBox(
                     height: layout.labelHeight,
@@ -335,6 +371,125 @@ class _BottomNavButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ChatUnreadCountBuilder extends StatefulWidget {
+  const _ChatUnreadCountBuilder({required this.builder});
+
+  final Widget Function(BuildContext context, int unreadConversationCount)
+  builder;
+
+  @override
+  State<_ChatUnreadCountBuilder> createState() =>
+      _ChatUnreadCountBuilderState();
+}
+
+class _ChatUnreadCountBuilderState extends State<_ChatUnreadCountBuilder>
+    with WidgetsBindingObserver {
+  ChatProvider? _provider;
+  bool _requestedInitialLoad = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider = _maybeRead<ChatProvider>(context);
+    if (!_requestedInitialLoad) {
+      _requestedInitialLoad = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_provider?.loadConversations());
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_provider?.loadConversations(forceRefresh: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = _maybeWatch<ChatProvider>(context);
+    final count = _unreadConversationCount(provider?.conversations ?? const []);
+    return widget.builder(context, count);
+  }
+}
+
+class _BottomNavBadge extends StatelessWidget {
+  const _BottomNavBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: _commonBottomNavBackground, width: 1.5),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+int _unreadConversationCount(List<ConversationVm> conversations) {
+  return conversations
+      .where((conversation) => conversation.unreadCount > 0)
+      .length;
+}
+
+String _bottomNavBadgeLabel(int count) {
+  if (count > 99) {
+    return '99+';
+  }
+  return '$count';
+}
+
+T? _maybeRead<T>(BuildContext context) {
+  try {
+    return context.read<T>();
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
+
+T? _maybeWatch<T>(BuildContext context) {
+  try {
+    return context.watch<T>();
+  } on ProviderNotFoundException {
+    return null;
   }
 }
 

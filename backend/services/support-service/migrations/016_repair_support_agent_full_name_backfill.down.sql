@@ -1,0 +1,2 @@
+-- Data repair migration. Rollback is intentionally a no-op to avoid corrupting
+-- manually corrected support agent profiles.

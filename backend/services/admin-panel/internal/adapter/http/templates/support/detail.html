@@ -1,0 +1,184 @@
+{{define "support/detail"}}
+{{template "pageStart" .}}
+{{$ticket := .Data.Detail.Ticket}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "support.eyebrow"}}</p>
+      <h1>{{t .Locale "support.detailTitle"}} {{if $ticket.ID}}· {{.Data.DisplayID}}{{end}}</h1>
+    </div>
+    <a class="button" href="{{.Data.QueueURL}}">{{t .Locale "action.back"}}</a>
+  </div>
+
+  {{if $ticket.ID}}
+    <div class="support-detail-layout">
+      <section class="card support-ticket-summary">
+        <div class="support-ticket-summary-head">
+          <div>
+            <h2>{{t .Locale "support.ticketInfo"}}</h2>
+            <p class="muted">{{t .Locale "support.conversationHint"}}</p>
+          </div>
+          <span class="{{supportStatusClass $ticket.Status}}">{{t $.Locale (printf "support.status.%s" $ticket.Status)}}</span>
+        </div>
+        <dl class="meta-grid">
+          <div><dt>ID</dt><dd><code>{{.Data.DisplayID}}</code></dd></div>
+          <div><dt>{{t .Locale "support.user"}}</dt><dd>{{if .Data.UserLabel}}{{.Data.UserLabel}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.priority"}}</dt><dd>{{t $.Locale (printf "support.priority.%s" $ticket.Priority)}}</dd></div>
+          <div><dt>{{t .Locale "support.priorityReasons"}}</dt><dd>{{if .Data.PriorityReasonLabels}}{{join .Data.PriorityReasonLabels ", "}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.customerSegment"}}</dt><dd>{{if $ticket.CustomerSegment}}{{t $.Locale (printf "support.segment.%s" $ticket.CustomerSegment)}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.customerSegmentReasons"}}</dt><dd>{{if .Data.CustomerSegmentReasonLabels}}{{join .Data.CustomerSegmentReasonLabels ", "}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.segmentRefreshStatus"}}</dt><dd>{{if .Data.SegmentRefreshLabel}}{{.Data.SegmentRefreshLabel}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.locale"}}</dt><dd>{{if .Data.LocaleLabel}}{{.Data.LocaleLabel}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.assignee"}}</dt><dd>{{if .Data.AssigneeLabel}}{{.Data.AssigneeLabel}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.assignmentStatus"}}</dt><dd>{{if $ticket.AssignmentStatus}}{{t $.Locale (printf "support.assignment.%s" $ticket.AssignmentStatus)}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.assignmentReasons"}}</dt><dd>{{if .Data.AssignmentReasonLabels}}{{join .Data.AssignmentReasonLabels ", "}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t .Locale "support.assignedAt"}}</dt><dd>{{formatTime $ticket.AssignedAt (staffTimezone $.Staff)}}</dd></div>
+          <div>
+            <dt>{{t .Locale "support.sla"}}</dt>
+            <dd>
+              {{if .Data.SLA.LabelKey}}
+                <span class="{{.Data.SLA.BadgeClass}}">{{if .Data.SLA.DisplayLabel}}{{.Data.SLA.DisplayLabel}}{{else}}{{t $.Locale .Data.SLA.StateKey}}{{end}}</span>
+                <span class="muted block">{{t $.Locale .Data.SLA.LabelKey}}</span>
+              {{else}}
+                -
+              {{end}}
+            </dd>
+          </div>
+          <div><dt>{{t .Locale "support.createdAt"}}</dt><dd>{{formatTime $ticket.CreatedAt (staffTimezone $.Staff)}}</dd></div>
+          <div><dt>{{t .Locale "support.firstResponseAt"}}</dt><dd>{{formatTime $ticket.FirstResponseAt (staffTimezone $.Staff)}}</dd></div>
+          <div><dt>{{t .Locale "support.resolvedAt"}}</dt><dd>{{formatTime $ticket.ResolvedAt (staffTimezone $.Staff)}}</dd></div>
+          {{if .Data.CSAT.RatingLabel}}
+            <div>
+              <dt>{{t .Locale "support.csatRating"}}</dt>
+              <dd>
+                <span class="support-csat-rating">★ {{.Data.CSAT.RatingLabel}}</span>
+                {{if .Data.CSAT.Comment}}<span class="muted block">{{.Data.CSAT.Comment}}</span>{{end}}
+              </dd>
+            </div>
+          {{end}}
+        </dl>
+      </section>
+
+      <aside class="support-side-stack">
+        {{if .Data.CanManage}}
+          <form class="card form" method="post" action="/admin/support/tickets/{{$ticket.ID}}/assign">
+            {{csrfField $.CSRFToken}}
+            <label>
+              <span>{{t .Locale "support.assignee"}}</span>
+              <input type="search" name="assignee_query" value="{{.Data.AssigneeInputValue}}" list="support-assignee-options" autocomplete="off" required placeholder="{{t .Locale "support.assigneePlaceholder"}}">
+              <input type="hidden" name="assignee_id" value="{{.Data.AssigneeID}}">
+              <datalist id="support-assignee-options">
+                {{range .Data.AssigneeOptions}}
+                  <option value="{{.SearchValue}}" label="{{.Meta}}" data-staff-id="{{.StaffID}}"></option>
+                {{end}}
+              </datalist>
+            </label>
+            <label>
+              <span>{{t .Locale "support.assignmentReason"}}</span>
+              <textarea name="assignment_reason" rows="3" required placeholder="{{t .Locale "support.assignmentReasonPlaceholder"}}"></textarea>
+            </label>
+            <button class="primary" type="submit">{{t .Locale "support.assign"}}</button>
+          </form>
+        {{end}}
+
+        {{if .Data.Context}}
+          <section class="card">
+            <h2>{{t .Locale "support.context"}}</h2>
+            <dl class="meta-grid">
+              {{range .Data.Context}}
+                <div><dt>{{.Key}}</dt><dd><code>{{.Value}}</code></dd></div>
+              {{end}}
+            </dl>
+          </section>
+        {{end}}
+
+        {{if and .Data.CanReply .Data.SavedReplies}}
+          <section class="card">
+            <h2>{{t .Locale "support.savedRepliesTitle"}}</h2>
+            <div class="support-saved-reply-list">
+              {{range .Data.SavedReplies}}
+                <button class="support-saved-reply-card" type="button" data-support-saved-reply data-reply-body="{{.Body}}">
+                  <strong>{{.Title}}</strong>
+                  <span>{{.BodyPreview}}</span>
+                </button>
+              {{end}}
+            </div>
+          </section>
+        {{end}}
+
+        {{if .Data.CanReply}}
+          <form class="card form" method="post" action="/admin/support/tickets/{{$ticket.ID}}/notes">
+            {{csrfField $.CSRFToken}}
+            <label>
+              <span>{{t .Locale "support.internalNote"}}</span>
+              <textarea name="note" rows="4" required placeholder="{{t .Locale "support.notePlaceholder"}}"></textarea>
+            </label>
+            <button type="submit">{{t .Locale "support.addNote"}}</button>
+          </form>
+          <form class="card form" method="post" action="/admin/support/tickets/{{$ticket.ID}}/resolve">
+            {{csrfField $.CSRFToken}}
+            <label>
+              <span>{{t .Locale "support.resolution"}}</span>
+              <textarea name="resolution" rows="3" placeholder="{{t .Locale "support.resolutionPlaceholder"}}"></textarea>
+            </label>
+            <button class="primary" type="submit">{{t .Locale "support.resolve"}}</button>
+          </form>
+          <form class="card form" method="post" action="/admin/support/tickets/{{$ticket.ID}}/reopen">
+            {{csrfField $.CSRFToken}}
+            <label>
+              <span>{{t .Locale "support.reopenReason"}}</span>
+              <textarea name="reason" rows="3" placeholder="{{t .Locale "support.reopenPlaceholder"}}"></textarea>
+            </label>
+            <button type="submit">{{t .Locale "support.reopen"}}</button>
+          </form>
+        {{end}}
+      </aside>
+    </div>
+
+    <section class="card support-chat-card">
+      <div class="section-head compact">
+        <div>
+          <h2>{{t .Locale "support.chat"}}</h2>
+          <p>{{t .Locale "support.chatSubtitle"}}</p>
+        </div>
+      </div>
+      {{if .Data.Events}}
+        <div class="support-chat">
+          {{range .Data.Events}}
+            <article class="{{.BubbleClass}}">
+              <div class="support-chat-author">
+                <strong>{{.ActorLabel}}</strong>
+                <span>{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}</span>
+              </div>
+              <p>{{.Message}}</p>
+              {{if .Attachments}}
+                <div class="support-chat-attachments">
+                  <span class="muted block">{{t $.Locale "label.attachments"}}: {{.AttachmentCount}}</span>
+                  {{range .Attachments}}
+                    <a class="button support-chat-attachment" href="{{.URL}}" target="_blank" rel="noopener">{{.Label}}</a>
+                  {{end}}
+                </div>
+              {{else if .AttachmentCount}}
+                <p class="muted block">{{t $.Locale "label.attachments"}}: {{.AttachmentCount}}</p>
+              {{end}}
+            </article>
+          {{end}}
+        </div>
+      {{else}}
+        <div class="empty">{{t .Locale "support.noEvents"}}</div>
+      {{end}}
+
+      {{if .Data.CanReply}}
+        <form id="support-chat-composer" class="support-chat-composer form" method="post" action="/admin/support/tickets/{{$ticket.ID}}/reply">
+          {{csrfField $.CSRFToken}}
+          <textarea name="message" rows="3" required placeholder="{{t .Locale "support.replyPlaceholder"}}" data-support-reply-composer></textarea>
+          <button class="primary" type="submit">{{t .Locale "support.sendReply"}}</button>
+        </form>
+      {{end}}
+    </section>
+  {{else}}
+    <div class="empty card">{{t .Locale "support.notLoaded"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

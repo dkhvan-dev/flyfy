@@ -51,6 +51,7 @@ type Repository interface {
 	ListUserNotificationCategorySummaries(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
 	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
 	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
+	MarkUserNotificationRead(ctx context.Context, userID uuid.UUID, notificationID uuid.UUID) (int, error)
 	GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (*model.NotificationPreferences, error)
 	UpsertNotificationPreferences(ctx context.Context, preferences model.NotificationPreferences) (*model.NotificationPreferences, error)
 	ListNotificationPreferences(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]model.NotificationPreferences, error)
@@ -280,6 +281,23 @@ func (uc *NotificationUseCase) MarkUserNotificationsRead(
 		return 0, fmt.Errorf("%w: category is required", model.ErrInvalidInput)
 	}
 	return uc.repo.MarkUserNotificationsRead(ctx, userID, normalizedCategory)
+}
+
+func (uc *NotificationUseCase) MarkUserNotificationRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	notificationID uuid.UUID,
+) (int, error) {
+	if uc == nil || uc.repo == nil {
+		return 0, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return 0, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	if notificationID == uuid.Nil {
+		return 0, fmt.Errorf("%w: notification id is required", model.ErrInvalidInput)
+	}
+	return uc.repo.MarkUserNotificationRead(ctx, userID, notificationID)
 }
 
 func (uc *NotificationUseCase) GetNotificationPreferences(

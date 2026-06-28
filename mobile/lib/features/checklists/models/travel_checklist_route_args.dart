@@ -211,7 +211,10 @@ class TravelChecklistRouteArgs {
     };
   }
 
-  TripChecklistPreviewRequest toRequest({required String preferredLanguage}) {
+  TripChecklistPreviewRequest toRequest({
+    required String preferredLanguage,
+    String? citizenshipCountryCode,
+  }) {
     return TripChecklistPreviewRequest(
       tripId: normalizedTripId,
       destination: destination,
@@ -220,6 +223,9 @@ class TravelChecklistRouteArgs {
       transportModes: normalizedTokens(transportModes),
       activitySlugs: normalizedTokens(activitySlugs),
       hasChildren: hasChildren,
+      citizenshipCountryCode: _blankToNull(
+        citizenshipCountryCode,
+      )?.toUpperCase(),
       preferredLanguage: preferredLanguage.trim().isNotEmpty
           ? preferredLanguage.trim()
           : 'ru',

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'guide dashboard screen uses adaptive tabs with a private draft tab',
+    'guide dashboard screen uses full-width section tabs and status filters',
     () async {
       final source = await File(
         'lib/screens/excursions/guide_dashboard_screen.dart',
@@ -36,7 +36,33 @@ void main() {
       expect(source, contains('_dashboardOfferAfterMutation'));
       expect(source, contains('_offerTabForStatus'));
       expect(source, contains('TextEditingController _searchController'));
-      expect(source, contains('class _GuideDashboardSearchField'));
+      expect(
+        source.contains("import '../../core/ui/app_list_search_field.dart';"),
+        isTrue,
+      );
+      expect(source.contains('AppListSearchField('), isTrue);
+      expect(source.contains('onFilterTap: _openFilters'), isTrue);
+      expect(source.contains('activeFilterCount: _activeFilterCount'), isTrue);
+      expect(
+        source.contains('showModalBottomSheet<_GuideDashboardFilters>'),
+        isTrue,
+      );
+      expect(
+        source.contains('class _GuideDashboardStatusFiltersSheet'),
+        isTrue,
+      );
+      expect(source.contains('class _GuideDashboardSegmentedTabs'), isTrue);
+      expect(source.contains('class _GuideDashboardSubTabs'), isFalse);
+      expect(source.contains('class _GuideHorizontalTabs'), isFalse);
+      expect(source.contains('class _GuideStatusFilterChip'), isTrue);
+      expect(
+        source.contains('GuideOfferDashboardTab? _offerStatusFilter'),
+        isTrue,
+      );
+      expect(
+        source.contains('GuideBookingDashboardTab? _bookingStatusFilter'),
+        isTrue,
+      );
       expect(source, contains('AppColors.accent'));
       expect(source, contains('_matchesSmartQuery'));
       expect(source, contains('_bookingCountForOffer'));
@@ -160,6 +186,21 @@ void main() {
     expect(kkSource, isNot(contains('ұсыныс немесе брон')));
   });
 
+  test('guide dashboard active booking badge shows status copy', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+    final enSource = await File('lib/l10n/app_en.arb').readAsString();
+    final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('statusLabel: l10n.guideDashboardStatusBooked'));
+    expect(ruSource, contains('"guideDashboardStatusBooked": "Активно"'));
+    expect(ruSource, isNot(contains('"guideDashboardStatusBooked": "Бронь"')));
+    expect(enSource, contains('"guideDashboardStatusBooked": "Active"'));
+    expect(kkSource, contains('"guideDashboardStatusBooked": "Белсенді"'));
+  });
+
   test('guide dashboard booking cards use excursion covers', () async {
     final source = await File(
       'lib/screens/excursions/guide_dashboard_screen.dart',
@@ -181,6 +222,158 @@ void main() {
     );
     expect(bookingCardSource, isNot(contains('imageUrl: null')));
   });
+
+  test(
+    'guide dashboard cards trust backend localized offer titles and omit redundant booking CTA',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+      final offerCardStart = source.indexOf('class _GuideOfferCard');
+      final bookingCardStart = source.indexOf('class _GuideBookingCard');
+      final attendanceActionStart = source.indexOf(
+        'class _ExcursionAttendanceQrAction',
+        bookingCardStart,
+      );
+      expect(offerCardStart, isNonNegative);
+      expect(bookingCardStart, greaterThan(offerCardStart));
+      expect(attendanceActionStart, greaterThan(bookingCardStart));
+
+      final offerCardSource = source.substring(
+        offerCardStart,
+        bookingCardStart,
+      );
+      final bookingCardSource = source.substring(
+        bookingCardStart,
+        attendanceActionStart,
+      );
+
+      expect(
+        source,
+        isNot(
+          contains(
+            "import '../../features/excursions/excursion_localization.dart';",
+          ),
+        ),
+      );
+      expect(offerCardSource, isNot(contains('localizedExcursionTitle(')));
+      expect(
+        offerCardSource,
+        isNot(contains('Localizations.localeOf(context).languageCode')),
+      );
+      expect(
+        offerCardSource,
+        contains('final title = excursion.title.trim().isEmpty'),
+      );
+      expect(offerCardSource, contains(': excursion.title.trim();'));
+      expect(
+        offerCardSource,
+        isNot(contains('title: excursion.title.trim().isEmpty')),
+      );
+      expect(
+        bookingCardSource,
+        isNot(contains('actionLabel: l10n.guideDashboardViewBooking')),
+      );
+      expect(bookingCardSource, isNot(contains('actionLabel: actionLabel')));
+      expect(bookingCardSource, contains('actionLabel: null'));
+      expect(ruSource, contains('"guideDashboardOffersStat": "Предложения"'));
+      expect(
+        ruSource,
+        isNot(contains('"guideDashboardOffersStat": "Всего предложений"')),
+      );
+    },
+  );
+
+  test('guide dashboard booking card hides duplicate title subtitle', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    final bookingCardStart = source.indexOf('class _GuideBookingCard');
+    final attendanceActionStart = source.indexOf(
+      'class _ExcursionAttendanceQrAction',
+      bookingCardStart,
+    );
+    expect(bookingCardStart, isNonNegative);
+    expect(attendanceActionStart, greaterThan(bookingCardStart));
+
+    final bookingCardSource = source.substring(
+      bookingCardStart,
+      attendanceActionStart,
+    );
+
+    expect(source, contains('_guideBookingCardSubtitle('));
+    expect(source, contains('_sameGuideDashboardText('));
+    expect(source, contains('_normalizeGuideDashboardSearchText('));
+    expect(bookingCardSource, contains('final title ='));
+    expect(
+      bookingCardSource,
+      contains('_guideBookingCardSubtitle(booking, title)'),
+    );
+    expect(
+      bookingCardSource,
+      isNot(contains("subtitle: (booking.landmarkName ?? '').trim()")),
+    );
+  });
+
+  test(
+    'guide dashboard booking cancel action uses destructive color',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+
+      final bookingCardStart = source.indexOf('class _GuideBookingCard');
+      final attendanceActionStart = source.indexOf(
+        'class _ExcursionAttendanceQrAction',
+        bookingCardStart,
+      );
+      final journeyCardStart = source.indexOf('class _GuideJourneyCard');
+      final statusBadgeStart = source.indexOf(
+        'class _GuideStatusBadge',
+        journeyCardStart,
+      );
+      expect(bookingCardStart, isNonNegative);
+      expect(attendanceActionStart, greaterThan(bookingCardStart));
+      expect(journeyCardStart, isNonNegative);
+      expect(statusBadgeStart, greaterThan(journeyCardStart));
+
+      final bookingCardSource = source.substring(
+        bookingCardStart,
+        attendanceActionStart,
+      );
+      final journeyCardSource = source.substring(
+        journeyCardStart,
+        statusBadgeStart,
+      );
+
+      expect(
+        bookingCardSource.contains(
+          'destructiveActionLabel: secondaryActionLabel',
+        ),
+        isTrue,
+      );
+      expect(
+        bookingCardSource.contains(
+          'onDestructiveActionTap: onSecondaryActionTap',
+        ),
+        isTrue,
+      );
+      expect(
+        bookingCardSource.contains(
+          'secondaryActionLabel: secondaryActionLabel',
+        ),
+        isFalse,
+      );
+      expect(journeyCardSource.contains('final destructiveButton ='), isTrue);
+      expect(
+        journeyCardSource.contains('foregroundColor: const Color(0xFFFFB4AB)'),
+        isTrue,
+      );
+    },
+  );
 
   test(
     'attendance QR opens from bottom sheet instead of inline card',

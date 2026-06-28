@@ -9,15 +9,16 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	Postgres    PostgresConfig
-	Log         LogConfig
-	Redis       RedisConfig
-	Security    SecurityConfig
-	UserService UserServiceConfig
-	Admin       AdminConfig
-	Switches    SwitchesServiceConfig
+	App           AppConfig
+	HTTP          HTTPConfig
+	Postgres      PostgresConfig
+	Log           LogConfig
+	Redis         RedisConfig
+	Security      SecurityConfig
+	UserService   UserServiceConfig
+	Admin         AdminConfig
+	MediaBackfill MediaBackfillConfig
+	Switches      SwitchesServiceConfig
 }
 
 type AppConfig struct {
@@ -83,6 +84,14 @@ type SecurityConfig struct {
 
 type UserServiceConfig struct {
 	GRPCTarget string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
+}
+
+type MediaBackfillConfig struct {
+	FileManagerURL          string        `env:"PLACE_MEDIA_BACKFILL_FILE_MANAGER_URL, default=http://file-manager-service:8083"`
+	HTTPTimeout             time.Duration `env:"PLACE_MEDIA_BACKFILL_HTTP_TIMEOUT, default=30s"`
+	RowDelay                time.Duration `env:"PLACE_MEDIA_BACKFILL_ROW_DELAY, default=250ms"`
+	RunTimeout              time.Duration `env:"PLACE_MEDIA_BACKFILL_RUN_TIMEOUT, default=30m"`
+	CommonsMinMediaPerPlace int           `env:"PLACE_MEDIA_BACKFILL_COMMONS_MIN_MEDIA_PER_PLACE, default=0"`
 }
 
 type SwitchesServiceConfig struct {

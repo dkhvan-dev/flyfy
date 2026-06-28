@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,7 @@ type Server struct {
 	communities  *app.CommunityAdminUseCase
 	fraud        *app.FraudUseCase
 	operations   *app.OperationsUseCase
+	support      *app.SupportUseCase
 	readiness    func(context.Context) error
 }
 
@@ -78,6 +80,10 @@ func (s *Server) SetOperationsUseCase(useCase *app.OperationsUseCase) {
 
 func (s *Server) SetUserRouteModerationUseCase(useCase *app.UserRouteModerationUseCase) {
 	s.userRoutes = useCase
+}
+
+func (s *Server) SetSupportUseCase(useCase *app.SupportUseCase) {
+	s.support = useCase
 }
 
 func (s *Server) Handler() http.Handler {
@@ -141,6 +147,29 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/approve", s.ApproveUserRoute)
 	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/reject", s.RejectUserRoute)
 	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/hide", s.HideUserRoute)
+	mux.HandleFunc("GET /admin/support/tickets", s.SupportTicketQueue)
+	mux.HandleFunc("GET /admin/support/agents", s.SupportAgentList)
+	mux.HandleFunc("POST /admin/support/agents", s.SaveSupportAgent)
+	mux.HandleFunc("GET /admin/support/saved-replies", s.SupportSavedReplyList)
+	mux.HandleFunc("POST /admin/support/saved-replies", s.SaveSupportSavedReply)
+	mux.HandleFunc("GET /admin/support/tickets/{ticketID}/attachments/{eventIndex}/{attachmentIndex}", s.SupportTicketAttachment)
+	mux.HandleFunc("GET /admin/support/tickets/{ticketID}", s.SupportTicketDetail)
+	mux.HandleFunc("POST /admin/support/tickets/{ticketID}/assign", s.AssignSupportTicket)
+	mux.HandleFunc("POST /admin/support/tickets/{ticketID}/reply", s.ReplySupportTicket)
+	mux.HandleFunc("POST /admin/support/tickets/{ticketID}/notes", s.AddSupportTicketNote)
+	mux.HandleFunc("POST /admin/support/tickets/{ticketID}/resolve", s.ResolveSupportTicket)
+	mux.HandleFunc("POST /admin/support/tickets/{ticketID}/reopen", s.ReopenSupportTicket)
+	mux.HandleFunc("GET /admin/help/analytics", s.HelpAnalyticsDashboard)
+	mux.HandleFunc("GET /admin/help/categories", s.HelpCategoryList)
+	mux.HandleFunc("POST /admin/help/categories", s.SaveHelpCategory)
+	mux.HandleFunc("GET /admin/help/articles", s.HelpArticleList)
+	mux.HandleFunc("GET /admin/help/articles/new", s.NewHelpArticlePage)
+	mux.HandleFunc("POST /admin/help/articles", s.CreateHelpArticle)
+	mux.HandleFunc("GET /admin/help/articles/{articleID}/edit", s.EditHelpArticlePage)
+	mux.HandleFunc("POST /admin/help/articles/{articleID}", s.SaveHelpArticle)
+	mux.HandleFunc("POST /admin/help/articles/{articleID}/submit-review", s.SubmitHelpArticleForReview)
+	mux.HandleFunc("POST /admin/help/articles/{articleID}/publish", s.PublishHelpArticle)
+	mux.HandleFunc("POST /admin/help/articles/{articleID}/archive", s.ArchiveHelpArticle)
 	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
 	mux.HandleFunc("GET /admin/moderation/guides/fraud-blocks", s.GuideFraudBlocks)
 	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/confirm", s.ConfirmGuideFraudBlock)
@@ -158,6 +187,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/places", s.PlaceList)
 	mux.HandleFunc("GET /admin/places/new", s.NewPlacePage)
 	mux.HandleFunc("POST /admin/places", s.CreatePlace)
+	mux.HandleFunc("POST /admin/places/media/backfill", s.StartPlaceMediaBackfill)
 	mux.HandleFunc("GET /admin/place-media/{fileID}", s.PlaceMedia)
 	mux.HandleFunc("GET /admin/places/{placeID}/edit", s.EditPlacePage)
 	mux.HandleFunc("POST /admin/places/{placeID}", s.UpdatePlace)
@@ -284,9 +314,10 @@ func (s *Server) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
 	staff := staffFromContext(r.Context())
-	data, err := s.dashboardViewData(r.Context(), staff)
+	locale := localeFromContext(r.Context())
+	data, err := s.dashboardViewData(r.Context(), staff, locale)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "dashboard/index", "dashboard.title", "dashboard", data, publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "dashboard/index", "dashboard.title", "dashboard", data, publicError(locale, err))
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
@@ -500,27 +531,36 @@ func (s *Server) UpdateOwnTimezone(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectWithFlash("/admin/me", "staff.timezoneUpdated"), http.StatusSeeOther)
 }
 
-func (s *Server) dashboardViewData(ctx context.Context, staff *model.StaffUser) (DashboardViewData, error) {
-	if staff == nil || !staff.HasPermission(enum.PermissionModerationRead) {
-		return NewDashboardViewData(nil, nil, nil, nil), nil
+func (s *Server) dashboardViewData(ctx context.Context, staff *model.StaffUser, locale string) (DashboardViewData, error) {
+	var excursions []*model.ModerationCase
+	var activities []*model.ModerationCase
+	var guideApplications []*model.ModerationCase
+	var chatMessages []*model.ModerationCase
+	var dashboardErr error
+
+	if staff != nil && staff.HasPermission(enum.PermissionModerationRead) {
+		if s.moderation == nil {
+			dashboardErr = app.ErrIntegrationNotReady
+		} else {
+			excursions, dashboardErr = s.latestDashboardCases(ctx, staff, model.ModerationTargetExcursion)
+			if dashboardErr == nil {
+				activities, dashboardErr = s.latestDashboardCases(ctx, staff, model.ModerationTargetActivity)
+			}
+			if dashboardErr == nil {
+				guideApplications, dashboardErr = s.latestDashboardCases(ctx, staff, model.ModerationTargetGuideApplication)
+			}
+			if dashboardErr == nil {
+				chatMessages, dashboardErr = s.latestDashboardCases(ctx, staff, model.ModerationTargetChatMessage)
+			}
+		}
 	}
-	excursions, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetExcursion)
-	if err != nil {
-		return NewDashboardViewData(nil, nil, nil, nil), err
+
+	supportTickets, supportErr := s.latestDashboardSupportTickets(ctx, staff)
+	data := NewDashboardViewDataWithSupport(excursions, activities, guideApplications, chatMessages, supportTickets, staff, locale)
+	if data.Support != nil && supportErr != nil {
+		data.Support.Error = publicError(locale, supportErr)
 	}
-	activities, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetActivity)
-	if err != nil {
-		return NewDashboardViewData(excursions, nil, nil, nil), err
-	}
-	guideApplications, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetGuideApplication)
-	if err != nil {
-		return NewDashboardViewData(excursions, activities, nil, nil), err
-	}
-	chatMessages, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetChatMessage)
-	if err != nil {
-		return NewDashboardViewData(excursions, activities, guideApplications, nil), err
-	}
-	return NewDashboardViewData(excursions, activities, guideApplications, chatMessages), nil
+	return data, dashboardErr
 }
 
 func (s *Server) latestDashboardCases(ctx context.Context, staff *model.StaffUser, targetType model.ModerationTargetType) ([]*model.ModerationCase, error) {
@@ -531,6 +571,19 @@ func (s *Server) latestDashboardCases(ctx context.Context, staff *model.StaffUse
 		Limit:      5,
 	}
 	return s.moderation.ListQueue(ctx, staff, filter)
+}
+
+func (s *Server) latestDashboardSupportTickets(ctx context.Context, staff *model.StaffUser) ([]model.SupportTicket, error) {
+	if !staffCanSupportRead(staff) {
+		return nil, nil
+	}
+	if s.support == nil {
+		return nil, app.ErrIntegrationNotReady
+	}
+	return s.support.ListTickets(ctx, staff, model.SupportTicketFilter{
+		Status: model.SupportTicketStatusWaitingSupport,
+		Limit:  5,
+	})
 }
 
 func (s *Server) SyncExcursionQueue(w http.ResponseWriter, r *http.Request) {
@@ -1051,6 +1104,33 @@ func (s *Server) PlaceList(w http.ResponseWriter, r *http.Request) {
 	s.renderPage(w, http.StatusOK, r, "places/index", "place.title", "places", NewPlaceListViewData(items, total, filters), "")
 }
 
+func (s *Server) StartPlaceMediaBackfill(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := parseRequestForm(r); err != nil {
+		s.renderPage(w, http.StatusBadRequest, r, "places/index", "place.title", "places", NewPlaceListViewData(nil, 0, PlaceFilterViewData{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+
+	countryCode := strings.ToUpper(strings.TrimSpace(r.Form.Get("country")))
+	returnQuery := strings.TrimSpace(r.Form.Get("return_query"))
+	values, _ := url.ParseQuery(returnQuery)
+	if countryCode != "" {
+		values.Set("country", countryCode)
+	}
+	filters := placeListQuery(values)
+	if filters.CountryCode == "" {
+		s.renderPage(w, http.StatusBadRequest, r, "places/index", "place.title", "places", NewPlaceListViewData(nil, 0, filters), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+
+	if _, err := s.places.StartMediaBackfill(r.Context(), staff, filters.CountryCode, requestMetadata(r)); err != nil {
+		s.renderPage(w, errorStatus(err), r, "places/index", "place.title", "places", NewPlaceListViewData(nil, 0, filters), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+
+	http.Redirect(w, r, redirectWithFlash(placeListURL(filters.ReturnQuery), "place.mediaBackfillStarted"), http.StatusSeeOther)
+}
+
 func (s *Server) NewPlacePage(w http.ResponseWriter, r *http.Request) {
 	if staff := staffFromContext(r.Context()); staff == nil || !staff.HasPermission(enum.PermissionPlaceManage) {
 		s.renderPage(w, http.StatusForbidden, r, "places/form", "place.createTitle", "places", NewPlaceFormViewData(nil, placeInputFromItem(nil)), publicError(localeFromContext(r.Context()), app.ErrPermissionDenied))
@@ -1337,10 +1417,21 @@ func (s *Server) StaffList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) CreateStaff(w http.ResponseWriter, r *http.Request) {
 	staff := staffFromContext(r.Context())
+	if err := r.ParseForm(); err != nil {
+		items, _ := s.staff.ListStaff(r.Context(), staff, 100, 0)
+		s.renderPage(w, http.StatusBadRequest, r, "staff/index", "staff.title", "staff", NewStaffListViewData(staff, items), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	displayName, ok := staffDisplayNameFromForm(r.Form)
+	if !ok {
+		items, _ := s.staff.ListStaff(r.Context(), staff, 100, 0)
+		s.renderPage(w, http.StatusBadRequest, r, "staff/index", "staff.title", "staff", NewStaffListViewData(staff, items), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
 	result, err := s.staff.CreateStaff(r.Context(), staff, app.CreateStaffInput{
 		ActorStaffID: staff.ID,
 		Email:        r.Form.Get("email"),
-		DisplayName:  r.Form.Get("display_name"),
+		DisplayName:  displayName,
 		Roles:        parseRoles(r.Form["roles"]),
 		Metadata:     requestMetadata(r),
 	})
@@ -1373,9 +1464,18 @@ func (s *Server) UpdateStaffProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	staff := staffFromContext(r.Context())
+	if err := r.ParseForm(); err != nil {
+		s.renderStaffEditError(w, r, staff, staffID, app.ErrInvalidInput, "")
+		return
+	}
+	displayName, ok := staffDisplayNameFromForm(r.Form)
+	if !ok {
+		s.renderStaffEditError(w, r, staff, staffID, app.ErrInvalidInput, "")
+		return
+	}
 	err := s.staff.UpdateStaffProfile(r.Context(), staff, app.UpdateStaffProfileInput{
 		StaffID:     staffID,
-		DisplayName: r.Form.Get("display_name"),
+		DisplayName: displayName,
 		Roles:       parseRoles(r.Form["roles"]),
 		Metadata:    requestMetadata(r),
 	})
@@ -1384,6 +1484,20 @@ func (s *Server) UpdateStaffProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash("/admin/staff/"+staffID.String()+"/edit", "staff.updated"), http.StatusSeeOther)
+}
+
+func staffDisplayNameFromForm(values url.Values) (string, bool) {
+	lastName := strings.TrimSpace(values.Get("last_name"))
+	firstName := strings.TrimSpace(values.Get("first_name"))
+	middleName := strings.TrimSpace(values.Get("middle_name"))
+	if lastName == "" || firstName == "" {
+		return "", false
+	}
+	parts := []string{lastName, firstName}
+	if middleName != "" {
+		parts = append(parts, middleName)
+	}
+	return strings.Join(parts, " "), true
 }
 
 func (s *Server) ChangeStaffStatus(w http.ResponseWriter, r *http.Request) {

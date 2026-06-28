@@ -1019,6 +1019,241 @@
     }
   }
 
+  document.querySelectorAll("[data-support-agent-staff-combobox]").forEach((root) => {
+    const input = root.querySelector("[data-support-agent-staff-input]");
+    const hidden = root.querySelector("[data-support-agent-staff-id]");
+    const list = root.querySelector("[data-support-agent-staff-suggestions]");
+    const options = Array.from(root.querySelectorAll("[data-support-agent-staff-option]"));
+    if (!input || !hidden || !list || options.length === 0) {
+      return;
+    }
+    const normalize = (value) => String(value || "").trim().toLowerCase();
+    const showList = () => {
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    };
+    const hideList = () => {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    };
+    const applyOption = (option) => {
+      input.value = option.dataset.label || "";
+      hidden.value = option.dataset.value || "";
+      hideList();
+    };
+    const filterOptions = () => {
+      const query = normalize(input.value);
+      let visibleCount = 0;
+      options.forEach((option) => {
+        const search = normalize(option.dataset.search || option.dataset.label || "");
+        const visible = query === "" || search.includes(query);
+        option.hidden = !visible;
+        if (visible) {
+          visibleCount += 1;
+        }
+      });
+      if (visibleCount > 0) {
+        showList();
+      } else {
+        hideList();
+      }
+    };
+    const syncExactMatch = () => {
+      const query = normalize(input.value);
+      const exact = options.find((option) => normalize(option.dataset.label || "") === query);
+      hidden.value = exact ? exact.dataset.value || "" : "";
+      return exact;
+    };
+    input.addEventListener("focus", filterOptions);
+    input.addEventListener("input", () => {
+      syncExactMatch();
+      filterOptions();
+    });
+    options.forEach((option) => {
+      option.addEventListener("mousedown", (event) => event.preventDefault());
+      option.addEventListener("click", () => applyOption(option));
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideList();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!root.contains(event.target)) {
+        hideList();
+      }
+    });
+    if (input.form) {
+      input.form.addEventListener("submit", () => {
+        const exact = syncExactMatch();
+        if (exact) {
+          applyOption(exact);
+        }
+      });
+    }
+  });
+
+  document.querySelectorAll("[data-support-agent-language-dropdown]").forEach((root) => {
+    const button = root.querySelector("[data-support-agent-language-button]");
+    const summary = root.querySelector("[data-support-agent-language-summary]");
+    const options = Array.from(root.querySelectorAll("[data-support-agent-language-option]"));
+    if (!button || !summary || options.length === 0) {
+      return;
+    }
+    const placeholder = summary.textContent || "";
+    const getOptionLabel = (option) => {
+      const label = option.closest("label");
+      if (!label) {
+        return "";
+      }
+      const text = label.querySelector("span");
+      return text ? text.textContent.trim() : "";
+    };
+    const updateSummary = () => {
+      const selected = options.filter((option) => option.checked).map(getOptionLabel).filter(Boolean);
+      summary.textContent = selected.length > 0 ? selected.join(", ") : placeholder;
+    };
+    const hideList = () => {
+      root.removeAttribute("open");
+      button.setAttribute("aria-expanded", "false");
+    };
+    root.addEventListener("toggle", () => {
+      button.setAttribute("aria-expanded", root.open ? "true" : "false");
+    });
+    options.forEach((option) => {
+      option.addEventListener("change", updateSummary);
+    });
+    document.addEventListener("click", (event) => {
+      if (!root.contains(event.target)) {
+        hideList();
+      }
+    });
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideList();
+      }
+    });
+    updateSummary();
+  });
+
+  document.querySelectorAll("[data-support-agent-timezone-combobox]").forEach((root) => {
+    const input = root.querySelector("[data-support-agent-timezone-input]");
+    const hidden = root.querySelector("[data-support-agent-timezone-value]");
+    const list = root.querySelector("[data-support-agent-timezone-suggestions]");
+    const options = Array.from(root.querySelectorAll("[data-support-agent-timezone-option]"));
+    if (!input || !hidden || !list || options.length === 0) {
+      return;
+    }
+    const normalize = (value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/ё/g, "е")
+        .replace(/\s+/g, " ");
+    const queryTokens = () => normalize(input.value).split(" ").filter(Boolean);
+    const showList = () => {
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    };
+    const hideList = () => {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    };
+    const applyOption = (option) => {
+      input.value = option.dataset.label || option.dataset.value || "";
+      hidden.value = option.dataset.value || "";
+      input.setCustomValidity("");
+      hideList();
+    };
+    const optionMatches = (option, tokens) => {
+      if (tokens.length === 0) {
+        return true;
+      }
+      const search = normalize([option.dataset.value || "", option.dataset.label || "", option.dataset.search || ""].join(" "));
+      return tokens.every((token) => search.includes(token));
+    };
+    const filterOptions = () => {
+      const tokens = queryTokens();
+      let visibleCount = 0;
+      options.forEach((option) => {
+        const visible = optionMatches(option, tokens);
+        option.hidden = !visible;
+        if (visible) {
+          visibleCount += 1;
+        }
+      });
+      if (visibleCount > 0) {
+        showList();
+      } else {
+        hideList();
+      }
+    };
+    const syncExactMatch = () => {
+      const query = normalize(input.value);
+      const exact = options.find((option) => normalize(option.dataset.label || "") === query || normalize(option.dataset.value || "") === query);
+      if (exact) {
+        hidden.value = exact.dataset.value || "";
+      }
+      return exact;
+    };
+    input.addEventListener("focus", filterOptions);
+    input.addEventListener("input", () => {
+      hidden.value = "";
+      input.setCustomValidity("");
+      filterOptions();
+    });
+    options.forEach((option) => {
+      option.addEventListener("mousedown", (event) => event.preventDefault());
+      option.addEventListener("click", () => applyOption(option));
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideList();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!root.contains(event.target)) {
+        hideList();
+      }
+    });
+    if (input.form) {
+      input.form.addEventListener("submit", (event) => {
+        const exact = syncExactMatch();
+        if (exact) {
+          applyOption(exact);
+          return;
+        }
+        if (!hidden.value) {
+          event.preventDefault();
+          input.setCustomValidity(input.dataset.validationMessage || "Choose a timezone from the list.");
+          input.reportValidity();
+          filterOptions();
+        }
+      });
+    }
+  });
+
+  document.querySelectorAll("[data-support-saved-reply]").forEach((button) => {
+    const composer = document.querySelector("[data-support-reply-composer]");
+    if (!composer) {
+      return;
+    }
+    button.addEventListener("click", () => {
+      const body = button.dataset.replyBody || "";
+      if (!body.trim()) {
+        return;
+      }
+      composer.value = body;
+      composer.dispatchEvent(new Event("input", { bubbles: true }));
+      composer.focus();
+      if (typeof composer.setSelectionRange === "function") {
+        const end = composer.value.length;
+        composer.setSelectionRange(end, end);
+      }
+      composer.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  });
+
   document.querySelectorAll("[data-feature-flag-values]").forEach((container) => {
     const form = container.closest("form");
     const typeSelect = form ? form.querySelector("[data-feature-flag-type]") : null;

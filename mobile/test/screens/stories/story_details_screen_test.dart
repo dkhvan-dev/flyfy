@@ -288,7 +288,7 @@ void main() {
       expect(shareEvent.metadata, containsPair('engagementType', 'share'));
       expect(
         shareEvent.metadata,
-        containsPair('shareUrl', 'https://flyfy.test/posts/published-story'),
+        containsPair('shareUrl', 'https://inflap.test/posts/published-story'),
       );
     });
 
@@ -652,7 +652,7 @@ class _FakePostApi extends PostApi {
   @override
   Future<(String shareUrl, int shares)> sharePost(String storyId) async {
     sharedStoryIds.add(storyId);
-    return ('https://flyfy.test/posts/$storyId', 1);
+    return ('https://inflap.test/posts/$storyId', 1);
   }
 }
 

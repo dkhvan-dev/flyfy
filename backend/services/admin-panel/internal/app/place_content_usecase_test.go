@@ -28,6 +28,60 @@ func TestCreatePlaceRequiresPlaceManagePermission(t *testing.T) {
 	}
 }
 
+func TestStartMediaBackfillRequiresPlaceManagePermission(t *testing.T) {
+	t.Parallel()
+
+	uc := NewPlaceContentUseCase(&placeAdminClientStub{}, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+	_, err := uc.StartMediaBackfill(context.Background(), &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "support@inflap.local",
+		DisplayName: "Support",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{enum.PermissionDashboardRead},
+	}, "KZ", RequestMetadata{})
+
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Fatalf("StartMediaBackfill() error = %v, want ErrPermissionDenied", err)
+	}
+}
+
+func TestStartMediaBackfillRequiresSuperAdmin(t *testing.T) {
+	t.Parallel()
+
+	client := &placeAdminClientStub{}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+	_, err := uc.StartMediaBackfill(context.Background(), placeManagerActor(), "KZ", RequestMetadata{})
+
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Fatalf("StartMediaBackfill() error = %v, want ErrPermissionDenied", err)
+	}
+	if client.startedBackfillCountry != "" {
+		t.Fatalf("started backfill country = %q, want empty", client.startedBackfillCountry)
+	}
+}
+
+func TestStartMediaBackfillNormalizesCountryCode(t *testing.T) {
+	t.Parallel()
+
+	client := &placeAdminClientStub{backfillJob: model.PlaceMediaBackfillJob{
+		JobID:       "job-123",
+		CountryCode: "KZ",
+		Status:      "STARTED",
+	}}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	job, err := uc.StartMediaBackfill(context.Background(), superAdminPlaceManagerActor(), " kz ", RequestMetadata{})
+	if err != nil {
+		t.Fatalf("StartMediaBackfill() error = %v", err)
+	}
+	if client.startedBackfillCountry != "KZ" {
+		t.Fatalf("country = %q, want KZ", client.startedBackfillCountry)
+	}
+	if job.JobID != "job-123" {
+		t.Fatalf("job = %#v", job)
+	}
+}
+
 func TestReplacePlaceCoverImageUploadsFileAndAuditsAction(t *testing.T) {
 	t.Parallel()
 
@@ -241,9 +295,17 @@ func placeManagerActor() *model.StaffUser {
 	}
 }
 
+func superAdminPlaceManagerActor() *model.StaffUser {
+	actor := placeManagerActor()
+	actor.Roles = []enum.StaffRole{enum.StaffRoleSuperAdmin}
+	return actor
+}
+
 type placeAdminClientStub struct {
-	item          *model.AdminPlace
-	replacedMedia []model.PlaceMediaInput
+	item                   *model.AdminPlace
+	replacedMedia          []model.PlaceMediaInput
+	startedBackfillCountry string
+	backfillJob            model.PlaceMediaBackfillJob
 }
 
 func (c *placeAdminClientStub) ListPlaces(context.Context, model.AdminPlaceFilter) ([]model.AdminPlace, int, error) {
@@ -268,6 +330,11 @@ func (c *placeAdminClientStub) UpdatePlace(_ context.Context, id uuid.UUID, inpu
 func (c *placeAdminClientStub) ReplaceMedia(_ context.Context, _ uuid.UUID, media []model.PlaceMediaInput) error {
 	c.replacedMedia = media
 	return nil
+}
+
+func (c *placeAdminClientStub) StartMediaBackfill(_ context.Context, countryCode string) (model.PlaceMediaBackfillJob, error) {
+	c.startedBackfillCountry = countryCode
+	return c.backfillJob, nil
 }
 
 type fileUploadClientStub struct {

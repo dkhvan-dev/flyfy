@@ -29,7 +29,7 @@ String buildCalendarEventIcs(CalendarExportEvent event) {
   final lines = <String>[
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Inflap//FlyFy Calendar//EN',
+    'PRODID:-//Inflap//Inflap Calendar//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-TIMEZONE:$timezoneId',

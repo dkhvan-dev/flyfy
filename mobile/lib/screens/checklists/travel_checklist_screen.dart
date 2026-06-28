@@ -10,6 +10,7 @@ import '../../features/checklists/models/trip_checklist_vm.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/routing/models/routing_models.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/routing_provider.dart';
 import '../../shared/reference/app_country_names.dart';
 
@@ -337,14 +338,20 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
     final routeArgs = _requireRouteArgs();
     if (routeArgs.isPreview) {
       final checklist = await _checklistApi.previewTripChecklist(
-        routeArgs.toRequest(preferredLanguage: _localeCode),
+        routeArgs.toRequest(
+          preferredLanguage: _localeCode,
+          citizenshipCountryCode: _profileCitizenshipCountryCode,
+        ),
       );
       return _ChecklistLoadResult(checklist: checklist);
     }
 
     try {
       final checklist = await _checklistApi.getOrCreateTripChecklist(
-        routeArgs.toRequest(preferredLanguage: _localeCode),
+        routeArgs.toRequest(
+          preferredLanguage: _localeCode,
+          citizenshipCountryCode: _profileCitizenshipCountryCode,
+        ),
       );
       await _checklistCache.saveTripChecklist(
         routeArgs.normalizedTripId,
@@ -366,6 +373,15 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
   String get _localeCode {
     final locale = Localizations.maybeLocaleOf(context);
     return locale?.languageCode ?? 'ru';
+  }
+
+  String get _profileCitizenshipCountryCode {
+    try {
+      final session = context.read<SessionProvider>();
+      return session.profile?.countryCode?.trim().toUpperCase() ?? '';
+    } on ProviderNotFoundException {
+      return '';
+    }
   }
 
   void _reloadChecklist() {
@@ -1595,12 +1611,43 @@ class _MissingChecklistContextViewState
                                     ),
                                     _QuickPrepChoiceChip(
                                       key: const ValueKey(
+                                        'quick-prep-transport-motorcycle',
+                                      ),
+                                      label: l10n
+                                          .travelChecklistTransportMotorcycle,
+                                      selected: _transportMode == 'motorcycle',
+                                      onSelected: () => setState(() {
+                                        _transportMode = 'motorcycle';
+                                      }),
+                                    ),
+                                    _QuickPrepChoiceChip(
+                                      key: const ValueKey(
                                         'quick-prep-transport-bus',
                                       ),
                                       label: l10n.travelChecklistTransportBus,
                                       selected: _transportMode == 'bus',
                                       onSelected: () => setState(() {
                                         _transportMode = 'bus';
+                                      }),
+                                    ),
+                                    _QuickPrepChoiceChip(
+                                      key: const ValueKey(
+                                        'quick-prep-transport-ferry',
+                                      ),
+                                      label: l10n.travelChecklistTransportFerry,
+                                      selected: _transportMode == 'ferry',
+                                      onSelected: () => setState(() {
+                                        _transportMode = 'ferry';
+                                      }),
+                                    ),
+                                    _QuickPrepChoiceChip(
+                                      key: const ValueKey(
+                                        'quick-prep-transport-other',
+                                      ),
+                                      label: l10n.travelChecklistTransportOther,
+                                      selected: _transportMode == 'other',
+                                      onSelected: () => setState(() {
+                                        _transportMode = 'other';
                                       }),
                                     ),
                                   ],
@@ -2827,23 +2874,37 @@ class _QuickPrepChoiceChip extends StatelessWidget {
       selected: selected,
       onSelected: (_) => onSelected(),
       showCheckmark: false,
-      label: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: selected
-              ? AppColors.textPrimary
-              : _ChecklistAmber.textSecondary,
-          fontWeight: FontWeight.w900,
-          fontSize: 13,
-          letterSpacing: 0,
-        ),
-      ),
-      avatar: Icon(
-        Icons.check_rounded,
-        size: 16,
-        color: selected ? AppColors.textPrimary : Colors.transparent,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: selected
+                ? const Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: AppColors.textPrimary,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected
+                    ? AppColors.textPrimary
+                    : _ChecklistAmber.textSecondary,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
       ),
       backgroundColor: _ChecklistAmber.surfacePressed,
       selectedColor: _ChecklistAmber.amberSoft,
@@ -2852,6 +2913,7 @@ class _QuickPrepChoiceChip extends StatelessWidget {
             ? _ChecklistAmber.amberSoft
             : _ChecklistAmber.border.withValues(alpha: 0.48),
       ),
+      visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
@@ -5589,8 +5651,12 @@ String _transportModeLabel(String mode, AppLocalizations l10n) {
       return l10n.travelChecklistTransportBus;
     case 'car':
       return l10n.travelChecklistTransportCar;
+    case 'motorcycle':
+      return l10n.travelChecklistTransportMotorcycle;
     case 'ferry':
       return l10n.travelChecklistTransportFerry;
+    case 'other':
+      return l10n.travelChecklistTransportOther;
     default:
       return _humanizeCode(mode);
   }

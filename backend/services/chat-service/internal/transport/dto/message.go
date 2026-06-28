@@ -1,13 +1,14 @@
 package dto
 
 type SendMessageRequest struct {
-	Content          string                    `json:"content"`
-	Type             string                    `json:"type"`
-	ClientMessageID  *string                   `json:"clientMessageId,omitempty"`
-	FileIDs          []string                  `json:"fileIds"`
-	StickerID        *string                   `json:"stickerId,omitempty"`
-	ReplyToMessageID *string                   `json:"replyToMessageId"`
-	StoryReply       *StoryReplyContextRequest `json:"storyReply,omitempty"`
+	Content           string                    `json:"content"`
+	Type              string                    `json:"type"`
+	SenderDisplayName string                    `json:"senderDisplayName,omitempty"`
+	ClientMessageID   *string                   `json:"clientMessageId,omitempty"`
+	FileIDs           []string                  `json:"fileIds"`
+	StickerID         *string                   `json:"stickerId,omitempty"`
+	ReplyToMessageID  *string                   `json:"replyToMessageId"`
+	StoryReply        *StoryReplyContextRequest `json:"storyReply,omitempty"`
 }
 
 type StoryReplyContextRequest struct {

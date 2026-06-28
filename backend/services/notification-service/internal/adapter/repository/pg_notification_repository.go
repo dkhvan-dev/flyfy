@@ -533,6 +533,26 @@ func (r *PGNotificationRepository) MarkUserNotificationsRead(
 	return int(tag.RowsAffected()), nil
 }
 
+func (r *PGNotificationRepository) MarkUserNotificationRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	notificationID uuid.UUID,
+) (int, error) {
+	tag, err := r.pool.Exec(ctx, `
+		INSERT INTO notification_user_reads (user_id, request_id, read_at)
+		SELECT $1, r.id, NOW()
+		FROM notification_requests r
+		WHERE r.id = $2
+			AND r.recipient_user_ids @> ARRAY[$1]::uuid[]
+			AND r.scheduled_at <= NOW()
+		ON CONFLICT (user_id, request_id) DO NOTHING
+	`, userID, notificationID)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 func (r *PGNotificationRepository) GetNotificationPreferences(
 	ctx context.Context,
 	userID uuid.UUID,

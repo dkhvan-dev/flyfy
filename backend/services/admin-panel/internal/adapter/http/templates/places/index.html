@@ -67,8 +67,17 @@
     <div class="filter-actions">
       <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
       <a class="button" href="/admin/places">{{t .Locale "action.resetFilters"}}</a>
+      {{if and .Data.Filters.CountryCode (hasRole .Staff "SUPER_ADMIN") (hasPermission .Staff "place.manage")}}
+        <button type="submit" class="button" form="place-country-backfill-form">{{t .Locale "action.startPlaceMediaBackfill"}}</button>
+      {{end}}
     </div>
   </form>
+  {{if and .Data.Filters.CountryCode (hasRole .Staff "SUPER_ADMIN") (hasPermission .Staff "place.manage")}}
+    <form id="place-country-backfill-form" method="post" action="/admin/places/media/backfill">
+      <input type="hidden" name="country" value="{{.Data.Filters.CountryCode}}">
+      <input type="hidden" name="return_query" value="{{.Data.Filters.ReturnQuery}}">
+    </form>
+  {{end}}
 
   {{if .Data.Items}}
     <div class="table-wrap">

@@ -279,6 +279,7 @@ func ensureChecklistTestSchema(ctx context.Context, pool *pgxpool.Pool) error {
 			transport_modes TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 			activity_slugs TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 			has_children BOOLEAN NOT NULL DEFAULT false,
+			citizenship_country_code TEXT NOT NULL DEFAULT '',
 			readiness JSONB NOT NULL DEFAULT '{}'::jsonb,
 			seasonal_profile JSONB,
 			trust_notice JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -350,7 +351,8 @@ func ensureChecklistTestSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		ALTER TABLE checklist_instances
 			ADD COLUMN IF NOT EXISTS transport_modes TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 			ADD COLUMN IF NOT EXISTS activity_slugs TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-			ADD COLUMN IF NOT EXISTS has_children BOOLEAN NOT NULL DEFAULT false;
+			ADD COLUMN IF NOT EXISTS has_children BOOLEAN NOT NULL DEFAULT false,
+			ADD COLUMN IF NOT EXISTS citizenship_country_code TEXT NOT NULL DEFAULT '';
 	`)
 	return err
 }

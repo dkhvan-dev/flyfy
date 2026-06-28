@@ -55,16 +55,31 @@ class ChatProvider extends ChangeNotifier {
   // ── WebSocket ──────────────────────────────────────────────────
   StreamSubscription<ChatEvent>? _eventSubscription;
   Timer? _conversationsRefreshTimer;
+  Future<void>? _wsConnectFuture;
   bool get wsConnected => _wsService.isConnected;
+  Stream<ChatEvent> get realtimeEvents => _wsService.events;
 
   void connectWebSocket() {
-    _eventSubscription?.cancel();
-    _eventSubscription = _wsService.events.listen(_handleEvent);
-    _wsService.connect();
+    _eventSubscription ??= _wsService.events.listen(_handleEvent);
+    if (_wsService.isConnected || _wsConnectFuture != null) {
+      return;
+    }
+
+    final connectFuture = _wsService.connect();
+    _wsConnectFuture = connectFuture;
+    unawaited(
+      connectFuture.whenComplete(() {
+        if (identical(_wsConnectFuture, connectFuture)) {
+          _wsConnectFuture = null;
+        }
+      }),
+    );
   }
 
   void disconnectWebSocket() {
-    _eventSubscription?.cancel();
+    unawaited(_eventSubscription?.cancel());
+    _eventSubscription = null;
+    _wsConnectFuture = null;
     _wsService.disconnect();
   }
 

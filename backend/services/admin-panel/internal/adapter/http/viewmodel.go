@@ -35,6 +35,7 @@ type LoginViewData struct {
 
 type DashboardViewData struct {
 	Sections []DashboardSectionView
+	Support  *DashboardSupportSectionView
 }
 
 type DashboardSectionView struct {
@@ -42,6 +43,14 @@ type DashboardSectionView struct {
 	EmptyKey   string
 	ViewAllURL string
 	Items      []ModerationQueueItemView
+}
+
+type DashboardSupportSectionView struct {
+	TitleKey   string
+	EmptyKey   string
+	ViewAllURL string
+	Items      []SupportTicketRowView
+	Error      string
 }
 
 type QueueViewData struct {
@@ -380,6 +389,9 @@ type StaffProfileViewData struct {
 type TimezoneOptionView struct {
 	Value    string
 	Label    string
+	Offset   string
+	Hint     string
+	Search   string
 	Selected bool
 }
 
@@ -1439,6 +1451,23 @@ func NewDashboardViewData(
 	}
 }
 
+func NewDashboardViewDataWithSupport(
+	excursions []*model.ModerationCase,
+	activities []*model.ModerationCase,
+	guideApplications []*model.ModerationCase,
+	chatMessages []*model.ModerationCase,
+	supportTickets []model.SupportTicket,
+	staff *model.StaffUser,
+	locale string,
+) DashboardViewData {
+	data := NewDashboardViewData(excursions, activities, guideApplications, chatMessages)
+	if !staffCanSupportRead(staff) {
+		return data
+	}
+	data.Support = newDashboardSupportSection(supportTickets, staff, locale)
+	return data
+}
+
 func newDashboardSection(targetType model.ModerationTargetType, cases []*model.ModerationCase) DashboardSectionView {
 	latest := latestDashboardCases(cases, 5)
 	return DashboardSectionView{
@@ -1446,6 +1475,21 @@ func newDashboardSection(targetType model.ModerationTargetType, cases []*model.M
 		EmptyKey:   queueEmptyQueueKey(targetType),
 		ViewAllURL: queueBaseURL(targetType),
 		Items:      newQueueViewData(latest, targetType).Items,
+	}
+}
+
+func newDashboardSupportSection(tickets []model.SupportTicket, staff *model.StaffUser, locale string) *DashboardSupportSectionView {
+	const query = "status=waiting_support"
+	latest := latestDashboardSupportTickets(tickets, 5)
+	rows := NewSupportTicketQueueViewData(latest, SupportTicketFilterViewData{
+		Status: string(model.SupportTicketStatusWaitingSupport),
+		Query:  query,
+	}, staff, locale).Items
+	return &DashboardSupportSectionView{
+		TitleKey:   "dashboard.supportTickets",
+		EmptyKey:   "dashboard.supportEmpty",
+		ViewAllURL: supportQueueURL(query),
+		Items:      rows,
 	}
 }
 
@@ -1466,6 +1510,35 @@ func latestDashboardCases(cases []*model.ModerationCase, limit int) []*model.Mod
 		latest = latest[:limit]
 	}
 	return latest
+}
+
+func latestDashboardSupportTickets(tickets []model.SupportTicket, limit int) []model.SupportTicket {
+	if limit <= 0 {
+		return nil
+	}
+	latest := make([]model.SupportTicket, 0, len(tickets))
+	for _, item := range tickets {
+		if strings.TrimSpace(item.ID) != "" {
+			latest = append(latest, item)
+		}
+	}
+	sort.SliceStable(latest, func(i, j int) bool {
+		return dashboardSupportTicketSortTime(latest[i]).After(dashboardSupportTicketSortTime(latest[j]))
+	})
+	if len(latest) > limit {
+		latest = latest[:limit]
+	}
+	return latest
+}
+
+func dashboardSupportTicketSortTime(ticket model.SupportTicket) time.Time {
+	if !ticket.LastMessageAt.IsZero() {
+		return ticket.LastMessageAt
+	}
+	if !ticket.UpdatedAt.IsZero() {
+		return ticket.UpdatedAt
+	}
+	return ticket.CreatedAt
 }
 
 func dashboardSectionTitleKey(targetType model.ModerationTargetType) string {
@@ -1736,9 +1809,15 @@ func staffTimezoneOptions(selected string) []TimezoneOptionView {
 	options := make([]TimezoneOptionView, 0, len(values))
 	now := time.Now()
 	for _, value := range values {
+		offset := timezoneOptionOffset(value, now)
+		label := timezoneOptionLabelWithOffset(value, offset)
+		hint := timezoneOptionHint(value)
 		options = append(options, TimezoneOptionView{
 			Value:    value,
-			Label:    timezoneOptionLabel(value, now),
+			Label:    label,
+			Offset:   offset,
+			Hint:     hint,
+			Search:   timezoneOptionSearchText(value, label, offset, hint),
 			Selected: value == selected,
 		})
 	}
@@ -1746,9 +1825,20 @@ func staffTimezoneOptions(selected string) []TimezoneOptionView {
 }
 
 func timezoneOptionLabel(value string, now time.Time) string {
+	return timezoneOptionLabelWithOffset(value, timezoneOptionOffset(value, now))
+}
+
+func timezoneOptionLabelWithOffset(value string, offset string) string {
+	if strings.TrimSpace(offset) == "" {
+		return value
+	}
+	return fmt.Sprintf("%s (%s)", value, offset)
+}
+
+func timezoneOptionOffset(value string, now time.Time) string {
 	location, err := time.LoadLocation(value)
 	if err != nil {
-		return value
+		return ""
 	}
 	_, offsetSeconds := now.In(location).Zone()
 	sign := "+"
@@ -1758,7 +1848,106 @@ func timezoneOptionLabel(value string, now time.Time) string {
 	}
 	hours := offsetSeconds / 3600
 	minutes := (offsetSeconds % 3600) / 60
-	return fmt.Sprintf("%s (UTC%s%02d:%02d)", value, sign, hours, minutes)
+	return fmt.Sprintf("UTC%s%02d:%02d", sign, hours, minutes)
+}
+
+var staffTimezoneHints = map[string]string{
+	"Asia/Almaty":         "Almaty / Алматы, Kazakhstan / Казахстан",
+	"Asia/Aqtau":          "Aktau / Актау, Kazakhstan / Казахстан",
+	"Asia/Aqtobe":         "Aktobe / Актобе, Kazakhstan / Казахстан",
+	"Asia/Atyrau":         "Atyrau / Атырау, Kazakhstan / Казахстан",
+	"Asia/Oral":           "Oral / Уральск, Kazakhstan / Казахстан",
+	"Asia/Qyzylorda":      "Qyzylorda / Кызылорда, Kazakhstan / Казахстан",
+	"Asia/Bishkek":        "Bishkek / Бишкек, Kyrgyzstan / Кыргызстан",
+	"Asia/Tashkent":       "Tashkent / Ташкент, Uzbekistan / Узбекистан",
+	"Asia/Dubai":          "Dubai / Дубай, UAE / ОАЭ",
+	"Asia/Istanbul":       "Istanbul / Стамбул, Turkey / Турция",
+	"Asia/Tokyo":          "Tokyo / Токио, Japan / Япония",
+	"Europe/Moscow":       "Moscow / Москва, Russia / Россия",
+	"Europe/Berlin":       "Berlin / Берлин, Germany / Германия",
+	"Europe/London":       "London / Лондон, United Kingdom / Великобритания",
+	"America/New_York":    "New York / Нью-Йорк, USA / США",
+	"America/Los_Angeles": "Los Angeles / Лос-Анджелес, USA / США",
+	"UTC":                 "UTC / GMT / Гринвич",
+}
+
+var staffTimezoneSearchAliases = map[string][]string{
+	"Asia/Almaty":         {"Астана", "Нур-Султан", "Нурсултан", "Алма-Ата", "Алма Ата"},
+	"Asia/Aqtau":          {"Мангистау", "Маңғыстау"},
+	"Asia/Aqtobe":         {"Актюбинск"},
+	"Asia/Atyrau":         {"Гурьев"},
+	"Asia/Oral":           {"Уральск", "Западный Казахстан"},
+	"Asia/Qyzylorda":      {"Кызылорда", "Қызылорда"},
+	"Asia/Bishkek":        {"Киргизия"},
+	"Asia/Tashkent":       {"Узбекистан"},
+	"Asia/Dubai":          {"Эмираты", "United Arab Emirates"},
+	"Asia/Istanbul":       {"Турция"},
+	"Asia/Tokyo":          {"Япония"},
+	"Europe/Moscow":       {"Россия"},
+	"Europe/Berlin":       {"Германия"},
+	"Europe/London":       {"Англия", "UK", "Britain"},
+	"America/New_York":    {"Нью Йорк", "Америка"},
+	"America/Los_Angeles": {"Лос Анджелес", "Калифорния", "Америка"},
+	"UTC":                 {"Coordinated Universal Time", "универсальное время"},
+}
+
+func timezoneOptionHint(value string) string {
+	if hint, ok := staffTimezoneHints[value]; ok {
+		return hint
+	}
+	return strings.ReplaceAll(value, "_", " ")
+}
+
+func timezoneOptionSearchText(value string, label string, offset string, hint string) string {
+	parts := []string{value, strings.ReplaceAll(value, "_", " "), label, offset, hint}
+	parts = append(parts, staffTimezoneSearchAliases[value]...)
+	parts = append(parts, timezoneOffsetSearchAliases(offset)...)
+	return strings.Join(uniqueNonEmptyStrings(parts), " ")
+}
+
+func timezoneOffsetSearchAliases(offset string) []string {
+	offset = strings.TrimSpace(offset)
+	if !strings.HasPrefix(offset, "UTC") || len(offset) < len("UTC+00:00") {
+		return nil
+	}
+	signedOffset := strings.TrimPrefix(offset, "UTC")
+	sign := signedOffset[:1]
+	hour := signedOffset[1:3]
+	minute := signedOffset[4:]
+	hourNoZero := strings.TrimLeft(hour, "0")
+	if hourNoZero == "" {
+		hourNoZero = "0"
+	}
+	return []string{
+		signedOffset,
+		sign + hour,
+		sign + hourNoZero,
+		sign + hour + ":" + minute,
+		sign + hourNoZero + ":" + minute,
+		"UTC" + sign + hour,
+		"UTC" + sign + hourNoZero,
+		"GMT" + signedOffset,
+		"GMT" + sign + hour,
+		"GMT" + sign + hourNoZero,
+	}
+}
+
+func uniqueNonEmptyStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 func stringInSlice(values []string, expected string) bool {

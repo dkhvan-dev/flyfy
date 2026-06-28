@@ -312,6 +312,26 @@ func (u *PlaceContentUseCase) GetPublicImageContent(ctx context.Context, actor *
 	return u.files.GetPublicContent(ctx, fileID)
 }
 
+func (u *PlaceContentUseCase) StartMediaBackfill(ctx context.Context, actor *model.StaffUser, countryCode string, meta RequestMetadata) (model.PlaceMediaBackfillJob, error) {
+	if actor == nil || !actor.HasRole(enum.StaffRoleSuperAdmin) || !actor.HasPermission(enum.PermissionPlaceManage) {
+		return model.PlaceMediaBackfillJob{}, ErrPermissionDenied
+	}
+	countryCode = strings.ToUpper(strings.TrimSpace(countryCode))
+	if len(countryCode) != 2 {
+		return model.PlaceMediaBackfillJob{}, ErrInvalidInput
+	}
+	job, err := u.places.StartMediaBackfill(ctx, countryCode)
+	if err != nil {
+		return model.PlaceMediaBackfillJob{}, err
+	}
+	u.appendPlaceAudit(ctx, actor, "place.media.backfill.started", uuid.Nil, nil, job, map[string]any{
+		"countryCode": countryCode,
+		"jobId":       job.JobID,
+		"status":      job.Status,
+	}, meta)
+	return job, nil
+}
+
 func (u *PlaceContentUseCase) validateImageUpload(input PlaceImageUploadInput) error {
 	if len(input.Content) == 0 || int64(len(input.Content)) > u.maxImage {
 		return ErrInvalidInput

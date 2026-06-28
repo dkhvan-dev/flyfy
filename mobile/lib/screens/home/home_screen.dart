@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -18,7 +19,9 @@ import '../../features/feed/data/feed_api.dart';
 import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/feed/widgets/feed_post_card.dart';
+import '../../features/notifications/presentation/notification_unread_badge.dart';
 import '../../features/profile/data/guide_api.dart';
+import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/services/service_catalog.dart';
 import '../../features/services/widgets/service_grid.dart';
 import '../../features/stories/models/story_vm.dart';
@@ -27,11 +30,11 @@ import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/currency_rate_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
-import '../common/app_side_drawer.dart';
 import 'widgets/home_location_picker_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -64,19 +67,14 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _homeFeedPageLimit = 20;
   static const _homeLocationStartupTimeout = Duration(seconds: 2);
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
-  late final GuideApi _guideApi = widget.guideApi ?? GuideApi();
   late final PlaceApi _placeApi = widget.placeApi ?? PlaceApi();
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
   String? _requestedTopPlacesRequestKey;
-  String? _guideBadgeUserId;
-  bool _isGuideBadgeLoading = false;
-  int _guideBadgeRequestVersion = 0;
   List<PlaceVm> _topPlaces = const [];
   List<StoryVm> _homeStoryTrayStories = const [];
   List<PostVm> _topPosts = const [];
@@ -92,9 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _homePostFeedLoadingMore = false;
   bool _homePostFeedLoadMoreFailed = false;
   bool _topPostsRequestStarted = false;
-  bool _showGuideBadge = false;
-  bool _isGuideStatusRevoked = false;
-  bool _suppressGuideFallback = false;
   bool _initialHomeDataLoadScheduled = false;
 
   static const _promoYachtImageUrl =
@@ -213,47 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeOutCubic,
       ),
     );
-  }
-
-  Future<void> _confirmLogout() async {
-    final l10n = AppLocalizations.of(context)!;
-    final authProvider = context.read<AuthProvider>();
-    final sessionProvider = context.read<SessionProvider>();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return _LogoutConfirmDialog(
-          title: l10n.logoutDialogTitle,
-          message: l10n.logoutDialogMessage,
-          cancelLabel: l10n.cancel,
-          confirmLabel: l10n.logoutConfirmButton,
-          onCancel: () => Navigator.of(dialogContext).pop(false),
-          onConfirm: () => Navigator.of(dialogContext).pop(true),
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    await authProvider.logout();
-    await sessionProvider.clearSession();
-
-    if (mounted) {
-      context.go('/');
-    }
-  }
-
-  Future<void> _openMyActivities() async {
-    final authProvider = context.read<AuthProvider>();
-
-    if (authProvider.state != AuthState.authenticated) {
-      context.push('/login?from=/me/activities');
-      return;
-    }
-
-    context.push('/me/activities');
   }
 
   void _openProfile() {
@@ -666,81 +620,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _openDrawer() {
-    _scaffoldKey.currentState?.openDrawer();
-  }
-
-  Future<void> _closeDrawerIfNeeded() async {
-    final scaffoldState = _scaffoldKey.currentState;
-    if (scaffoldState == null || !scaffoldState.isDrawerOpen) return;
-
-    Navigator.of(context).pop();
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-  }
-
-  Future<void> _runDrawerAction(FutureOr<void> Function() action) async {
-    await _closeDrawerIfNeeded();
-    if (!mounted) return;
-    await action();
-  }
-
-  void _ensureGuideBadgeState(String? currentUserId, {bool force = false}) {
-    final normalizedUserId = (currentUserId ?? '').trim();
-    if (normalizedUserId.isEmpty) {
-      _guideBadgeUserId = null;
-      _isGuideBadgeLoading = false;
-      _guideBadgeRequestVersion++;
-      _showGuideBadge = false;
-      _isGuideStatusRevoked = false;
-      _suppressGuideFallback = false;
-      return;
-    }
-
-    final isNewUser = _guideBadgeUserId != normalizedUserId;
-    if (!force && !isNewUser) {
-      return;
-    }
-    if (_isGuideBadgeLoading && !isNewUser) return;
-
-    _guideBadgeUserId = normalizedUserId;
-    _isGuideBadgeLoading = true;
-    final requestVersion = ++_guideBadgeRequestVersion;
-    if (isNewUser) {
-      _showGuideBadge = false;
-      _isGuideStatusRevoked = false;
-      _suppressGuideFallback = false;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        final guide = await _guideApi.getMyGuideProfileOrNull();
-        if (!mounted ||
-            _guideBadgeUserId != normalizedUserId ||
-            _guideBadgeRequestVersion != requestVersion) {
-          return;
-        }
-        setState(() {
-          _isGuideBadgeLoading = false;
-          _showGuideBadge = guide?.isVerified == true;
-          _isGuideStatusRevoked = guide?.isRevoked == true;
-          _suppressGuideFallback = guide != null && !guide.isVerified;
-        });
-      } catch (_) {
-        if (!mounted ||
-            _guideBadgeUserId != normalizedUserId ||
-            _guideBadgeRequestVersion != requestVersion) {
-          return;
-        }
-        setState(() {
-          _isGuideBadgeLoading = false;
-          _showGuideBadge = false;
-          _isGuideStatusRevoked = false;
-          _suppressGuideFallback = false;
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -761,7 +640,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
     final homeLocation = homeLocationProvider.effectiveLocation;
-    final location = homeLocation.fallbackLabel;
     final promos = _buildPromoCards(l10n);
     final servicesPreview = _homeServicesPreview(l10n);
     final homePostStreamItems = _homePostFeedItems
@@ -804,7 +682,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
-    _ensureGuideBadgeState(currentUserId);
     final topPlacesLatitude = _validHomeLatitude(homeLocation.latitude);
     final topPlacesLongitude = _validHomeLongitude(homeLocation.longitude);
     final topPlacesRequestKey = _topPlacesRequestKey(
@@ -823,38 +700,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: const Color(0xFF160D07),
-      drawerEnableOpenDragGesture: true,
-      drawerEdgeDragWidth: 28,
-      drawerScrimColor: Colors.black.withValues(alpha: 0.42),
-      onDrawerChanged: (isOpened) {
-        if (!isOpened) return;
-        _ensureGuideBadgeState(currentUserId, force: true);
-      },
-      drawer: AppSideDrawer(
-        l10n: l10n,
-        isLoggedIn: isLoggedIn,
-        showGuideBadge: _showGuideBadge,
-        isGuideStatusRevoked: _isGuideStatusRevoked,
-        suppressGuideFallback: _suppressGuideFallback,
-        profile: profile,
-        location: location,
-        activeItem: AppDrawerActiveItem.none,
-        onProfileTap: () => _runDrawerAction(_openProfile),
-        onHomeTap: () => _runDrawerAction(() => context.go('/')),
-        onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
-        onMyExcursionsTap: () =>
-            _runDrawerAction(() => context.push('/me/excursions')),
-        onMyChecklistsTap: () =>
-            _runDrawerAction(() => context.push('/me/checklists')),
-        onMyStoriesTap: () => _runDrawerAction(() => context.push('/me/posts')),
-        onMyStoryArchiveTap: () =>
-            _runDrawerAction(() => context.push('/me/stories')),
-        onActivitiesTap: () => _runDrawerAction(_openActivities),
-        onLoginTap: () => _runDrawerAction(() => context.push('/login')),
-        onLogoutTap: () => _runDrawerAction(_confirmLogout),
-      ),
       bottomNavigationBar: CommonBottomNavigationBar(
         activeItem: AppBottomNavItem.home,
         onHomeTap: _handleHomeNavTap,
@@ -908,9 +754,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _HomeHeader(
                     location: homeLocation,
-                    currentLocationLabel: l10n.homeCurrentLocationLabel,
+                    profile: profile,
                     onLocationTap: _openLocationSheet,
-                    onMenuTap: _openDrawer,
+                    onProfileTap: _openProfile,
                     onNotificationsTap: () => context.push('/notifications'),
                   ),
                   Expanded(
@@ -1111,267 +957,19 @@ _HomeServiceConversionTarget? _homeServiceConversionTarget(
   };
 }
 
-class _LogoutConfirmDialog extends StatelessWidget {
-  const _LogoutConfirmDialog({
-    required this.title,
-    required this.message,
-    required this.cancelLabel,
-    required this.confirmLabel,
-    required this.onCancel,
-    required this.onConfirm,
-  });
-
-  final String title;
-  final String message;
-  final String cancelLabel;
-  final String confirmLabel;
-  final VoidCallback onCancel;
-  final VoidCallback onConfirm;
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenWidth = mediaQuery.size.width;
-    final screenHeight = mediaQuery.size.height;
-    final textScale = _homeTextScaleFactor(context);
-    final isCompact = screenWidth < 375;
-    final maxDialogHeight =
-        (screenHeight - mediaQuery.viewPadding.vertical - 48)
-            .clamp(320.0, screenHeight)
-            .toDouble();
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 16 : 24,
-        vertical: 24,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 386, maxHeight: maxDialogHeight),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF21170D),
-              border: Border.all(color: const Color(0x293A270F)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.34),
-                  blurRadius: 34,
-                  offset: const Offset(0, 18),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: -72,
-                  right: -80,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: 190,
-                      height: 190,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.accent.withValues(alpha: 0.08),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -98,
-                  left: -88,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: 210,
-                      height: 210,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.accent.withValues(alpha: 0.04),
-                      ),
-                    ),
-                  ),
-                ),
-                SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isCompact ? 22 : 26,
-                      isCompact ? 22 : 26,
-                      isCompact ? 22 : 26,
-                      isCompact ? 20 : 24,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: isCompact ? 54 : 58,
-                          height: isCompact ? 54 : 58,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF2C2118),
-                            border: Border.all(
-                              color: AppColors.accent.withValues(alpha: 0.24),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.14),
-                                blurRadius: 22,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.logout_rounded,
-                            color: AppColors.accent,
-                            size: 27,
-                          ),
-                        ),
-                        SizedBox(height: isCompact ? 18 : 20),
-                        Text(
-                          title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFFFFF7EC),
-                            fontSize: isCompact ? 21 : 23,
-                            height: 1.12,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          message,
-                          style: TextStyle(
-                            color: const Color(
-                              0xFFE0D4C6,
-                            ).withValues(alpha: 0.88),
-                            fontSize: isCompact ? 14 : 15,
-                            height: 1.45,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: isCompact ? 22 : 26),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final useStackedActions =
-                                constraints.maxWidth < 318 || textScale > 1.25;
-                            final actionWidth = useStackedActions
-                                ? constraints.maxWidth
-                                : (constraints.maxWidth - 12) / 2;
-
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              alignment: WrapAlignment.end,
-                              children: [
-                                SizedBox(
-                                  width: actionWidth,
-                                  child: _LogoutDialogActionButton(
-                                    label: cancelLabel,
-                                    onTap: onCancel,
-                                    isPrimary: false,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: actionWidth,
-                                  child: _LogoutDialogActionButton(
-                                    label: confirmLabel,
-                                    onTap: onConfirm,
-                                    isPrimary: true,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LogoutDialogActionButton extends StatelessWidget {
-  const _LogoutDialogActionButton({
-    required this.label,
-    required this.onTap,
-    required this.isPrimary,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    final foregroundColor = isPrimary
-        ? AppColors.textPrimary
-        : const Color(0xFFD8C7B7);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: isPrimary ? AppColors.accent : const Color(0xFF2C2118),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isPrimary ? AppColors.accent : const Color(0xFF3B260D),
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: foregroundColor,
-                    fontSize: 15,
-                    height: 1.1,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.location,
-    required this.currentLocationLabel,
+    required this.profile,
     required this.onLocationTap,
-    required this.onMenuTap,
+    required this.onProfileTap,
     required this.onNotificationsTap,
   });
 
   final HomeLocationPreference location;
-  final String currentLocationLabel;
+  final UserProfileVm? profile;
   final VoidCallback onLocationTap;
-  final VoidCallback onMenuTap;
+  final VoidCallback onProfileTap;
   final VoidCallback onNotificationsTap;
 
   @override
@@ -1397,10 +995,10 @@ class _HomeHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _HeaderActionButton(
-            icon: Icons.menu_rounded,
+          _HeaderAvatarButton(
+            profile: profile,
             size: buttonSize,
-            onTap: onMenuTap,
+            onTap: onProfileTap,
           ),
           Expanded(
             child: Center(
@@ -1439,16 +1037,6 @@ class _HomeHeader extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                currentLocationLabel,
-                                style: TextStyle(
-                                  color: const Color(0xFFFFB347),
-                                  fontSize: isCompact ? 10 : 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -1486,12 +1074,121 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
           ),
-          _HeaderActionButton(
-            icon: Icons.notifications_none_rounded,
-            size: buttonSize,
-            onTap: onNotificationsTap,
+          NotificationUnreadBadge(
+            child: _HeaderActionButton(
+              icon: Icons.notifications_none_rounded,
+              size: buttonSize,
+              onTap: onNotificationsTap,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderAvatarButton extends StatelessWidget {
+  const _HeaderAvatarButton({
+    required this.profile,
+    required this.onTap,
+    required this.size,
+  });
+
+  final UserProfileVm? profile;
+  final VoidCallback onTap;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final avatarUrl = resolvePublicFileContentUrl(
+      (profile?.avatarFileId ?? '').trim(),
+    );
+    final initials = _normalizedInitials(profile?.initials);
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      label: l10n.myProfileTitle,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.22),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.16),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: ExcludeSemantics(
+                child: avatarUrl == null
+                    ? _HeaderAvatarInitials(initials: initials)
+                    : Image.network(
+                        avatarUrl,
+                        width: size,
+                        height: size,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            _HeaderAvatarInitials(initials: initials),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _normalizedInitials(String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return 'F';
+    return value.length <= 2 ? value.toUpperCase() : value.substring(0, 2);
+  }
+}
+
+class _HeaderAvatarInitials extends StatelessWidget {
+  const _HeaderAvatarInitials({required this.initials});
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.accent.withValues(alpha: 0.32),
+            const Color(0xFF3B260D),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          maxLines: 1,
+          overflow: TextOverflow.clip,
+          style: const TextStyle(
+            color: Color(0xFFFFF7EF),
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+          ),
+        ),
       ),
     );
   }
@@ -2025,7 +1722,16 @@ class _TopDestinationPlaceCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    formatPlacePriceLabel(context, l10n, place),
+                    formatPlacePriceLabel(
+                      context,
+                      l10n,
+                      place,
+                      preferredCurrency: context
+                          .watch<SessionProvider>()
+                          .profile
+                          ?.currency,
+                      currencyRates: context.watch<CurrencyRateProvider>(),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -3830,7 +3536,10 @@ bool _isHomePostViewable(PostVm post) {
 
 List<TravelServiceEntry> _homeServicesPreview(AppLocalizations l10n) {
   return buildTravelServiceCatalog(l10n)
-      .where((service) => service.route != '/travel-checklist')
+      .where(
+        (service) =>
+            service.route != '/travel-checklist' && service.route != '/help',
+      )
       .take(6)
       .toList(growable: false);
 }

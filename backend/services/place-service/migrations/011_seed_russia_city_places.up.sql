@@ -7,7 +7,7 @@
 -- - country_code is always RU, because federal subjects/regions are not modeled as countries;
 -- - city_id stores a practical departure/search hub inside Russia;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 WITH seed_base (
     id,
@@ -65,8 +65,12 @@ SELECT
     'RU',
     seed_base.city_id,
     seed_base.category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 1000::numeric
+        ELSE 500::numeric
+    END,
+    'RUB',
     seed_base.duration_value,
     seed_base.duration_unit,
     seed_base.rating,

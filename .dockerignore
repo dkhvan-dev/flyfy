@@ -2,6 +2,9 @@
 .git
 .gitignore
 .idea
+.agents
+.omc
+.goose
 .vscode
 .DS_Store
 **/.DS_Store
@@ -22,6 +25,8 @@ node_modules/
 **/node_modules/
 **/.dart_tool/
 **/build/
+**/bin/
+**/.gocache/
 **/.gradle/
 **/coverage/
 **/.pytest_cache/

@@ -27,6 +27,7 @@ import (
 	placeadapter "kz/inflap/backend/services/admin-panel/internal/adapter/place"
 	postadapter "kz/inflap/backend/services/admin-panel/internal/adapter/post"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/repository"
+	supportadapter "kz/inflap/backend/services/admin-panel/internal/adapter/support"
 	techbreakadapter "kz/inflap/backend/services/admin-panel/internal/adapter/techbreak"
 	trustadapter "kz/inflap/backend/services/admin-panel/internal/adapter/trust"
 	useradapter "kz/inflap/backend/services/admin-panel/internal/adapter/user"
@@ -79,6 +80,11 @@ func main() {
 	chatClient := chatadapter.NewClient(
 		cfg.Chat.BaseURL,
 		cfg.Chat.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
+	supportClient := supportadapter.NewClient(
+		cfg.Support.BaseURL,
+		cfg.Support.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
 	postClient := postadapter.NewClient(
@@ -162,6 +168,8 @@ func main() {
 	userRouteModerationUC := app.NewUserRouteModerationUseCase(userRouteClient, auditRepo)
 	userModerationUC := app.NewUserModerationUseCase(userClient, userModerationRepo, auditRepo)
 	trustAppealUC := app.NewTrustAppealUseCase(trustClient, auditRepo)
+	supportUC := app.NewSupportUseCase(supportClient, auditRepo)
+	supportUC.SetFileDownloadClient(fileManagerClient)
 	if notificationClient != nil {
 		moderationUC.SetNotificationGateway(notificationClient)
 		userModerationUC.SetNotificationGateway(notificationClient)
@@ -209,6 +217,7 @@ func main() {
 	adminServer.SetCommunityAdminUseCase(communityAdminUC)
 	adminServer.SetOperationsUseCase(operationsUC)
 	adminServer.SetUserRouteModerationUseCase(userRouteModerationUC)
+	adminServer.SetSupportUseCase(supportUC)
 
 	go restrictionOutboxWorker.Start(ctx)
 

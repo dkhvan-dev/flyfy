@@ -1,0 +1,3 @@
+-- Irreversible data repair: the migration removes false guide segment markers
+-- from pending/non-active guide applications. Reconstructing the previous
+-- incorrect priority and segment reasons would reintroduce the bug.

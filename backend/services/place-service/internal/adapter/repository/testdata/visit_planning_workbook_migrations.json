@@ -1,0 +1,888 @@
+[
+  {
+    "migration": "154_seed_abkhazia_visit_planning_from_workbook.up.sql",
+    "downMigration": "154_seed_abkhazia_visit_planning_from_workbook.down.sql",
+    "countryCode": "AB",
+    "countryName": "Abkhazia",
+    "tempTable": "seed_abkhazia_visit_planning",
+    "jsonPayloadCount": 44,
+    "expectedTitles": [
+      "Абхазский государственный музей",
+      "Новоафонская пещера",
+      "Юпшарский каньон"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 44
+  },
+  {
+    "migration": "155_seed_united_arab_emirates_visit_planning_from_workbook.up.sql",
+    "downMigration": "155_seed_united_arab_emirates_visit_planning_from_workbook.down.sql",
+    "countryCode": "AE",
+    "countryName": "United Arab Emirates",
+    "tempTable": "seed_united_arab_emirates_visit_planning",
+    "jsonPayloadCount": 108,
+    "expectedTitles": [
+      "Aquaventure World",
+      "Музей будущего",
+      "Этнографическая деревня Хатта"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 108
+  },
+  {
+    "migration": "156_seed_armenia_visit_planning_from_workbook.up.sql",
+    "downMigration": "156_seed_armenia_visit_planning_from_workbook.down.sql",
+    "countryCode": "AM",
+    "countryName": "Armenia",
+    "tempTable": "seed_armenia_visit_planning",
+    "jsonPayloadCount": 113,
+    "expectedTitles": [
+      "Yell Extreme Park",
+      "Монастырь Ваганаванк",
+      "Экстрим-парк Парз"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 113
+  },
+  {
+    "migration": "157_seed_argentina_visit_planning_from_workbook.up.sql",
+    "downMigration": "157_seed_argentina_visit_planning_from_workbook.down.sql",
+    "countryCode": "AR",
+    "countryName": "Argentina",
+    "tempTable": "seed_argentina_visit_planning",
+    "jsonPayloadCount": 113,
+    "expectedTitles": [
+      "Duty Free Shop Пуэрто-Игуасу",
+      "Национальный парк Науэль-Уапи",
+      "Ярмарка Матадерос"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 113
+  },
+  {
+    "migration": "158_seed_austria_visit_planning_from_workbook.up.sql",
+    "downMigration": "158_seed_austria_visit_planning_from_workbook.down.sql",
+    "countryCode": "AT",
+    "countryName": "Austria",
+    "tempTable": "seed_austria_visit_planning",
+    "jsonPayloadCount": 110,
+    "expectedTitles": [
+      "007 Elements",
+      "Монастырь Клостернойбург",
+      "Штирийский арсенал"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 110
+  },
+  {
+    "migration": "159_seed_australia_visit_planning_from_workbook.up.sql",
+    "downMigration": "159_seed_australia_visit_planning_from_workbook.down.sql",
+    "countryCode": "AU",
+    "countryName": "Australia",
+    "tempTable": "seed_australia_visit_planning",
+    "jsonPayloadCount": 150,
+    "expectedTitles": [
+      "A Maze N Things",
+      "Музей Кэрнса",
+      "Чайнатаун Брума"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 150
+  },
+  {
+    "migration": "160_seed_azerbaijan_visit_planning_from_workbook.up.sql",
+    "downMigration": "160_seed_azerbaijan_visit_planning_from_workbook.down.sql",
+    "countryCode": "AZ",
+    "countryName": "Azerbaijan",
+    "tempTable": "seed_azerbaijan_visit_planning",
+    "jsonPayloadCount": 73,
+    "expectedTitles": [
+      "Deniz Mall",
+      "Мавзолей Дири-Баба",
+      "Шемахинская астрофизическая обсерватория"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 73
+  },
+  {
+    "migration": "161_seed_brazil_visit_planning_from_workbook.up.sql",
+    "downMigration": "161_seed_brazil_visit_planning_from_workbook.down.sql",
+    "countryCode": "BR",
+    "countryName": "Brazil",
+    "tempTable": "seed_brazil_visit_planning",
+    "jsonPayloadCount": 81,
+    "expectedTitles": [
+      "MASP",
+      "Пелуринью",
+      "Шапада-дус-Гимарайнс"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 81
+  },
+  {
+    "migration": "162_seed_belarus_visit_planning_from_workbook.up.sql",
+    "downMigration": "162_seed_belarus_visit_planning_from_workbook.down.sql",
+    "countryCode": "BY",
+    "countryName": "Belarus",
+    "tempTable": "seed_belarus_visit_planning",
+    "jsonPayloadCount": 82,
+    "expectedTitles": [
+      "Августовский канал",
+      "Музейный комплекс Дудутки",
+      "Экотропа Голубых озер"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 82
+  },
+  {
+    "migration": "163_seed_canada_visit_planning_from_workbook.up.sql",
+    "downMigration": "163_seed_canada_visit_planning_from_workbook.down.sql",
+    "countryCode": "CA",
+    "countryName": "Canada",
+    "tempTable": "seed_canada_visit_planning",
+    "jsonPayloadCount": 137,
+    "expectedTitles": [
+      "Banff Avenue",
+      "Внутренняя гавань Виктории",
+      "Цитадель Галифакса"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 137
+  },
+  {
+    "migration": "164_seed_switzerland_visit_planning_from_workbook.up.sql",
+    "downMigration": "164_seed_switzerland_visit_planning_from_workbook.down.sql",
+    "countryCode": "CH",
+    "countryName": "Switzerland",
+    "tempTable": "seed_switzerland_visit_planning",
+    "jsonPayloadCount": 122,
+    "expectedTitles": [
+      "First Cliff Walk",
+      "Музей Сегантини",
+      "Якобсхорн"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 122
+  },
+  {
+    "migration": "165_seed_china_visit_planning_from_workbook.up.sql",
+    "downMigration": "165_seed_china_visit_planning_from_workbook.down.sql",
+    "countryCode": "CN",
+    "countryName": "China",
+    "tempTable": "seed_china_visit_planning",
+    "jsonPayloadCount": 163,
+    "expectedTitles": [
+      "CDF Sanya Duty Free City",
+      "Национальный лесной парк Чжанцзяцзе",
+      "Шанхайский музей Восточный корпус"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 163
+  },
+  {
+    "migration": "166_seed_cuba_visit_planning_from_workbook.up.sql",
+    "downMigration": "166_seed_cuba_visit_planning_from_workbook.down.sql",
+    "countryCode": "CU",
+    "countryName": "Cuba",
+    "tempTable": "seed_cuba_visit_planning",
+    "jsonPayloadCount": 90,
+    "expectedTitles": [
+      "Археологический музей Куэва-дель-Параисо",
+      "Парк Хосе Марти в Сьенфуэгосе",
+      "Экологический заповедник Вараикакос"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 90
+  },
+  {
+    "migration": "167_seed_cyprus_visit_planning_from_workbook.up.sql",
+    "downMigration": "167_seed_cyprus_visit_planning_from_workbook.down.sql",
+    "countryCode": "CY",
+    "countryName": "Cyprus",
+    "tempTable": "seed_cyprus_visit_planning",
+    "jsonPayloadCount": 87,
+    "expectedTitles": [
+      "City Mall Фамагуста",
+      "Монастырь Троодитисса",
+      "Черепаший пляж Алагади"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 87
+  },
+  {
+    "migration": "168_seed_czechia_visit_planning_from_workbook.up.sql",
+    "downMigration": "168_seed_czechia_visit_planning_from_workbook.down.sql",
+    "countryCode": "CZ",
+    "countryName": "Czechia",
+    "tempTable": "seed_czechia_visit_planning",
+    "jsonPayloadCount": 107,
+    "expectedTitles": [
+      "Пражский Град",
+      "Лабиринт под овощным рынком",
+      "Аквацентр Пардубице"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 107
+  },
+  {
+    "migration": "169_seed_germany_visit_planning_from_workbook.up.sql",
+    "downMigration": "169_seed_germany_visit_planning_from_workbook.down.sql",
+    "countryCode": "DE",
+    "countryName": "Germany",
+    "tempTable": "seed_germany_visit_planning",
+    "jsonPayloadCount": 119,
+    "expectedTitles": [
+      "Autostadt Wolfsburg",
+      "Музей BMW",
+      "Эльбская филармония"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 119
+  },
+  {
+    "migration": "170_seed_estonia_visit_planning_from_workbook.up.sql",
+    "downMigration": "170_seed_estonia_visit_planning_from_workbook.down.sql",
+    "countryCode": "EE",
+    "countryName": "Estonia",
+    "tempTable": "seed_estonia_visit_planning",
+    "jsonPayloadCount": 97,
+    "expectedTitles": [
+      "Balti Jaama Turg",
+      "Парк Ору в Тойла",
+      "Этнографический музей Нарва-Йыэсуу"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 97
+  },
+  {
+    "migration": "171_seed_egypt_visit_planning_from_workbook.up.sql",
+    "downMigration": "171_seed_egypt_visit_planning_from_workbook.down.sql",
+    "countryCode": "EG",
+    "countryName": "Egypt",
+    "tempTable": "seed_egypt_visit_planning",
+    "jsonPayloadCount": 71,
+    "expectedTitles": [
+      "Cairo Festival City Mall",
+      "Монастырь Святой Екатерины",
+      "Черная пустыня"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 71
+  },
+  {
+    "migration": "172_seed_spain_visit_planning_from_workbook.up.sql",
+    "downMigration": "172_seed_spain_visit_planning_from_workbook.down.sql",
+    "countryCode": "ES",
+    "countryName": "Spain",
+    "tempTable": "seed_spain_visit_planning",
+    "jsonPayloadCount": 127,
+    "expectedTitles": [
+      "El Nacional Barcelona",
+      "Новый мост Ронды",
+      "Эс-Ведра"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 127
+  },
+  {
+    "migration": "173_seed_finland_visit_planning_from_workbook.up.sql",
+    "downMigration": "173_seed_finland_visit_planning_from_workbook.down.sql",
+    "countryCode": "FI",
+    "countryName": "Finland",
+    "tempTable": "seed_finland_visit_planning",
+    "jsonPayloadCount": 95,
+    "expectedTitles": [
+      "Aboa Vetus Ars Nova",
+      "Музей саамов Siida",
+      "Церковь Темппелиаукио"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 95
+  },
+  {
+    "migration": "174_seed_france_visit_planning_from_workbook.up.sql",
+    "downMigration": "174_seed_france_visit_planning_from_workbook.down.sql",
+    "countryCode": "FR",
+    "countryName": "France",
+    "tempTable": "seed_france_visit_planning",
+    "jsonPayloadCount": 107,
+    "expectedTitles": [
+      "Cite de l'Espace",
+      "Национальный парк Каланки",
+      "Эйфелева башня"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 107
+  },
+  {
+    "migration": "175_seed_united_kingdom_visit_planning_from_workbook.up.sql",
+    "downMigration": "175_seed_united_kingdom_visit_planning_from_workbook.down.sql",
+    "countryCode": "GB",
+    "countryName": "United Kingdom",
+    "tempTable": "seed_united_kingdom_visit_planning",
+    "jsonPayloadCount": 120,
+    "expectedTitles": [
+      "Arthur's Seat",
+      "Клифтонский подвесной мост",
+      "Юрское побережье"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 120
+  },
+  {
+    "migration": "176_seed_georgia_visit_planning_from_workbook.up.sql",
+    "downMigration": "176_seed_georgia_visit_planning_from_workbook.down.sql",
+    "countryCode": "GE",
+    "countryName": "Georgia",
+    "tempTable": "seed_georgia_visit_planning",
+    "jsonPayloadCount": 108,
+    "expectedTitles": [
+      "Grand Mall Batumi",
+      "Монастырь Самтавро",
+      "Этнографический музей под открытым небом"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 108
+  },
+  {
+    "migration": "177_seed_greece_visit_planning_from_workbook.up.sql",
+    "downMigration": "177_seed_greece_visit_planning_from_workbook.down.sql",
+    "countryCode": "GR",
+    "countryName": "Greece",
+    "tempTable": "seed_greece_visit_planning",
+    "jsonPayloadCount": 83,
+    "expectedTitles": [
+      "Акрополь Линдоса",
+      "Монастыри Метеоры",
+      "Центральный рынок Ираклиона"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 83
+  },
+  {
+    "migration": "178_seed_indonesia_visit_planning_from_workbook.up.sql",
+    "downMigration": "178_seed_indonesia_visit_planning_from_workbook.down.sql",
+    "countryCode": "ID",
+    "countryName": "Indonesia",
+    "tempTable": "seed_indonesia_visit_planning",
+    "jsonPayloadCount": 145,
+    "expectedTitles": [
+      "Aloha Ubud Swing",
+      "Музей искусства Агунг Раи",
+      "Японский рэк Баньюнинг"
+    ],
+    "duplicateTitlesCollapsed": [
+      "Aloha Ubud Swing",
+      "Дворец Убуда",
+      "Рыбный рынок Кедонганан",
+      "Храм Батукару"
+    ],
+    "workbookRowCount": 149
+  },
+  {
+    "migration": "179_seed_ireland_visit_planning_from_workbook.up.sql",
+    "downMigration": "179_seed_ireland_visit_planning_from_workbook.down.sql",
+    "countryCode": "IE",
+    "countryName": "Ireland",
+    "tempTable": "seed_ireland_visit_planning",
+    "jsonPayloadCount": 103,
+    "expectedTitles": [
+      "Аббатство Кайлмор и викторианский сад",
+      "Национальный парк Килларни",
+      "Центр ирландского дизайна Килкенни"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 103
+  },
+  {
+    "migration": "180_seed_india_visit_planning_from_workbook.up.sql",
+    "downMigration": "180_seed_india_visit_planning_from_workbook.down.sql",
+    "countryCode": "IN",
+    "countryName": "India",
+    "tempTable": "seed_india_visit_planning",
+    "jsonPayloadCount": 119,
+    "expectedTitles": [
+      "Broadway Market Kochi",
+      "Монастырь Румтек",
+      "Шанивар-Вада"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 119
+  },
+  {
+    "migration": "181_seed_iceland_visit_planning_from_workbook.up.sql",
+    "downMigration": "181_seed_iceland_visit_planning_from_workbook.down.sql",
+    "countryCode": "IS",
+    "countryName": "Iceland",
+    "tempTable": "seed_iceland_visit_planning",
+    "jsonPayloadCount": 73,
+    "expectedTitles": [
+      "The Greenhouse в Хверагерди",
+      "Музей Киты Исландии",
+      "Чёрный пляж Рейнисфьяра"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 73
+  },
+  {
+    "migration": "182_seed_italy_visit_planning_from_workbook.up.sql",
+    "downMigration": "182_seed_italy_visit_planning_from_workbook.down.sql",
+    "countryCode": "IT",
+    "countryName": "Italy",
+    "tempTable": "seed_italy_visit_planning",
+    "jsonPayloadCount": 124,
+    "expectedTitles": [
+      "Movieland и CanevaWorld",
+      "Музей бумаги Амальфи",
+      "Этна"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 124
+  },
+  {
+    "migration": "183_seed_japan_visit_planning_from_workbook.up.sql",
+    "downMigration": "183_seed_japan_visit_planning_from_workbook.down.sql",
+    "countryCode": "JP",
+    "countryName": "Japan",
+    "tempTable": "seed_japan_visit_planning",
+    "jsonPayloadCount": 155,
+    "expectedTitles": [
+      "Fuji-Q Highland",
+      "Парк Нара",
+      "Ясима"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 155
+  },
+  {
+    "migration": "184_seed_kenya_visit_planning_from_workbook.up.sql",
+    "downMigration": "184_seed_kenya_visit_planning_from_workbook.down.sql",
+    "countryCode": "KE",
+    "countryName": "Kenya",
+    "tempTable": "seed_kenya_visit_planning",
+    "jsonPayloadCount": 145,
+    "expectedTitles": [
+      "Bio-Ken Snake Farm",
+      "Национальный заповедник Масаи-Мара",
+      "Экватор в Наньюки"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 145
+  },
+  {
+    "migration": "185_seed_kyrgyzstan_visit_planning_from_workbook.up.sql",
+    "downMigration": "185_seed_kyrgyzstan_visit_planning_from_workbook.down.sql",
+    "countryCode": "KG",
+    "countryName": "Kyrgyzstan",
+    "tempTable": "seed_kyrgyzstan_visit_planning",
+    "jsonPayloadCount": 72,
+    "expectedTitles": [
+      "Bishkek Park Mall",
+      "Ошский базар в Бишкеке",
+      "Южная прогулка склонов Сулайман-Тоо"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 72
+  },
+  {
+    "migration": "186_seed_south_korea_visit_planning_from_workbook.up.sql",
+    "downMigration": "186_seed_south_korea_visit_planning_from_workbook.down.sql",
+    "countryCode": "KR",
+    "countryName": "South Korea",
+    "tempTable": "seed_south_korea_visit_planning",
+    "jsonPayloadCount": 102,
+    "expectedTitles": [
+      "Arte Museum Jeju",
+      "Обсерватория мира в Чхорвоне",
+      "Эверленд"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 102
+  },
+  {
+    "migration": "187_seed_sri_lanka_visit_planning_from_workbook.up.sql",
+    "downMigration": "187_seed_sri_lanka_visit_planning_from_workbook.down.sql",
+    "countryCode": "LK",
+    "countryName": "Sri Lanka",
+    "tempTable": "seed_sri_lanka_visit_planning",
+    "jsonPayloadCount": 112,
+    "expectedTitles": [
+      "Bale Bazaar",
+      "Национальный парк Миннерия",
+      "Японская пагода мира"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 112
+  },
+  {
+    "migration": "188_seed_luxembourg_visit_planning_from_workbook.up.sql",
+    "downMigration": "188_seed_luxembourg_visit_planning_from_workbook.down.sql",
+    "countryCode": "LU",
+    "countryName": "Luxembourg",
+    "tempTable": "seed_luxembourg_visit_planning",
+    "jsonPayloadCount": 81,
+    "expectedTitles": [
+      "Casino 2000",
+      "Музей Kulturhuef",
+      "Эспланада Ремиха"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 81
+  },
+  {
+    "migration": "189_seed_morocco_visit_planning_from_workbook.up.sql",
+    "downMigration": "189_seed_morocco_visit_planning_from_workbook.down.sql",
+    "countryCode": "MA",
+    "countryName": "Morocco",
+    "tempTable": "seed_morocco_visit_planning",
+    "jsonPayloadCount": 126,
+    "expectedTitles": [
+      "4x4 и сэндбординг в Мерзуге",
+      "Мечеть Кутубия",
+      "Энкор-Пойнт"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 126
+  },
+  {
+    "migration": "190_seed_moldova_visit_planning_from_workbook.up.sql",
+    "downMigration": "190_seed_moldova_visit_planning_from_workbook.down.sql",
+    "countryCode": "MD",
+    "countryName": "Moldova",
+    "tempTable": "seed_moldova_visit_planning",
+    "jsonPayloadCount": 1,
+    "expectedTitles": [
+      "Тропа заповедника Кодры"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 1
+  },
+  {
+    "migration": "191_seed_montenegro_visit_planning_from_workbook.up.sql",
+    "downMigration": "191_seed_montenegro_visit_planning_from_workbook.down.sql",
+    "countryCode": "ME",
+    "countryName": "Montenegro",
+    "tempTable": "seed_montenegro_visit_planning",
+    "jsonPayloadCount": 79,
+    "expectedTitles": [
+      "Mall of Montenegro",
+      "Монастырь Савина",
+      "Черное озеро"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 79
+  },
+  {
+    "migration": "192_seed_mongolia_visit_planning_from_workbook.up.sql",
+    "downMigration": "192_seed_mongolia_visit_planning_from_workbook.down.sql",
+    "countryCode": "MN",
+    "countryName": "Mongolia",
+    "tempTable": "seed_mongolia_visit_planning",
+    "jsonPayloadCount": 89,
+    "expectedTitles": [
+      "Бага-Газрын-Чулуу",
+      "Национальный музей Монголии",
+      "Центральный рынок Дархана"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 89
+  },
+  {
+    "migration": "193_seed_malta_visit_planning_from_workbook.up.sql",
+    "downMigration": "193_seed_malta_visit_planning_from_workbook.down.sql",
+    "countryCode": "MT",
+    "countryName": "Malta",
+    "tempTable": "seed_malta_visit_planning",
+    "jsonPayloadCount": 86,
+    "expectedTitles": [
+      "Bay Street Shopping Complex",
+      "Музей авиации Мальты",
+      "Часовня Святой Марии Магдалины"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 86
+  },
+  {
+    "migration": "194_seed_maldives_visit_planning_from_workbook.up.sql",
+    "downMigration": "194_seed_maldives_visit_planning_from_workbook.down.sql",
+    "countryCode": "MV",
+    "countryName": "Maldives",
+    "tempTable": "seed_maldives_visit_planning",
+    "jsonPayloadCount": 53,
+    "expectedTitles": [
+      "Bikini Beach Гулхи",
+      "Мангровая прогулка Хураа",
+      "Центральный парк Хулхумале"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 53
+  },
+  {
+    "migration": "195_seed_mexico_visit_planning_from_workbook.up.sql",
+    "downMigration": "195_seed_mexico_visit_planning_from_workbook.down.sql",
+    "countryCode": "MX",
+    "countryName": "Mexico",
+    "tempTable": "seed_mexico_visit_planning",
+    "jsonPayloadCount": 105,
+    "expectedTitles": [
+      "Andares",
+      "Остров Эспириту-Санто",
+      "Чичен-Ица"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 105
+  },
+  {
+    "migration": "196_seed_malaysia_visit_planning_from_workbook.up.sql",
+    "downMigration": "196_seed_malaysia_visit_planning_from_workbook.down.sql",
+    "countryCode": "MY",
+    "countryName": "Malaysia",
+    "tempTable": "seed_malaysia_visit_planning",
+    "jsonPayloadCount": 104,
+    "expectedTitles": [
+      "A Famosa",
+      "Набережная Кучинга и Main Bazaar",
+      "Чайный центр BOH Cameron Highlands"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 104
+  },
+  {
+    "migration": "197_seed_netherlands_visit_planning_from_workbook.up.sql",
+    "downMigration": "197_seed_netherlands_visit_planning_from_workbook.down.sql",
+    "countryCode": "NL",
+    "countryName": "Netherlands",
+    "tempTable": "seed_netherlands_visit_planning",
+    "jsonPayloadCount": 89,
+    "expectedTitles": [
+      "SEA LIFE Схевенинген",
+      "Музей Royal Delft",
+      "Экомаре на Текселе"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 89
+  },
+  {
+    "migration": "198_seed_new_zealand_visit_planning_from_workbook.up.sql",
+    "downMigration": "198_seed_new_zealand_visit_planning_from_workbook.down.sql",
+    "countryCode": "NZ",
+    "countryName": "New Zealand",
+    "tempTable": "seed_new_zealand_visit_planning",
+    "jsonPayloadCount": 99,
+    "expectedTitles": [
+      "Puzzling World",
+      "Озеро Таупо",
+      "Экскурсии Weta Workshop в Веллингтоне"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 99
+  },
+  {
+    "migration": "199_seed_philippines_visit_planning_from_workbook.up.sql",
+    "downMigration": "199_seed_philippines_visit_planning_from_workbook.down.sql",
+    "countryCode": "PH",
+    "countryName": "Philippines",
+    "tempTable": "seed_philippines_visit_planning",
+    "jsonPayloadCount": 89,
+    "expectedTitles": [
+      "10,000 Roses Cafe",
+      "Национальный музей изящных искусств",
+      "Шоколадные холмы"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 89
+  },
+  {
+    "migration": "200_seed_poland_visit_planning_from_workbook.up.sql",
+    "downMigration": "200_seed_poland_visit_planning_from_workbook.down.sql",
+    "countryCode": "PL",
+    "countryName": "Poland",
+    "tempTable": "seed_poland_visit_planning",
+    "jsonPayloadCount": 84,
+    "expectedTitles": [
+      "EC1 Lodz",
+      "Музей POLIN истории польских евреев",
+      "Центральный пляж Сопота"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 84
+  },
+  {
+    "migration": "201_seed_portugal_visit_planning_from_workbook.up.sql",
+    "downMigration": "201_seed_portugal_visit_planning_from_workbook.down.sql",
+    "countryCode": "PT",
+    "countryName": "Portugal",
+    "tempTable": "seed_portugal_visit_planning",
+    "jsonPayloadCount": 254,
+    "expectedTitles": [
+      "LX Factory",
+      "Наблюдение за дельфинами в Саду",
+      "Экомузей соли Тронкальяда"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 254
+  },
+  {
+    "migration": "202_seed_serbia_visit_planning_from_workbook.up.sql",
+    "downMigration": "202_seed_serbia_visit_planning_from_workbook.down.sql",
+    "countryCode": "RS",
+    "countryName": "Serbia",
+    "tempTable": "seed_serbia_visit_planning",
+    "jsonPayloadCount": 86,
+    "expectedTitles": [
+      "Ада Циганлия",
+      "Национальный музей Чачака",
+      "Этнографический музей Белграда"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 86
+  },
+  {
+    "migration": "203_seed_seychelles_visit_planning_from_workbook.up.sql",
+    "downMigration": "203_seed_seychelles_visit_planning_from_workbook.down.sql",
+    "countryCode": "SC",
+    "countryName": "Seychelles",
+    "tempTable": "seed_seychelles_visit_planning",
+    "jsonPayloadCount": 71,
+    "expectedTitles": [
+      "Cafe des Arts",
+      "Пляж Анс-Интенданс",
+      "Эспланада Кот-д’Ор"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 71
+  },
+  {
+    "migration": "204_seed_sweden_visit_planning_from_workbook.up.sql",
+    "downMigration": "204_seed_sweden_visit_planning_from_workbook.down.sql",
+    "countryCode": "SE",
+    "countryName": "Sweden",
+    "tempTable": "seed_sweden_visit_planning",
+    "jsonPayloadCount": 144,
+    "expectedTitles": [
+      "A World of Dinosaurs",
+      "Музей Гамла Уппсала",
+      "Юниверсеум"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 144
+  },
+  {
+    "migration": "205_seed_thailand_visit_planning_from_workbook.up.sql",
+    "downMigration": "205_seed_thailand_visit_planning_from_workbook.down.sql",
+    "countryCode": "TH",
+    "countryName": "Thailand",
+    "tempTable": "seed_thailand_visit_planning",
+    "jsonPayloadCount": 63,
+    "expectedTitles": [
+      "Белый храм Ват Ронг Кхун",
+      "Пляж Паттайя",
+      "Центр искусств и культуры Чиангмая"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 63
+  },
+  {
+    "migration": "206_seed_tajikistan_visit_planning_from_workbook.up.sql",
+    "downMigration": "206_seed_tajikistan_visit_planning_from_workbook.down.sql",
+    "countryCode": "TJ",
+    "countryName": "Tajikistan",
+    "tempTable": "seed_tajikistan_visit_planning",
+    "jsonPayloadCount": 104,
+    "expectedTitles": [
+      "Алаудинские озера",
+      "Пойменная тропа реки Вахш",
+      "Южная тугайная тропа Тигровой Балки"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 104
+  },
+  {
+    "migration": "207_seed_turkmenistan_visit_planning_from_workbook.up.sql",
+    "downMigration": "207_seed_turkmenistan_visit_planning_from_workbook.down.sql",
+    "countryCode": "TM",
+    "countryName": "Turkmenistan",
+    "tempTable": "seed_turkmenistan_visit_planning",
+    "jsonPayloadCount": 1,
+    "expectedTitles": [
+      "Тропа предгорий Копетдага"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 1
+  },
+  {
+    "migration": "208_seed_turkey_visit_planning_from_workbook.up.sql",
+    "downMigration": "208_seed_turkey_visit_planning_from_workbook.down.sql",
+    "countryCode": "TR",
+    "countryName": "Turkey",
+    "tempTable": "seed_turkey_visit_planning",
+    "jsonPayloadCount": 83,
+    "expectedTitles": [
+      "Forum Bornova",
+      "Ликийская тропа Каякей - Олюдениз",
+      "Часовая башня Измира"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 83
+  },
+  {
+    "migration": "209_seed_tanzania_visit_planning_from_workbook.up.sql",
+    "downMigration": "209_seed_tanzania_visit_planning_from_workbook.down.sql",
+    "countryCode": "TZ",
+    "countryName": "Tanzania",
+    "tempTable": "seed_tanzania_visit_planning",
+    "jsonPayloadCount": 109,
+    "expectedTitles": [
+      "Livingstone Tembe в Kwihara",
+      "Национальный парк Саадани",
+      "Центральный рынок Кингалу"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 109
+  },
+  {
+    "migration": "210_seed_ukraine_visit_planning_from_workbook.up.sql",
+    "downMigration": "210_seed_ukraine_visit_planning_from_workbook.down.sql",
+    "countryCode": "UA",
+    "countryName": "Ukraine",
+    "tempTable": "seed_ukraine_visit_planning",
+    "jsonPayloadCount": 145,
+    "expectedTitles": [
+      "Dastor Mukachevo",
+      "Одесский театр оперы и балета",
+      "Яремчанский сувенирный рынок"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 145
+  },
+  {
+    "migration": "211_seed_uzbekistan_visit_planning_from_workbook.up.sql",
+    "downMigration": "211_seed_uzbekistan_visit_planning_from_workbook.down.sql",
+    "countryCode": "UZ",
+    "countryName": "Uzbekistan",
+    "tempTable": "seed_uzbekistan_visit_planning",
+    "jsonPayloadCount": 81,
+    "expectedTitles": [
+      "Magic City Tashkent",
+      "Ляби-Хауз",
+      "Экотропа Язъяванских песков"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 81
+  },
+  {
+    "migration": "212_seed_vietnam_visit_planning_from_workbook.up.sql",
+    "downMigration": "212_seed_vietnam_visit_planning_from_workbook.down.sql",
+    "countryCode": "VN",
+    "countryName": "Vietnam",
+    "tempTable": "seed_vietnam_visit_planning",
+    "jsonPayloadCount": 126,
+    "expectedTitles": [
+      "AB Central Square",
+      "Музей этнологии Вьетнама",
+      "Центральный рынок Фантхьета"
+    ],
+    "duplicateTitlesCollapsed": [],
+    "workbookRowCount": 126
+  }
+]

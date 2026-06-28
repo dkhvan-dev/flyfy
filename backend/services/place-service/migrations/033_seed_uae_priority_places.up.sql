@@ -206,7 +206,11 @@ SELECT
     'AE',
     city_id,
     category,
-    NULL::numeric,
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 50::numeric
+        ELSE 25::numeric
+    END,
     'AED',
     duration_value,
     duration_unit,
@@ -223,6 +227,7 @@ ON CONFLICT (id) DO UPDATE SET
     country_code = EXCLUDED.country_code,
     city_id = EXCLUDED.city_id,
     category = EXCLUDED.category,
+    price_amount = EXCLUDED.price_amount,
     price_currency = EXCLUDED.price_currency,
     duration_value = EXCLUDED.duration_value,
     duration_unit = EXCLUDED.duration_unit,

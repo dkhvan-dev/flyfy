@@ -117,6 +117,12 @@ type PlaceMediaInput struct {
 	Position    int
 }
 
+type PlaceMediaBackfillJob struct {
+	JobID       string
+	CountryCode string
+	Status      string
+}
+
 type FileUploadInput struct {
 	FileName    string
 	ContentType string
@@ -134,4 +140,9 @@ type UploadedFile struct {
 type FileContent struct {
 	ContentType string
 	Content     []byte
+}
+
+type FileDownloadURL struct {
+	URL       string
+	ExpiresAt time.Time
 }

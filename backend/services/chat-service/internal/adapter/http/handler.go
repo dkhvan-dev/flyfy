@@ -796,6 +796,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		SenderUserID:        actorUserID,
 		ClientMessageID:     clientMessageID,
 		StickerAccessUserID: stickerAccessUserID,
+		SenderDisplayName:   supportSenderDisplayNameFromRequest(r, req.SenderDisplayName),
 		Type:                req.Type,
 		Content:             req.Content,
 		FileIDs:             req.FileIDs,
@@ -1177,6 +1178,20 @@ func requireChatModerationAccess(w http.ResponseWriter, r *http.Request) bool {
 	}
 	writeError(w, r, http.StatusForbidden, "missing chat moderation role")
 	return false
+}
+
+func supportSenderDisplayNameFromRequest(r *http.Request, value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	for _, role := range RolesFromContext(r.Context()) {
+		switch strings.ToUpper(strings.TrimSpace(role)) {
+		case "SUPPORT_AGENT", "SUPPORT_ADMIN":
+			return value
+		}
+	}
+	return ""
 }
 
 func adminActorIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {

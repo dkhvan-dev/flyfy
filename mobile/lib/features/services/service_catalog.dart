@@ -54,6 +54,11 @@ List<TravelServiceEntry> buildTravelServiceCatalog(AppLocalizations l10n) {
       route: '/currency-converter',
     ),
     TravelServiceEntry(
+      title: l10n.helpCenterTitle,
+      icon: Icons.support_agent_rounded,
+      route: '/help',
+    ),
+    TravelServiceEntry(
       title: l10n.homeServiceStays,
       icon: Icons.bed_rounded,
       route: '/featured-stays',

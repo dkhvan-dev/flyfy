@@ -461,7 +461,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get travelChecklistTransportFlight => 'Перелет';
+  String get travelChecklistTransportFlight => 'Самолет';
 
   @override
   String get travelChecklistTransportTrain => 'Поезд';
@@ -473,7 +473,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get travelChecklistTransportCar => 'Авто';
 
   @override
+  String get travelChecklistTransportMotorcycle => 'Мотоцикл';
+
+  @override
   String get travelChecklistTransportFerry => 'Паром';
+
+  @override
+  String get travelChecklistTransportOther => 'Другое';
 
   @override
   String get travelChecklistActivityWalking => 'Пешие прогулки';
@@ -680,7 +686,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get travelChecklistPriorityImportant => 'Важное';
 
   @override
-  String get travelChecklistPriorityRecommended => 'Рекомендуется';
+  String get travelChecklistPriorityRecommended => 'Рекомендуем';
 
   @override
   String get travelChecklistPriorityOptional => 'Опционально';
@@ -956,7 +962,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get profileCountry => 'Страна';
+  String get profileCountry => 'Гражданство';
 
   @override
   String get profileCurrency => 'Валюта';
@@ -1023,7 +1029,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideVerificationIdentityNotice =>
-      'Мы используем эти данные только для проверки личности и статуса гида.';
+      'Мы используем эти данные только для проверки личности и статуса гида';
 
   @override
   String get guideVerificationContinueToDocuments => 'Перейти к документам';
@@ -1049,14 +1055,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideVerificationNoGlareHint =>
-      'Сделайте фото при ровном освещении, чтобы текст был читаемым.';
+      'Сделайте фото при ровном освещении, чтобы текст был читаемым';
 
   @override
   String get guideVerificationFullFrame => 'Полностью в кадре';
 
   @override
   String get guideVerificationFullFrameHint =>
-      'Все края документа должны быть видны на изображении.';
+      'Все края документа должны быть видны на изображении';
 
   @override
   String get guideVerificationTapToCapturePassport =>
@@ -1070,8 +1076,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideVerificationChooseFile => 'Выбрать файл';
 
   @override
+  String get guideVerificationReplaceFile => 'Заменить файл';
+
+  @override
   String get guideVerificationDocumentConfirm =>
-      'Я подтверждаю, что этот документ действителен, не просрочен, а предоставленное фото четкое и хорошо читается автоматическими системами проверки.';
+      'Я подтверждаю, что этот документ действителен, не просрочен, а предоставленное фото четкое и хорошо читается автоматическими системами проверки';
 
   @override
   String get guideVerificationVerifyContinue => 'Продолжить проверку';
@@ -1106,7 +1115,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideVerificationUploadLicenseSubtitle =>
-      'Подойдет сертификат, лицензия или другой профессиональный документ.';
+      'Подойдет сертификат, лицензия или другой профессиональный документ';
 
   @override
   String get guideVerificationAdditionalCertifications =>
@@ -1133,14 +1142,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideVerificationFirstAidHint =>
-      'Есть действующее обучение или сертификат по первой помощи.';
+      'Есть действующее обучение или сертификат по первой помощи';
 
   @override
   String get guideVerificationLanguageProficiency => 'Иностранные языки';
 
   @override
   String get guideVerificationLanguageProficiencyHint =>
-      'Можете проводить активности и экскурсии более чем на одном языке.';
+      'Можете проводить активности и экскурсии более чем на одном языке';
 
   @override
   String get guideVerificationTimelineTitle => 'Срок проверки';
@@ -1193,14 +1202,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideVerificationAgreement =>
-      'Соглашаюсь на проверку документов и обработку данных для подтверждения статуса гида.';
+      'Соглашаюсь на проверку документов и обработку данных для подтверждения статуса гида';
 
   @override
   String get guideVerificationSubmit => 'Отправить заявку';
 
   @override
   String get guideVerificationReviewNote =>
-      'После отправки вы сможете отслеживать статус заявки в профиле.';
+      'После отправки вы сможете отслеживать статус заявки в профиле';
 
   @override
   String get guideVerificationPendingTitle => 'Заявка уже на проверке';
@@ -1305,7 +1314,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Заполните никнейм, имя, фамилию и страну, чтобы пользоваться всеми возможностями Inflap';
+      'Заполните никнейм, имя, фамилию и гражданство, чтобы пользоваться всеми возможностями Inflap';
 
   @override
   String get fillNowButton => 'Заполнить';
@@ -1362,14 +1371,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lastNameRequired => 'Укажите фамилию';
 
   @override
-  String get profileCountryRequired => 'Выберите страну';
+  String get profileCountryRequired => 'Выберите гражданство';
 
   @override
   String get profileRequiredTitle => 'Заполните профиль';
 
   @override
   String get profileRequiredDescription =>
-      'Чтобы продолжить, укажите никнейм, имя, фамилию и страну в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
+      'Чтобы продолжить, укажите никнейм, имя, фамилию и гражданство в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
 
   @override
   String get myProfileTitle => 'Мой профиль';
@@ -1388,7 +1397,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileEmptyBioPlaceholder =>
-      'Пока здесь нет описания. Когда профиль будет заполнен, здесь появится краткая информация о пользователе.';
+      'Несколько слов о себе помогут другим узнать вас лучше';
 
   @override
   String get profileBecomeGuideTitle => 'Станьте гидом';
@@ -1519,6 +1528,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Новые входящие запросы в друзья появятся здесь.';
 
   @override
+  String get profileMyContentTitle => 'Мое пространство';
+
+  @override
   String get profileJourneyTitle => 'Мой путь';
 
   @override
@@ -1554,14 +1566,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileNotificationsRowSubtitle =>
-      'Push, email и SMS-уведомления по вашим активностям.';
+      'Push, email и SMS-уведомления по вашим активностям';
 
   @override
   String get profileSecurityRowTitle => 'Безопасность и данные';
 
   @override
   String get profileSecurityRowSubtitle =>
-      'Защита аккаунта, экспорт данных и настройки приватности.';
+      'Защита аккаунта, экспорт данных и настройки приватности';
 
   @override
   String get profileHostedActivitiesTitle => 'Активности пользователя';
@@ -1768,7 +1780,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSettingsEditSubtitle =>
-      'Измените имя, фото, описание и базовые данные профиля.';
+      'Измените имя, фото, описание и базовые данные профиля';
 
   @override
   String get profileOverviewSectionTitle => 'Параметры профиля';
@@ -1911,7 +1923,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String profileNotificationsQuietHoursTimezone(Object timezone) {
-    return 'Используется часовой пояс профиля: $timezone';
+    return 'Используется текущий часовой пояс: $timezone';
   }
 
   @override
@@ -2550,7 +2562,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get servicesSectionTitle => 'Сервисы';
 
   @override
-  String get servicesAllButton => 'Все';
+  String get servicesAllButton => 'Смотреть все';
 
   @override
   String get homeExcursionsTitle => 'Экскурсии';
@@ -2655,7 +2667,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeCarRentals => 'Аренда авто';
 
   @override
-  String get homeRecommendedActivities => 'Рекомендованные активности';
+  String get homeRecommendedActivities => 'Топ активности';
 
   @override
   String get homeFilterButton => 'Фильтр';
@@ -4101,16 +4113,181 @@ class AppLocalizationsRu extends AppLocalizations {
   String get placeExperienceSection => 'Впечатление';
 
   @override
+  String get placeFeeDetailsSection => 'Расходы';
+
+  @override
+  String get placeFeeDetailsTitle => 'Примерные расходы';
+
+  @override
+  String get placeFeeDetailsNote =>
+      'Актуальные тарифы могут измениться перед визитом';
+
+  @override
   String get placeExpectSection => 'Что ожидать';
 
   @override
   String get placeVisitPlanSection => 'План визита';
 
   @override
+  String get placeVisitOverviewTitle => 'Коротко';
+
+  @override
+  String get placeVisitCostTitle => 'Стоимость';
+
+  @override
+  String get placeVisitSeasonTitle => 'Когда ехать';
+
+  @override
+  String get placeVisitAccessTitle => 'Как добраться';
+
+  @override
+  String get placeVisitTimeTitle => 'Сколько времени заложить';
+
+  @override
+  String get placeVisitRecommendedItemsTitle => 'Что взять с собой';
+
+  @override
+  String get placeVisitPracticalNotesTitle => 'Практические советы';
+
+  @override
   String get placeInflapTipTitle => 'Совет Inflap';
 
   @override
   String get placeVisitDurationLabel => 'Время на месте';
+
+  @override
+  String get placeVisitCarTimeLabel => 'На авто';
+
+  @override
+  String get placeVisitOpeningHoursLabel => 'Время работы';
+
+  @override
+  String get placeVisitPriceNoteLabel => 'Пояснение по цене';
+
+  @override
+  String get placeVisitRoadConditionLabel => 'Дорога';
+
+  @override
+  String get placeVisitRouteHintLabel => 'Ориентир';
+
+  @override
+  String get placeVisitParkingLabel => 'Парковка';
+
+  @override
+  String get placeVisitLastSegmentLabel => 'Последний участок';
+
+  @override
+  String get placeVisitRequires4x4 => 'Нужен 4x4';
+
+  @override
+  String get placeVisitRequiredLabel => 'Обязательно';
+
+  @override
+  String get placeVisitOptionalLabel => 'Опционально';
+
+  @override
+  String get placeVisitRecommendedLabel => 'Рекомендуется';
+
+  @override
+  String get placeVisitItemWater => 'Вода';
+
+  @override
+  String get placeVisitItemShoes => 'Удобная обувь';
+
+  @override
+  String get placeVisitItemCash => 'Наличные';
+
+  @override
+  String get placeVisitItemWarmClothes => 'Тёплая одежда';
+
+  @override
+  String get placeVisitItemPowerbank => 'Powerbank';
+
+  @override
+  String get placeVisitItemDocuments => 'Документы';
+
+  @override
+  String get placeVisitItemFood => 'Еда';
+
+  @override
+  String get placeVisitItemSpf => 'SPF и головной убор';
+
+  @override
+  String get placeVisitItemRain => 'Дождевик';
+
+  @override
+  String get placeVisitItemMap => 'Офлайн-карта';
+
+  @override
+  String get placeVisitItemRepellent => 'Репеллент';
+
+  @override
+  String get placeVisitItemFirstAid => 'Аптечка';
+
+  @override
+  String get placeVisitItemOther => 'Подготовка';
+
+  @override
+  String get placeVisitTransportCar => 'Авто';
+
+  @override
+  String get placeVisitTransportWalk => 'Пешком';
+
+  @override
+  String get placeVisitTransportTaxi => 'Такси';
+
+  @override
+  String get placeVisitTransportBus => 'Автобус';
+
+  @override
+  String get placeVisitTransportCableCar => 'Канатная дорога';
+
+  @override
+  String get placeVisitTransportShuttle => 'Шаттл';
+
+  @override
+  String get placeVisitTransportHorse => 'Лошадь';
+
+  @override
+  String get placeVisitTransportTrain => 'Поезд';
+
+  @override
+  String get placeVisitTransportBoat => 'Лодка';
+
+  @override
+  String get placeVisitRoadPaved => 'Асфальт';
+
+  @override
+  String get placeVisitRoadGravel => 'Грунтовка';
+
+  @override
+  String get placeVisitRoadMountain => 'Горная дорога';
+
+  @override
+  String get placeVisitRoadMixed => 'Смешанная дорога';
+
+  @override
+  String get placeVisitRoadOffroad => 'Бездорожье';
+
+  @override
+  String placeVisitMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String placeVisitHoursOnly(int hours) {
+    return '$hours ч';
+  }
+
+  @override
+  String placeVisitHoursMinutes(int hours, int minutes) {
+    return '$hours ч $minutes мин';
+  }
+
+  @override
+  String placeVisitDistanceKm(String distance) {
+    return '$distance км';
+  }
 
   @override
   String get placeVisitDurationFlexible => 'Гибко';
@@ -4188,7 +4365,28 @@ class AppLocalizationsRu extends AppLocalizations {
       'Проверьте актуальное расписание и совместите локацию с соседними активностями, чтобы не терять время на дорогу.';
 
   @override
-  String get placeReviewsSection => 'Голоса путешественников';
+  String get placeVisitPracticalGeneral => 'Практический совет';
+
+  @override
+  String get placeVisitPracticalConnection => 'Связь';
+
+  @override
+  String get placeVisitPracticalToilet => 'Туалеты';
+
+  @override
+  String get placeVisitPracticalCafe => 'Кафе';
+
+  @override
+  String get placeVisitPracticalSafety => 'Безопасность';
+
+  @override
+  String get placeVisitPracticalKids => 'С детьми';
+
+  @override
+  String get placeVisitPracticalWeather => 'Погода';
+
+  @override
+  String get placeReviewsSection => 'Отзывы туристов';
 
   @override
   String placeSeeAllReviews(int count) {
@@ -4265,7 +4463,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get placeVerifiedNomad => 'Проверенный путешественник';
 
   @override
-  String get placeReviewsTitle => 'Отзывы';
+  String get placeReviewsTitle => 'Отзывы туристов';
 
   @override
   String get placeTravelerFallback => 'Путешественник';
@@ -4313,10 +4511,46 @@ class AppLocalizationsRu extends AppLocalizations {
       'Потяните для обновления или откройте профиль снова.';
 
   @override
-  String get placePriceVaries => 'Цена варьируется';
+  String get placePriceVaries => 'цена уточняется';
 
   @override
-  String get placePriceVariesShort => 'Варьируется';
+  String get placePriceVariesShort => 'уточняется';
+
+  @override
+  String get placeFreeEntry => 'Бесплатно';
+
+  @override
+  String placePriceFrom(Object price) {
+    return 'от $price';
+  }
+
+  @override
+  String placeFeeApproxAmount(Object amount) {
+    return '~$amount';
+  }
+
+  @override
+  String placeFeePerUnit(Object amount, Object unit) {
+    return '$amount за $unit';
+  }
+
+  @override
+  String get placeFeeUnitPerson => 'человека';
+
+  @override
+  String get placeFeeUnitCar => 'авто';
+
+  @override
+  String get placeFeeUnitMotorcycle => 'мотоцикл';
+
+  @override
+  String get placeFeeUnitTicket => 'билет';
+
+  @override
+  String get placeFeeUnitGroup => 'группу';
+
+  @override
+  String get placeFeeUnitItem => 'позицию';
 
   @override
   String placeDurationHours(int hours) {
@@ -6327,7 +6561,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardDirectGuideReviewsTab => 'Гид';
 
   @override
-  String get guideDashboardOffersStat => 'Всего предложений';
+  String get guideDashboardOffersStat => 'Предложения';
 
   @override
   String get guideDashboardBookingsStat => 'Брони';
@@ -6584,7 +6818,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardStatusRejected => 'Отклонено';
 
   @override
-  String get guideDashboardStatusBooked => 'Бронь';
+  String get guideDashboardStatusBooked => 'Активно';
 
   @override
   String get guideDashboardStatusCompleted => 'Проведено';
@@ -8850,6 +9084,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notificationsCategorySystem => 'Система';
 
   @override
+  String get notificationsCategorySupport => 'Поддержка';
+
+  @override
   String get notificationsCategoryGeneral => 'Общее';
 
   @override
@@ -8905,6 +9142,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationsChatMessageBody => 'Откройте чаты, чтобы ответить.';
+
+  @override
+  String get notificationsSupportRepliedTitle => 'Поддержка ответила';
+
+  @override
+  String get notificationsSupportRepliedBody =>
+      'Поддержка ответила в вашем обращении.';
+
+  @override
+  String get notificationsSupportUpdatedTitle =>
+      'Обращение в поддержку обновлено';
+
+  @override
+  String get notificationsSupportUpdatedBody =>
+      'Откройте чат поддержки, чтобы посмотреть обновление.';
 
   @override
   String notificationsActivityJoinedTitle(Object actor) {
@@ -9048,4 +9300,243 @@ class AppLocalizationsRu extends AppLocalizations {
   String notificationsDaysAgo(Object days) {
     return '$days дн назад';
   }
+
+  @override
+  String get helpCenterTitle => 'Центр помощи';
+
+  @override
+  String get helpCenterSubtitle =>
+      'Ответы по бронированиям, гидам, местам, оплатам, валюте и безопасности аккаунта';
+
+  @override
+  String get helpCenterSearchHint => 'Вопросы, советы, инструкции';
+
+  @override
+  String get helpCenterCategoryAll => 'Все';
+
+  @override
+  String get helpCenterCategoryDocuments => 'Документы';
+
+  @override
+  String get helpCenterCategoryFlights => 'Перелеты';
+
+  @override
+  String get helpCenterCategoryAccommodation => 'Проживание';
+
+  @override
+  String get helpCenterCategoryMoney => 'Деньги';
+
+  @override
+  String get helpCenterCategorySafety => 'Безопасность';
+
+  @override
+  String get helpCenterCategoryTransport => 'Транспорт';
+
+  @override
+  String get helpCenterCategoryPlanning => 'Маршрут';
+
+  @override
+  String get helpCenterCategoryCulture => 'Правила';
+
+  @override
+  String get helpCenterMoreCategories => 'Еще';
+
+  @override
+  String get helpCenterCategoriesTitle => 'Категории';
+
+  @override
+  String get helpCenterPopularTitle => 'Популярные ответы';
+
+  @override
+  String get helpCenterSearchResultsTitle => 'Результаты поиска';
+
+  @override
+  String get helpCenterNoResultsTitle => 'Ответ не найден';
+
+  @override
+  String get helpCenterNoResultsMessage =>
+      'Попробуйте другой запрос или откройте обращения в поддержку, если ответа всё еще нет';
+
+  @override
+  String get helpCenterLoadFailedTitle => 'Не удалось загрузить помощь';
+
+  @override
+  String get helpCenterRetry => 'Повторить';
+
+  @override
+  String get helpCenterLoadMore => 'Показать еще';
+
+  @override
+  String get helpCenterContactSupport => 'Связаться с поддержкой';
+
+  @override
+  String get helpCenterOpenChat => 'Открыть чат';
+
+  @override
+  String get helpCenterSupportChatButton => 'Чат';
+
+  @override
+  String get helpCenterOpenRoute => 'Открыть';
+
+  @override
+  String get helpCenterWasHelpful => 'Ответ помог?';
+
+  @override
+  String get helpCenterHelpful => 'Помогло';
+
+  @override
+  String get helpCenterNotHelpful => 'Не помогло';
+
+  @override
+  String get helpCenterFeedbackSaved =>
+      'Спасибо, ваш отзыв поможет улучшить ответы';
+
+  @override
+  String get supportRequestsSubtitle =>
+      'Следите за диалогами с поддержкой Inflap и отвечайте, когда нужны детали.';
+
+  @override
+  String get supportRequestsLoadFailedTitle => 'Не удалось загрузить обращения';
+
+  @override
+  String get supportTicketDetailTitle => 'Чат поддержки';
+
+  @override
+  String get supportTicketReplyHint => 'Напишите ответ';
+
+  @override
+  String get supportTicketClose => 'Закрыть обращение';
+
+  @override
+  String get supportTicketNoMessagesTitle => 'Сообщений пока нет';
+
+  @override
+  String get supportTicketNoMessagesMessage =>
+      'Ответы поддержки появятся здесь';
+
+  @override
+  String get supportReplyFailed => 'Не удалось отправить ответ';
+
+  @override
+  String get supportTicketCSATTitle => 'Оцените поддержку';
+
+  @override
+  String get supportTicketCSATCommentHint => 'Добавьте комментарий';
+
+  @override
+  String get supportTicketCSATSubmit => 'Отправить оценку';
+
+  @override
+  String get supportTicketCSATThanks => 'Спасибо за оценку поддержки';
+
+  @override
+  String get supportTicketCSATFailed => 'Не удалось сохранить оценку';
+
+  @override
+  String get supportEventTicketClosedByUser =>
+      'Обращение закрыто пользователем';
+
+  @override
+  String get supportEventCSATSubmitted => 'Оценка поддержки отправлена';
+
+  @override
+  String get supportEventTicketResolved => 'Обращение решено';
+
+  @override
+  String get supportEventSegmentCalculated => 'Контекст обращения обновлен';
+
+  @override
+  String get supportEventUserReplied => 'Сообщение отправлено';
+
+  @override
+  String get supportEventAgentReplied => 'Поддержка ответила';
+
+  @override
+  String get supportEventUpdated => 'Обращение обновлено';
+
+  @override
+  String get supportStatusNew => 'Получено';
+
+  @override
+  String get supportStatusOpen => 'Открыто';
+
+  @override
+  String get supportStatusAssigned => 'Назначено';
+
+  @override
+  String get supportStatusWaitingUser => 'Ждет вашего ответа';
+
+  @override
+  String get supportStatusWaitingSupport => 'Ждет поддержки';
+
+  @override
+  String get supportStatusResolved => 'Решено';
+
+  @override
+  String get supportStatusClosed => 'Закрыто';
+
+  @override
+  String get supportStatusReopened => 'Открыто снова';
+
+  @override
+  String get supportPreviewNew =>
+      'Мы получили обращение и ответим в этом чате.';
+
+  @override
+  String get supportPreviewWaitingUser =>
+      'Поддержке нужны дополнительные детали от вас';
+
+  @override
+  String get supportPreviewWaitingSupport =>
+      'Ваш ответ отправлен. Поддержка вернется сюда с ответом.';
+
+  @override
+  String get supportPreviewResolved =>
+      'Обращение завершено. Можно оценить поддержку или создать новое обращение.';
+
+  @override
+  String supportExpectedResponseWithin(Object time) {
+    return 'Обычно отвечаем в течение $time';
+  }
+
+  @override
+  String get supportMessageSending => 'Отправляется';
+
+  @override
+  String get supportMessageSent => 'Отправлено';
+
+  @override
+  String get supportMessageNotSent => 'Не отправлено';
+
+  @override
+  String get supportMessageRetry => 'Повторить';
+
+  @override
+  String get supportEpisodeNewRequestCreated => 'Создано новое обращение';
+
+  @override
+  String supportEpisodeStarted(Object date) {
+    return 'Обращение от $date';
+  }
+
+  @override
+  String get supportUserFallbackName => 'Вы';
+
+  @override
+  String get supportAgentFallbackName => 'Поддержка';
+
+  @override
+  String get supportSystemFallbackName => 'Система';
+
+  @override
+  String get contextualHelpTitle => 'Вопросы и помощь';
+
+  @override
+  String get contextualHelpOpenAll => 'Вся помощь';
+
+  @override
+  String get contextualHelpLoadFailed => 'Помощь временно недоступна';
+
+  @override
+  String get contextualHelpTryAgain => 'Повторить';
 }

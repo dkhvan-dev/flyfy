@@ -42,6 +42,23 @@ void main() {
     },
   );
 
+  test(
+    'travel checklist request uses profile citizenship from session',
+    () async {
+      final source = await File(
+        'lib/screens/checklists/travel_checklist_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../providers/session_provider.dart';"),
+      );
+      expect(source, contains('context.read<SessionProvider>()'));
+      expect(source, contains('session.profile?.countryCode'));
+      expect(source, contains('citizenshipCountryCode:'));
+    },
+  );
+
   testWidgets(
     'shows setup state instead of sample checklist when route args are missing',
     (tester) async {
@@ -901,7 +918,7 @@ void main() {
       final selectedFlightLabel = tester.widget<Text>(
         find.descendant(
           of: find.byKey(const ValueKey('quick-prep-transport-flight')),
-          matching: find.text('Перелет'),
+          matching: find.text('Самолет'),
         ),
       );
       expect(selectedFlightLabel.style?.color, AppColors.textPrimary);
@@ -1053,46 +1070,81 @@ void main() {
     },
   );
 
-  testWidgets('transport chips reserve checkmark space to prevent row jumps', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'transport chips are content-sized without shifting when selected',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('ru'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: TravelChecklistScreen(
-          checklistApi: _FakeChecklistApi(),
-          checklistCache: _FakeChecklistOfflineCache(),
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: TravelChecklistScreen(
+            checklistApi: _FakeChecklistApi(),
+            checklistCache: _FakeChecklistOfflineCache(),
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    final trainFinder = find.byKey(
-      const ValueKey('quick-prep-transport-train'),
-    );
-    final busFinder = find.byKey(const ValueKey('quick-prep-transport-bus'));
-    await tester.ensureVisible(trainFinder);
-    await tester.pumpAndSettle();
+      final trainFinder = find.byKey(
+        const ValueKey('quick-prep-transport-train'),
+      );
+      final carFinder = find.byKey(const ValueKey('quick-prep-transport-car'));
+      final busFinder = find.byKey(const ValueKey('quick-prep-transport-bus'));
+      final motorcycleFinder = find.byKey(
+        const ValueKey('quick-prep-transport-motorcycle'),
+      );
+      final ferryFinder = find.byKey(
+        const ValueKey('quick-prep-transport-ferry'),
+      );
+      final otherFinder = find.byKey(
+        const ValueKey('quick-prep-transport-other'),
+      );
+      await tester.ensureVisible(trainFinder);
+      await tester.pumpAndSettle();
 
-    final initialBusTopLeft = tester.getTopLeft(busFinder);
-    final unselectedBusChip = tester.widget<FilterChip>(
-      find.descendant(of: busFinder, matching: find.byType(FilterChip)),
-    );
-    expect(unselectedBusChip.avatar, isNotNull);
+      final unselectedBusChip = tester.widget<FilterChip>(
+        find.descendant(of: busFinder, matching: find.byType(FilterChip)),
+      );
+      expect(unselectedBusChip.avatar, isNull);
+      expect(find.text('Мотоцикл'), findsOneWidget);
+      expect(find.text('Паром'), findsOneWidget);
+      expect(find.text('Другое'), findsOneWidget);
+      expect(motorcycleFinder, findsOneWidget);
+      expect(ferryFinder, findsOneWidget);
+      expect(otherFinder, findsOneWidget);
 
-    await tester.tap(trainFinder);
-    await tester.pumpAndSettle();
+      final carChipFinder = find.descendant(
+        of: carFinder,
+        matching: find.byType(FilterChip),
+      );
+      final carRectBeforeSelection = tester.getRect(carChipFinder);
 
-    expect(tester.getTopLeft(busFinder), initialBusTopLeft);
-  });
+      await tester.tap(trainFinder);
+      await tester.pumpAndSettle();
+
+      final carRectAfterSelection = tester.getRect(carChipFinder);
+      expect(carRectAfterSelection.topLeft, carRectBeforeSelection.topLeft);
+
+      final selectedTrainChip = tester.widget<FilterChip>(
+        find.descendant(of: trainFinder, matching: find.byType(FilterChip)),
+      );
+      expect(selectedTrainChip.avatar, isNull);
+      expect(
+        find.descendant(
+          of: trainFinder,
+          matching: find.byIcon(Icons.check_rounded),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('opens quick preparation date picker with Amber theme', (
     tester,
@@ -1159,7 +1211,7 @@ void main() {
     expect(find.textContaining('Inflap собирает no-paid'), findsNothing);
     expect(find.text('Для какой поездки'), findsOneWidget);
     expect(find.text('Токио, Япония'), findsOneWidget);
-    expect(find.text('Перелет'), findsOneWidget);
+    expect(find.text('Самолет'), findsOneWidget);
     expect(find.text('Хайкинг'), findsOneWidget);
     expect(find.textContaining('50%'), findsOneWidget);
     expect(find.text('Не готово'), findsOneWidget);
@@ -1438,7 +1490,7 @@ void main() {
     );
     FlutterError.onError = previousOnError;
     expect(find.text('Важное'), findsWidgets);
-    expect(find.text('Рекомендуется'), findsOneWidget);
+    expect(find.text('Рекомендуем'), findsOneWidget);
     expect(find.text('Опционально'), findsOneWidget);
     expect(
       flutterErrors.where(

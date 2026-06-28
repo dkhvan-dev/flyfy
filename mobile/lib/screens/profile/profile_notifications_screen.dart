@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import '../../features/notifications/data/notification_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import 'profile_style.dart';
 
@@ -30,7 +33,6 @@ class _ProfileNotificationsScreenState
   bool _initialized = false;
   bool _preferencesLoading = true;
   bool _preferencesLoadFailed = false;
-  String _profileTimezone = 'Asia/Almaty';
 
   @override
   void initState() {
@@ -44,8 +46,15 @@ class _ProfileNotificationsScreenState
     if (_initialized) {
       return;
     }
+    final locationProvider = context.read<HomeLocationProvider>();
+    if (!locationProvider.isLoaded && !locationProvider.isLoading) {
+      unawaited(
+        locationProvider.load(
+          languageCode: Localizations.localeOf(context).languageCode,
+        ),
+      );
+    }
     final profile = context.read<SessionProvider>().profile;
-    _profileTimezone = profile?.timezone ?? _profileTimezone;
     final settings = profile?.settings;
     _settings =
         settings ??
@@ -57,7 +66,6 @@ class _ProfileNotificationsScreenState
           marketingEnabled: false,
           darkModeEnabled: false,
         );
-    _preferences = _preferences.copyWith(timezone: _profileTimezone);
     _initialized = true;
   }
 
@@ -349,9 +357,13 @@ class _ProfileNotificationsScreenState
   }
 
   String get _effectiveTimezone {
-    final profileTimezone = _profileTimezone.trim();
-    if (profileTimezone.isNotEmpty) {
-      return profileTimezone;
+    final locationTimezone = context
+        .read<HomeLocationProvider>()
+        .effectiveLocation
+        .timezone
+        ?.trim();
+    if (locationTimezone != null && locationTimezone.isNotEmpty) {
+      return locationTimezone;
     }
     final preferencesTimezone = _preferences.timezone.trim();
     if (preferencesTimezone.isNotEmpty) {

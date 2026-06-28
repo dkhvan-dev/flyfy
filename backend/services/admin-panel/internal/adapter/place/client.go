@@ -105,6 +105,21 @@ func (c *Client) ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.P
 	return c.doJSON(ctx, http.MethodPut, "/internal/v1/admin/places/"+id.String()+"/media", nil, body, nil)
 }
 
+func (c *Client) StartMediaBackfill(ctx context.Context, countryCode string) (model.PlaceMediaBackfillJob, error) {
+	body := placeMediaBackfillRequest{
+		CountryCode: strings.ToUpper(strings.TrimSpace(countryCode)),
+	}
+	var resp placeMediaBackfillResponse
+	if err := c.doJSON(ctx, http.MethodPost, "/internal/v1/admin/places/media/backfill", nil, body, &resp); err != nil {
+		return model.PlaceMediaBackfillJob{}, err
+	}
+	return model.PlaceMediaBackfillJob{
+		JobID:       resp.JobID,
+		CountryCode: resp.CountryCode,
+		Status:      resp.Status,
+	}, nil
+}
+
 func (c *Client) doJSON(ctx context.Context, method string, path string, headers map[string]string, body any, dest any) error {
 	var reader io.Reader
 	if body != nil {
@@ -166,6 +181,16 @@ type placeListResponse struct {
 	Total int             `json:"total"`
 }
 
+type placeMediaBackfillRequest struct {
+	CountryCode string `json:"countryCode"`
+}
+
+type placeMediaBackfillResponse struct {
+	JobID       string `json:"jobId"`
+	CountryCode string `json:"countryCode"`
+	Status      string `json:"status"`
+}
+
 type placeResponse struct {
 	ID                string                              `json:"id"`
 	Locale            string                              `json:"locale"`
@@ -212,12 +237,50 @@ type placeVisitInfoResponse struct {
 	BestTime        string            `json:"bestTime"`
 	Accessibility   string            `json:"accessibility"`
 	BookingRequired *bool             `json:"bookingRequired"`
-	OpeningHours    string            `json:"openingHours"`
+	OpeningHours    openingHoursText  `json:"openingHours"`
 	Amenities       []string          `json:"amenities"`
 	Audience        []string          `json:"audience"`
 	SafetyNotes     []string          `json:"safetyNotes"`
 	NearbyIDs       []string          `json:"nearbyIds"`
 	LocalizedTips   map[string]string `json:"localizedTips"`
+}
+
+type openingHoursText string
+
+func (o *openingHoursText) UnmarshalJSON(raw []byte) error {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		*o = ""
+		return nil
+	}
+	var legacy string
+	if err := json.Unmarshal(raw, &legacy); err == nil {
+		*o = openingHoursText(strings.TrimSpace(legacy))
+		return nil
+	}
+	var v2 struct {
+		Is24Hours bool   `json:"is24Hours"`
+		Seasonal  string `json:"seasonal"`
+		Summary   string `json:"summary"`
+	}
+	if err := json.Unmarshal(raw, &v2); err != nil {
+		return err
+	}
+	switch {
+	case strings.TrimSpace(v2.Summary) != "":
+		*o = openingHoursText(strings.TrimSpace(v2.Summary))
+	case strings.TrimSpace(v2.Seasonal) != "":
+		*o = openingHoursText(strings.TrimSpace(v2.Seasonal))
+	case v2.Is24Hours:
+		*o = "24/7"
+	default:
+		*o = ""
+	}
+	return nil
+}
+
+func (o openingHoursText) String() string {
+	return string(o)
 }
 
 type placeMediaResponse struct {
@@ -261,7 +324,7 @@ func (r placeResponse) toModel() model.AdminPlace {
 			BestTime:        r.VisitInfo.BestTime,
 			Accessibility:   r.VisitInfo.Accessibility,
 			BookingRequired: r.VisitInfo.BookingRequired,
-			OpeningHours:    r.VisitInfo.OpeningHours,
+			OpeningHours:    r.VisitInfo.OpeningHours.String(),
 			Amenities:       r.VisitInfo.Amenities,
 			Audience:        r.VisitInfo.Audience,
 			SafetyNotes:     r.VisitInfo.SafetyNotes,
@@ -354,15 +417,19 @@ type placeCityLinkRequest struct {
 }
 
 type placeVisitInfoRequest struct {
-	BestTime        string            `json:"bestTime"`
-	Accessibility   string            `json:"accessibility"`
-	BookingRequired *bool             `json:"bookingRequired"`
-	OpeningHours    string            `json:"openingHours"`
-	Amenities       []string          `json:"amenities"`
-	Audience        []string          `json:"audience"`
-	SafetyNotes     []string          `json:"safetyNotes"`
-	NearbyIDs       []string          `json:"nearbyIds"`
-	LocalizedTips   map[string]string `json:"localizedTips"`
+	BestTime        string                    `json:"bestTime"`
+	Accessibility   string                    `json:"accessibility"`
+	BookingRequired *bool                     `json:"bookingRequired"`
+	OpeningHours    *placeOpeningHoursRequest `json:"openingHours,omitempty"`
+	Amenities       []string                  `json:"amenities"`
+	Audience        []string                  `json:"audience"`
+	SafetyNotes     []string                  `json:"safetyNotes"`
+	NearbyIDs       []string                  `json:"nearbyIds"`
+	LocalizedTips   map[string]string         `json:"localizedTips"`
+}
+
+type placeOpeningHoursRequest struct {
+	Summary map[string]string `json:"summary,omitempty"`
 }
 
 func placeRequestFromModel(input model.PlaceInput) placeRequest {
@@ -395,7 +462,7 @@ func placeRequestFromModel(input model.PlaceInput) placeRequest {
 			BestTime:        input.VisitInfo.BestTime,
 			Accessibility:   input.VisitInfo.Accessibility,
 			BookingRequired: input.VisitInfo.BookingRequired,
-			OpeningHours:    input.VisitInfo.OpeningHours,
+			OpeningHours:    placeOpeningHoursRequestFromText(input.VisitInfo.OpeningHours, input.DefaultLocale),
 			Amenities:       input.VisitInfo.Amenities,
 			Audience:        input.VisitInfo.Audience,
 			SafetyNotes:     input.VisitInfo.SafetyNotes,
@@ -404,6 +471,18 @@ func placeRequestFromModel(input model.PlaceInput) placeRequest {
 		}
 	}
 	return req
+}
+
+func placeOpeningHoursRequestFromText(value string, locale string) *placeOpeningHoursRequest {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	locale = strings.ToLower(strings.TrimSpace(locale))
+	if locale == "" {
+		locale = "ru"
+	}
+	return &placeOpeningHoursRequest{Summary: map[string]string{locale: value}}
 }
 
 func cityLinksFromModel(values []model.PlaceCityLink) []placeCityLinkRequest {

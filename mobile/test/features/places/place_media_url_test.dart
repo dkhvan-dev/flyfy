@@ -4,6 +4,36 @@ import 'package:inflap/features/places/place_ui.dart';
 import 'package:inflap/features/places/models/place_vm.dart';
 
 void main() {
+  test(
+    'place cover media prefers mirrored MinIO files over external placeholders',
+    () {
+      final place = _placeWithMedia([
+        const PlaceMediaVm(
+          id: 'external-cover',
+          fileId: '00000000-0000-0000-0000-000000000000',
+          externalUrl: 'https://cdn.example.com/external.jpg',
+          sourceUrl: '',
+          credit: '',
+          license: '',
+          mediaType: 'PHOTO',
+          position: 0,
+        ),
+        const PlaceMediaVm(
+          id: 'minio-cover',
+          fileId: '7ec7955e-0e4e-4a2f-aa31-3e41aa345211',
+          externalUrl: '',
+          sourceUrl: '',
+          credit: '',
+          license: '',
+          mediaType: 'PHOTO',
+          position: 1,
+        ),
+      ]);
+
+      expect(place.coverMedia?.id, 'minio-cover');
+    },
+  );
+
   test('resolves place media file ids through public file content route', () {
     const media = PlaceMediaVm(
       id: 'media-1',
@@ -60,6 +90,27 @@ void main() {
     );
   });
 
+  test('builds canonical Wikimedia fallback candidates from source file pages', () {
+    const media = PlaceMediaVm(
+      id: 'media-1',
+      fileId: '',
+      externalUrl:
+          'https://commons.wikimedia.org/wiki/Special:FilePath/Ascension%20Cathedral,%20Almaty%20(LRM%2020240402%20221113-RR).jpg?width=1400',
+      sourceUrl:
+          'https://commons.wikimedia.org/wiki/File:Ascension_Cathedral,_Almaty_(LRM_20240402_221113-RR).jpg',
+      credit: '',
+      license: '',
+      mediaType: 'PHOTO',
+      position: 0,
+    );
+
+    expect(resolvePlaceMediaUrls(media, targetWidth: 620), [
+      'https://commons.wikimedia.org/wiki/Special:FilePath/Ascension%20Cathedral,%20Almaty%20(LRM%2020240402%20221113-RR).jpg?width=620',
+      'https://commons.wikimedia.org/wiki/Special:FilePath/Ascension_Cathedral,_Almaty_(LRM_20240402_221113-RR).jpg?width=620',
+      'https://commons.wikimedia.org/wiki/Special:FilePath/Ascension%20Cathedral,%20Almaty%20(LRM%2020240402%20221113-RR).jpg?width=1400',
+    ]);
+  });
+
   test('uses a compact Wikimedia thumbnail when target width is omitted', () {
     const media = PlaceMediaVm(
       id: 'media-1',
@@ -112,4 +163,31 @@ void main() {
 
     expect(resolvePlaceMediaUrl(media), isNull);
   });
+}
+
+PlaceVm _placeWithMedia(List<PlaceMediaVm> media) {
+  return PlaceVm(
+    id: 'place-1',
+    locale: 'ru',
+    defaultLocale: 'ru',
+    title: 'Место',
+    description: 'Описание',
+    countryCode: 'KZ',
+    cityId: 'almaty',
+    locationSourceUrl: '',
+    category: 'PARK',
+    priceAmount: 1000,
+    priceCurrency: 'KZT',
+    rating: 4.6,
+    reviewCount: 0,
+    source: 'IMPORT',
+    status: 'PUBLISHED',
+    tags: const [],
+    visitInfo: PlaceVisitInfoVm.empty,
+    translations: const {},
+    media: media,
+    author: const PlaceAuthorVm(userId: 'seed-author'),
+    createdAt: '2026-06-22T00:00:00Z',
+    updatedAt: '2026-06-22T00:00:00Z',
+  );
 }

@@ -67,6 +67,29 @@ func adminNavigationSections(staff *model.StaffUser) []AdminNavigationSectionVie
 		sections = append(sections, AdminNavigationSectionView{TitleKey: "navigation.section.management", Items: management})
 	}
 
+	helpCenter := []AdminNavigationItemView{}
+	if staffCanSupportRead(staff) {
+		helpCenter = append(helpCenter, AdminNavigationItemView{Key: "support", LabelKey: "nav.support", URL: "/admin/support/tickets"})
+	}
+	if staffCanSupportReply(staff) {
+		helpCenter = append(helpCenter, AdminNavigationItemView{Key: "support_saved_replies", LabelKey: "nav.supportSavedReplies", URL: "/admin/support/saved-replies"})
+	}
+	if staffCanSupportManage(staff) {
+		helpCenter = append(helpCenter, AdminNavigationItemView{Key: "support_agents", LabelKey: "nav.supportAgents", URL: "/admin/support/agents"})
+	}
+	if staffCanSupportRead(staff) || staff.HasPermission(enum.PermissionHelpContentEdit) || staff.HasPermission(enum.PermissionHelpContentPublish) {
+		helpCenter = append(helpCenter, AdminNavigationItemView{Key: "help_analytics", LabelKey: "nav.helpAnalytics", URL: "/admin/help/analytics"})
+	}
+	if staff.HasPermission(enum.PermissionHelpContentEdit) || staff.HasPermission(enum.PermissionHelpContentPublish) {
+		helpCenter = append(helpCenter,
+			AdminNavigationItemView{Key: "help_categories", LabelKey: "nav.helpCategories", URL: "/admin/help/categories"},
+			AdminNavigationItemView{Key: "help_content", LabelKey: "nav.helpContent", URL: "/admin/help/articles"},
+		)
+	}
+	if len(helpCenter) > 0 {
+		sections = append(sections, AdminNavigationSectionView{TitleKey: "navigation.section.helpCenter", Items: helpCenter})
+	}
+
 	administration := []AdminNavigationItemView{{Key: "staff", LabelKey: "nav.staff", URL: "/admin/staff"}}
 	if staff.HasRole(enum.StaffRoleSuperAdmin) {
 		administration = append(administration, AdminNavigationItemView{Key: "operations", LabelKey: "nav.operations", URL: "/admin/operations"})

@@ -45,6 +45,37 @@ func TestPlaceSeedMigrationsPopulateRequiredAuthorUserID(t *testing.T) {
 	}
 }
 
+func TestPlaceSeedMigrationsPopulateEntryPriceFloors(t *testing.T) {
+	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() ||
+			!strings.HasSuffix(name, "_places.up.sql") ||
+			!strings.Contains(name, "_seed_") {
+			continue
+		}
+
+		upSQL := readMigration(t, name)
+		if !strings.Contains(upSQL, "INSERT INTO places (") {
+			continue
+		}
+		if !strings.Contains(upSQL, "price_amount") {
+			t.Fatalf("%s must populate places.price_amount for imported entry-price floors", name)
+		}
+		if strings.Contains(upSQL, "NULL::numeric") || strings.Contains(upSQL, "NULL::varchar(3)") {
+			t.Fatalf("%s must not seed unknown place prices for imported places", name)
+		}
+		if strings.Contains(upSQL, "ON CONFLICT (id) DO UPDATE") &&
+			!strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+			t.Fatalf("%s must update places.price_amount on seed conflict", name)
+		}
+	}
+}
+
 func TestPlaceSeedMigrationsUseCurrentCityLinkKindColumn(t *testing.T) {
 	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
 	if err != nil {
@@ -64,6 +95,31 @@ func TestPlaceSeedMigrationsUseCurrentCityLinkKindColumn(t *testing.T) {
 	}
 }
 
+func TestPlaceCityLinksSortOrderCompatibilityMigrationRunsBeforeSortOrderSeeds(t *testing.T) {
+	const compatMigration = "084_place_city_links_sort_order_compat.up.sql"
+	if compatMigration >= "085_seed_hiking_place_enrichment.up.sql" {
+		t.Fatalf("%s must sort before 085 seed migrations that write place_city_links.sort_order", compatMigration)
+	}
+
+	upSQL := readMigration(t, compatMigration)
+	requiredFragments := []string{
+		"ALTER TABLE place_city_links",
+		"ADD COLUMN IF NOT EXISTS sort_order",
+		"UPDATE place_city_links",
+		"CREATE OR REPLACE FUNCTION sync_place_city_links_sort_order",
+		"CREATE TRIGGER trg_place_city_links_sort_order_sync",
+		"NEW.country_code",
+		"SELECT p.country_code",
+		"NEW.position := NEW.sort_order",
+		"NEW.sort_order := NEW.position",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("%s must contain %q", compatMigration, fragment)
+		}
+	}
+}
+
 func TestPlaceSeedMigrationsDoNotUseRemovedPlaceTablesOrMediaColumns(t *testing.T) {
 	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
 	if err != nil {
@@ -72,7 +128,6 @@ func TestPlaceSeedMigrationsDoNotUseRemovedPlaceTablesOrMediaColumns(t *testing.
 
 	removedFragments := []string{
 		"place_locations",
-		"place_visit_info",
 		"\n    url,",
 		"\n    alt_text,",
 		"media_type = EXCLUDED.media_type,\n    url = EXCLUDED.url",
@@ -91,6 +146,175 @@ func TestPlaceSeedMigrationsDoNotUseRemovedPlaceTablesOrMediaColumns(t *testing.
 			if strings.Contains(sql, fragment) {
 				t.Fatalf("%s must not use removed place schema fragment %q", name, fragment)
 			}
+		}
+	}
+}
+
+func TestKazakhstanOutdoorRouteTitleMigrationMakesListTitlesReadable(t *testing.T) {
+	upSQL := readMigration(t, "140_rename_kazakhstan_outdoor_route_titles.up.sql")
+	downSQL := readMigration(t, "140_rename_kazakhstan_outdoor_route_titles.down.sql")
+
+	requiredFragments := []string{
+		"seed_kazakhstan_outdoor_route_titles",
+		"UPDATE place_translations",
+		"p.country_code = 'KZ'",
+		"p.tags @> ARRAY[readable.slug]::text[]",
+		"'talgar-peak-base-trail'",
+		"'Пик Талгар: базовые виды'",
+		"'second-kolsai-lake-trek'",
+		"'Второе Кольсайское озеро'",
+		"'big-almaty-peak-trail'",
+		"'Большой Алматинский пик'",
+		"'tamgaly-tas-climber-path'",
+		"'Тамгалы-Тас: скалолазная тропа'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("readable Kazakhstan outdoor title migration must contain %q", fragment)
+		}
+	}
+
+	for _, fragment := range []string{
+		"old_title",
+		"UPDATE place_translations",
+		"p.country_code = 'KZ'",
+		"p.tags @> ARRAY[readable.slug]::text[]",
+	} {
+		if !strings.Contains(downSQL, fragment) {
+			t.Fatalf("readable Kazakhstan outdoor title rollback must contain %q", fragment)
+		}
+	}
+}
+
+func TestPaidPlaceFeeDetailsMigrationAddsDisplayOnlyVisitInfo(t *testing.T) {
+	upSQL := readMigration(t, "142_seed_paid_place_fee_details.up.sql")
+	downSQL := readMigration(t, "142_seed_paid_place_fee_details.down.sql")
+
+	requiredUpFragments := []string{
+		"jsonb_set",
+		"'{feeDetails}'",
+		"price_amount IS NOT NULL",
+		"price_amount > 0",
+		"price_currency IS NOT NULL",
+		"NOT (visit_info ? 'feeDetails')",
+		"'isApproximate', true",
+		"'sortOrder', 10",
+	}
+	for _, fragment := range requiredUpFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("142 fee details migration must contain %q", fragment)
+		}
+	}
+
+	for _, forbidden := range []string{"source_url", "sourceUrl", "wiki", "wikipedia", "commons.wikimedia"} {
+		if strings.Contains(strings.ToLower(upSQL), strings.ToLower(forbidden)) {
+			t.Fatalf("142 fee details migration must not store source fragment %q", forbidden)
+		}
+	}
+
+	if !strings.Contains(downSQL, "visit_info - 'feeDetails'") {
+		t.Fatalf("142 fee details down migration must remove seeded feeDetails")
+	}
+}
+
+func TestKazakhstan2026FeeDetailsMigrationUsesSpecificDisplayPrices(t *testing.T) {
+	upSQL := readMigration(t, "143_update_kazakhstan_2026_fee_details.up.sql")
+	downSQL := readMigration(t, "143_update_kazakhstan_2026_fee_details.down.sql")
+
+	requiredUpFragments := []string{
+		"p.country_code = 'KZ'",
+		"seed_kazakhstan_oopt_fee_patterns",
+		"'ile-alatau'",
+		"'charyn'",
+		"'kolsai'",
+		"'altyn-emel'",
+		"'burabay'",
+		"'bayanaul'",
+		"'katon-karagay'",
+		"'aksu-jabagly'",
+		"'ООПТ-сбор за посетителя'",
+		"'Въезд легкового автомобиля'",
+		"650",
+		"1300",
+		"865",
+		"7000",
+		"11250",
+		"21625",
+		"'Вход бесплатный'",
+		"'Билет на смотровую площадку'",
+		"'Билет на сеанс катания'",
+		"'Канатная дорога или ски-пасс'",
+	}
+	for _, fragment := range requiredUpFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("143 Kazakhstan fee details migration must contain %q", fragment)
+		}
+	}
+
+	for _, forbidden := range []string{
+		"source_url",
+		"sourceUrl",
+		"wiki",
+		"wikipedia",
+		"commons.wikimedia",
+		"transport, parking, guides",
+		"транспорт, парковка, гиды",
+		"Примерная стартовая стоимость доступа",
+		"Доступ к природной территории",
+		"Natural area access",
+		"Ориентир по тарифу 2026 за 1 человека в сутки",
+		"2026 tariff reference per person per day",
+		"2026 тарифі бойынша 1 адамға тәулігіне бағдар",
+	} {
+		if strings.Contains(strings.ToLower(upSQL), strings.ToLower(forbidden)) {
+			t.Fatalf("143 Kazakhstan fee details migration must not contain generic/source fragment %q", forbidden)
+		}
+	}
+
+	for _, fragment := range []string{
+		"visit_info - 'feeDetails'",
+		"p.country_code = 'KZ'",
+		"sortOrder",
+		"BETWEEN 1000 AND 1399",
+	} {
+		if !strings.Contains(downSQL, fragment) {
+			t.Fatalf("143 Kazakhstan fee details rollback must contain %q", fragment)
+		}
+	}
+}
+
+func TestKazakhstanRemainingRouteTitleMigrationCleansLegacyAndReferenceTitles(t *testing.T) {
+	upSQL := readMigration(t, "141_rename_remaining_kazakhstan_route_titles.up.sql")
+	downSQL := readMigration(t, "141_rename_remaining_kazakhstan_route_titles.down.sql")
+
+	requiredFragments := []string{
+		"seed_kazakhstan_remaining_route_titles",
+		"UPDATE place_translations",
+		"p.country_code = 'KZ'",
+		"p.tags && remaining.match_tags",
+		"'rocky-trail'",
+		"'Актау: скальная тропа'",
+		"'kolsai-sary-bulak-pass-trek'",
+		"'Перевал Сары-Булак у Кольсая'",
+		"'imantau-shalkar-lakes-trail'",
+		"'Озера Имантау-Шалкар'",
+		"'west-altai-nature-reserve-trails'",
+		"'Западно-Алтайский заповедник: тропы'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("remaining Kazakhstan route title migration must contain %q", fragment)
+		}
+	}
+
+	for _, fragment := range []string{
+		"old_title",
+		"UPDATE place_translations",
+		"p.country_code = 'KZ'",
+		"p.tags && remaining.match_tags",
+	} {
+		if !strings.Contains(downSQL, fragment) {
+			t.Fatalf("remaining Kazakhstan route title rollback must contain %q", fragment)
 		}
 	}
 }
@@ -3194,7 +3418,7 @@ func TestArgentinaPriorityPlacesSeedMigrationCoversTouristBreadth(t *testing.T) 
 		"Quebrada de Humahuaca",
 		"Hill of Seven Colors",
 		"Cafayate Wineries",
-		"Aconcagua Provincial Park",
+		"'Aconcagua Provincial Park'",
 		"Mendoza Wine Route",
 		"Atuel Canyon",
 		"Cordoba Jesuit Block",
@@ -6928,6 +7152,5503 @@ func TestEstoniaPriorityPlacesSeedMigrationCoversTouristBreadth(t *testing.T) {
 	}
 	if !strings.Contains(downSQL, "estonia-seed-v1") || !strings.Contains(downSQL, "country_code = 'EE'") {
 		t.Fatalf("Estonia down migration must remove only tagged Estonia seed places")
+	}
+}
+
+func TestHikingPlaceEnrichmentSeedMigrationCoversHubDayHikes(t *testing.T) {
+	upSQL := readMigration(t, "085_seed_hiking_place_enrichment.up.sql")
+	downSQL := readMigration(t, "085_seed_hiking_place_enrichment.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_hiking_enrichment_resolved_places AS",
+		"hiking-enrichment-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("hiking enrichment up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"shymkent",
+		"karaganda",
+		"balkhash",
+		"aktau",
+		"ust-kamenogorsk",
+		"kokshetau",
+		"bishkek",
+		"karakol",
+		"tashkent",
+		"tbilisi",
+		"yerevan",
+		"dubai",
+		"ras-al-khaimah",
+		"sochi",
+		"antalya",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("hiking enrichment up migration must seed places linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Butakovka Gorge",
+		"Kimasar Gorge",
+		"Sayram-Ugam National Park",
+		"Bektau-Ata",
+		"Karkaraly National Park",
+		"Sherkala Mountain",
+		"Altyn Arashan",
+		"Ala-Kul Lake Trek",
+		"Greater Chimgan Trail",
+		"Tbilisi National Park",
+		"Azat Reservoir Trail",
+		"Hatta Mountain Trails",
+		"Jebel Jais Hiking Trails",
+		"Agura Waterfalls",
+		"Lycian Way near Goynuk Canyon",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("hiking enrichment up migration must include curated hiking place %q", title)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("hiking enrichment up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("hiking enrichment up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "hiking-enrichment-v1") {
+		t.Fatalf("hiking enrichment down migration must remove only tagged hiking enrichment places")
+	}
+}
+
+func TestKazakhstanHikingDepthSeedMigrationCoversAdditionalRegionalRoutes(t *testing.T) {
+	upSQL := readMigration(t, "086_seed_kazakhstan_hiking_depth.up.sql")
+	downSQL := readMigration(t, "086_seed_kazakhstan_hiking_depth.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_hiking_depth_resolved_places AS",
+		"kazakhstan-hiking-depth-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan hiking depth up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"shymkent",
+		"pavlodar",
+		"astana",
+		"kokshetau",
+		"aktau",
+		"ust-kamenogorsk",
+		"taldykorgan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan hiking depth up migration must seed places linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Turgen Gorge",
+		"Bear Falls in Turgen Gorge",
+		"Issyk Lake Trail",
+		"Assy Plateau",
+		"Kaskelen Gorge",
+		"Monakhov Gorge",
+		"Tuyuksu Glacier Trail",
+		"Tamgaly-Tas Rocks",
+		"Aksu Canyon",
+		"Ugam Gorge",
+		"Akbet Peak",
+		"Konyr-Aulie Cave",
+		"Buiratau National Park",
+		"Okzhetpes Rock",
+		"Torysh Valley",
+		"Tuzbair Salt Flat",
+		"Airakty-Shomanai Valley",
+		"Zhygylgan Fault",
+		"Sibiny Lakes",
+		"Rakhmanov Springs Trails",
+		"Burkhan-Bulak Waterfall",
+		"Dzungarian Alatau National Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan hiking depth up migration must include additional hiking place %q", title)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan hiking depth up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan hiking depth up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-hiking-depth-v1") {
+		t.Fatalf("kazakhstan hiking depth down migration must remove only tagged Kazakhstan hiking depth places")
+	}
+}
+
+func TestReferenceGapHikingSeedMigrationCoversPreviouslyUnseededCityHubs(t *testing.T) {
+	upSQL := readMigration(t, "087_seed_reference_gap_hiking_places.up.sql")
+	downSQL := readMigration(t, "087_seed_reference_gap_hiking_places.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_reference_gap_hiking_resolved_places AS",
+		"reference-gap-hiking-v1",
+		"'hiking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("reference gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"petropavlovsk",
+		"spb",
+		"novosibirsk",
+		"omsk",
+		"namadgut",
+		"khargush",
+		"zorkul",
+		"ak-baital",
+		"rangkul",
+		"danghara",
+		"khovaling",
+		"farkhor",
+		"ashgabat",
+		"ijevan",
+		"chisinau",
+		"vung-tau",
+		"cat-ba",
+		"ha-giang",
+		"phong-nha",
+		"urumqi",
+		"new-delhi",
+		"lazio-coast",
+		"elche",
+		"calpe",
+		"jakarta",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("reference gap hiking up migration must cover previously unseeded city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Imantau-Shalkar Lakes Trail",
+		"Duderhof Heights",
+		"Berd Rocks Trail",
+		"Bird Harbor Nature Trail",
+		"Namadgut Fortress Viewpoint Trail",
+		"Khargush Pass Lakes Trail",
+		"Zorkul Lake Shore Trail",
+		"Ak-Baital Pass Viewpoint",
+		"Rangkul Lakes Viewpoint Trail",
+		"Danghara Foothill Trail",
+		"Khovaling Ridge Trail",
+		"Panj River Floodplain Trail",
+		"Kopet Dag Foothills Trail",
+		"Ijevan Dendropark Forest Trail",
+		"Codru Forest Reserve Trail",
+		"Vung Tau Big Mountain Trail",
+		"Ngu Lam Peak Trail",
+		"Ma Pi Leng Pass Trail",
+		"Phong Nha Botanical Garden Trail",
+		"Heavenly Lake Tianshan Trail",
+		"Aravalli Biodiversity Park Trail",
+		"Circeo National Park Trail",
+		"Clot de Galvany Trail",
+		"Penon de Ifach Trail",
+		"Angke Kapuk Mangrove Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("reference gap hiking up migration must include hiking place %q", title)
+		}
+	}
+
+	if strings.Contains(upSQL, "Lastiver Caves and Waterfall") {
+		t.Fatalf("reference gap hiking up migration must avoid duplicating already seeded Lastiver place")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("reference gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "reference-gap-hiking-v1") {
+		t.Fatalf("reference gap hiking down migration must remove only tagged reference gap hiking places")
+	}
+}
+
+func TestKazakhstanRegionalHikingSeedMigrationCoversWeakRegionalHubs(t *testing.T) {
+	upSQL := readMigration(t, "088_seed_kazakhstan_regional_hiking_places.up.sql")
+	downSQL := readMigration(t, "088_seed_kazakhstan_regional_hiking_places.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_regional_hiking_resolved_places AS",
+		"kazakhstan-regional-hiking-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan regional hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"aktobe",
+		"taraz",
+		"semey",
+		"atyrau",
+		"kostanay",
+		"kyzylorda",
+		"oral",
+		"turkestan",
+		"zhezkazgan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan regional hiking up migration must seed places linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kargaly Reservoir Shore Trail",
+		"Aksu-Zhabagly Foothill Trail",
+		"Semey Pine Belt Trail",
+		"Akzhaiyk Delta Eco Trail",
+		"Naurzum Pine and Lake Trail",
+		"Kamyslybas Lake Shore Trail",
+		"Ural River Floodplain Trail",
+		"Karatau Foothill Trail",
+		"Ulytau Akmeshit Ridge Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan regional hiking up migration must include regional hiking place %q", title)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan regional hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan regional hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-regional-hiking-v1") {
+		t.Fatalf("kazakhstan regional hiking down migration must remove only tagged Kazakhstan regional hiking places")
+	}
+}
+
+func TestKazakhstanExtendedHikingSeedMigrationAddsMoreRouteLevelPlaces(t *testing.T) {
+	upSQL := readMigration(t, "090_seed_kazakhstan_extended_hiking_routes.up.sql")
+	downSQL := readMigration(t, "090_seed_kazakhstan_extended_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_extended_hiking_resolved_places AS",
+		"kazakhstan-extended-hiking-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan extended hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"shymkent",
+		"karaganda",
+		"kokshetau",
+		"aktau",
+		"atyrau",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan extended hiking up migration must seed places linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Big Almaty Peak Trail",
+		"Mynzhylky Plateau Trail",
+		"Bogdanovich Glacier View Trail",
+		"Butakovka Waterfall Trail",
+		"Kairak Waterfall Trail",
+		"Second Kolsai Lake Trek",
+		"Kaindy Lake Viewpoint Trail",
+		"Aktogay Canyon Trail",
+		"Aktau Mountains Red Gorge Trail",
+		"Katutau Volcanic Hills Trail",
+		"Kokkol Waterfall Trail",
+		"Markakol Shore Trail",
+		"Kiin-Kerish Valley Trail",
+		"Kora Gorge Trail",
+		"Sayram-Su Lake Trail",
+		"Mashat Gorge Trail",
+		"Shaitankol Lake Trail",
+		"Aksoran Peak Trail",
+		"Zerenda Lake Forest Trail",
+		"Sinyukha Peak Trail",
+		"Kapamsay Canyon Trail",
+		"Karagiye Depression Rim Trail",
+		"Saura Canyon and Lake Trail",
+		"Inder Salt Lake Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan extended hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Furmanov Peak",
+		"Kara-Kungey Ridge",
+		"Karkaraly National Park",
+		"Dzungarian Alatau National Park",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan extended hiking up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan extended hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan extended hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-extended-hiking-v1") {
+		t.Fatalf("kazakhstan extended hiking down migration must remove only tagged Kazakhstan extended hiking places")
+	}
+}
+
+func TestKazakhstanAdditionalHikingSeedMigrationAddsRemainingRouteLevelPlaces(t *testing.T) {
+	upSQL := readMigration(t, "092_seed_kazakhstan_additional_hiking_routes.up.sql")
+	downSQL := readMigration(t, "092_seed_kazakhstan_additional_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_hiking_resolved_places AS",
+		"kazakhstan-additional-hiking-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"shymkent",
+		"taraz",
+		"karaganda",
+		"kokshetau",
+		"aktau",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional hiking up migration must seed places linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Ayusai Waterfalls Trail",
+		"Prohodnoye Gorge Trail",
+		"Left Talgar Gorge Trail",
+		"Talgar Peak Base Trail",
+		"Bartogai Reservoir View Trail",
+		"Ketmen Ridge Trail",
+		"Tekeli Gorge Trail",
+		"Eskeldy Gorge Trail",
+		"Yazevoe Lake Trail",
+		"Ivanov Ridge Trail",
+		"Radon Lake Trail",
+		"Sairam Peak Base Trail",
+		"Boraldai Gorge Trail",
+		"Kyzylkol Lake Trail",
+		"Kent Mountains Trail",
+		"Begazy Granite Trail",
+		"Zhumbaktas Shore Trail",
+		"Bokty Mountain View Trail",
+		"Boszhira Fang View Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Butakovka Waterfall Trail",
+		"Second Kolsai Lake Trek",
+		"Kora Gorge Trail",
+		"Torysh Valley",
+		"Tuzbair Salt Flat",
+		"Bolektau Viewpoint",
+		"Bozzhyra Valley",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan additional hiking up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-hiking-v1") {
+		t.Fatalf("kazakhstan additional hiking down migration must remove only tagged Kazakhstan additional hiking places")
+	}
+}
+
+func TestEuropeCaucasusHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "093_seed_europe_caucasus_hiking_routes.up.sql")
+	downSQL := readMigration(t, "093_seed_europe_caucasus_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_europe_caucasus_hiking_resolved_places AS",
+		"europe-caucasus-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("europe caucasus hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"stepantsminda",
+		"gudauri",
+		"chakvistavi",
+		"dilijan",
+		"garni",
+		"khndzoresk",
+		"shamakhi",
+		"goygol",
+		"hirkan",
+		"moscow",
+		"spb",
+		"sochi",
+		"yekaterinburg",
+		"kazan",
+		"braslav",
+		"naroch",
+		"belovezhskaya-pushcha",
+		"pripyatsky",
+		"yaremche",
+		"bukovel",
+		"uzhhorod",
+		"interlaken",
+		"innsbruck",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("europe caucasus hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Gergeti Glacier Trail",
+		"Juta to Chaukhi Lake Trail",
+		"Mtirala Tsablnari Waterfall Loop",
+		"Parz Lake to Gosh Lake Trail",
+		"Mount Dimats Trail",
+		"Azat Gorge Basalt Trail",
+		"Old Khndzoresk Cave Trail",
+		"Candy Cane Mountains Trail",
+		"Goygol Lake Shore Trail",
+		"Khanbulan Lake Forest Trail",
+		"Losiny Ostrov Ecological Trail",
+		"Komarovo Shore Eco Trail",
+		"Eagle Rocks and Matsesta Springs Trail",
+		"Seven Brothers Rocks Trail",
+		"Blue Lakes Forest Loop",
+		"Slobodka Ridge Lakes View Trail",
+		"Blue Lakes Eco Trail",
+		"Tsarskaya Polyana Forest Trail",
+		"Pripyat Floodplain Boardwalk Trail",
+		"Makovytsia Mountain Trail",
+		"Hoverla Ascent from Zarosliak",
+		"Synyak Mountain Trail",
+		"Borzhava Ridge to Velykyi Verkh Trail",
+		"Eiger Trail",
+		"Nockspitze Saile Summit Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("europe caucasus hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Gergeti Trinity Church",
+		"Juta and Chaukhi Massif",
+		"Mtirala National Park",
+		"Dilijan National Park",
+		"Lake Parz",
+		"Symphony of Stones",
+		"Goygol National Park",
+		"Hirkan National Park",
+		"Duderhof Heights",
+		"Agura Waterfalls",
+		"Braslav Lakes National Park",
+		"Naroch National Park",
+		"Pripyatsky National Park",
+		"Dovbush Trail",
+		"Family Park in Bukovel",
+		"Nordkette",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("europe caucasus hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("europe caucasus hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("europe caucasus hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "europe-caucasus-hiking-v1") {
+		t.Fatalf("europe caucasus hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestEuropeCaucasusGapHikingRoutesSeedMigrationAddsMissingHubCoverage(t *testing.T) {
+	upSQL := readMigration(t, "106_seed_europe_caucasus_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "106_seed_europe_caucasus_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_europe_caucasus_gap_hiking_resolved_places AS",
+		"europe-caucasus-gap-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("europe caucasus gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"lake-ritsa",
+		"mestia",
+		"ushguli",
+		"artanish",
+		"jermuk",
+		"quba",
+		"grossglockner",
+		"swiss-national-park",
+		"troodos",
+		"bohemian-switzerland",
+		"garmisch-partenkirchen",
+		"mons-klint",
+		"kilpisjarvi",
+		"chamonix",
+		"lake-district",
+		"litochoro",
+		"glendalough",
+		"snaefellsnes",
+		"amalfi-coast",
+		"durmitor",
+		"dingli",
+		"hoge-veluwe",
+		"zakopane",
+		"madeira",
+		"tara",
+		"are",
+		"cappadocia",
+		"chernivtsi",
+		"sintra",
+		"howth",
+		"mullerthal",
+		"lahemaa",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("europe caucasus gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Yupshara Canyon Forest Trail",
+		"Mestia Glacier Valley Trail",
+		"Shkhara Valley View Trail",
+		"Artanish Peninsula Ridge Walk",
+		"Arpa Canyon Resort Trail",
+		"Tengealti Canyon Trail",
+		"Pasterze Glacier View Trail",
+		"Trupchun Valley Wildlife Trail",
+		"Troodos Cedar Ridge Trail",
+		"Elbe Sandstone Forest Trail",
+		"Reintal Gorge Approach Trail",
+		"Klinteskoven Cliff Forest Trail",
+		"Kilpisjarvi Fell Ridge Trail",
+		"Lac Blanc Trail",
+		"Catbells Ridge Walk",
+		"Prionia Forest Ascent Trail",
+		"Spinc and Glenealo Valley Trail",
+		"Snaefellsnes Coastal Lava Walk",
+		"Path of the Gods Trail",
+		"Durmitor Lake Forest Loop",
+		"Malta Western Clifftop Walk",
+		"Veluwe Sand Drift Trail",
+		"Tatra Lake Approach Trail",
+		"Pico Ruivo Trail",
+		"Banjska Stena Viewpoint Trail",
+		"Areskutan Summit Trail",
+		"Red Valley Loop Trail",
+		"Tsetsyno Ridge Forest Trail",
+		"Sintra Cabo da Roca Cliff Walk",
+		"Howth Cliff Loop Walk",
+		"Mullerthal Schiessentumpel Trail",
+		"Lahemaa Viru Bog Boardwalk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("europe caucasus gap hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Ritsa Relict National Park",
+		"Chalaadi Glacier",
+		"Ushguli Village",
+		"Sevanavank Monastery",
+		"Jermuk Waterfall",
+		"Khinalig to Galakhudat Trail",
+		"Khinalig Village",
+		"Val Trupchun",
+		"Artemis Trail",
+		"Partnach Gorge",
+		"Enipeas Gorge",
+		"Black Lake",
+		"Dingli Cliffs",
+		"Hoge Veluwe National Park",
+		"Morskie Oko",
+		"Gergeti Trinity Church",
+		"Juta and Chaukhi Massif",
+		"Lake Parz",
+		"Symphony of Stones",
+		"Goygol National Park",
+		"Hirkan National Park",
+		"Nordkette",
+		"Meteora Monasteries",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("europe caucasus gap hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("europe caucasus gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("europe caucasus gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("europe caucasus gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "europe-caucasus-gap-hiking-v1") {
+		t.Fatalf("europe caucasus gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanRemainingOutdoorRoutesSeedMigrationAddsMoreRouteChoices(t *testing.T) {
+	upSQL := readMigration(t, "105_seed_kazakhstan_remaining_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "105_seed_kazakhstan_remaining_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_remaining_outdoor_routes_resolved_places AS",
+		"kazakhstan-remaining-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan remaining outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"ust-kamenogorsk",
+		"pavlodar",
+		"kokshetau",
+		"balkhash",
+		"karaganda",
+		"kyzylorda",
+		"aktobe",
+		"oral",
+		"aktau",
+		"shymkent",
+		"turkestan",
+		"taraz",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan remaining outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Temirlik Canyon Trail",
+		"Bestamak Canyon Rim Trail",
+		"First Kolsai Shore Loop",
+		"Turgusun Waterfall Forest Trail",
+		"Bukhtarma Shore Pine Trail",
+		"Chernovaya Uba Forest Trail",
+		"Sabyndykol Pine Shore Loop",
+		"Birzhankol Granite Trail",
+		"Sandyktau Forest Ridge Walk",
+		"Shortandy Lake Shore Walk",
+		"Karatal Delta Reed Walk",
+		"Aksu-Ayuly Steppe Ridge Walk",
+		"Kambash Lake Dune Walk",
+		"Syrdarya Tugai Walk",
+		"Karagaily Mugodzhary Ridge Trail",
+		"Bokei Orda Pine Belt Walk",
+		"Akkespe Chalk Cliffs Walk",
+		"Karaman-Ata Ravine Walk",
+		"Kelte-Mashat Canyon Walk",
+		"Akmechet Cave Steppe Walk",
+		"Zhanatas Karatau Ridge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan remaining outdoor routes up migration must include additional route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Furmanov Peak",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Turgen Gorge",
+		"Second Kolsai Lake Trek",
+		"Kaindy Lake Viewpoint Trail",
+		"Charyn Moon Canyon Trail",
+		"Aigaikum Singing Dune Walk",
+		"Lineyskie Belki Trail",
+		"Maral Lake Altai Trail",
+		"West Altai Cedar Loop",
+		"Zhasybai Lake Shore Trail",
+		"Zhasybai to Toraigyr Traverse",
+		"Burabay Green Cape Trail",
+		"Balkhash Reed Islands Walk",
+		"Karkaraly National Park",
+		"Mugodzhary Hills Trail",
+		"Kushum River Floodplain Walk",
+		"Senek Dune Field Walk",
+		"Shakpak-Ata Canyon Walk",
+		"Mashat Gorge Trail",
+		"Karatau Foothill Trail",
+		"Merke Gorge Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan remaining outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan remaining outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan remaining outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan remaining outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-remaining-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan remaining outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanFurtherOutdoorRoutesSeedMigrationAddsMoreCountryCoverage(t *testing.T) {
+	upSQL := readMigration(t, "107_seed_kazakhstan_further_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "107_seed_kazakhstan_further_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_further_outdoor_routes_resolved_places AS",
+		"kazakhstan-further-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan further outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"kostanay",
+		"karaganda",
+		"aktobe",
+		"taraz",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan further outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Pioneer Peak Ridge Trail",
+		"Sovetov Peak View Trail",
+		"Third Kolsai Lake Trek",
+		"Boguty Red Mountains Trail",
+		"Akkainar-Zhartas Petroglyph Walk",
+		"Bayan-Zhurek Petroglyph Ridge Walk",
+		"Akbaur Cave Hill Walk",
+		"Sarykopa Steppe Lake Walk",
+		"Koktinkoli Lake Steppe Walk",
+		"Zhamanshin Crater Rim Walk",
+		"Kyrshabakty Gorge Fossil Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan further outdoor routes up migration must include additional country route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Furmanov Peak",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Big Almaty Peak Trail",
+		"Tourist Peak Approach Trail",
+		"Ozerny Peak Moraine Trail",
+		"First Kolsai Shore Loop",
+		"Second Kolsai Lake Trek",
+		"Tamgaly-Tas Rocks",
+		"Bektau-Ata",
+		"Aksoran Peak Trail",
+		"Kyzylkol Lake Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan further outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan further outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan further outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan further outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-further-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan further outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanFinalOutdoorRoutesSeedMigrationAddsRemainingStrongChoices(t *testing.T) {
+	upSQL := readMigration(t, "109_seed_kazakhstan_final_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "109_seed_kazakhstan_final_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_final_outdoor_routes_resolved_places AS",
+		"kazakhstan-final-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan final outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"semey",
+		"astana",
+		"kokshetau",
+		"petropavlovsk",
+		"aktau",
+		"shymkent",
+		"turkestan",
+		"taraz",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan final outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Ushkonyr Plateau Ridge Walk",
+		"Eshkiolmes Petroglyph Hill Walk",
+		"Kapal-Arasan Foothill Walk",
+		"Shyngystau Ridge Steppe Trail",
+		"Ulba River Foothill Trail",
+		"Syrymbet Ridge Forest Walk",
+		"Akkol Lake Pine Walk",
+		"Kapkansor Salt Flat Walk",
+		"Oytau Chalk Hills Trail",
+		"Karzhantau Ridge View Trail",
+		"Kelinshektau Ridge Trail",
+		"Tekturmas Hill Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan final outdoor routes up migration must include remaining strong outdoor route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Big Almaty Peak Trail",
+		"Tourist Peak Approach Trail",
+		"Ozerny Peak Moraine Trail",
+		"Third Kolsai Lake Trek",
+		"Konyr-Aulie Cave",
+		"Airakty-Shomanai Valley",
+		"Kokkol Waterfall Trail",
+		"Zerenda Lake Forest Trail",
+		"Karagiye Depression Rim Trail",
+		"Akbet Peak",
+		"Ereymentau Granite Ridge Trail",
+		"Burabay Green Cape Trail",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Torysh Valley",
+		"Sherkala Mountain",
+		"Karynzharyk Depression View Trail",
+		"Zhygylgan Rim Walk",
+		"Tuzbair Sunrise Cliffs Trail",
+		"Tamshaly Canyon",
+		"Aksu-Zhabagly Nature Reserve",
+		"Burgulyuk Gorge",
+		"Sayram-Su Lake Trail",
+		"Akzhaiyk Delta Eco Trail",
+		"Kazygurt Mountain Pilgrim Trail",
+		"Ulytau Aulietau Summit Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan final outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan final outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan final outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan final outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-final-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan final outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanNicheOutdoorRoutesSeedMigrationAddsLastUsefulGaps(t *testing.T) {
+	upSQL := readMigration(t, "112_seed_kazakhstan_niche_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "112_seed_kazakhstan_niche_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_niche_outdoor_routes_resolved_places AS",
+		"kazakhstan-niche-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan niche outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"karaganda",
+		"aktobe",
+		"atyrau",
+		"aktau",
+		"kyzylorda",
+		"shymkent",
+		"turkestan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan niche outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Big Shymbulak Falls Trail",
+		"Four Brothers Rocks Trail",
+		"Uzun-Kargaly Waterfall Trail",
+		"Chukotka Ridge Trail",
+		"Kyzyl Kent Monastery Trail",
+		"Aktolagay Chalk Plateau Trail",
+		"Kendirli Bay Spit Walk",
+		"Greater Barsuki Dune Walk",
+		"Imankara Cave Hill Trail",
+		"Sauskandyk Petroglyph Gorge Trail",
+		"Boraldaytau Rock Art Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan niche outdoor routes up migration must include useful niche outdoor route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Mynzhylky Plateau Trail",
+		"Tuyuksu Glacier Trail",
+		"Kairak Waterfall Trail",
+		"Kaskelen Gorge",
+		"Mokhnatka Mountain Trail",
+		"Monakhov Gorge",
+		"Shymbulak Talgar Pass View Walk",
+		"Burkhan-Bulak Waterfall",
+		"Lepsy River Valley Trail",
+		"Naizatas Rock Trail",
+		"Granite Labyrinth Loop near Bektauata",
+		"Bektau-Ata",
+		"Beket-Ata Plateau Walk",
+		"Barsa-Kelmes Desert Edge Trail",
+		"Kent Mountains Trail",
+		"Ulytau Akmeshit Ridge Trail",
+		"Ulytau Edige Peak Trail",
+		"Arpa-Uzen Petroglyph Ridge Trail",
+		"Kokala Clay Hills Trail",
+		"Kiin-Kerish Valley Trail",
+		"Kapamsay Canyon Trail",
+		"Torysh Valley",
+		"Bozzhyra Valley",
+		"Shakpak-Ata Canyon Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan niche outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan niche outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan niche outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan niche outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-niche-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan niche outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAdditionalLocalOutdoorRoutesSeedMigrationAddsMoreUsefulPlaces(t *testing.T) {
+	upSQL := readMigration(t, "116_seed_kazakhstan_additional_local_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "116_seed_kazakhstan_additional_local_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_local_outdoor_routes_resolved_places AS",
+		"kazakhstan-additional-local-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional local outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"semey",
+		"ust-kamenogorsk",
+		"kokshetau",
+		"petropavlovsk",
+		"aktobe",
+		"kyzylorda",
+		"shymkent",
+		"taraz",
+		"balkhash",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional local outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kokbulak Forest Trail",
+		"Panorama Peak Trail",
+		"Besshatyr Mounds Steppe Walk",
+		"Tuzkol Salt Lake Shore Walk",
+		"Koksu River Gorge Trail",
+		"Tarbagatai Manrak Ridge Trail",
+		"Imantau Lake Hills Trail",
+		"Donyztau Escarpment Walk",
+		"Kamystybas Lake Shore Trail",
+		"Kaskasu Juniper Trail",
+		"Daubaba Canyon Trail",
+		"Irgiz-Turgay Steppe Walk",
+		"Mynaral Balkhash Shore Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional local outdoor routes up migration must include useful local outdoor route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Butakovka Gorge",
+		"Kimasar Gorge",
+		"Kumbel Peak",
+		"Prohodnoye Gorge Trail",
+		"Prohodnaya River Waterfall Trail",
+		"Left Talgar Gorge Trail",
+		"Talgar Peak Base Trail",
+		"Ketmen Ridge Trail",
+		"Tekeli Gorge Trail",
+		"Yazevoe Lake Trail",
+		"Karagiye Depression Rim Trail",
+		"Saura Canyon and Lake Trail",
+		"Zerenda Lake Forest Trail",
+		"Aksoran Peak Trail",
+		"Sairam Peak Base Trail",
+		"Bokty Mountain View Trail",
+		"Boszhira Fang View Trail",
+		"Ushkonyr Plateau Ridge Walk",
+		"Karzhantau Ridge View Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan additional local outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional local outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional local outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan additional local outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-local-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan additional local outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanLastOutdoorRouteGapsSeedMigrationAddsOnlyNonDuplicateRoutes(t *testing.T) {
+	upSQL := readMigration(t, "117_seed_kazakhstan_last_outdoor_route_gaps.up.sql")
+	downSQL := readMigration(t, "117_seed_kazakhstan_last_outdoor_route_gaps.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_last_outdoor_route_gaps_resolved_places AS",
+		"kazakhstan-last-outdoor-route-gaps-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan last outdoor route gaps up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"karaganda",
+		"taldykorgan",
+		"balkhash",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan last outdoor route gaps up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Charyn Ash Grove Walk",
+		"Sogety Plateau Ridge Walk",
+		"Baceen Lake Stone Trail",
+		"Saryesik-Atyrau Desert Edge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan last outdoor route gaps up migration must include useful non-duplicate route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Bestamak Canyon Rim Trail",
+		"Boguty Red Mountains Trail",
+		"Bartogai Reservoir View Trail",
+		"Shaitankol Lake Trail",
+		"Shaitankol Ridge Walk",
+		"Lepsy River Valley Trail",
+		"Akbet Peak",
+		"Sabyndykol Pine Shore Loop",
+		"Zhasybai to Toraigyr Traverse",
+		"Kent Mountains Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan last outdoor route gaps up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan last outdoor route gaps up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan last outdoor route gaps up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan last outdoor route gaps up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-last-outdoor-route-gaps-v1") {
+		t.Fatalf("kazakhstan last outdoor route gaps down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanMoreOutdoorGapPlacesSeedMigrationAddsDistinctPlaces(t *testing.T) {
+	upSQL := readMigration(t, "118_seed_kazakhstan_more_outdoor_gap_places.up.sql")
+	downSQL := readMigration(t, "118_seed_kazakhstan_more_outdoor_gap_places.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_more_outdoor_gap_places_resolved_places AS",
+		"kazakhstan-more-outdoor-gap-places-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan more outdoor gap places up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"aktau",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan more outdoor gap places up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kosbastau Oasis Walk",
+		"Zhasylkol Lake Trail",
+		"Aktogay Canyon Rim Walk",
+		"Zhalanashkol Wind Steppe Walk",
+		"Ybyqty Sai Canyon Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan more outdoor gap places up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Tamgaly-Tas Rocks",
+		"Tamgaly-Tas Climber Path",
+		"Bolektau Viewpoint",
+		"Zhumbaktas Shore Trail",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Buiratau National Park",
+		"Buiratau Stone Ridge Walk",
+		"Kokkol Waterfall Trail",
+		"Burkhan-Bulak Waterfall",
+		"Lepsy River Valley Trail",
+		"Kapamsay Canyon Trail",
+		"Zhygylgan Rim Walk",
+		"Tuzbair Sunrise Cliffs Trail",
+		"Saura Canyon and Lake Trail",
+		"Kokala Clay Hills Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan more outdoor gap places up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan more outdoor gap places up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan more outdoor gap places up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan more outdoor gap places up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-more-outdoor-gap-places-v1") {
+		t.Fatalf("kazakhstan more outdoor gap places down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAdditionalOutdoorGapPlacesSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "119_seed_kazakhstan_additional_outdoor_gap_places.up.sql")
+	downSQL := readMigration(t, "119_seed_kazakhstan_additional_outdoor_gap_places.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_outdoor_gap_places_resolved_places AS",
+		"kazakhstan-additional-outdoor-gap-places-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional outdoor gap places up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"kokshetau",
+		"pavlodar",
+		"ust-kamenogorsk",
+		"atyrau",
+		"kyzylorda",
+		"taldykorgan",
+		"almaty",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional outdoor gap places up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kenesary Cave Pine Walk",
+		"Peak of Courage Toraygir Trail",
+		"Gromotukha Gorge Forest Trail",
+		"Akkergeshen Chalk Plateau Walk",
+		"Kokaral Aral Shore Walk",
+		"Tekes River Meadow Trail",
+		"Shalkode High Pasture Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional outdoor gap places up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Aigaikum Singing Dune Walk",
+		"Boguty Red Mountains Trail",
+		"Titov Lake Trail",
+		"Karagiye Depression Rim Trail",
+		"Besshatyr Mounds Steppe Walk",
+		"Koksu River Gorge Trail",
+		"Imantau-Shalkar Lakes Trail",
+		"Akbet Peak",
+		"Naizatas Rock Trail",
+		"Sairam Peak Base Trail",
+		"Kaskasu Juniper Trail",
+		"Akbaur Cave Hill Walk",
+		"Ulba River Foothill Trail",
+		"Austrian Road Katon-Karagay Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan additional outdoor gap places up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional outdoor gap places up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional outdoor gap places up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan additional outdoor gap places up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-outdoor-gap-places-v1") {
+		t.Fatalf("kazakhstan additional outdoor gap places down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanRemoteOutdoorGapRoutesSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "120_seed_kazakhstan_remote_outdoor_gap_routes.up.sql")
+	downSQL := readMigration(t, "120_seed_kazakhstan_remote_outdoor_gap_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_remote_outdoor_gap_routes_resolved_places AS",
+		"kazakhstan-remote-outdoor-gap-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan remote outdoor gap routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"karaganda",
+		"semey",
+		"ust-kamenogorsk",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan remote outdoor gap routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Komissarovka Forester House Walk",
+		"Kyzyl-Kensh Palace Valley Trail",
+		"Sauyr Muztau Foothill Trail",
+		"Tarbagatai Wild Fruit Ridge Trail",
+		"Zaysan Lake Steppe Shore Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan remote outdoor gap routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Shaitankol Lake Trail",
+		"Kent Mountains Trail",
+		"Baceen Lake Stone Trail",
+		"Karkaraly Three Caves Trail",
+		"Pashennoye Lake Forest Trail",
+		"Tarbagatai Manrak Ridge Trail",
+		"Kiin-Kerish Valley Trail",
+		"Markakol Shore Trail",
+		"Zhamanshin Crater Rim Walk",
+		"Eshkiolmes Petroglyph Hill Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan remote outdoor gap routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan remote outdoor gap routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan remote outdoor gap routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan remote outdoor gap routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-remote-outdoor-gap-routes-v1") {
+		t.Fatalf("kazakhstan remote outdoor gap routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAlmatyOutdoorGapRoutesSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "121_seed_kazakhstan_almaty_outdoor_gap_routes.up.sql")
+	downSQL := readMigration(t, "121_seed_kazakhstan_almaty_outdoor_gap_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_almaty_outdoor_gap_routes_resolved_places AS",
+		"kazakhstan-almaty-outdoor-gap-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan almaty outdoor gap routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan almaty outdoor gap routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Alma-Arasan Spring Valley Walk",
+		"Aksai Skete Gorge Walk",
+		"Gorelnik Waterfalls Trail",
+		"Furmanov Peak Ridge Trail",
+		"Kara-Kungey Ridge Trail",
+		"Kumbel Peak Ridge Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan almaty outdoor gap routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Prohodnaya River Waterfall Trail",
+		"Kok-Zhailau Waterfall Trail",
+		"Butakovka Waterfall Trail",
+		"Turgen Gorge",
+		"Bear Falls in Turgen Gorge",
+		"Big Almaty Peak Trail",
+		"Mynzhylky Plateau Trail",
+		"Kairak Waterfall Trail",
+		"Ketmen Ridge Trail",
+		"Aksu Canyon",
+		"Aksoran Peak Trail",
+		"Kyzylarai Cedar Valley Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan almaty outdoor gap routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan almaty outdoor gap routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan almaty outdoor gap routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan almaty outdoor gap routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-almaty-outdoor-gap-routes-v1") {
+		t.Fatalf("kazakhstan almaty outdoor gap routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestGlobalSubagentOutdoorRoutesSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "122_seed_global_subagent_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "122_seed_global_subagent_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_global_subagent_outdoor_routes_resolved_places AS",
+		"global-subagent-outdoor-routes-v1",
+		"'hiking'",
+		"'trekking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("global subagent outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, countryCode := range []string{
+		"US",
+		"CA",
+		"BR",
+		"AR",
+		"KE",
+		"TZ",
+		"AU",
+		"NZ",
+		"MA",
+		"EG",
+		"TR",
+		"GE",
+		"GR",
+		"GB",
+		"IS",
+		"FR",
+		"KR",
+		"CN",
+		"IN",
+		"MY",
+		"LK",
+	} {
+		if !strings.Contains(upSQL, "'"+countryCode+"'") {
+			t.Fatalf("global subagent outdoor routes up migration must seed country_code %q", countryCode)
+		}
+	}
+
+	for _, cityID := range []string{
+		"los-angeles",
+		"seattle",
+		"vancouver",
+		"toronto",
+		"rio-de-janeiro",
+		"ushuaia",
+		"nairobi",
+		"arusha",
+		"perth",
+		"adelaide",
+		"christchurch",
+		"wellington",
+		"queenstown",
+		"tetouan",
+		"ouarzazate",
+		"dahab",
+		"fethiye",
+		"keda",
+		"athens",
+		"snowdonia",
+		"skaftafell",
+		"marseille",
+		"seoul",
+		"seogwipo",
+		"nanjing",
+		"shillong",
+		"mumbai",
+		"kuching",
+		"haputale",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("global subagent outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Runyon Canyon Loop",
+		"Discovery Park Loop Trail",
+		"Grouse Grind Trail",
+		"Scarborough Bluffs Trail",
+		"Pedra da Gavea Trail",
+		"Martial Glacier Trail",
+		"Oloolua Nature Trail",
+		"Lake Duluti Forest Walk",
+		"Bold Park Zamia Trail",
+		"Morialta Falls Plateau Hike",
+		"Rapaki Track",
+		"Red Rocks Coastal Walk",
+		"Queenstown Hill Time Walk",
+		"Jebel Musa Ridge Trail",
+		"Dades Monkey Fingers Walk",
+		"Abu Galum to Blue Hole Coastal Trail",
+		"Kayakoy to Oludeniz Lycian Way Trail",
+		"Machakhela Arched Bridges Trail",
+		"Hymettus Kaisariani Forest Trail",
+		"Cwm Idwal and Llyn Idwal Walk",
+		"Svartifoss Skaftafell Loop",
+		"Calanques Port-Miou to En-Vau Trail",
+		"Inwangsan Fortress Wall Trail",
+		"Jeju Olle Route 7 Coastal Walk",
+		"Purple Mountain Greenway Trail",
+		"Nongriat Double-Decker Root Bridge Trail",
+		"Kanheri Caves Forest Trail",
+		"Bako Telok Pandan Kecil Trail",
+		"Bambarakanda to Lanka Ella Falls Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("global subagent outdoor routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Quarry Rock Trail",
+		"Karura Waterfall Loop",
+		"Ngurdoto Crater View Trail",
+		"Mount Victoria Lookout Walk",
+		"Ben Lomond Track",
+		"Blue Hole Dahab",
+		"Sinai Sunrise Steps Trail",
+		"Bukhansan Baegundae Trail",
+		"Mount Meru",
+		"Dois Irmaos Trail",
+		"Howth Cliff Path Loop",
+		"Reykjadalur Hot Spring River",
+		"Morne Blanc Trail",
+		"Dingli Cliffs",
+		"Ait Bouguemez Valley",
+		"Oludeniz Blue Lagoon",
+		"Bambarakanda Falls",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("global subagent outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("global subagent outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("global subagent outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("global subagent outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "global-subagent-outdoor-routes-v1") {
+		t.Fatalf("global subagent outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanExtraLocalOutdoorGapRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "123_seed_kazakhstan_extra_local_outdoor_gap_routes.up.sql")
+	downSQL := readMigration(t, "123_seed_kazakhstan_extra_local_outdoor_gap_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_extra_local_outdoor_gap_routes_resolved_places AS",
+		"kazakhstan-extra-local-outdoor-gap-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan extra local outdoor gap routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"ust-kamenogorsk",
+		"kokshetau",
+		"pavlodar",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan extra local outdoor gap routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Terisbutak Gorge Descent Trail",
+		"Kamenskiy Ridge Ak-Kain Traverse",
+		"Tuyuk-Su Crag Approach Walk",
+		"Upper Butakovka Falls Trail",
+		"Kara-Koba River Valley Trail",
+		"Burabay Climber Rocks Walk",
+		"Bayanaul Stone Head Ridge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan extra local outdoor gap routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Kok-Zhailau Waterfall Trail",
+		"Kamenskoye Plateau Trail",
+		"Tuyuksu Glacier Trail",
+		"Titov Lake Trail",
+		"Butakovka Waterfall Trail",
+		"West Altai Cedar Loop",
+		"Ridder Stone Bowl Forest Trail",
+		"Okzhetpes Rock",
+		"Borovushka Forest Loop",
+		"Kempirtas Rock Trail",
+		"Naizatas Rock Trail",
+		"Zhasybai to Toraigyr Traverse",
+		"Konyr-Aulie Cave",
+		"Akbet Peak",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan extra local outdoor gap routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan extra local outdoor gap routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan extra local outdoor gap routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan extra local outdoor gap routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-extra-local-outdoor-gap-routes-v1") {
+		t.Fatalf("kazakhstan extra local outdoor gap routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAdditionalHikingGapRoutesSeedMigrationAddsRemainingCountryPlaces(t *testing.T) {
+	upSQL := readMigration(t, "124_seed_kazakhstan_additional_hiking_gap_routes.up.sql")
+	downSQL := readMigration(t, "124_seed_kazakhstan_additional_hiking_gap_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_hiking_gap_routes_resolved_places AS",
+		"kazakhstan-additional-hiking-gap-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional hiking gap routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"semey",
+		"shymkent",
+		"taraz",
+		"kokshetau",
+		"karaganda",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional hiking gap routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kishi Turgen Gorge Walk",
+		"Kolsai Sary-Bulak Pass Trek",
+		"Charyn Tazbas Tract Walk",
+		"Ulken Buguty Hills Walk",
+		"Ashutas Clay Hills Walk",
+		"Karalma Gorge Trail",
+		"Zhabagly Plateau Walk",
+		"Aiyrtau Rock Ridge Walk",
+		"Tasmola Stone Ridge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional hiking gap routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Bear Falls Turgen",
+		"Kairak Waterfall Trail",
+		"Issyk Lake Trail",
+		"Aktogay Canyon Trail",
+		"Karagiye Depression Rim Trail",
+		"Karynzharyk Depression View Trail",
+		"Kiin-Kerish Valley Trail",
+		"Mashat Gorge Trail",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Kyzylkol Lake Trail",
+		"Baldybrek Canyon Trail",
+		"Buiratau Stone Ridge Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan additional hiking gap routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional hiking gap routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional hiking gap routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan additional hiking gap routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-hiking-gap-routes-v1") {
+		t.Fatalf("kazakhstan additional hiking gap routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestGlobalSubagentAdditionalOutdoorRoutesSeedMigrationAddsMoreCityHubRoutes(t *testing.T) {
+	upSQL := readMigration(t, "125_seed_global_subagent_additional_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "125_seed_global_subagent_additional_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_global_subagent_additional_outdoor_routes_resolved_places AS",
+		"global-subagent-additional-outdoor-routes-v1",
+		"'hiking'",
+		"'walking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("global subagent additional outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"ottawa",
+		"madeira",
+		"guadalajara",
+		"san-cristobal-de-las-casas",
+		"ras-al-khaimah",
+		"mestia",
+		"catania",
+		"belem",
+		"byron-bay",
+		"launceston",
+		"rottnest-island",
+		"dhigurah",
+		"fethiye",
+		"zermatt",
+		"chimgan",
+		"beau-vallon",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("global subagent additional outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Mer Bleue Bog Boardwalk",
+		"Ponta de Sao Lourenco Trail",
+		"Barranca de Huentitan Trail",
+		"Huitepec Cloud Forest Trail",
+		"Wadi Shawka Dam Loop",
+		"Hatsvali Zuruldi Ridge Trail",
+		"Sartorius Craters Trail",
+		"Utinga State Park Trail",
+		"Cape Byron Walking Track",
+		"Cataract Gorge Basin Loop",
+		"Wadjemup Bidi Coastal Trail",
+		"Dhigurah Sandbank Walk",
+		"Butterfly Valley Faralya View Trail",
+		"Riffelsee Gornergrat Panorama Trail",
+		"Chimgan Gulkam Gorge Trail",
+		"Dans Gallas Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("global subagent additional outdoor routes up migration must include non-duplicate route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Rideau Canal",
+		"Pico do Arieiro",
+		"Guadalajara Cathedral",
+		"Sumidero Canyon",
+		"Jebel Jais",
+		"Koruldi Lakes",
+		"Mount Etna",
+		"Mangal das Garcas",
+		"Cape Byron Lighthouse",
+		"'Cataract Gorge',",
+		"Thomson Bay Rottnest Island",
+		"Dhigurah Long Beach",
+		"Saklikent Canyon",
+		"Five Lakes Trail",
+		"Greater Chimgan Trail",
+		"Anse Major Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("global subagent additional outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("global subagent additional outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("global subagent additional outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("global subagent additional outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "global-subagent-additional-outdoor-routes-v1") {
+		t.Fatalf("global subagent additional outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanExtraOutdoorGapRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "126_seed_kazakhstan_extra_outdoor_gap_routes.up.sql")
+	downSQL := readMigration(t, "126_seed_kazakhstan_extra_outdoor_gap_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_extra_outdoor_gap_routes_resolved_places AS",
+		"kazakhstan-extra-outdoor-gap-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan extra outdoor gap routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"shymkent",
+		"taraz",
+		"ust-kamenogorsk",
+		"semey",
+		"aktau",
+		"kyzylorda",
+		"karaganda",
+		"kokshetau",
+		"aktobe",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan extra outdoor gap routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Right Talgar Valley Trail",
+		"Bartogay Reservoir Shore Walk",
+		"Ketpen Ridge Foothill Trail",
+		"Kaskabulak Gorge Trail",
+		"Kshi-Kaindy Gorge Trail",
+		"Zhabaglysu River Trail",
+		"Yazevoye Lake Shore Trail",
+		"Koktau Ridge Sibiny Walk",
+		"Urkashar Ridge Trail",
+		"Saura Lake Shore Walk",
+		"Kelinshiktau Ridge Walk",
+		"Karkaraly Komsomol Peak Trail",
+		"Jeke Batyr Ridge Walk",
+		"Katarkol Pine Shore Walk",
+		"Kokzhide Sands Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan extra outdoor gap routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Left Talgar Gorge Trail",
+		"Ushkonyr Plateau Ridge Walk",
+		"Kora Gorge Trail",
+		"Burkhan-Bulak Waterfall",
+		"Tarbagatai Manrak Ridge Trail",
+		"Airakty-Shomanai Valley",
+		"Kyzylkup Rainbow Hills Trail",
+		"Kokkol Waterfall Trail",
+		"Shaitankol Ridge Walk",
+		"Bolektau Viewpoint",
+		"Naurzum Pine Lake Birding Trail",
+		"Zhygylgan Rim Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan extra outdoor gap routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan extra outdoor gap routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan extra outdoor gap routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan extra outdoor gap routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-extra-outdoor-gap-routes-v1") {
+		t.Fatalf("kazakhstan extra outdoor gap routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanLastHiddenOutdoorRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "127_seed_kazakhstan_last_hidden_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "127_seed_kazakhstan_last_hidden_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_last_hidden_outdoor_routes_resolved_places AS",
+		"kazakhstan-last-hidden-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan last hidden outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"semey",
+		"ust-kamenogorsk",
+		"kokshetau",
+		"petropavlovsk",
+		"aktau",
+		"zhezkazgan",
+		"taraz",
+		"turkestan",
+		"shymkent",
+		"kostanay",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan last hidden outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kazachka Waterfall Trail",
+		"Amangeldy Peak Approach Trail",
+		"Kokpekty River Gorge Trail",
+		"Keregetas Rocks Walk",
+		"Shilikty Valley Heritage Walk",
+		"Shalkar-Imantau Shore Walk",
+		"Kokshetau Blue Bay Forest Walk",
+		"Sherkala North Ridge Walk",
+		"Baskamyr Steppe Valley Walk",
+		"Berkara Gorge Trail",
+		"Borolday Petroglyph Gorge Walk",
+		"Turgay Geoglyph Steppe Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan last hidden outdoor routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Kiin-Kerish Mars Valley Walk",
+		"Tuzbair Sunrise Cliffs Trail",
+		"Akkergeshen Chalk Plateau Walk",
+		"Akmechet Cave Steppe Walk",
+		"Assy Plateau",
+		"Bektau-Ata",
+		"Tamshaly Canyon",
+		"Sinyukha Peak Trail",
+		"Imantau Lake Hills Trail",
+		"Ulytau Aulietau Summit Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan last hidden outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan last hidden outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan last hidden outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan last hidden outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-last-hidden-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan last hidden outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanFinalMicrogapOutdoorRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "128_seed_kazakhstan_final_microgap_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "128_seed_kazakhstan_final_microgap_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_final_microgap_outdoor_routes_resolved_places AS",
+		"kazakhstan-final-microgap-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan final microgap outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"shymkent",
+		"kostanay",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan final microgap outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Qotyrbulaq Forest Valley Walk",
+		"Kuigensai Moraine Lakes Trail",
+		"Narynkol Khan Tengri View Walk",
+		"Bayankol Glacier Valley Trail",
+		"Ketmen Pass Caravan Trail",
+		"Upper Aksu Gorge View Trail",
+		"Tersek-Karagay Pine Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan final microgap outdoor routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Gorelnik Waterfalls Trail",
+		"Kazachka Waterfall Trail",
+		"Mynzhylky Plateau Trail",
+		"Alpengrad High Camp Trail",
+		"Tuzkol Salt Lake Shore Walk",
+		"Ketpen Ridge Foothill Trail",
+		"Aksu Canyon",
+		"Naurzum Pine and Lake Trail",
+		"Naurzum Pine Lake Birding Trail",
+		"Akbet Peak",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan final microgap outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan final microgap outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan final microgap outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan final microgap outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-final-microgap-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan final microgap outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanLastCityNatureMicroRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "129_seed_kazakhstan_last_city_nature_micro_routes.up.sql")
+	downSQL := readMigration(t, "129_seed_kazakhstan_last_city_nature_micro_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_last_city_nature_micro_routes_resolved_places AS",
+		"kazakhstan-last-city-nature-micro-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan last city nature micro routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"kokshetau",
+		"petropavlovsk",
+		"turkestan",
+		"kyzylorda",
+		"oral",
+		"kostanay",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan last city nature micro routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Bukpa Hill City Trail",
+		"Arykbalyk Lake Forest Trail",
+		"Tutybulak Cave Tugai Walk",
+		"Daryalyktakyr Takyr Plain Walk",
+		"Ural-Chagan Riverbank Walk",
+		"Karatomar Reservoir Shore Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan last city nature micro routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Bear Falls in Turgen Gorge",
+		"Kaskelen Gorge",
+		"Monakhov Gorge",
+		"Big Shymbulak Falls Trail",
+		"Burkhan-Bulak Waterfall",
+		"Aktau Mountains Red Gorge Trail",
+		"Katutau Volcanic Hills Trail",
+		"Besshatyr Mounds Steppe Walk",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Irgiz-Turgay Steppe Walk",
+		"Semey Irtysh Island Trail",
+		"Tersek-Karagay Pine Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan last city nature micro routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan last city nature micro routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan last city nature micro routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan last city nature micro routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-last-city-nature-micro-routes-v1") {
+		t.Fatalf("kazakhstan last city nature micro routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestGlobalNearCompletionOutdoorRoutesSeedMigrationClosesHighSignalHubGaps(t *testing.T) {
+	upSQL := readMigration(t, "130_seed_global_near_completion_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "130_seed_global_near_completion_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_global_near_completion_outdoor_routes_resolved_places AS",
+		"global-near-completion-outdoor-routes-v1",
+		"'hiking'",
+		"'walking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("global near completion outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, countryCode := range []string{
+		"'IN'",
+		"'KG'",
+		"'CY'",
+		"'MN'",
+		"'TJ'",
+		"'AE'",
+		"'UZ'",
+	} {
+		if !strings.Contains(upSQL, countryCode) {
+			t.Fatalf("global near completion outdoor routes up migration must include country_code %q", countryCode)
+		}
+	}
+
+	for _, cityID := range []string{
+		"delhi",
+		"osh",
+		"nicosia",
+		"paphos",
+		"murun",
+		"tsetserleg",
+		"ishkashim",
+		"kulob",
+		"ajman",
+		"sharjah",
+		"umm-al-quwain",
+		"tashkent",
+		"aral-sea",
+		"urgench",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("global near completion outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sanjay Van Ridge Forest Trail",
+		"Sulaiman-Too Southern Slope Walk",
+		"Athalassa Forest Park Loop",
+		"Akamas Aphrodite Trail",
+		"Uushgiin Uver Deer Stones Walk",
+		"Taikhar Rock Steppe Loop",
+		"Ishkashim Panj River Terrace Walk",
+		"Dashti-Jum Reserve Ridge Trail",
+		"Al Zorah Mangrove Lagoon Walk",
+		"Mleiha Fossil Rock Trail",
+		"Umm Al Quwain Mangrove Lagoon Walk",
+		"Ankhor Canal Green Walk",
+		"Aral Sea Ustyurt Cliff Walk",
+		"Kyzyl-Kala Fortress Steppe Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("global near completion outdoor routes up migration must include useful non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Sulaiman-Too Sacred Mountain",
+		"Al Zorah Nature Reserve",
+		"Mangrove Beach Umm Al Quwain",
+		"Wakhan Valley Road",
+		"Childukhtaron Ridge Trail",
+		"Toprak-Kala Desert Loop Trail",
+		"Sudochye Lake Ustyurt Birding Trail",
+		"Moynaq Aral Seabed Dune Walk",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("global near completion outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("global near completion outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("global near completion outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("global near completion outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "global-near-completion-outdoor-routes-v1") {
+		t.Fatalf("global near completion outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAdditionalVerifiedOutdoorRoutesSeedMigrationAddsRemainingNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "131_seed_kazakhstan_additional_verified_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "131_seed_kazakhstan_additional_verified_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_verified_outdoor_routes_resolved_places AS",
+		"kazakhstan-additional-verified-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'birdwatching'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional verified outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"astana",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional verified outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Chinturgen Moss Spruce Forest Walk",
+		"Charyn Valley of Castles Walk",
+		"Kurtogay Canyon View Walk",
+		"Tengiz Lake Flamingo Shore Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional verified outdoor routes up migration must include remaining non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Temirlik Canyon Trail",
+		"Bestamak Canyon Rim Trail",
+		"Charyn Ash Grove Walk",
+		"Charyn Tazbas Tract Walk",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Prohodnoye Gorge Trail",
+		"Bear Falls in Turgen Gorge",
+		"Kairak Waterfall Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan additional verified outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional verified outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional verified outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan additional verified outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-verified-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan additional verified outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanAdditionalMicroOutdoorRoutesSeedMigrationAddsMoreNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "132_seed_kazakhstan_additional_micro_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "132_seed_kazakhstan_additional_micro_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_additional_micro_outdoor_routes_resolved_places AS",
+		"kazakhstan-additional-micro-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan additional micro outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"kostanay",
+		"pavlodar",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan additional micro outdoor routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Medeu Dam Stairs Walk",
+		"Kok Tobe Footpath Ascent",
+		"Esentai River Green Walk",
+		"Sayran Lake Loop Walk",
+		"Tobol River Embankment Walk",
+		"Irtysh River Embankment Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan additional micro outdoor routes up migration must include non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Medeu Alpine Skating Rink",
+		"Medeu Terrenkur Health Trail",
+		"Kok Tobe Hill and Cable Car",
+		"Central Park Almaty",
+		"First President Park",
+		"Almaty Botanical Garden",
+		"Karatomar Reservoir Shore Walk",
+		"Ubagan River Valley Walk",
+		"Semey Irtysh Island Trail",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("kazakhstan additional micro outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan additional micro outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan additional micro outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan additional micro outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-additional-micro-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan additional micro outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanRemainingCitySteppeMicroRoutesSeedMigrationAddsLastNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "135_seed_kazakhstan_remaining_city_steppe_micro_routes.up.sql")
+	downSQL := readMigration(t, "135_seed_kazakhstan_remaining_city_steppe_micro_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_remaining_city_steppe_micro_routes_resolved_places AS",
+		"kazakhstan-remaining-city-steppe-micro-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan remaining city steppe micro routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"taraz",
+		"shymkent",
+		"aktobe",
+		"astana",
+		"almaty",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan remaining city steppe micro routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Talas Riverbank Walk",
+		"Badam River Green Walk",
+		"Sazdy Reservoir Shore Walk",
+		"Yesil Riverside Walk",
+		"Kapchagay Reservoir Shore Walk",
+		"Zhambyl Massif Steppe Ridge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan remaining city steppe micro routes up migration must include non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Tekturmas Hill Walk",
+		"Syrdarya Tugai Walk",
+		"Astana Botanical Garden",
+		"Tobol River Embankment Walk",
+		"Irtysh River Embankment Walk",
+		"Bartogai Reservoir View Trail",
+		"Tamgaly-Tas Rocks",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("kazakhstan remaining city steppe micro routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan remaining city steppe micro routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan remaining city steppe micro routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan remaining city steppe micro routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-remaining-city-steppe-micro-routes-v1") {
+		t.Fatalf("kazakhstan remaining city steppe micro routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanMoreVerifiedHikingRoutesSeedMigrationAddsNextNonDuplicateLayer(t *testing.T) {
+	upSQL := readMigration(t, "136_seed_kazakhstan_more_verified_hiking_routes.up.sql")
+	downSQL := readMigration(t, "136_seed_kazakhstan_more_verified_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_more_verified_hiking_routes_resolved_places AS",
+		"kazakhstan-more-verified-hiking-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan more verified hiking routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"shymkent",
+		"turkestan",
+		"aktau",
+		"kyzylorda",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan more verified hiking routes up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Maralsay Gorge Trail",
+		"Prosveshchenets Pass Trail",
+		"Pogrebetsky Glacier View Trail",
+		"Tuyuk-Su Gate Moraine Walk",
+		"Butakovka Pass Forest Trail",
+		"Kumbel Pass Ridge Walk",
+		"Kyrkkyz Ridge Trail",
+		"Ordabasy Hill Steppe Walk",
+		"Kenderli-Kayasan Cliff Walk",
+		"Syrdarya Delta Reed Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan more verified hiking routes up migration must include non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Waterfalls Trail",
+		"Furmanov Peak Ridge Trail",
+		"Aksai Skete Gorge Walk",
+		"Kara-Kungey Ridge Trail",
+		"Medeu Terrenkur Health Trail",
+		"Medeu Dam Stairs Walk",
+		"Kaskelen Gorge",
+		"Kora Gorge Trail",
+		"Kokzhide Sands Walk",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("kazakhstan more verified hiking routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan more verified hiking routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan more verified hiking routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan more verified hiking routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-more-verified-hiking-routes-v1") {
+		t.Fatalf("kazakhstan more verified hiking routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanWeakHubOutdoorDepthSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "137_seed_kazakhstan_weak_hub_outdoor_depth.up.sql")
+	downSQL := readMigration(t, "137_seed_kazakhstan_weak_hub_outdoor_depth.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_weak_hub_outdoor_depth_resolved_places AS",
+		"kazakhstan-weak-hub-outdoor-depth-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan weak hub outdoor depth up migration must contain %q", fragment)
+		}
+	}
+	assertMigrationDoesNotSeedExternalWikimediaMedia(t, upSQL, "kazakhstan weak hub outdoor depth")
+
+	for _, cityID := range []string{
+		"petropavlovsk",
+		"aktobe",
+		"atyrau",
+		"kostanay",
+		"kyzylorda",
+		"oral",
+		"balkhash",
+		"zhezkazgan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan weak hub outdoor depth up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sergeyev Reservoir Shore Walk",
+		"Shalkarteniz Salt Flat Walk",
+		"Kigach Delta Reed Walk",
+		"Aksuat Lake Reed Walk",
+		"Aral Karakum Dune Walk",
+		"Aralsor Salt Lake Walk",
+		"Tokrau Dry Delta Walk",
+		"Karsakpai Steppe Heritage Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan weak hub outdoor depth up migration must include non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Syrymbet Ridge Forest Walk",
+		"Aiyrtau Rock Ridge Walk",
+		"Imantau Lake Pine Shore Walk",
+		"Aktolagay Chalk Plateau Walk",
+		"Aktolagay Chalk Plateau Trail",
+		"Imankara Cave Hill Trail",
+		"Tersek-Karagai Pine Forest Walk",
+		"Tersek-Karagay Pine Walk",
+		"Kambash Lake Shore Walk",
+		"Kambash Lake Dune Walk",
+		"Kamyslybas Lake Shore Trail",
+		"Ural River Floodplain Island Walk",
+		"Shalkar Lake Shore Walk",
+		"Kushum River Floodplain Walk",
+		"Akzhaiyk Reserve Boardwalk Trail",
+		"Inder Salt Dome View Walk",
+		"Naurzum Pine Lake Birding Trail",
+		"Barsa-Kelmes Desert Edge Trail",
+		"Syrdarya Delta Reed Walk",
+		"Bektau-Ata Cave Summit Trail",
+		"Granite Labyrinth Loop near Bektauata",
+		"Aulie Cave Granite Trail",
+		"Ulytau Aulietau Summit Trail",
+		"Terekty Aulie Petroglyph Trail",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("kazakhstan weak hub outdoor depth up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan weak hub outdoor depth up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan weak hub outdoor depth up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan weak hub outdoor depth up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-weak-hub-outdoor-depth-v1") {
+		t.Fatalf("kazakhstan weak hub outdoor depth down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanSouthSoutheastOutdoorDepthSeedMigrationAddsNonDuplicatePlaces(t *testing.T) {
+	upSQL := readMigration(t, "138_seed_kazakhstan_south_southeast_outdoor_depth.up.sql")
+	downSQL := readMigration(t, "138_seed_kazakhstan_south_southeast_outdoor_depth.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_south_southeast_outdoor_depth_resolved_places AS",
+		"kazakhstan-south-southeast-outdoor-depth-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan south southeast outdoor depth up migration must contain %q", fragment)
+		}
+	}
+	assertMigrationDoesNotSeedExternalWikimediaMedia(t, upSQL, "kazakhstan south southeast outdoor depth")
+
+	for _, cityID := range []string{
+		"almaty",
+		"shymkent",
+		"taldykorgan",
+		"taraz",
+		"turkestan",
+		"kyzylorda",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan south southeast outdoor depth up migration must seed place linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Baum Grove Walk",
+		"Sayramsu Lake Trail",
+		"Makpal Lake Route",
+		"Kaskasu-Susingen Lake Route",
+		"Saryaygyr Gorge Trail",
+		"Ptichiy Bazar View Trail",
+		"Boztorgay Stream Walk",
+		"Shumsky Glacier View Trail",
+		"Sarkand Forest Walk",
+		"Sievers Apple Forest Eco Trail",
+		"Teris-Ashybulak Reservoir Shore Walk",
+		"Moiynkum Desert Edge Walk",
+		"Aksumbe Karatau Tower View Walk",
+		"Aralkum Desert View Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan south southeast outdoor depth up migration must include non-duplicate place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Issyk Lake Trail",
+		"Assy Plateau",
+		"Bear Falls Turgen",
+		"Kairak Waterfall Trail",
+		"Bogdanovich Glacier View Trail",
+		"Burkhan-Bulak Waterfall Trail",
+		"Tekeli Gorge Trail",
+		"Sazanata Gorge Trail",
+		"Dzungarian Alatau National Park",
+		"Zhasylkol Lake Trail",
+		"Left Talgar Gorge Trail",
+		"Prohodnoye Gorge Trail",
+		"Mynzhylky Plateau Trail",
+		"Aral Karakum Dune Walk",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("kazakhstan south southeast outdoor depth up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan south southeast outdoor depth up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan south southeast outdoor depth up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan south southeast outdoor depth up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-south-southeast-outdoor-depth-v1") {
+		t.Fatalf("kazakhstan south southeast outdoor depth down migration must remove only tagged route-level places")
+	}
+}
+
+func TestRemoveSeededWikimediaPlaceMediaMigrationDeletesOnlyPlaceholderExternalMedia(t *testing.T) {
+	upSQL := readMigration(t, "139_remove_seeded_wikimedia_place_media.up.sql")
+	downSQL := readMigration(t, "139_remove_seeded_wikimedia_place_media.down.sql")
+
+	requiredFragments := []string{
+		"DELETE FROM place_media",
+		"file_id = '00000000-0000-0000-0000-000000000000'::uuid",
+		"commons.wikimedia.org",
+		"upload.wikimedia.org",
+		"wikipedia.org",
+		"external_url",
+		"source_url",
+		"credit",
+		"license",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("remove seeded wikimedia place media up migration must contain %q", fragment)
+		}
+	}
+	if strings.Contains(upSQL, "DELETE FROM places") {
+		t.Fatalf("remove seeded wikimedia place media up migration must not delete places")
+	}
+	if !strings.Contains(downSQL, "Intentionally no-op") {
+		t.Fatalf("remove seeded wikimedia place media down migration must document that deleted external media is not restored")
+	}
+}
+
+func assertMigrationDoesNotSeedExternalWikimediaMedia(t *testing.T, sql string, migrationName string) {
+	t.Helper()
+
+	for _, forbiddenFragment := range []string{
+		"INSERT INTO place_media",
+		"commons.wikimedia.org",
+		"upload.wikimedia.org",
+		"wikipedia.org",
+		"Wikimedia Commons contributors",
+		"See Wikimedia Commons source page",
+		"media_url",
+		"media_source_url",
+	} {
+		if strings.Contains(sql, forbiddenFragment) {
+			t.Fatalf("%s migration must not seed external Wiki/Wikimedia media, found %q", migrationName, forbiddenFragment)
+		}
+	}
+}
+
+func TestGlobalAdditionalOutdoorRoutePlacesSeedMigrationAddsMoreNonDuplicateRoutes(t *testing.T) {
+	upSQL := readMigration(t, "133_seed_global_additional_outdoor_route_places.up.sql")
+	downSQL := readMigration(t, "133_seed_global_additional_outdoor_route_places.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_global_additional_outdoor_route_places_resolved_places AS",
+		"global-additional-outdoor-route-places-v1",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("global additional outdoor route places up migration must contain %q", fragment)
+		}
+	}
+
+	for _, countryCode := range []string{
+		"'US'",
+		"'MX'",
+		"'SC'",
+		"'GE'",
+		"'CZ'",
+		"'EE'",
+		"'FI'",
+		"'LU'",
+		"'FR'",
+		"'AU'",
+		"'NZ'",
+		"'JP'",
+		"'KR'",
+		"'CN'",
+		"'MY'",
+	} {
+		if !strings.Contains(upSQL, countryCode) {
+			t.Fatalf("global additional outdoor route places up migration must include country_code %q", countryCode)
+		}
+	}
+
+	for _, cityID := range []string{
+		"new-york",
+		"washington-dc",
+		"portland",
+		"san-diego",
+		"cozumel",
+		"mahe",
+		"tbilisi",
+		"bohemian-switzerland",
+		"lahemaa",
+		"kilpisjarvi",
+		"berdorf",
+		"marseille",
+		"kakadu",
+		"waitakere-ranges",
+		"nikko",
+		"jeju",
+		"zhangjiajie",
+		"kuching",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("global additional outdoor route places up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Inwood Hill Park Forest Trail",
+		"Theodore Roosevelt Island Loop Trail",
+		"Forest Park Wildwood Trail Segment",
+		"Torrey Pines Beach Trail Loop",
+		"Punta Sur Lagoon Boardwalk",
+		"Morne Seychellois Summit Trail",
+		"Kojori to Udzo Monastery Ridge Trail",
+		"Gabriela Sandstone Balcony Trail",
+		"Oandu Beaver Forest Trail",
+		"Kilpisjarvi Border Fell Walk",
+		"Berdorf Wanterbaach Rock Trail",
+		"Sugiton Belvedere Trail",
+		"Nawurlandja Lookout Walk",
+		"Mercer Bay Loop Track",
+		"Kanmangafuchi Abyss Riverside Walk",
+		"Hallasan Eorimok Trail",
+		"Huangshi Village Loop Trail",
+		"Mount Santubong Summit Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("global additional outdoor route places up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Central Park",
+		"National Mall and Memorial Parks",
+		"Washington Park Portland",
+		"La Jolla Cove",
+		"Cozumel Reefs",
+		"Morne Seychellois National Park",
+		"Tbilisi National Park",
+		"Bohemian Switzerland National Park",
+		"Lahemaa National Park",
+		"Three-Country Cairn",
+		"Mullerthal Trail",
+		"Calanques National Park",
+		"Kakadu Ubirr",
+		"Waitakere Ranges Regional Park",
+		"Nikko Toshogu Shrine",
+		"Hallasan National Park",
+		"Zhangjiajie National Forest Park",
+		"Bako National Park",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("global additional outdoor route places up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("global additional outdoor route places up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("global additional outdoor route places up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("global additional outdoor route places up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "global-additional-outdoor-route-places-v1") {
+		t.Fatalf("global additional outdoor route places down migration must remove only tagged route-level places")
+	}
+}
+
+func TestEuropeMenaAdditionalCityWalkRoutesSeedMigrationAddsAgentVerifiedPlaces(t *testing.T) {
+	upSQL := readMigration(t, "134_seed_europe_mena_additional_city_walk_routes.up.sql")
+	downSQL := readMigration(t, "134_seed_europe_mena_additional_city_walk_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_europe_mena_additional_city_walk_routes_resolved_places AS",
+		"europe-mena-additional-city-walk-routes-v1",
+		"'hiking'",
+		"'walking'",
+		"'free-entry'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("europe mena additional city walk routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"paris",
+		"london",
+		"berlin",
+		"barcelona",
+		"prague",
+		"lisbon",
+		"dubai",
+		"amsterdam",
+		"helsinki",
+		"stockholm",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("europe mena additional city walk routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Coulee Verte Rene-Dumont Walk",
+		"Parkland Walk",
+		"Havelhoehenweg Grunewald Trail",
+		"Carretera de les Aigues Walk",
+		"Divoka Sarka Valley Trail",
+		"Monsanto Forest Park Loop",
+		"Palm Jumeirah Boardwalk",
+		"Amsterdamse Bos Walking Loop",
+		"Paloheina Central Park Trail",
+		"Nackareservatet Hellasgarden Loop",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("europe mena additional city walk routes up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Appian Way Regional Park",
+		"Larnaca Salt Lake",
+		"Luxembourg Gardens",
+		"Hyde Park",
+		"Tiergarten",
+		"Park Guell",
+		"Stromovka Park",
+		"Parque Eduardo VII",
+		"Palm Jumeirah",
+		"Vondelpark Outer Loop Walk",
+		"Esplanadi Park",
+		"Djurgarden Waterfront Forest Walk",
+	} {
+		if strings.Contains(upSQL, "'"+duplicateTitle+"'") {
+			t.Fatalf("europe mena additional city walk routes up migration must avoid duplicating existing broad or route place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("europe mena additional city walk routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("europe mena additional city walk routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("europe mena additional city walk routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "europe-mena-additional-city-walk-routes-v1") {
+		t.Fatalf("europe mena additional city walk routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestEuropeMiddleEastCityHubOutdoorRoutesSeedMigrationAddsUncoveredHubs(t *testing.T) {
+	upSQL := readMigration(t, "113_seed_europe_middle_east_city_hub_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "113_seed_europe_middle_east_city_hub_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_europe_middle_east_city_hub_outdoor_routes_resolved_places AS",
+		"europe-middle-east-city-hub-outdoor-routes-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("europe middle east city hub outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"abu-dhabi",
+		"dubai",
+		"sevan",
+		"gobustan",
+		"gabala",
+		"borjomi",
+		"chania",
+		"santorini",
+		"meteora",
+		"montserrat",
+		"lake-garda",
+		"lake-como",
+		"setubal",
+		"istanbul",
+		"cairo",
+		"fruska-gora",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("europe middle east city hub outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Jubail Mangrove Boardwalk",
+		"Ras Al Khor Flamingo Boardwalk",
+		"Sevan Peninsula Monastery Walk",
+		"Gobustan Mud Volcanoes Ridge Walk",
+		"Tufandag Mountain Ridge Trail",
+		"Likani to Lomismta Trail",
+		"Samaria Gorge Trail",
+		"Santorini Fira to Oia Caldera Walk",
+		"Meteora Monastery Ridge Walk",
+		"Montserrat Sant Jeroni Trail",
+		"Busatte Tempesta Trail",
+		"Greenway del Lago di Como Walk",
+		"Arrabida Coastal Ridge Trail",
+		"Belgrad Forest Neset Suyu Trail",
+		"Wadi Degla Canyon Trail",
+		"Fruska Gora Iriski Venac Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("europe middle east city hub outdoor routes up migration must include uncovered hub route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Jubail Mangrove Park",
+		"Ras Al Khor Wildlife Sanctuary",
+		"Lake Sevan",
+		"Sevanavank Monastery",
+		"Lake Sevan Public Beach",
+		"Gobustan Rock Art Cultural Landscape",
+		"Gabala Tufandag Mountain Resort",
+		"Nohur Lake",
+		"Borjomi Central Park",
+		"Borjomi-Kharagauli National Park",
+		"Old Venetian Harbor Chania",
+		"Balos Lagoon",
+		"Santorini Caldera",
+		"Oia Sunset",
+		"Fira Old Port",
+		"Meteora Monasteries",
+		"Kalambaka Old Town",
+		"Santa Maria de Montserrat Abbey",
+		"Montserrat Natural Park",
+		"Gardaland Resort",
+		"Scaliger Castle of Sirmione",
+		"Jamaica Beach",
+		"Lake Como Bellagio",
+		"Villa Melzi Gardens",
+		"Villa Carlotta",
+		"Arrabida Natural Park",
+		"Praia de Galapinhos",
+		"Gulhane Park",
+		"Princes' Islands",
+		"Al Azhar Park",
+		"Cairo Food Walk",
+		"Fruska Gora National Park",
+		"Novo Hopovo Monastery",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("europe middle east city hub outdoor routes up migration must avoid duplicating broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("europe middle east city hub outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("europe middle east city hub outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("europe middle east city hub outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "europe-middle-east-city-hub-outdoor-routes-v1") {
+		t.Fatalf("europe middle east city hub outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAsiaOceaniaCentralAsiaCityHubOutdoorRoutesSeedMigrationAddsUncoveredHubs(t *testing.T) {
+	upSQL := readMigration(t, "114_seed_asia_oceania_central_asia_city_hub_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "114_seed_asia_oceania_central_asia_city_hub_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_asia_oceania_central_asia_city_hub_outdoor_routes_resolved_places AS",
+		"asia-oceania-central-asia-city-hub-outdoor-routes-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("asia oceania central asia city hub outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"balykchy",
+		"varzob",
+		"wakhan-valley",
+		"khuvsgul",
+		"altai-tavan-bogd",
+		"gold-coast",
+		"waiheke-island",
+		"waitakere-ranges",
+		"huangshan",
+		"lijiang",
+		"hakone",
+		"jeju",
+		"pai",
+		"miri",
+		"sigiriya",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("asia oceania central asia city hub outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Balykchy Lakeside Promenade Walk",
+		"Varzob Riverside Mountain Trail",
+		"Wakhan Valley Panj River Walk",
+		"Khuvsgul West Shore Forest Trail",
+		"Malchin Peak Base Trail",
+		"Burleigh Head Oceanview Circuit",
+		"Te Ara Hura Coastal Walk",
+		"Kitekite Falls Track",
+		"Xihai Grand Canyon Trail",
+		"Haba Snow Mountain High Trail",
+		"Hakone Old Tokaido Cedar Avenue Walk",
+		"Hallasan Seongpanak Trail",
+		"Pai Red Ridge Loop",
+		"Lambir Hills Latak Waterfall Trail",
+		"Pidurangala Sunrise Rock Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("asia oceania central asia city hub outdoor routes up migration must include uncovered hub route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Balykchy Lakefront",
+		"Varzob Gorge",
+		"Varzob Waterfall Trail",
+		"Wakhan Valley Road",
+		"Khuvsgul Lake National Park",
+		"Khuvsgul East Shore Trail",
+		"Altai Tavan Bogd National Park",
+		"Potanin Glacier Base Trail",
+		"Burleigh Head National Park",
+		"Waiheke Island",
+		"Piha Beach",
+		"Waitakere Ranges Regional Park",
+		"Yellow Mountain",
+		"Tiger Leaping Gorge",
+		"Lake Ashi",
+		"Hallasan National Park",
+		"Pai Canyon",
+		"Lambir Hills National Park",
+		"Pidurangala Rock",
+		"Sigiriya Rock Fortress",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("asia oceania central asia city hub outdoor routes up migration must avoid duplicating broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("asia oceania central asia city hub outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("asia oceania central asia city hub outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("asia oceania central asia city hub outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "asia-oceania-central-asia-city-hub-outdoor-routes-v1") {
+		t.Fatalf("asia oceania central asia city hub outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAmericasAfricaIslandCityHubOutdoorRoutesSeedMigrationAddsUncoveredHubs(t *testing.T) {
+	upSQL := readMigration(t, "115_seed_americas_africa_island_city_hub_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "115_seed_americas_africa_island_city_hub_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_americas_africa_island_city_hub_outdoor_routes_resolved_places AS",
+		"americas-africa-island-city-hub-outdoor-routes-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("americas africa island city hub outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"san-francisco",
+		"las-vegas",
+		"calgary",
+		"manaus",
+		"sao-paulo",
+		"mendoza",
+		"salta",
+		"cayo-guillermo",
+		"sharm-el-sheikh",
+		"nairobi",
+		"arusha",
+		"dar-es-salaam",
+		"morogoro",
+		"tangier",
+		"marrakech",
+		"darwin",
+		"melbourne",
+		"sunshine-coast",
+		"tekapo",
+		"tauranga",
+		"dublin",
+		"reykjavik",
+		"valletta",
+		"limassol",
+		"victoria",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("americas africa island city hub outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Lands End Trail",
+		"Calico Tanks Trail",
+		"Nose Hill Prairie Loop",
+		"MUSA Forest Tower Trail",
+		"Cantareira Pedra Grande Trail",
+		"Cerro Arco Summit Trail",
+		"Salta Hill Stairs Trail",
+		"Cayo Guillermo Dune Coastal Walk",
+		"Ras Mohammed Mangrove Boardwalk",
+		"Karura Waterfall Loop",
+		"Ngurdoto Crater View Trail",
+		"Pugu Hills Forest Trail",
+		"Uluguru Bondwa Peak Trail",
+		"Tangier Atlantic Woodland Coastal Walk",
+		"Marrakech Stone Desert Ridge Walk",
+		"East Point Mangrove Boardwalk",
+		"1000 Steps Kokoda Track Memorial Walk",
+		"Mount Coolum Summit Track",
+		"Mount John Summit Track",
+		"Papamoa Hills Track",
+		"Ticknock Fairy Castle Loop",
+		"Mount Esja Trail",
+		"Victoria Lines Trail",
+		"Cape Aspro Coastal Trail",
+		"Trois Freres Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("americas africa island city hub outdoor routes up migration must include uncovered hub route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Golden Gate Bridge",
+		"Golden Gate Park",
+		"Red Rock Canyon National Conservation Area",
+		"Princes Island Park",
+		"MUSA Manaus",
+		"Meeting of Waters Manaus",
+		"Ibirapuera Park",
+		"MASP Brazil",
+		"Mendoza Wine Route",
+		"General San Martin Park",
+		"Cerro San Bernardo",
+		"Playa Pilar",
+		"Pilar Dunes",
+		"Ras Mohammed National Park",
+		"Colored Canyon Trail",
+		"Karura Forest",
+		"Ngong Hills",
+		"Arusha National Park",
+		"Mount Meru Momella Gate Day Hike",
+		"Mbudya Island",
+		"Bongoyo Island Marine Reserve",
+		"Uluguru Mountains",
+		"Udzungwa Mwanihana Trail",
+		"Cap Spartel",
+		"Hercules Caves",
+		"Perdicaris Park",
+		"Agafay Desert",
+		"Setti Fatma Waterfalls Trail",
+		"Toubkal Refuge Trail",
+		"Mindil Beach Sunset Market",
+		"Darwin Waterfront Wave Lagoon",
+		"Royal Botanic Gardens Melbourne",
+		"St Kilda Beach",
+		"Noosa National Park",
+		"Noosa Headland Coastal Walk",
+		"Lake Tekapo",
+		"Sealy Tarns Track",
+		"Tauranga Waterfront",
+		"Mauao Summit Track",
+		"Howth Cliff Loop Walk",
+		"Derrybawn Woodland Trail",
+		"Snaefellsnes Coastal Lava Walk",
+		"Arnarstapi to Hellnar Coastal Walk",
+		"Malta Western Clifftop Walk",
+		"Dingli Cliffs",
+		"Cape Greco",
+		"Troodos Cedar Ridge Trail",
+		"Atalanti Trail",
+		"Morne Blanc Trail",
+		"Copolia Trail",
+		"Mare aux Cochons Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("americas africa island city hub outdoor routes up migration must avoid duplicating broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("americas africa island city hub outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("americas africa island city hub outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("americas africa island city hub outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "americas-africa-island-city-hub-outdoor-routes-v1") {
+		t.Fatalf("americas africa island city hub outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAmericasAfricaHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "094_seed_americas_africa_hiking_routes.up.sql")
+	downSQL := readMigration(t, "094_seed_americas_africa_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_americas_africa_hiking_resolved_places AS",
+		"americas-africa-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("americas africa hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"yosemite",
+		"grand-canyon",
+		"rocky-mountain",
+		"zion",
+		"seattle",
+		"banff",
+		"jasper",
+		"whistler",
+		"mexico-city",
+		"puebla",
+		"oaxaca",
+		"rio-de-janeiro",
+		"florianopolis",
+		"chapada-dos-veadeiros",
+		"el-chalten",
+		"bariloche",
+		"ushuaia",
+		"trinidad",
+		"dahab",
+		"imlil",
+		"ouarzazate",
+		"chefchaouen",
+		"aberdares",
+		"udzungwa",
+		"mount-meru",
+		"mahe",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("americas africa hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Mist Trail to Vernal and Nevada Falls",
+		"Bright Angel Trail Day Hike",
+		"Sky Pond Trail",
+		"Observation Point Trail via East Mesa",
+		"Rattlesnake Ledge Trail",
+		"Plain of Six Glaciers Trail",
+		"Johnston Canyon to Ink Pots Trail",
+		"Valley of the Five Lakes Trail",
+		"Garibaldi Lake Trail",
+		"Nevado de Toluca Crater Lakes Trail",
+		"Iztaccihuatl Paso de Cortes Trail",
+		"Sierra Norte Pueblos Mancomunados Trail",
+		"Pedra Bonita Trail",
+		"Dois Irmaos Trail",
+		"Lagoinha do Leste Trail",
+		"Mirante da Janela Trail",
+		"Laguna Torre Trail",
+		"Cerro Llao Llao Trail",
+		"Laguna Esmeralda Trail",
+		"Guanayara Trail",
+		"Colored Canyon Trail",
+		"Toubkal Refuge Trail",
+		"Jebel Saghro Bab n'Ali Trail",
+		"Talassemtane Forest Trail",
+		"Elephant Hill Trail",
+		"Udzungwa Mwanihana Trail",
+		"Mount Meru Momella Gate Day Hike",
+		"Mare aux Cochons Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("americas africa hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Yosemite National Park",
+		"Yosemite Valley",
+		"Grand Canyon South Rim",
+		"Rocky Mountain National Park",
+		"Emerald Lake Trail",
+		"Zion National Park",
+		"The Narrows Zion",
+		"Angels Landing",
+		"Lake Louise",
+		"Maligne Lake",
+		"Whistler Blackcomb",
+		"Hierve el Agua",
+		"Sumidero Canyon",
+		"Tijuca National Park",
+		"Sugarloaf Mountain",
+		"Laguna de los Tres",
+		"Cerro Campanario",
+		"Topes de Collantes",
+		"Gabal El Medawara Trail",
+		"Gebel Dakrur Trail",
+		"Akchour Waterfalls",
+		"Paradise Valley",
+		"Sanje Waterfall",
+		"Materuni Waterfalls and Coffee Tour",
+		"Morne Blanc Trail",
+		"Anse Major Trail",
+		"Copolia Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("americas africa hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("americas africa hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("americas africa hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "americas-africa-hiking-v1") {
+		t.Fatalf("americas africa hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAmericasAfricaGapHikingRoutesSeedMigrationAddsMissingRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "108_seed_americas_africa_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "108_seed_americas_africa_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_americas_africa_gap_hiking_resolved_places AS",
+		"americas-africa-gap-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("americas africa gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"yellowstone",
+		"denali",
+		"anchorage",
+		"maui",
+		"honolulu",
+		"vancouver",
+		"victoria",
+		"st-johns",
+		"whitehorse",
+		"monterrey",
+		"puerto-vallarta",
+		"tulum",
+		"foz-do-iguacu",
+		"lencois-maranhenses",
+		"bonito",
+		"cuiaba",
+		"el-calafate",
+		"aconcagua",
+		"purmamarca",
+		"vinales",
+		"baracoa",
+		"saint-catherine",
+		"fayoum",
+		"ourika",
+		"mount-kenya",
+		"hells-gate",
+		"kilimanjaro",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("americas africa gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Fairy Falls and Grand Prismatic Overlook Trail",
+		"Horseshoe Lake Trail",
+		"Powerline Pass Trail",
+		"Sliding Sands Trail",
+		"Makapuu Point Lighthouse Trail",
+		"Quarry Rock Trail",
+		"Mount Finlayson Trail",
+		"North Head Trail",
+		"Grey Mountain Ridge Trail",
+		"Cerro de la Silla Trail",
+		"Boca de Tomatlan to Las Animas Trail",
+		"Muyil Sian Ka'an Boardwalk Trail",
+		"Macuco Trail Iguazu",
+		"Lagoa Bonita Dune Trail",
+		"Boca da Onca Waterfall Trail",
+		"Veu de Noiva Waterfall Trail",
+		"Glacier Balcony Boardwalk Trail",
+		"Laguna de Horcones Trail",
+		"Purmamarca Colorados Loop",
+		"Los Aquaticos Trail",
+		"El Yunque Summit Trail",
+		"Sinai Sunrise Steps Trail",
+		"Magic Lake Dune Walk",
+		"Setti Fatma Waterfalls Trail",
+		"Naro Moru River Trail",
+		"Hell's Gate Gorge Walk",
+		"Marangu Mandara Hut Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("americas africa gap hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Yellowstone National Park",
+		"Grand Prismatic Spring",
+		"Denali National Park",
+		"Chugach State Park",
+		"Flattop Mountain and Glen Alps",
+		"Haleakala National Park",
+		"Diamond Head State Monument",
+		"Stanley Park",
+		"Signal Hill",
+		"Miles Canyon",
+		"Chipinque Park",
+		"Sian Kaan Biosphere Reserve",
+		"Iguazu Falls",
+		"Lencois Maranhenses National Park",
+		"Chapada dos Guimaraes",
+		"Perito Moreno Glacier",
+		"'Aconcagua Provincial Park'",
+		"Paseo de los Colorados",
+		"Vinales Valley",
+		"Mount Sinai",
+		"Wadi El Rayan",
+		"Ourika Valley",
+		"Mount Kenya National Park",
+		"Hell''s Gate National Park",
+		"Mount Kilimanjaro",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("americas africa gap hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("americas africa gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("americas africa gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("americas africa gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "americas-africa-gap-hiking-v1") {
+		t.Fatalf("americas africa gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestOceaniaRemainingAsiaHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "095_seed_oceania_asia_hiking_routes.up.sql")
+	downSQL := readMigration(t, "095_seed_oceania_asia_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_oceania_asia_hiking_resolved_places AS",
+		"oceania-asia-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("oceania asia hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"blue-mountains",
+		"sydney",
+		"canberra",
+		"hobart",
+		"noosa",
+		"auckland",
+		"mount-maunganui",
+		"queenstown",
+		"fiordland",
+		"wellington",
+		"hanoi",
+		"da-lat",
+		"hue",
+		"chiang-mai",
+		"krabi",
+		"cebu-city",
+		"sagada",
+		"kintamani",
+		"munduk",
+		"penang",
+		"kota-kinabalu",
+		"singapore",
+		"kandy",
+		"kyoto",
+		"sokcho",
+		"yangshuo",
+		"manali",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("oceania asia hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Grand Canyon Track",
+		"Bondi to Coogee Coastal Walk",
+		"Mount Ainslie Summit Trail",
+		"kunanyi Organ Pipes Track",
+		"Noosa Headland Coastal Walk",
+		"Rangitoto Summit Track",
+		"Mauao Summit Track",
+		"Ben Lomond Track",
+		"Key Summit Track",
+		"Mount Victoria Lookout Walk",
+		"Ba Vi Summit Trail",
+		"Lang Biang Peak Trail",
+		"Bach Ma Hai Vong Dai Trail",
+		"Monk's Trail to Wat Pha Lat",
+		"Railay Viewpoint and Lagoon Trail",
+		"Osmena Peak Trail",
+		"Marlboro Hills Blue Soil Trail",
+		"Mount Abang Trail",
+		"Tamblingan Forest Loop Trail",
+		"Penang Hill Heritage Trail",
+		"Sosodikon Hill Trail",
+		"Southern Ridges Walk",
+		"MacRitchie TreeTop Walk Loop",
+		"Riverston Pitawala Pathana Trail",
+		"Fushimi Inari Summit Trail",
+		"Seoraksan Ulsanbawi Rock Trail",
+		"Yulong River Karst Walking Trail",
+		"Bhrigu Lake Trek",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("oceania asia hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Bondi Beach",
+		"Noosa National Park",
+		"Mount Maunganui Beach",
+		"Fiordland National Park",
+		"Kew Mae Pan Nature Trail",
+		"Dragon Crest Mountain Trail",
+		"Mount Batur",
+		"Lake Tamblingan",
+		"Kinabalu Park",
+		"MacRitchie Reservoir Park",
+		"Knuckles Mini World's End Trail",
+		"Fushimi Inari Taisha",
+		"Seoraksan National Park",
+		"Yulong River Scenic Area",
+		"Cat Cat Village",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("oceania asia hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("oceania asia hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("oceania asia hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "oceania-asia-hiking-v1") {
+		t.Fatalf("oceania asia hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAsiaOceaniaGapHikingRoutesSeedMigrationAddsRemainingRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "110_seed_asia_oceania_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "110_seed_asia_oceania_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_asia_oceania_gap_hiking_resolved_places AS",
+		"asia-oceania-gap-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("asia oceania gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"sa-pa",
+		"ninh-binh",
+		"phuket",
+		"koh-tao",
+		"banaue",
+		"coron",
+		"bohol",
+		"nusa-penida",
+		"sidemen",
+		"jatiluwih",
+		"fuvahmulah",
+		"hulhumale",
+		"hangzhou",
+		"zhangjiajie",
+		"kamakura",
+		"nikko",
+		"busan",
+		"kuala-lumpur",
+		"ella",
+		"rishikesh",
+		"leh",
+		"kakadu",
+		"aoraki-mount-cook",
+		"cameron-highlands",
+		"langkawi",
+		"great-ocean-road",
+		"cairns",
+		"al-ain",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("asia oceania gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Y Linh Ho to Lao Chai Valley Trail",
+		"Cuc Phuong Ancient Tree Trail",
+		"Black Rock Viewpoint Trail",
+		"John-Suwan Viewpoint Trail",
+		"Batad Rice Terraces Trail",
+		"Tapyas Sunset Stair Trail",
+		"Bohol Karst Hills View Trail",
+		"Kelingking Cliff View Trail",
+		"Sidemen Rice Terrace Walk",
+		"Jatiluwih Subak Terrace Loop",
+		"Fuvahmulah Lake-to-Beach Nature Walk",
+		"Hulhumale Eastern Beach Coastal Walk",
+		"Nine Creeks and Longjing Trail",
+		"Golden Whip Stream Trail",
+		"Daibutsu Hiking Trail",
+		"Senjogahara Marshland Trail",
+		"Igidae Coastal Walk",
+		"Bukit Gasing Forest Trail",
+		"Ella Mini Adams Ridge Walk",
+		"Neer Garh Waterfall Trail",
+		"Sham Valley Day Trek",
+		"Ubirr Rock Art Walk",
+		"Sealy Tarns Track",
+		"Cameron Highlands Boardwalk Trail",
+		"Gunung Raya Summit Trail",
+		"Wreck Beach Steps Walk",
+		"Red Arrow Circuit",
+		"Jebel Hafit Foothill Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("asia oceania gap hiking up migration must include gap route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Muong Hoa Valley",
+		"Cat Cat Village",
+		"Cuc Phuong National Park",
+		"Ma Pi Leng Pass Trail",
+		"Ko Nang Yuan",
+		"Chocolate Hills",
+		"Mount Tapyas",
+		"Kelingking Beach",
+		"Sidemen Rice Terraces",
+		"Jatiluwih Rice Terraces",
+		"Thoondu Beach",
+		"Fuvahmulah Tiger Shark Point",
+		"Hulhumale Beach",
+		"West Lake",
+		"Zhangjiajie National Forest Park",
+		"Nikko Toshogu Shrine",
+		"Haeundae Beach",
+		"Little Adam's Peak",
+		"Laxman Jhula",
+		"Leh Palace",
+		"Kakadu Ubirr",
+		"Hooker Valley Track",
+		"Mossy Forest Eco Park",
+		"Langkawi Sky Bridge",
+		"Tongariro Alpine Crossing",
+		"Caledonia Waterfall Trail",
+		"Jebel Hafit Desert Park",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("asia oceania gap hiking up migration must avoid duplicating existing broad or route place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("asia oceania gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("asia oceania gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("asia oceania gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "asia-oceania-gap-hiking-v1") {
+		t.Fatalf("asia oceania gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestEuropeCaucasusMiddleEastGapHikingRoutesSeedMigrationAddsRemainingRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "111_seed_europe_caucasus_middle_east_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "111_seed_europe_caucasus_middle_east_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_europe_caucasus_middle_east_gap_hiking_resolved_places AS",
+		"europe-caucasus-middle-east-gap-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("europe caucasus middle east gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"gudauri",
+		"mestia",
+		"dilijan",
+		"jermuk",
+		"quba",
+		"hatta",
+		"ras-al-khaimah",
+		"fujairah",
+		"rize",
+		"cappadocia",
+		"kemer",
+		"troodos",
+		"litochoro",
+		"interlaken",
+		"grossglockner",
+		"chamonix",
+		"lake-district",
+		"amalfi-coast",
+		"calpe",
+		"madeira",
+		"glendalough",
+		"snaefellsnes",
+		"zakopane",
+		"durmitor",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("europe caucasus middle east gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Truso Valley Trail",
+		"Mestia to Zhabeshi Trail",
+		"Jukhtak Monastery Forest Trail",
+		"Jermuk to Gndevank Canyon Trail",
+		"Afurja Waterfall Trail",
+		"Hatta Sign Hill Trail",
+		"Wadi Shah Stairway to Heaven Trail",
+		"Wadi Abadilah Trail",
+		"Avusor Plateau Trail",
+		"Love Valley to Uchisar Trail",
+		"Olympos to Cirali Lycian Way Walk",
+		"Atalanti Trail",
+		"Gortsia to Petrostrouga Trail",
+		"Hardergrat Trail",
+		"Gamsgrubenweg Panorama Trail",
+		"Grand Balcon Nord Trail",
+		"Helvellyn Striding Edge Walk",
+		"Punta Campanella Trail",
+		"Sierra de Bernia Circular Trail",
+		"Levada do Caldeirao Verde Trail",
+		"Derrybawn Woodland Trail",
+		"Arnarstapi to Hellnar Coastal Walk",
+		"Dolina Pieciu Stawow Trail",
+		"Bobotov Kuk Summit Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("europe caucasus middle east gap hiking up migration must include gap route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Juta to Chaukhi Lake Trail",
+		"Gudauri Ski Resort",
+		"Mestia Glacier Valley Trail",
+		"Chalaadi Glacier",
+		"Koruldi Lakes",
+		"Parz Lake to Gosh Lake Trail",
+		"Mount Dimats Trail",
+		"Lake Parz",
+		"Arpa Canyon Resort Trail",
+		"Jermuk Waterfall",
+		"Gndevank Monastery",
+		"Tengealti Canyon Trail",
+		"Red Settlement Quba",
+		"Hatta Mountain Trails",
+		"Hatta Wadi Hub",
+		"Jebel Jais Hiking Trails",
+		"Wadi Wurayah Trail",
+		"Kackar Pokut Plateau Trail",
+		"Ayder Plateau",
+		"Red Valley Loop Trail",
+		"Lycian Way near Goynuk Canyon",
+		"Phaselis Ancient City",
+		"Troodos Cedar Ridge Trail",
+		"Artemis Trail",
+		"Prionia Forest Ascent Trail",
+		"Enipeas Gorge",
+		"Eiger Trail",
+		"Harder Kulm",
+		"Pasterze Glacier View Trail",
+		"Grossglockner High Alpine Road",
+		"Lac Blanc Trail",
+		"Aiguille du Midi",
+		"Catbells Ridge Walk",
+		"Lake District National Park",
+		"Path of the Gods Trail",
+		"Valle delle Ferriere",
+		"Penon de Ifach Trail",
+		"Pico Ruivo Trail",
+		"Pico do Arieiro",
+		"Spinc and Glenealo Valley Trail",
+		"Snaefellsnes Coastal Lava Walk",
+		"Snaefellsjokull National Park",
+		"Tatra Lake Approach Trail",
+		"Morskie Oko",
+		"Durmitor Lake Forest Loop",
+		"Durmitor National Park",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("europe caucasus middle east gap hiking up migration must avoid duplicating existing broad or route place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("europe caucasus middle east gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("europe caucasus middle east gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("europe caucasus middle east gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "europe-caucasus-middle-east-gap-hiking-v1") {
+		t.Fatalf("europe caucasus middle east gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanMoreHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "096_seed_kazakhstan_more_hiking_routes.up.sql")
+	downSQL := readMigration(t, "096_seed_kazakhstan_more_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_more_hiking_resolved_places AS",
+		"kazakhstan-more-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan more hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"ust-kamenogorsk",
+		"pavlodar",
+		"karaganda",
+		"balkhash",
+		"kokshetau",
+		"aktau",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan more hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Mokhnatka Mountain Trail",
+		"Titov Lake Trail",
+		"Kamenskoye Plateau Trail",
+		"Kok-Zhailau Waterfall Trail",
+		"Medeu Terrenkur Health Trail",
+		"Manshuk Mametova Lake Trail",
+		"Esik Waterfall Trail",
+		"Oi-Qaragai Forest Ridge Trail",
+		"Lineyskie Belki Trail",
+		"Poperechnoye Lake Trail",
+		"Zhasybai Lake Shore Trail",
+		"Toraigyr Lake View Trail",
+		"Abylai Khan Meadow Trail",
+		"Kyzyltas Ridge Trail",
+		"Karynzharyk Depression View Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan more hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Butakovka Gorge",
+		"Kimasar Gorge",
+		"Kumbel Peak",
+		"Turgen Gorge",
+		"Bear Falls in Turgen Gorge",
+		"Issyk Lake Trail",
+		"Tuyuksu Glacier Trail",
+		"Big Almaty Peak Trail",
+		"Mynzhylky Plateau Trail",
+		"Bogdanovich Glacier View Trail",
+		"Akbet Peak",
+		"Konyr-Aulie Cave",
+		"West Altai Nature Reserve Trails",
+		"Karkaraly National Park",
+		"Bektau-Ata",
+		"Sherkala Mountain",
+		"Torysh Valley",
+		"Tuzbair Salt Flat",
+		"Airakty-Shomanai Valley",
+		"Bokty Mountain View Trail",
+		"Boszhira Fang View Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan more hiking up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan more hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan more hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan more hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-more-hiking-v1") {
+		t.Fatalf("kazakhstan more hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanHighlandNatureWalksSeedMigrationAddsExtraRouteDepth(t *testing.T) {
+	upSQL := readMigration(t, "098_seed_kazakhstan_highland_nature_walks.up.sql")
+	downSQL := readMigration(t, "098_seed_kazakhstan_highland_nature_walks.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_highland_nature_walks_resolved_places AS",
+		"kazakhstan-highland-nature-walks-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan highland nature walks up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"shymkent",
+		"taraz",
+		"astana",
+		"kokshetau",
+		"aktau",
+		"atyrau",
+		"balkhash",
+		"zhezkazgan",
+		"kostanay",
+		"semey",
+		"oral",
+		"turkestan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan highland nature walks up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Bukreev Peak Trail",
+		"Japanese Road Trail",
+		"Kim-Asar Waterfall Trail",
+		"Batan Meadows Trail",
+		"Sazanata Gorge Trail",
+		"Merke Gorge Trail",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Zheke-Batyr Mountain Trail",
+		"Kyzylkup Rainbow Hills Trail",
+		"Sultan-Epe Valley Walk",
+		"Akkegershin Chalk Canyon Trail",
+		"Aulie Cave Granite Trail",
+		"Terekty Aulie Petroglyph Trail",
+		"Ubagan River Valley Walk",
+		"Semey Irtysh Island Trail",
+		"Kushum River Floodplain Walk",
+		"Arpa-Uzen Petroglyph Ridge Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan highland nature walks up migration must include extra route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Burgulyuk Gorge",
+		"Kaskasu Gorge",
+		"Mashat Gorge Trail",
+		"Tamshaly Canyon",
+		"Bektau-Ata",
+		"Konyr-Aulie Cave",
+		"Saryarka Steppe and Lakes",
+		"Ulytau Reserve-Museum",
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Furmanov Peak",
+		"Kara-Kungey Ridge",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan highland nature walks up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan highland nature walks up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan highland nature walks up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan highland nature walks up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-highland-nature-walks-v1") {
+		t.Fatalf("kazakhstan highland nature walks down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanExtraOutdoorRoutesSeedMigrationAddsMoreRouteDepth(t *testing.T) {
+	upSQL := readMigration(t, "100_seed_kazakhstan_extra_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "100_seed_kazakhstan_extra_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_extra_outdoor_routes_resolved_places AS",
+		"kazakhstan-extra-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan extra outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"pavlodar",
+		"karaganda",
+		"kokshetau",
+		"astana",
+		"aktau",
+		"atyrau",
+		"kyzylorda",
+		"aktobe",
+		"taraz",
+		"shymkent",
+		"zhezkazgan",
+		"balkhash",
+		"oral",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan extra outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Abai Peak Classic Trail",
+		"Three Brothers Rocks Trail",
+		"Charyn Moon Canyon Trail",
+		"Aigaikum Singing Dune Walk",
+		"Basshi Steppe Eco Trail",
+		"Lepsy River Valley Trail",
+		"Austrian Road Katon-Karagay Trail",
+		"Belukha Base View Trail",
+		"Berel Valley Heritage Walk",
+		"Kempirtas Rock Trail",
+		"Auliebulak Spring Trail",
+		"Bugyly Mountains Trail",
+		"Karkaraly Three Caves Trail",
+		"Pashennoye Lake Forest Trail",
+		"Burabay Green Cape Trail",
+		"Ereymentau Granite Ridge Trail",
+		"Shakpak-Ata Canyon Walk",
+		"Kokala Clay Hills Trail",
+		"Beket-Ata Plateau Walk",
+		"Akzhaiyk Reserve Boardwalk Trail",
+		"Barsa-Kelmes Desert Edge Trail",
+		"Mugodzhary Hills Trail",
+		"Koksay Gorge Trail",
+		"Baldybrek Canyon Trail",
+		"Ulytau Aulietau Summit Trail",
+		"Balkhash Reed Islands Walk",
+		"Shalkar Lake Shore Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan extra outdoor routes up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Butakovka Gorge",
+		"Monakhov Gorge",
+		"Torysh Valley",
+		"Sherkala Mountain",
+		"Bektau-Ata",
+		"Korgalzhyn Reedbed Birding Trail",
+		"Ulytau Akmeshit Ridge Trail",
+		"Bukreev Peak Trail",
+		"Japanese Road Trail",
+		"Kim-Asar Waterfall Trail",
+		"Batan Meadows Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan extra outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan extra outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan extra outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan extra outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-extra-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan extra outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanMoreOutdoorDepthSeedMigrationAddsAdditionalRouteChoices(t *testing.T) {
+	upSQL := readMigration(t, "102_seed_kazakhstan_more_outdoor_depth.up.sql")
+	downSQL := readMigration(t, "102_seed_kazakhstan_more_outdoor_depth.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_more_outdoor_depth_resolved_places AS",
+		"kazakhstan-more-outdoor-depth-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan more outdoor depth up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"ust-kamenogorsk",
+		"pavlodar",
+		"kokshetau",
+		"aktau",
+		"balkhash",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan more outdoor depth up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Alpengrad High Camp Trail",
+		"Mayakovsky Peak View Trail",
+		"Tourist Peak Approach Trail",
+		"Ozerny Peak Moraine Trail",
+		"Shukur Gorge Hut Trail",
+		"Kimasar Pass Ridge Trail",
+		"Prohodnaya River Waterfall Trail",
+		"Karash Ridge Turgen Trail",
+		"Besqaynar Forest Trail",
+		"Tamgaly-Tas Climber Path",
+		"Maral Lake Altai Trail",
+		"Kokkol Mine Heritage Trail",
+		"Sarymsakty Ridge Trail",
+		"Zhasybai to Toraigyr Traverse",
+		"Naizatas Rock Trail",
+		"Borovushka Forest Loop",
+		"Senek Dune Field Walk",
+		"Tuyesu Sands Trail",
+		"Bozjira Western Escarpment Walk",
+		"Granite Labyrinth Loop near Bektauata",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan more outdoor depth up migration must include additional route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Big Almaty Peak Trail",
+		"Mynzhylky Plateau Trail",
+		"Tuyuksu Glacier Trail",
+		"Prohodnoye Gorge Trail",
+		"Left Talgar Gorge Trail",
+		"Talgar Peak Base Trail",
+		"Tamgaly-Tas Rocks",
+		"Bektau-Ata",
+		"Zhasybai Lake Shore Trail",
+		"Toraigyr Lake View Trail",
+		"Bozzhyra Valley",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan more outdoor depth up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan more outdoor depth up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan more outdoor depth up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan more outdoor depth up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-more-outdoor-depth-v1") {
+		t.Fatalf("kazakhstan more outdoor depth down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKazakhstanHiddenOutdoorRoutesSeedMigrationAddsMoreLocalChoices(t *testing.T) {
+	upSQL := readMigration(t, "104_seed_kazakhstan_hidden_outdoor_routes.up.sql")
+	downSQL := readMigration(t, "104_seed_kazakhstan_hidden_outdoor_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kazakhstan_hidden_outdoor_routes_resolved_places AS",
+		"kazakhstan-hidden-outdoor-routes-v1",
+		"'KZ'",
+		"'KZT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kazakhstan hidden outdoor routes up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"almaty",
+		"taldykorgan",
+		"ust-kamenogorsk",
+		"semey",
+		"karaganda",
+		"astana",
+		"zhezkazgan",
+		"kostanay",
+		"aktau",
+		"atyrau",
+		"aktobe",
+		"oral",
+		"shymkent",
+		"turkestan",
+		"taraz",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kazakhstan hidden outdoor routes up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Cosmostation Ridge Walk",
+		"Molodezhny Peak Approach Trail",
+		"Karlytau Glacier View Trail",
+		"Shymbulak Talgar Pass View Walk",
+		"Turgen Wild Apple Ridge Trail",
+		"Kaskelen Upper Meadows Trail",
+		"Upper Kora Cascades Trail",
+		"Zhetysu Dzungarian Fir Belt Trail",
+		"Ridder Stone Bowl Forest Trail",
+		"West Altai Cedar Loop",
+		"Sibins Hidden Lake Loop",
+		"Kiin-Kerish Mars Valley Walk",
+		"Shaitankol Ridge Walk",
+		"Kyzylarai Cedar Valley Walk",
+		"Buiratau Stone Ridge Walk",
+		"Ulytau Edige Peak Trail",
+		"Naurzum Pine Lake Birding Trail",
+		"Zhygylgan Rim Walk",
+		"Tuzbair Sunrise Cliffs Trail",
+		"Torysh Stone Field Walk",
+		"Inder Salt Dome View Walk",
+		"Kargaly Reservoir Ridge Walk",
+		"Chagan Riverbank Forest Walk",
+		"Tulkibas Juniper Foothill Trail",
+		"Kazygurt Mountain Pilgrim Trail",
+		"Karatau Arystanbab Steppe Ridge Walk",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kazakhstan hidden outdoor routes up migration must include local outdoor route %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Alma-Arasan Gorge",
+		"Gorelnik Gorge",
+		"Gorelnik Waterfalls",
+		"Furmanov Peak",
+		"Aksai Skete",
+		"Kara-Kungey Ridge",
+		"Kok-Zhailau Plateau",
+		"Butakovka Gorge",
+		"Kimasar Gorge",
+		"Kumbel Peak",
+		"Turgen Gorge",
+		"Kaskelen Gorge",
+		"Burkhan-Bulak Waterfall",
+		"Dzungarian Alatau National Park",
+		"Yazevoe Lake Trail",
+		"Ivanov Ridge Trail",
+		"Markakol Shore Trail",
+		"West Altai Nature Reserve Trails",
+		"Sibiny Lakes",
+		"Karkaraly National Park",
+		"Kent Mountains Trail",
+		"Aksoran Peak Trail",
+		"Buiratau National Park",
+		"Ulytau Akmeshit Ridge Trail",
+		"Ulytau Aulietau Summit Trail",
+		"Naurzum Nature Reserve",
+		"Zhygylgan Fault",
+		"Tuzbair Salt Flat",
+		"Torysh Valley",
+		"Inder Salt Lake Trail",
+		"Koksay Gorge Trail",
+		"Sairam Peak Base Trail",
+		"Kaskasu Gorge",
+		"Karatau Foothill Trail",
+		"Merke Gorge Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kazakhstan hidden outdoor routes up migration must avoid duplicating existing place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kazakhstan hidden outdoor routes up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kazakhstan hidden outdoor routes up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kazakhstan hidden outdoor routes up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kazakhstan-hidden-outdoor-routes-v1") {
+		t.Fatalf("kazakhstan hidden outdoor routes down migration must remove only tagged route-level places")
+	}
+}
+
+func TestTajikistanGapHikingRoutesSeedMigrationAddsRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "101_seed_tajikistan_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "101_seed_tajikistan_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_tajikistan_gap_hiking_resolved_places AS",
+		"tajikistan-gap-hiking-v1",
+		"'TJ'",
+		"'TJS'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("tajikistan gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"khujand",
+		"hisor",
+		"safed-dara",
+		"norak",
+		"guliston-qayraqqum",
+		"istaravshan",
+		"panjakent",
+		"sarazm",
+		"panjrud",
+		"seven-lakes",
+		"fann-mountains",
+		"kulikalon",
+		"alauddin",
+		"iskanderkul",
+		"garm-chashma",
+		"jelondy",
+		"yamchun",
+		"vrang",
+		"langar",
+		"bulunkul",
+		"karakul",
+		"bokhtar",
+		"vakhsh",
+		"vose-hulbuk",
+		"sari-khosor",
+		"dusti",
+		"shahrituz",
+		"nosiri-khusrav",
+		"qubodiyon",
+		"muminobod",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("tajikistan gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Mogol-Tau Foothill Trail",
+		"Hisor Range Foothill Trail",
+		"Safed-Dara Ridge Trail",
+		"Nurek Ridge View Trail",
+		"Qayraqqum North Shore Trail",
+		"Mug Teppa Ridge Walk",
+		"Panjakent Zeravshan Bend Walk",
+		"Zeravshan River Terrace Trail",
+		"Panjrud Valley Rudaki Trail",
+		"Haft Kul Lake-to-Lake Trail",
+		"Artuch Basin Trail",
+		"Chukurak Pass View Trail",
+		"Alauddin to Mutnye Lakes Trail",
+		"Snake Lake and Waterfall Trail",
+		"Garm Chashma Ridge View Trail",
+		"Jelondy Valley Walk",
+		"Yamchun to Bibi Fatima Trail",
+		"Vrang Wakhan Terrace Trail",
+		"Langar Ridge Petroglyph Trail",
+		"Bulunkul-Yashilkul Shore Trail",
+		"Karakul Shore Ridge Trail",
+		"Bokhtar Tugai Nature Walk",
+		"Vakhsh River Floodplain Trail",
+		"Khoja Mumin Salt Mountain Trail",
+		"Sari Khosor Upper Gorge Trail",
+		"Tigrovaya Balka Southern Tugai Trail",
+		"Kyzylsu Tugai Trail",
+		"Chiluchor Chashma Ridge Walk",
+		"Takhti Sangin Oxus Riverbank Trail",
+		"Childukhtaron Ridge Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("tajikistan gap hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Hisor Fortress",
+		"Safed-Dara Ski Resort",
+		"Nurek Reservoir",
+		"Kayrakkum Reservoir Tajik Sea",
+		"Mug Teppa Fortress",
+		"Ancient Panjakent",
+		"Proto-urban Site of Sarazm",
+		"Rudaki Mausoleum",
+		"Seven Lakes Haft Kul",
+		"Fann Mountains",
+		"Kulikalon Lakes",
+		"Alauddin Lakes",
+		"Iskanderkul Lake",
+		"Garm Chashma Hot Spring",
+		"Jelondy Hot Springs",
+		"Yamchun Fortress",
+		"Bibi Fatima Hot Springs",
+		"Vrang Buddhist Stupa",
+		"Langar Petroglyphs",
+		"Yashilkul and Bulunkul Lakes",
+		"Lake Karakul",
+		"Ajina-Teppa Buddhist Monastery",
+		"Hulbuk Fortress",
+		"Sari Khosor Waterfall",
+		"Tigrovaya Balka Nature Reserve",
+		"Khoja Mashhad Mausoleum and Madrasa",
+		"Chiluchor Chashma Springs",
+		"Takhti Sangin Oxus Temple",
+		"Childukhtaron Mountain",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("tajikistan gap hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("tajikistan gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("tajikistan gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("tajikistan gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "tajikistan-gap-hiking-v1") {
+		t.Fatalf("tajikistan gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestMongoliaGapHikingRoutesSeedMigrationAddsRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "103_seed_mongolia_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "103_seed_mongolia_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_mongolia_gap_hiking_resolved_places AS",
+		"mongolia-gap-hiking-v1",
+		"'MN'",
+		"'MNT'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("mongolia gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"tsonjin-boldog",
+		"zuunmod",
+		"khustai",
+		"kharkhorin",
+		"orkhon-valley",
+		"tuvkhun",
+		"tsenkher",
+		"amarbayasgalant",
+		"dalanzadgad",
+		"yolyn-am",
+		"khongoryn-els",
+		"bayanzag",
+		"tsagaan-suvarga",
+		"baga-gazriin-chuluu",
+		"sainshand",
+		"khamaryn-khiid",
+		"khermen-tsav",
+		"darkhan",
+		"erdenet",
+		"choibalsan",
+		"khalkh-gol",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("mongolia gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Tuul River Steppe Trail",
+		"Manzushir Forest Ridge Trail",
+		"Khustai Takhi Steppe Trail",
+		"Karakorum Riverbank Heritage Trail",
+		"Orkhon Waterfall Rim Trail",
+		"Tuvkhun Forest Ascent Trail",
+		"Tsenkher River Valley Walk",
+		"Amarbayasgalant Valley Ridge Trail",
+		"Dalan Bulag Desert Steppe Trail",
+		"Yolyn Am Ice Gorge Trail",
+		"Singing Dune Ridge Climb",
+		"Bayanzag Cliffs Rim Trail",
+		"Tsagaan Suvarga Escarpment Trail",
+		"Baga Gazriin Rock Labyrinth Trail",
+		"Khamar Steppe Viewpoint Trail",
+		"Shambhala Desert Energy Trail",
+		"Khermen Tsav Rim Trail",
+		"Darkhan Kharaa River Trail",
+		"Bayan-Undur Hill Trail",
+		"Kherlen Riverbank Steppe Trail",
+		"Khalkh Gol Riverbank Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("mongolia gap hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Chinggis Khaan Statue Complex",
+		"Manzushir Monastery",
+		"Khustai National Park",
+		"Orkhon Valley Cultural Landscape",
+		"Erdene Zuu Monastery",
+		"Ancient Karakorum Ruins",
+		"Karakorum Museum",
+		"Tuvkhun Monastery",
+		"Orkhon Waterfall Ulaan Tsutgalan",
+		"Tsenkher Hot Springs",
+		"Amarbayasgalant Monastery",
+		"Gobi Gurvansaikhan National Park",
+		"Yolyn Am Gorge",
+		"Khongoryn Els Sand Dunes",
+		"Bayanzag Flaming Cliffs",
+		"Tsagaan Suvarga White Stupa",
+		"Baga Gazriin Chuluu",
+		"Khamaryn Khiid Monastery",
+		"Khermen Tsav Canyon",
+		"Khalkh Gol Memorial Complex",
+		"Bogd Khan Tsetsee Gun Trail",
+		"Mongol Olle Terelj Route",
+		"Khorgo Volcano Crater Trail",
+		"Khuvsgul East Shore Trail",
+		"Potanin Glacier Base Trail",
+		"Onon-Balj Valley Trail",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("mongolia gap hiking up migration must avoid duplicating existing broad or route place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("mongolia gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("mongolia gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("mongolia gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "mongolia-gap-hiking-v1") {
+		t.Fatalf("mongolia gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestKyrgyzstanUzbekistanGapHikingRoutesSeedMigrationAddsRouteCoverage(t *testing.T) {
+	upSQL := readMigration(t, "099_seed_kyrgyzstan_uzbekistan_gap_hiking_routes.up.sql")
+	downSQL := readMigration(t, "099_seed_kyrgyzstan_uzbekistan_gap_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_kyrgyzstan_uzbekistan_gap_hiking_resolved_places AS",
+		"kyrgyzstan-uzbekistan-gap-hiking-v1",
+		"'KG'",
+		"'UZ'",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"ala-archa",
+		"chunkurchak",
+		"issyk-ata",
+		"jeti-oguz",
+		"barskoon",
+		"skazka-canyon",
+		"bokonbaevo",
+		"tamga",
+		"kaji-say",
+		"song-kul",
+		"tash-rabat",
+		"kel-suu",
+		"at-bashy",
+		"jalal-abad",
+		"arslanbob",
+		"sary-chelek",
+		"toktogul",
+		"suusamyr",
+		"bukhara",
+		"khiva",
+		"urgench",
+		"nukus",
+		"muynak",
+		"margilan",
+		"kokand",
+		"rishtan",
+		"andijan",
+		"namangan",
+		"charvak",
+		"termez",
+		"zaamin",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Ak-Sai Waterfall Trail",
+		"Chunkurchak Ridge Viewpoint Trail",
+		"Issyk-Ata Waterfall Gorge Trail",
+		"Telety Valley Day Hike",
+		"Barskoon Upper Cascade Trail",
+		"Skazka Canyon Ridge Loop",
+		"Shatyly Panorama Trail",
+		"Tamga Gorge Petroglyph Trail",
+		"Kaji-Say Shoreline Ridge Walk",
+		"Song-Kul Shore Pasture Loop",
+		"Chatyr-Kul Pass View Trail",
+		"Kel-Suu Canyon Shore Trail",
+		"At-Bashy Ridge View Trail",
+		"Kara-Alma Walnut Forest Trail",
+		"Small Arslanbob Waterfall Loop",
+		"Arkyt to Sary-Chelek Lake Trail",
+		"Toktogul Shore Ridge Trail",
+		"Too-Ashuu Ridge Walk",
+		"Tudakul Lake Shore Birding Trail",
+		"Toprak-Kala Desert Loop Trail",
+		"Sudochye Lake Ustyurt Birding Trail",
+		"Moynaq Aral Seabed Dune Walk",
+		"Yazyavan Sands Eco Trail",
+		"Kokand Foothill Steppe Trail",
+		"Sokh River Foothill Trail",
+		"Andijan Reservoir Shore Trail",
+		"Papsay Gorge Foothill Trail",
+		"Charvak Ridge View Trail",
+		"Surkhan River Tugai Trail",
+		"Supa Plateau Juniper Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must include route-level place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Ala Archa National Park",
+		"Chunkurchak Gorge",
+		"Issyk-Ata Gorge",
+		"Jeti-Oguz Rocks",
+		"Barskoon Waterfalls",
+		"Skazka Fairy Tale Canyon",
+		"Song-Kul Lake",
+		"Tash Rabat Caravanserai",
+		"Kel-Suu Lake",
+		"Arslanbob Walnut Forest",
+		"Arslanbob Waterfalls",
+		"Sary-Chelek Biosphere Reserve",
+		"Toktogul Reservoir",
+		"Suusamyr Valley",
+		"Ark of Bukhara",
+		"Itchan Kala",
+		"Ayaz-Kala Fortress",
+		"Moynaq Ship Cemetery",
+		"Charvak Reservoir Beaches",
+		"Zaamin National Park",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(upSQL, "price_currency = EXCLUDED.price_currency") {
+		t.Fatalf("kyrgyzstan uzbekistan gap hiking up migration must update places.price_currency on seed conflict")
+	}
+	if !strings.Contains(downSQL, "kyrgyzstan-uzbekistan-gap-hiking-v1") {
+		t.Fatalf("kyrgyzstan uzbekistan gap hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestAsiaMiddleEastHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "091_seed_asia_middle_east_hiking_routes.up.sql")
+	downSQL := readMigration(t, "091_seed_asia_middle_east_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_asia_middle_east_hiking_resolved_places AS",
+		"asia-me-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("asia middle east hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"khor-fakkan",
+		"fujairah",
+		"fayoum",
+		"siwa",
+		"pune",
+		"bengaluru",
+		"munnar",
+		"guangzhou",
+		"shenzhen",
+		"tokyo",
+		"seoul",
+		"krabi",
+		"chiang-mai",
+		"camiguin",
+		"baguio",
+		"selangor",
+		"kandy",
+		"rize",
+		"byurakan",
+		"khinalig",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("asia middle east hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Al Rabi Hiking Trail",
+		"Wadi Wurayah Trail",
+		"Gabal El Medawara Trail",
+		"Gebel Dakrur Trail",
+		"Sinhagad Fort Trek",
+		"Nandi Hills Sunrise Trail",
+		"Meesapulimala Day Trek",
+		"Baiyun Mountain Trail",
+		"Wutong Mountain Trail",
+		"Mount Takao Trail",
+		"Bukhansan Baegundae Trail",
+		"Dragon Crest Mountain Trail",
+		"Kew Mae Pan Nature Trail",
+		"Mount Hibok-Hibok Trail",
+		"Mount Ulap Trail",
+		"Broga Hill Trail",
+		"Knuckles Mini World's End Trail",
+		"Kackar Pokut Plateau Trail",
+		"Mount Aragats Kari Lake Trail",
+		"Khinalig to Galakhudat Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("asia middle east hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Khor Fakkan Beach",
+		"Wadi El Hitan",
+		"Eravikulam National Park",
+		"Doi Inthanon National Park",
+		"Camiguin White Island",
+		"Ayder Plateau",
+		"Khinalig Village",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("asia middle east hiking up migration must avoid duplicating existing broad place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("asia middle east hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("asia middle east hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "asia-me-hiking-v1") {
+		t.Fatalf("asia middle east hiking down migration must remove only tagged route-level places")
+	}
+}
+
+func TestCentralAsiaMongoliaHikingRoutesSeedMigrationAddsRouteLevelCoverage(t *testing.T) {
+	upSQL := readMigration(t, "089_seed_central_asia_mongolia_hiking_routes.up.sql")
+	downSQL := readMigration(t, "089_seed_central_asia_mongolia_hiking_routes.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO places",
+		"INSERT INTO place_translations",
+		"INSERT INTO place_media",
+		"INSERT INTO place_city_links",
+		"CREATE TEMP TABLE seed_central_asia_mongolia_hiking_resolved_places AS",
+		"central-asia-mongolia-hiking-v1",
+		"'hiking'",
+		"'trekking'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("central asia mongolia hiking up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"kochkor",
+		"naryn",
+		"talas",
+		"tokmok",
+		"cholpon-ata",
+		"uzgen",
+		"samarkand",
+		"navoi",
+		"nurata",
+		"fergana",
+		"shahrisabz",
+		"dushanbe",
+		"murghab",
+		"khorog",
+		"baljuvon",
+		"ulaanbaatar",
+		"gorkhi-terelj",
+		"khorgo-terkhiin-tsagaan-nuur",
+		"khatgal",
+		"ulgii",
+		"binder",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("central asia mongolia hiking up migration must seed route linked to city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kol-Ukok Lake Trek",
+		"Eki-Naryn Valley Trail",
+		"Besh-Tash Lake Trail",
+		"Konorchek Canyon Trail",
+		"Grigorievka Gorge Trail",
+		"Kara-Shoro Nature Park Trail",
+		"Aman-Kutan Gorge Trail",
+		"Sarmishsay Gorge Petroglyph Trail",
+		"Aydarkul Desert Shore Trail",
+		"Fergana Valley Foothill Trail",
+		"Gissar Range Foothill Trail",
+		"Varzob Waterfall Trail",
+		"Pshart Valley Trail",
+		"Jizeu Valley Trail",
+		"Baljuvon Valley Trail",
+		"Bogd Khan Tsetsee Gun Trail",
+		"Mongol Olle Terelj Route",
+		"Khorgo Volcano Crater Trail",
+		"Khuvsgul East Shore Trail",
+		"Potanin Glacier Base Trail",
+		"Onon-Balj Valley Trail",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("central asia mongolia hiking up migration must include route-level hiking place %q", title)
+		}
+	}
+
+	for _, duplicateTitle := range []string{
+		"Ala Archa National Park",
+		"Sulaiman-Too Sacred Mountain",
+		"Fann Mountains",
+		"Khorgo-Terkhiin Tsagaan Nuur National Park",
+	} {
+		if strings.Contains(upSQL, duplicateTitle) {
+			t.Fatalf("central asia mongolia hiking up migration must avoid duplicating broad seed place %q", duplicateTitle)
+		}
+	}
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("central asia mongolia hiking up migration must not write obsolete place_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "price_amount = EXCLUDED.price_amount") {
+		t.Fatalf("central asia mongolia hiking up migration must update places.price_amount on seed conflict")
+	}
+	if !strings.Contains(downSQL, "central-asia-mongolia-hiking-v1") {
+		t.Fatalf("central asia mongolia hiking down migration must remove only tagged route-level places")
 	}
 }
 

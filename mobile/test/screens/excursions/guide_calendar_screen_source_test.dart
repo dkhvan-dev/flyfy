@@ -122,4 +122,19 @@ void main() {
     );
     expect(source, isNot(contains('selected ? const Color(0xFF201407)')));
   });
+
+  test('guide calendar day tabs use rounded segmented radius', () async {
+    final source = await File(
+      'lib/screens/excursions/widgets/guide_calendar_day_strip.dart',
+    ).readAsString();
+
+    expect(source, contains('const double _guideCalendarDayCellRadius = 18;'));
+    expect(
+      RegExp(
+        r'BorderRadius\.circular\(\s*_guideCalendarDayCellRadius\s*,?\s*\)',
+      ).allMatches(source).length,
+      greaterThanOrEqualTo(2),
+    );
+    expect(source, isNot(contains('BorderRadius.circular(8)')));
+  });
 }

@@ -63,6 +63,10 @@ type UserNotificationGateway interface {
 	SendUserNotification(ctx context.Context, input UserNotificationInput) error
 }
 
+type FileDownloadClient interface {
+	CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (model.FileDownloadURL, error)
+}
+
 type UserAdminClient interface {
 	ListAdminUsers(ctx context.Context, filter model.AdminUserListFilter) (model.AdminUserListPage, error)
 	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)
@@ -187,6 +191,31 @@ type ChatClient interface {
 	GetMessage(ctx context.Context, id uuid.UUID) (*model.ChatMessageModerationItem, error)
 	ApproveMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
 	HideMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
+}
+
+type SupportClient interface {
+	ListTickets(ctx context.Context, filter model.SupportTicketFilter) ([]model.SupportTicket, error)
+	GetTicket(ctx context.Context, ticketID string) (model.SupportTicketDetail, error)
+	AssignTicket(ctx context.Context, input model.SupportTicketAssignInput) (model.SupportTicket, error)
+	ReplyTicket(ctx context.Context, input model.SupportTicketReplyInput) (model.SupportTicket, error)
+	AddTicketNote(ctx context.Context, input model.SupportTicketNoteInput) error
+	ResolveTicket(ctx context.Context, input model.SupportTicketResolveInput) (model.SupportTicket, error)
+	ReopenTicket(ctx context.Context, input model.SupportTicketReopenInput) (model.SupportTicket, error)
+	ListSupportAgents(ctx context.Context, filter model.SupportAgentFilter) ([]model.SupportAgent, error)
+	UpsertSupportAgent(ctx context.Context, input model.SupportAgentUpsertInput) (model.SupportAgent, error)
+	GetSupportUserSegment(ctx context.Context, userID string) (model.SupportUserSegment, error)
+	UpsertSupportUserSegment(ctx context.Context, input model.SupportUserSegmentUpsertInput) (model.SupportUserSegment, error)
+	ListSupportSavedReplies(ctx context.Context, filter model.SupportSavedReplyFilter) ([]model.SupportSavedReply, error)
+	UpsertSupportSavedReply(ctx context.Context, input model.SupportSavedReplyUpsertInput) (model.SupportSavedReply, error)
+	ListHelpCategories(ctx context.Context, filter model.HelpCategoryFilter) ([]model.HelpCategory, error)
+	UpsertHelpCategory(ctx context.Context, input model.HelpCategoryUpsertInput) (model.HelpCategory, error)
+	ListHelpArticles(ctx context.Context, filter model.HelpArticleFilter) ([]model.HelpArticle, error)
+	GetHelpArticle(ctx context.Context, articleID string) (model.HelpArticleDetail, error)
+	UpsertHelpArticle(ctx context.Context, input model.HelpArticleUpsertInput) (model.HelpArticle, error)
+	SubmitHelpArticleForReview(ctx context.Context, articleID string, input model.HelpArticleActionInput) (model.HelpArticle, error)
+	PublishHelpArticle(ctx context.Context, articleID string, input model.HelpArticleActionInput) (model.HelpArticle, error)
+	ArchiveHelpArticle(ctx context.Context, articleID string, input model.HelpArticleActionInput) (model.HelpArticle, error)
+	GetHelpAnalytics(ctx context.Context, limit int) (model.HelpAnalyticsSummary, error)
 }
 
 type PostReportClient interface {
@@ -328,6 +357,7 @@ type PlaceAdminClient interface {
 	CreatePlace(ctx context.Context, input model.PlaceInput) (*model.AdminPlace, error)
 	UpdatePlace(ctx context.Context, id uuid.UUID, input model.PlaceInput) (*model.AdminPlace, error)
 	ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.PlaceMediaInput) error
+	StartMediaBackfill(ctx context.Context, countryCode string) (model.PlaceMediaBackfillJob, error)
 }
 
 type FileUploadClient interface {

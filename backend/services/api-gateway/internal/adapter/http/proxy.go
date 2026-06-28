@@ -38,6 +38,7 @@ type ProxyHandler struct {
 	paymentProxy      *httputil.ReverseProxy
 	stickerProxy      *httputil.ReverseProxy
 	notificationProxy *httputil.ReverseProxy
+	supportProxy      *httputil.ReverseProxy
 	adminPanelProxy   *httputil.ReverseProxy
 	trustClient       *trustserviceadapter.Client
 	userIDResolver    userIDResolver
@@ -129,6 +130,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	supportProxy, err := newSingleHostProxy("support", cfg.Downstreams.SupportService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
 	adminPanelProxy, err := newSingleHostProxy("admin-panel", cfg.Downstreams.AdminPanelService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
@@ -165,6 +171,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		paymentProxy:      paymentProxy,
 		stickerProxy:      stickerProxy,
 		notificationProxy: notificationProxy,
+		supportProxy:      supportProxy,
 		adminPanelProxy:   adminPanelProxy,
 		trustClient:       trustClient,
 		userIDResolver:    userIDResolver,
@@ -280,6 +287,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.stickerProxy
 	case "notification":
 		return h.notificationProxy
+	case "support":
+		return h.supportProxy
 	case "admin-panel":
 		return h.adminPanelProxy
 	default:

@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/currency/data/currency_api.dart';
 import '../../features/currency/models/currency_conversion_result.dart';
+import '../../features/help_center/data/help_center_api.dart';
+import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 const _backgroundColor = Color(0xFF1A1008);
@@ -228,6 +230,24 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
     ];
   }
 
+  String get _currentSupportLocale =>
+      Localizations.localeOf(context).languageCode;
+
+  Map<String, String> get _currencySupportContext {
+    final amount = _amountController.text.trim();
+    final convertedAmount = _result?.convertedAmount.trim();
+    return {
+      'screen': 'currency_converter',
+      'locale': _currentSupportLocale,
+      'from_currency': _fromCurrency,
+      'to_currency': _toCurrency,
+      'currency_pair': '$_fromCurrency-$_toCurrency',
+      if (amount.isNotEmpty) 'amount': _amountController.text.trim(),
+      if (convertedAmount != null && convertedAmount.isNotEmpty)
+        'converted_amount': convertedAmount,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -300,6 +320,12 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                   ),
                   const SizedBox(height: 18),
                   _NoticePanel(l10n: l10n),
+                  const SizedBox(height: 18),
+                  ContextualHelpSection(
+                    surface: HelpCenterSurface.currencyConverter,
+                    tags: const ['currency', 'payments'],
+                    supportContext: _currencySupportContext,
+                  ),
                 ],
               ),
             ),

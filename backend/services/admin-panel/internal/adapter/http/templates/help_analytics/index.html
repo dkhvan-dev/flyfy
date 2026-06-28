@@ -1,0 +1,108 @@
+{{define "help_analytics/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "help.analyticsEyebrow"}}</p>
+      <h1>{{t .Locale "help.analyticsTitle"}}</h1>
+      <p class="muted">{{t .Locale "help.analyticsSubtitle"}}</p>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="/admin/support/tickets">{{t .Locale "nav.support"}}</a>
+      <a class="button" href="/admin/help/articles">{{t .Locale "nav.helpContent"}}</a>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    {{range .Data.Metrics}}
+      <article class="metric card">
+        <span class="muted">{{t $.Locale .LabelKey}}</span>
+        <strong>{{.Value}}</strong>
+      </article>
+    {{end}}
+  </div>
+
+  <div class="navigation-grid">
+    <section class="card">
+      <h2>{{t .Locale "help.analytics.noResultQueries"}}</h2>
+      {{if .Data.TopNoResultQueries}}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{t .Locale "help.analytics.query"}}</th>
+                <th>{{t .Locale "help.analytics.count"}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Data.TopNoResultQueries}}
+                <tr>
+                  <td>{{.Query}}</td>
+                  <td>{{.Count}}</td>
+                </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      {{else}}
+        <p class="muted">{{t .Locale "help.analytics.emptyNoResultQueries"}}</p>
+      {{end}}
+    </section>
+
+    <section class="card">
+      <h2>{{t .Locale "help.analytics.repeatedQueries"}}</h2>
+      {{if .Data.RepeatedQueries}}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{t .Locale "help.analytics.query"}}</th>
+                <th>{{t .Locale "help.analytics.count"}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Data.RepeatedQueries}}
+                <tr>
+                  <td>{{.Query}}</td>
+                  <td>{{.Count}}</td>
+                </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      {{else}}
+        <p class="muted">{{t .Locale "help.analytics.emptyRepeatedQueries"}}</p>
+      {{end}}
+    </section>
+
+    <section class="card">
+      <h2>{{t .Locale "help.analytics.notHelpfulArticles"}}</h2>
+      {{if .Data.TopNotHelpfulArticles}}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{t .Locale "help.article"}}</th>
+                <th>{{t .Locale "help.analytics.count"}}</th>
+                <th>{{t .Locale "help.analytics.escalations"}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Data.TopNotHelpfulArticles}}
+                <tr>
+                  <td><code>{{.ArticleID}}</code></td>
+                  <td>{{.Count}}</td>
+                  <td>{{.Escalations}}</td>
+                </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      {{else}}
+        <p class="muted">{{t .Locale "help.analytics.emptyNotHelpfulArticles"}}</p>
+      {{end}}
+    </section>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

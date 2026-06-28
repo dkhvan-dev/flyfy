@@ -6,6 +6,8 @@ import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import 'guide_schedule_slot_card.dart';
 
+const double _guideCalendarDayCellRadius = 18;
+
 class GuideCalendarDayStrip extends StatelessWidget {
   const GuideCalendarDayStrip({
     super.key,
@@ -51,9 +53,14 @@ class GuideCalendarDayStrip extends StatelessWidget {
               ),
               child: Material(
                 color: selected ? AppColors.accent : const Color(0xFF2A2118),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(
+                  _guideCalendarDayCellRadius,
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(
+                    _guideCalendarDayCellRadius,
+                  ),
                   onTap: () => onDateSelected(day),
                   child: ExcludeSemantics(
                     child: Padding(

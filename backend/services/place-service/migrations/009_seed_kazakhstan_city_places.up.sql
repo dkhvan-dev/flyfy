@@ -10,7 +10,7 @@
 -- - this migration complements nature-heavy national seeds with practical city anchors;
 -- - every place belongs to a reference-service/data/cities.json city_id;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 WITH seed_base (
     id,
@@ -85,8 +85,36 @@ SELECT
     'KZ',
     seed_base.city_id,
     seed_base.category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE seed_base.id
+        -- Almaty
+        WHEN '2eeacb52-12ef-4499-b229-05e52a199d22'::uuid THEN 10000::numeric -- Kok Tobe cable car, round-trip adult 2026
+        WHEN '396f6629-a240-4845-8a5d-2fa33fc42b1b'::uuid THEN 7000::numeric  -- Fantasy World, weekday adult, all rides
+        WHEN '8a7b975e-9a4e-434e-a7e2-d721c41bda93'::uuid THEN 1450::numeric  -- Almaty Zoo adult (2026)
+        -- Astana
+        WHEN 'abede8f2-87db-4f12-bc3e-64e815a1f97e'::uuid THEN 0::numeric     -- Nur Alem: closed Dec 2024, no admission in 2026
+        WHEN '12e77265-9e9d-4d11-9c6d-acb8aac48f4b'::uuid THEN 2000::numeric  -- National Museum of Kazakhstan, adult
+        WHEN 'adece1ed-0d63-48e5-b54e-d49cad52a391'::uuid THEN 1000::numeric  -- Astana Opera, show ticket from
+        -- Shymkent
+        WHEN '92f6c2cc-1b44-4900-a764-c1daab90024d'::uuid THEN 800::numeric   -- Shymkent Zoo adult
+        WHEN 'd3951503-5e02-41ec-b886-dfc7cce1f925'::uuid THEN 0::numeric     -- Dendropark, free entry
+        -- Turkestan
+        WHEN 'b8847588-a922-42cf-94a2-ffcbf043922a'::uuid THEN 0::numeric     -- Karavansaray: public area free (flying theatre 6500 separate)
+        WHEN '788b2836-0bbb-40bc-8a14-9548f47979ab'::uuid THEN 1000::numeric  -- Azret Sultan reserve, local base
+        WHEN '877a0a46-da12-4f4c-be9c-a12a2032f93a'::uuid THEN 200::numeric   -- Otrar settlement, adult
+        -- Karaganda
+        WHEN '1d3163c5-fa93-484f-b917-f721a8f1ae27'::uuid THEN 1000::numeric  -- KarLag Museum adult
+        -- Kyzylorda
+        WHEN '1ab18d1c-be18-4cfc-a5df-4494a4c12aed'::uuid THEN 500::numeric   -- Korkyt Ata memorial complex
+        -- Regional museums (approximate floors, ~500 KZT typical)
+        WHEN 'b42b4c2b-cd7f-47c1-b2ba-da8c1798cf60'::uuid THEN 500::numeric   -- East KZ ethnographic museum-reserve
+        WHEN '90742f2d-6b54-4676-930c-97bc59b60a64'::uuid THEN 500::numeric   -- Abai museum-reserve, Semey
+        WHEN '0ce9cd13-dfc9-481b-821f-78ccaafb48bc'::uuid THEN 500::numeric   -- Kostanay regional museum
+        WHEN 'eb123ce9-2da4-4b75-a0cd-d419699c166f'::uuid THEN 500::numeric   -- West Kazakhstan museum, Oral
+        WHEN '3050b34f-5ecf-4ed3-8438-d6cc8deee7ff'::uuid THEN 500::numeric   -- Akmola regional museum, Kokshetau
+        -- Free entry: parks, embankments, markets, mosques, memorials, open areas
+        ELSE 0::numeric
+    END,
+    'KZT',
     seed_base.duration_value,
     seed_base.duration_unit,
     seed_base.rating,

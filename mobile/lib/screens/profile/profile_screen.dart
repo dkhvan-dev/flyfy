@@ -2472,6 +2472,8 @@ class _OwnProfileSections extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const _OwnProfileQuickActions(),
+        SizedBox(height: profileScaled(context, 28, min: 22, max: 32)),
         ProfileSectionHeading(title: l10n.profileJourneyTitle),
         SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
         if (UserRouteFeatureFlags.customRoutesEnabled)
@@ -2516,6 +2518,135 @@ class _OwnProfileSections extends StatelessWidget {
           popularStoriesFuture: popularStoriesFuture,
         ),
       ],
+    );
+  }
+}
+
+class _OwnProfileQuickActions extends StatelessWidget {
+  const _OwnProfileQuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final actions = [
+      _ProfileQuickActionTile(
+        icon: Icons.event_note_rounded,
+        title: l10n.myActivitiesTitle,
+        onTap: () => context.push('/me/activities'),
+      ),
+      _ProfileQuickActionTile(
+        icon: Icons.tour_rounded,
+        title: l10n.myExcursionsTitle,
+        onTap: () => context.push('/me/excursions'),
+      ),
+      _ProfileQuickActionTile(
+        icon: Icons.checklist_rtl_rounded,
+        title: l10n.travelChecklistRecentTitle,
+        onTap: () => context.push('/me/checklists'),
+      ),
+      _ProfileQuickActionTile(
+        icon: Icons.auto_stories_rounded,
+        title: l10n.myStoriesTitle,
+        onTap: () => context.push('/me/posts'),
+      ),
+      _ProfileQuickActionTile(
+        icon: Icons.auto_awesome_motion_rounded,
+        title: l10n.myStoryArchiveTitle,
+        onTap: () => context.push('/me/stories'),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: l10n.profileMyContentTitle),
+        SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+        Column(
+          children: [
+            for (var index = 0; index < actions.length; index++) ...[
+              actions[index],
+              if (index != actions.length - 1)
+                SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileQuickActionTile extends StatelessWidget {
+  const _ProfileQuickActionTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 22, min: 18, max: 22),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: profileScaled(context, 74, min: 66, max: 80),
+          ),
+          child: Ink(
+            padding: EdgeInsets.all(
+              profileScaled(context, 14, min: 12, max: 16),
+            ),
+            decoration: profileCardDecoration(
+              context,
+              radius: profileScaled(context, 22, min: 18, max: 22),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: profileScaled(context, 42, min: 38, max: 44),
+                  height: profileScaled(context, 42, min: 38, max: 44),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: AppColors.accent,
+                    size: profileScaled(context, 21, min: 19, max: 22),
+                  ),
+                ),
+                SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: profileScaled(context, 15, min: 14, max: 16),
+                      fontWeight: FontWeight.w800,
+                      height: 1.12,
+                    ),
+                  ),
+                ),
+                SizedBox(width: profileScaled(context, 8, min: 6, max: 10)),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: profileTextSoft,
+                  size: profileScaled(context, 22, min: 20, max: 24),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

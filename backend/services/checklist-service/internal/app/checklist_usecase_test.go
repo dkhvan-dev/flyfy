@@ -38,7 +38,7 @@ func TestGenerateTripChecklistAddsSeasonalActivityAndRestrictionItems(t *testing
 	assertHasItem(t, result.Items, "documents.child_documents", model.ChecklistPriorityCritical)
 	assertHasItem(t, result.Items, "weather.bali_january_rain_kit", model.ChecklistPriorityImportant)
 	assertHasItem(t, result.Items, "activity.hiking_daypack", model.ChecklistPriorityEssential)
-	assertHasItem(t, result.Items, "baggage.power_bank_carry_on", model.ChecklistPriorityEssential)
+	assertHasItem(t, result.Items, "baggage.power_bank_carry_on", model.ChecklistPriorityRecommended)
 
 	if result.SeasonalProfile == nil {
 		t.Fatal("expected seasonal profile")
@@ -58,6 +58,44 @@ func TestGenerateTripChecklistAddsSeasonalActivityAndRestrictionItems(t *testing
 	if result.TrustNotice.Code != "official_source_required" {
 		t.Fatalf("expected official source trust notice, got %q", result.TrustNotice.Code)
 	}
+}
+
+func TestGenerateTripChecklistUsesCitizenshipForInternationalDocuments(t *testing.T) {
+	repo := NewMemoryChecklistRepository(seedTestCatalog())
+	uc := NewChecklistUseCase(repo)
+	startAt := time.Date(2026, time.May, 15, 10, 0, 0, 0, time.UTC)
+
+	domestic, err := uc.GenerateTripChecklist(GenerateTripChecklistInput{
+		UserID:      "user-1",
+		TripID:      "trip-almaty",
+		Destination: model.TripDestination{CountryCode: "KZ", CityName: "Almaty"},
+		StartAt:     startAt,
+		EndAt:       startAt.AddDate(0, 0, 4),
+		TravelerProfile: model.TravelerProfile{
+			CitizenshipCountryCode: "KZ",
+			PreferredLanguage:      "ru",
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateTripChecklist domestic returned error: %v", err)
+	}
+	assertNoItem(t, domestic.Items, "documents.travel_insurance")
+
+	international, err := uc.GenerateTripChecklist(GenerateTripChecklistInput{
+		UserID:      "user-1",
+		TripID:      "trip-istanbul",
+		Destination: model.TripDestination{CountryCode: "TR", CityName: "Istanbul"},
+		StartAt:     startAt,
+		EndAt:       startAt.AddDate(0, 0, 4),
+		TravelerProfile: model.TravelerProfile{
+			CitizenshipCountryCode: "KZ",
+			PreferredLanguage:      "ru",
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateTripChecklist international returned error: %v", err)
+	}
+	assertHasItem(t, international.Items, "documents.travel_insurance", model.ChecklistPriorityEssential)
 }
 
 func TestCalculateReadinessTreatsCriticalItemsAsHardGates(t *testing.T) {
@@ -482,6 +520,15 @@ func assertHasItem(t *testing.T, items []model.ChecklistItem, id string, priorit
 	t.Fatalf("expected item %q in checklist; got %#v", id, items)
 }
 
+func assertNoItem(t *testing.T, items []model.ChecklistItem, id string) {
+	t.Helper()
+	for _, item := range items {
+		if item.ID == id {
+			t.Fatalf("did not expect item %q in checklist; got %#v", id, items)
+		}
+	}
+}
+
 func createTestTripChecklist(
 	t *testing.T,
 	ctx context.Context,
@@ -537,6 +584,15 @@ func seedTestCatalog() model.CatalogSeed {
 				AppliesTo:                model.RuleCondition{TravelerHasChildren: true},
 			},
 			{
+				ID:         "documents.travel_insurance",
+				Category:   model.ChecklistCategoryDocuments,
+				Priority:   model.ChecklistPriorityEssential,
+				Title:      model.LocalizedText{EN: "Travel insurance", RU: "Туристическая страховка", KK: "Саяхат сақтандыруы"},
+				Reason:     model.LocalizedText{EN: "Keep policy contacts offline.", RU: "Сохраните контакты полиса офлайн.", KK: "Полис байланыстарын офлайн сақтаңыз."},
+				TrustLevel: model.TrustLevelGeneralAdvisory,
+				AppliesTo:  model.RuleCondition{InternationalTrip: true},
+			},
+			{
 				ID:         "weather.bali_january_rain_kit",
 				Category:   model.ChecklistCategoryWeather,
 				Priority:   model.ChecklistPriorityImportant,
@@ -557,7 +613,7 @@ func seedTestCatalog() model.CatalogSeed {
 			{
 				ID:         "baggage.power_bank_carry_on",
 				Category:   model.ChecklistCategoryBaggage,
-				Priority:   model.ChecklistPriorityEssential,
+				Priority:   model.ChecklistPriorityRecommended,
 				Title:      model.LocalizedText{EN: "Power bank in carry-on", RU: "Power bank в ручную кладь", KK: "Power bank қол жүгінде"},
 				Reason:     model.LocalizedText{EN: "Spare lithium batteries and power banks belong in carry-on baggage.", RU: "Запасные литиевые батареи и power bank перевозятся в ручной клади.", KK: "Қосымша литий батареялары мен power bank қол жүгінде болуы керек."},
 				TrustLevel: model.TrustLevelVerifiedCurated,

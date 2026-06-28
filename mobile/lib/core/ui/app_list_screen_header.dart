@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../features/notifications/presentation/notification_unread_badge.dart';
 import 'app_colors.dart';
 
 class AppListScreenHeader extends StatelessWidget {
@@ -81,14 +82,16 @@ class AppListScreenHeader extends StatelessWidget {
               ),
             ),
           ),
-          _AppListHeaderButton(
-            icon: Icons.notifications_outlined,
-            color: AppColors.accent,
-            background: const Color(0xFF3A2308),
-            size: buttonSize,
-            iconSize: notificationIconSize,
-            tooltip: notificationsTooltip,
-            onTap: onNotificationsTap,
+          NotificationUnreadBadge(
+            child: _AppListHeaderButton(
+              icon: Icons.notifications_outlined,
+              color: AppColors.accent,
+              background: const Color(0xFF3A2308),
+              size: buttonSize,
+              iconSize: notificationIconSize,
+              tooltip: notificationsTooltip,
+              onTap: onNotificationsTap,
+            ),
           ),
         ],
       ),

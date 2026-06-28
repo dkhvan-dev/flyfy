@@ -14,30 +14,12 @@ enum AppDrawerActiveItem {
   myStoryArchive,
 }
 
-const Map<String, Map<String, String>> _localizedCountryNames = {
-  'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
-};
-
 const Map<String, Map<String, String>> _localizedCityNames = {
   'Almaty': {'en': 'Almaty', 'ru': 'Алматы', 'kk': 'Алматы'},
-  'Astana': {'en': 'Astana', 'ru': 'Астана', 'kk': 'Астана'},
 };
 
-String resolveDrawerLocation(UserProfileVm? profile, Locale locale) {
+String resolveDrawerLocation(UserProfileVm? _, Locale locale) {
   final languageCode = locale.languageCode;
-  final timezone = (profile?.timezone ?? '').trim();
-  final city = _resolveLocalizedCity(timezone, languageCode);
-  final country = _resolveLocalizedCountry(
-    (profile?.countryCode ?? '').trim(),
-    languageCode,
-  );
-
-  if (country.isNotEmpty && city.isNotEmpty) {
-    return '$country, $city';
-  }
-  if (city.isNotEmpty) return city;
-  if (country.isNotEmpty) return country;
-
   return _localizedCityNames['Almaty']?[languageCode] ?? 'Almaty';
 }
 
@@ -577,26 +559,6 @@ class _DrawerPinnedFooter extends StatelessWidget {
       ),
     );
   }
-}
-
-String _resolveLocalizedCountry(String countryCode, String languageCode) {
-  if (countryCode.isEmpty) return '';
-
-  final normalizedCode = countryCode.toUpperCase();
-  return _localizedCountryNames[normalizedCode]?[languageCode] ??
-      normalizedCode;
-}
-
-String _resolveLocalizedCity(String timezone, String languageCode) {
-  if (timezone.isEmpty) return '';
-
-  final timezoneParts = timezone.split('/');
-  if (timezoneParts.length > 1 && timezoneParts.last.trim().isNotEmpty) {
-    final cityKey = timezoneParts.last.trim().replaceAll('_', ' ');
-    return _localizedCityNames[cityKey]?[languageCode] ?? cityKey;
-  }
-
-  return '';
 }
 
 class _AppDrawerLayout {

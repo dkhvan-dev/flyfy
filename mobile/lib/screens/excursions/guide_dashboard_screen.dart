@@ -11,6 +11,7 @@ import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
@@ -42,16 +43,12 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  final Map<GuideOfferDashboardTab, int> _offerPages = {
-    for (final tab in GuideOfferDashboardTab.values) tab: 1,
-  };
-  final Map<GuideBookingDashboardTab, int> _bookingPages = {
-    for (final tab in GuideBookingDashboardTab.values) tab: 1,
-  };
 
   GuideDashboardSection _activeSection = GuideDashboardSection.offers;
-  GuideOfferDashboardTab _activeOfferTab = GuideOfferDashboardTab.active;
-  GuideBookingDashboardTab _activeBookingTab = GuideBookingDashboardTab.active;
+  GuideOfferDashboardTab? _offerStatusFilter;
+  GuideBookingDashboardTab? _bookingStatusFilter;
+  int _offersPage = 1;
+  int _bookingsPage = 1;
   String _searchQuery = '';
 
   @override
@@ -74,8 +71,15 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
   int get _activePage {
     return switch (_activeSection) {
-      GuideDashboardSection.offers => _offerPages[_activeOfferTab] ?? 1,
-      GuideDashboardSection.bookings => _bookingPages[_activeBookingTab] ?? 1,
+      GuideDashboardSection.offers => _offersPage,
+      GuideDashboardSection.bookings => _bookingsPage,
+    };
+  }
+
+  int get _activeFilterCount {
+    return switch (_activeSection) {
+      GuideDashboardSection.offers => _offerStatusFilter == null ? 0 : 1,
+      GuideDashboardSection.bookings => _bookingStatusFilter == null ? 0 : 1,
     };
   }
 
@@ -84,9 +88,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     setState(() {
       switch (_activeSection) {
         case GuideDashboardSection.offers:
-          _offerPages[_activeOfferTab] = page;
+          _offersPage = page;
         case GuideDashboardSection.bookings:
-          _bookingPages[_activeBookingTab] = page;
+          _bookingsPage = page;
       }
     });
     if (_scrollController.hasClients) {
@@ -105,22 +109,6 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     });
   }
 
-  void _setActiveOfferTab(GuideOfferDashboardTab tab) {
-    if (_activeOfferTab == tab) return;
-    setState(() {
-      _activeOfferTab = tab;
-      _offerPages[tab] = 1;
-    });
-  }
-
-  void _setActiveBookingTab(GuideBookingDashboardTab tab) {
-    if (_activeBookingTab == tab) return;
-    setState(() {
-      _activeBookingTab = tab;
-      _bookingPages[tab] = 1;
-    });
-  }
-
   void _handleSearchChanged() {
     final nextQuery = _searchController.text.trim();
     if (_searchQuery == nextQuery) return;
@@ -131,12 +119,49 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
   }
 
   void _resetPages() {
-    for (final tab in GuideOfferDashboardTab.values) {
-      _offerPages[tab] = 1;
+    _offersPage = 1;
+    _bookingsPage = 1;
+  }
+
+  Future<void> _openFilters() async {
+    final provider = context.read<ExcursionProvider>();
+    final now = DateTime.now().toUtc();
+    final filteredExcursions = _filterOffersBySearch(
+      provider.myGuideExcursions,
+      _searchQuery,
+    );
+    final filteredBookings = _filterBookingsBySearch(
+      provider.myGuideExcursionBookings,
+      _searchQuery,
+    );
+    final offerCounts = _guideOfferStatusCounts(filteredExcursions);
+    final bookingCounts = _guideBookingStatusCounts(filteredBookings, now);
+
+    final result = await showModalBottomSheet<_GuideDashboardFilters>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.58),
+      builder: (_) => _GuideDashboardStatusFiltersSheet(
+        activeSection: _activeSection,
+        initialOfferStatus: _offerStatusFilter,
+        initialBookingStatus: _bookingStatusFilter,
+        offerCounts: offerCounts,
+        bookingCounts: bookingCounts,
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
     }
-    for (final tab in GuideBookingDashboardTab.values) {
-      _bookingPages[tab] = 1;
-    }
+
+    setState(() {
+      _offerStatusFilter = result.offerStatusFilter;
+      _bookingStatusFilter = result.bookingStatusFilter;
+      _resetPages();
+    });
   }
 
   void _goBack() {
@@ -221,8 +246,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     if (cancelled) {
       setState(() {
         _activeSection = GuideDashboardSection.bookings;
-        _activeBookingTab = GuideBookingDashboardTab.cancelled;
-        _bookingPages[GuideBookingDashboardTab.cancelled] = 1;
+        _bookingStatusFilter = GuideBookingDashboardTab.cancelled;
+        _bookingsPage = 1;
       });
       ScaffoldMessenger.of(
         context,
@@ -250,8 +275,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     if (archived) {
       setState(() {
         _activeSection = GuideDashboardSection.offers;
-        _activeOfferTab = GuideOfferDashboardTab.archive;
-        _offerPages[GuideOfferDashboardTab.archive] = 1;
+        _offerStatusFilter = GuideOfferDashboardTab.archive;
+        _offersPage = 1;
       });
       return;
     }
@@ -362,8 +387,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     if (deleted) {
       setState(() {
         _activeSection = GuideDashboardSection.offers;
-        _activeOfferTab = GuideOfferDashboardTab.draft;
-        _offerPages[GuideOfferDashboardTab.draft] = 1;
+        _offerStatusFilter = GuideOfferDashboardTab.draft;
+        _offersPage = 1;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.guideDashboardDeleteDraftSuccess)),
@@ -394,11 +419,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       );
       setState(() {
         _activeSection = GuideDashboardSection.offers;
-        _activeOfferTab = _offerTabForStatus(
+        _offerStatusFilter = _offerTabForStatus(
           updatedOffer,
           fallback: GuideOfferDashboardTab.active,
         );
-        _offerPages[_activeOfferTab] = 1;
+        _offersPage = 1;
       });
       return;
     }
@@ -424,11 +449,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       );
       setState(() {
         _activeSection = GuideDashboardSection.offers;
-        _activeOfferTab = _offerTabForStatus(
+        _offerStatusFilter = _offerTabForStatus(
           updatedOffer,
           fallback: GuideOfferDashboardTab.review,
         );
-        _offerPages[_activeOfferTab] = 1;
+        _offersPage = 1;
       });
       return;
     }
@@ -485,16 +510,24 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                 now,
               );
               final cancelledBookings = _cancelledBookings(filteredBookings);
-              final activeItemsCount = _activeItemCount(
+              final visibleOffers = _offersForStatusFilter(
+                filter: _offerStatusFilter,
                 activeOffers: activeOffers,
                 draftOffers: draftOffers,
                 archivedOffers: archivedOffers,
                 reviewOffers: reviewOffers,
                 rejectedOffers: rejectedOffers,
+              );
+              final visibleBookings = _bookingsForStatusFilter(
+                filter: _bookingStatusFilter,
                 upcomingBookings: upcomingBookings,
                 completedBookings: completedBookings,
                 cancelledBookings: cancelledBookings,
               );
+              final activeItemsCount = switch (_activeSection) {
+                GuideDashboardSection.offers => visibleOffers.length,
+                GuideDashboardSection.bookings => visibleBookings.length,
+              };
               final page = paginateItems<int>(
                 List<int>.generate(activeItemsCount, (index) => index),
                 currentPage: _activePage,
@@ -558,42 +591,26 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           rating: provider.myGuideProfile?.ratingAvg ?? 0,
                         ),
                         const SizedBox(height: 22),
-                        _GuideDashboardSearchField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          hintText: l10n.guideDashboardSearchHint,
-                        ),
-                        const SizedBox(height: 26),
                         _GuideDashboardSectionTabs(
                           activeSection: _activeSection,
                           offersCount: filteredExcursions.length,
                           bookingsCount: filteredBookings.length,
                           onChanged: _setActiveSection,
                         ),
-                        const SizedBox(height: 18),
-                        _GuideDashboardSubTabs(
-                          activeSection: _activeSection,
-                          activeOfferTab: _activeOfferTab,
-                          activeBookingTab: _activeBookingTab,
-                          offerCounts: {
-                            GuideOfferDashboardTab.active: activeOffers.length,
-                            GuideOfferDashboardTab.draft: draftOffers.length,
-                            GuideOfferDashboardTab.archive:
-                                archivedOffers.length,
-                            GuideOfferDashboardTab.rejected:
-                                rejectedOffers.length,
-                            GuideOfferDashboardTab.review: reviewOffers.length,
-                          },
-                          bookingCounts: {
-                            GuideBookingDashboardTab.active:
-                                upcomingBookings.length,
-                            GuideBookingDashboardTab.cancelled:
-                                cancelledBookings.length,
-                            GuideBookingDashboardTab.completed:
-                                completedBookings.length,
-                          },
-                          onOfferChanged: _setActiveOfferTab,
-                          onBookingChanged: _setActiveBookingTab,
+                        const SizedBox(height: 14),
+                        AppListSearchField(
+                          textFieldKey: const ValueKey(
+                            'guide-dashboard-search',
+                          ),
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          hintText: l10n.guideDashboardSearchHint,
+                          filterTooltip: l10n.myActivitiesFilterTitle,
+                          activeFilterCount: _activeFilterCount,
+                          showClearButton: true,
+                          onClear: _searchController.clear,
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                          onFilterTap: _openFilters,
                         ),
                         const SizedBox(height: 24),
                         if (isInitialLoading) ...[
@@ -614,33 +631,35 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           _GuideDashboardInfoCard(
                             icon: _emptyIconFor(
                               section: _activeSection,
-                              offerTab: _activeOfferTab,
-                              bookingTab: _activeBookingTab,
+                              offerTab: _offerStatusFilter,
+                              bookingTab: _bookingStatusFilter,
                             ),
                             title: _emptyTitleFor(
                               l10n,
                               section: _activeSection,
-                              offerTab: _activeOfferTab,
-                              bookingTab: _activeBookingTab,
+                              offerTab: _offerStatusFilter,
+                              bookingTab: _bookingStatusFilter,
                             ),
                             message: _emptyMessageFor(
                               l10n,
                               section: _activeSection,
-                              offerTab: _activeOfferTab,
-                              bookingTab: _activeBookingTab,
+                              offerTab: _offerStatusFilter,
+                              bookingTab: _bookingStatusFilter,
                             ),
                             actionLabel:
                                 _activeSection ==
                                         GuideDashboardSection.offers &&
-                                    _activeOfferTab ==
-                                        GuideOfferDashboardTab.active
+                                    (_offerStatusFilter == null ||
+                                        _offerStatusFilter ==
+                                            GuideOfferDashboardTab.active)
                                 ? l10n.guideDashboardCreateOffer
                                 : null,
                             onActionTap:
                                 _activeSection ==
                                         GuideDashboardSection.offers &&
-                                    _activeOfferTab ==
-                                        GuideOfferDashboardTab.active
+                                    (_offerStatusFilter == null ||
+                                        _offerStatusFilter ==
+                                            GuideOfferDashboardTab.active)
                                 ? _openCreateOffer
                                 : null,
                           ),
@@ -649,14 +668,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                             l10n: l10n,
                             now: now,
                             pageIndexes: page.items,
-                            activeOffers: activeOffers,
-                            draftOffers: draftOffers,
-                            archivedOffers: archivedOffers,
-                            reviewOffers: reviewOffers,
-                            rejectedOffers: rejectedOffers,
-                            upcomingBookings: upcomingBookings,
-                            completedBookings: completedBookings,
-                            cancelledBookings: cancelledBookings,
+                            visibleOffers: visibleOffers,
+                            visibleBookings: visibleBookings,
                             guideBookings: provider.myGuideExcursionBookings,
                           ),
                           if (page.hasMultiplePages) ...[
@@ -680,66 +693,26 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     );
   }
 
-  int _activeItemCount({
-    required List<ExcursionVm> activeOffers,
-    required List<ExcursionVm> draftOffers,
-    required List<ExcursionVm> archivedOffers,
-    required List<ExcursionVm> reviewOffers,
-    required List<ExcursionVm> rejectedOffers,
-    required List<ExcursionBookingVm> upcomingBookings,
-    required List<ExcursionBookingVm> completedBookings,
-    required List<ExcursionBookingVm> cancelledBookings,
-  }) {
-    return switch (_activeSection) {
-      GuideDashboardSection.offers => switch (_activeOfferTab) {
-        GuideOfferDashboardTab.active => activeOffers.length,
-        GuideOfferDashboardTab.draft => draftOffers.length,
-        GuideOfferDashboardTab.archive => archivedOffers.length,
-        GuideOfferDashboardTab.rejected => rejectedOffers.length,
-        GuideOfferDashboardTab.review => reviewOffers.length,
-      },
-      GuideDashboardSection.bookings => switch (_activeBookingTab) {
-        GuideBookingDashboardTab.active => upcomingBookings.length,
-        GuideBookingDashboardTab.cancelled => cancelledBookings.length,
-        GuideBookingDashboardTab.completed => completedBookings.length,
-      },
-    };
-  }
-
   List<Widget> _activeCards({
     required AppLocalizations l10n,
     required DateTime now,
     required List<int> pageIndexes,
-    required List<ExcursionVm> activeOffers,
-    required List<ExcursionVm> draftOffers,
-    required List<ExcursionVm> archivedOffers,
-    required List<ExcursionVm> reviewOffers,
-    required List<ExcursionVm> rejectedOffers,
-    required List<ExcursionBookingVm> upcomingBookings,
-    required List<ExcursionBookingVm> completedBookings,
-    required List<ExcursionBookingVm> cancelledBookings,
+    required List<ExcursionVm> visibleOffers,
+    required List<ExcursionBookingVm> visibleBookings,
     required List<ExcursionBookingVm> guideBookings,
   }) {
     final cards = <Widget>[];
     for (final index in pageIndexes) {
       final Widget card = switch (_activeSection) {
-        GuideDashboardSection.offers => _offerCardForActiveTab(
+        GuideDashboardSection.offers => _offerCardForStatus(
           l10n: l10n,
-          index: index,
-          activeOffers: activeOffers,
-          draftOffers: draftOffers,
-          archivedOffers: archivedOffers,
-          reviewOffers: reviewOffers,
-          rejectedOffers: rejectedOffers,
+          excursion: visibleOffers[index],
           guideBookings: guideBookings,
         ),
-        GuideDashboardSection.bookings => _bookingCardForActiveTab(
+        GuideDashboardSection.bookings => _bookingCardForStatus(
           l10n: l10n,
           now: now,
-          index: index,
-          upcomingBookings: upcomingBookings,
-          completedBookings: completedBookings,
-          cancelledBookings: cancelledBookings,
+          booking: visibleBookings[index],
           guideBookings: guideBookings,
         ),
       };
@@ -751,88 +724,77 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     return cards;
   }
 
-  Widget _offerCardForActiveTab({
+  Widget _offerCardForStatus({
     required AppLocalizations l10n,
-    required int index,
-    required List<ExcursionVm> activeOffers,
-    required List<ExcursionVm> draftOffers,
-    required List<ExcursionVm> archivedOffers,
-    required List<ExcursionVm> reviewOffers,
-    required List<ExcursionVm> rejectedOffers,
+    required ExcursionVm excursion,
     required List<ExcursionBookingVm> guideBookings,
   }) {
-    return switch (_activeOfferTab) {
+    final status = _offerTabForStatus(
+      excursion,
+      fallback: GuideOfferDashboardTab.active,
+    );
+    return switch (status) {
       GuideOfferDashboardTab.active => _GuideOfferCard(
-        excursion: activeOffers[index],
-        bookingCount: _bookingCountForOffer(activeOffers[index], guideBookings),
+        excursion: excursion,
+        bookingCount: _bookingCountForOffer(excursion, guideBookings),
         statusLabel: l10n.guideDashboardStatusActive,
         actionLabel: l10n.guideDashboardEditOffer,
         secondaryActionLabel: l10n.guideDashboardArchiveOffer,
-        onSecondaryActionTap: () => _archiveOffer(activeOffers[index]),
-        onTap: () => _openOfferEditor(activeOffers[index]),
+        onSecondaryActionTap: () => _archiveOffer(excursion),
+        onTap: () => _openOfferEditor(excursion),
       ),
       GuideOfferDashboardTab.draft => _GuideOfferCard(
-        excursion: draftOffers[index],
-        bookingCount: _bookingCountForOffer(draftOffers[index], guideBookings),
+        excursion: excursion,
+        bookingCount: _bookingCountForOffer(excursion, guideBookings),
         statusLabel: l10n.guideDashboardStatusDraft,
         actionLabel: l10n.guideDashboardEditOffer,
         secondaryActionLabel: l10n.guideDashboardSubmitOffer,
-        onSecondaryActionTap: () => _submitOfferForReview(draftOffers[index]),
+        onSecondaryActionTap: () => _submitOfferForReview(excursion),
         destructiveActionLabel: l10n.guideDashboardDeleteDraftOffer,
-        onDestructiveActionTap: () => _deleteDraftOffer(draftOffers[index]),
+        onDestructiveActionTap: () => _deleteDraftOffer(excursion),
         muted: true,
-        onTap: () => _openOfferEditor(draftOffers[index]),
+        onTap: () => _openOfferEditor(excursion),
       ),
       GuideOfferDashboardTab.archive => _GuideOfferCard(
-        excursion: archivedOffers[index],
-        bookingCount: _bookingCountForOffer(
-          archivedOffers[index],
-          guideBookings,
-        ),
+        excursion: excursion,
+        bookingCount: _bookingCountForOffer(excursion, guideBookings),
         statusLabel: l10n.guideDashboardStatusArchived,
         actionLabel: l10n.guideDashboardEditOffer,
         secondaryActionLabel: l10n.guideDashboardPublishOffer,
-        onSecondaryActionTap: () => _publishOffer(archivedOffers[index]),
+        onSecondaryActionTap: () => _publishOffer(excursion),
         muted: true,
-        onTap: () => _openOfferEditor(archivedOffers[index]),
+        onTap: () => _openOfferEditor(excursion),
       ),
       GuideOfferDashboardTab.rejected => _GuideOfferCard(
-        excursion: rejectedOffers[index],
-        bookingCount: _bookingCountForOffer(
-          rejectedOffers[index],
-          guideBookings,
-        ),
+        excursion: excursion,
+        bookingCount: _bookingCountForOffer(excursion, guideBookings),
         statusLabel: l10n.guideDashboardStatusRejected,
         actionLabel: l10n.guideDashboardViewDetails,
         secondaryActionLabel: l10n.guideDashboardSubmitOffer,
-        onSecondaryActionTap: () =>
-            _submitOfferForReview(rejectedOffers[index]),
+        onSecondaryActionTap: () => _submitOfferForReview(excursion),
         muted: true,
-        onTap: () => _openOfferEditor(rejectedOffers[index]),
+        onTap: () => _openOfferEditor(excursion),
       ),
       GuideOfferDashboardTab.review => _GuideOfferCard(
-        excursion: reviewOffers[index],
-        bookingCount: _bookingCountForOffer(reviewOffers[index], guideBookings),
+        excursion: excursion,
+        bookingCount: _bookingCountForOffer(excursion, guideBookings),
         statusLabel: l10n.guideDashboardStatusReview,
         actionLabel: l10n.guideDashboardViewDetails,
         muted: true,
-        onTap: () => _openOfferEditor(reviewOffers[index]),
+        onTap: () => _openOfferEditor(excursion),
       ),
     };
   }
 
-  Widget _bookingCardForActiveTab({
+  Widget _bookingCardForStatus({
     required AppLocalizations l10n,
     required DateTime now,
-    required int index,
-    required List<ExcursionBookingVm> upcomingBookings,
-    required List<ExcursionBookingVm> completedBookings,
-    required List<ExcursionBookingVm> cancelledBookings,
+    required ExcursionBookingVm booking,
     required List<ExcursionBookingVm> guideBookings,
   }) {
-    switch (_activeBookingTab) {
+    final status = _bookingTabForStatus(booking, now);
+    switch (status) {
       case GuideBookingDashboardTab.active:
-        final booking = upcomingBookings[index];
         final relatedBookings = _relatedBookingsFor(booking, guideBookings);
         final canCancel = booking.canBeCancelledByGuide(now);
         return _GuideBookingCard(
@@ -840,7 +802,6 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           now: now,
           relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusBooked,
-          actionLabel: l10n.guideDashboardViewBooking,
           secondaryActionLabel: canCancel
               ? l10n.guideDashboardCancelExcursion
               : null,
@@ -850,26 +811,22 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
         );
       case GuideBookingDashboardTab.cancelled:
-        final booking = cancelledBookings[index];
         final relatedBookings = _relatedBookingsFor(booking, guideBookings);
         return _GuideBookingCard(
           booking: booking,
           now: now,
           relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusCancelled,
-          actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
           onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
         );
       case GuideBookingDashboardTab.completed:
-        final booking = completedBookings[index];
         final relatedBookings = _relatedBookingsFor(booking, guideBookings);
         return _GuideBookingCard(
           booking: booking,
           now: now,
           relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusCompleted,
-          actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
           onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
         );
@@ -923,6 +880,108 @@ List<ExcursionBookingVm> _cancelledBookings(List<ExcursionBookingVm> items) {
     return left.compareTo(right);
   });
   return result;
+}
+
+List<ExcursionVm> _offersForStatusFilter({
+  required GuideOfferDashboardTab? filter,
+  required List<ExcursionVm> activeOffers,
+  required List<ExcursionVm> draftOffers,
+  required List<ExcursionVm> archivedOffers,
+  required List<ExcursionVm> reviewOffers,
+  required List<ExcursionVm> rejectedOffers,
+}) {
+  return switch (filter) {
+    null => [
+      ...activeOffers,
+      ...draftOffers,
+      ...reviewOffers,
+      ...archivedOffers,
+      ...rejectedOffers,
+    ],
+    GuideOfferDashboardTab.active => activeOffers,
+    GuideOfferDashboardTab.draft => draftOffers,
+    GuideOfferDashboardTab.review => reviewOffers,
+    GuideOfferDashboardTab.archive => archivedOffers,
+    GuideOfferDashboardTab.rejected => rejectedOffers,
+  };
+}
+
+List<ExcursionBookingVm> _bookingsForStatusFilter({
+  required GuideBookingDashboardTab? filter,
+  required List<ExcursionBookingVm> upcomingBookings,
+  required List<ExcursionBookingVm> completedBookings,
+  required List<ExcursionBookingVm> cancelledBookings,
+}) {
+  return switch (filter) {
+    null => [...upcomingBookings, ...cancelledBookings, ...completedBookings],
+    GuideBookingDashboardTab.active => upcomingBookings,
+    GuideBookingDashboardTab.cancelled => cancelledBookings,
+    GuideBookingDashboardTab.completed => completedBookings,
+  };
+}
+
+Map<GuideOfferDashboardTab, int> _guideOfferStatusCounts(
+  List<ExcursionVm> excursions,
+) {
+  final activeOffers = _activeOffers(excursions);
+  final draftOffers = _draftOffers(excursions);
+  final archivedOffers = _archivedOffers(excursions);
+  final reviewOffers = _reviewOffers(excursions);
+  final rejectedOffers = _rejectedOffers(excursions);
+  return {
+    GuideOfferDashboardTab.active: activeOffers.length,
+    GuideOfferDashboardTab.draft: draftOffers.length,
+    GuideOfferDashboardTab.review: reviewOffers.length,
+    GuideOfferDashboardTab.archive: archivedOffers.length,
+    GuideOfferDashboardTab.rejected: rejectedOffers.length,
+  };
+}
+
+Map<GuideBookingDashboardTab, int> _guideBookingStatusCounts(
+  List<ExcursionBookingVm> bookings,
+  DateTime now,
+) {
+  return {
+    GuideBookingDashboardTab.active: _upcomingBookings(bookings, now).length,
+    GuideBookingDashboardTab.cancelled: _cancelledBookings(bookings).length,
+    GuideBookingDashboardTab.completed: _completedBookings(
+      bookings,
+      now,
+    ).length,
+  };
+}
+
+GuideBookingDashboardTab _bookingTabForStatus(
+  ExcursionBookingVm booking,
+  DateTime now,
+) {
+  if (booking.isCancelled) return GuideBookingDashboardTab.cancelled;
+  if (booking.isVisited(now)) return GuideBookingDashboardTab.completed;
+  return GuideBookingDashboardTab.active;
+}
+
+String _guideOfferStatusFilterLabel(
+  AppLocalizations l10n,
+  GuideOfferDashboardTab status,
+) {
+  return switch (status) {
+    GuideOfferDashboardTab.active => l10n.guideDashboardActiveTab,
+    GuideOfferDashboardTab.draft => l10n.guideDashboardDraftTab,
+    GuideOfferDashboardTab.review => l10n.guideDashboardReviewTab,
+    GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveTab,
+    GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedTab,
+  };
+}
+
+String _guideBookingStatusFilterLabel(
+  AppLocalizations l10n,
+  GuideBookingDashboardTab status,
+) {
+  return switch (status) {
+    GuideBookingDashboardTab.active => l10n.guideDashboardActiveTab,
+    GuideBookingDashboardTab.cancelled => l10n.guideDashboardCancelledTab,
+    GuideBookingDashboardTab.completed => l10n.guideDashboardCompletedTab,
+  };
 }
 
 List<ExcursionBookingVm> _relatedBookingsFor(
@@ -1152,6 +1211,23 @@ String _normalizeGuideDashboardSearchText(String value) {
       .replaceAll(RegExp(r'\s+'), ' ');
 }
 
+String _guideBookingCardSubtitle(ExcursionBookingVm booking, String title) {
+  final landmarkName = (booking.landmarkName ?? '').trim();
+  if (landmarkName.isEmpty) {
+    return '';
+  }
+  if (_sameGuideDashboardText(landmarkName, title)) {
+    return '';
+  }
+  return landmarkName;
+}
+
+bool _sameGuideDashboardText(String left, String right) {
+  final normalizedLeft = _normalizeGuideDashboardSearchText(left);
+  final normalizedRight = _normalizeGuideDashboardSearchText(right);
+  return normalizedLeft.isNotEmpty && normalizedLeft == normalizedRight;
+}
+
 double _totalRevenue(List<ExcursionBookingVm> bookings) {
   return bookings
       .where((booking) => !booking.isCancelled)
@@ -1168,11 +1244,12 @@ String _primaryCurrency(List<ExcursionBookingVm> bookings) {
 
 IconData _emptyIconFor({
   required GuideDashboardSection section,
-  required GuideOfferDashboardTab offerTab,
-  required GuideBookingDashboardTab bookingTab,
+  required GuideOfferDashboardTab? offerTab,
+  required GuideBookingDashboardTab? bookingTab,
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
+      null => Icons.explore_outlined,
       GuideOfferDashboardTab.active => Icons.explore_outlined,
       GuideOfferDashboardTab.draft => Icons.edit_note_rounded,
       GuideOfferDashboardTab.archive => Icons.inventory_2_outlined,
@@ -1180,6 +1257,7 @@ IconData _emptyIconFor({
       GuideOfferDashboardTab.review => Icons.manage_search_rounded,
     },
     GuideDashboardSection.bookings => switch (bookingTab) {
+      null => Icons.confirmation_number_outlined,
       GuideBookingDashboardTab.active => Icons.confirmation_number_outlined,
       GuideBookingDashboardTab.cancelled => Icons.event_busy_rounded,
       GuideBookingDashboardTab.completed => Icons.task_alt_rounded,
@@ -1190,11 +1268,12 @@ IconData _emptyIconFor({
 String _emptyTitleFor(
   AppLocalizations l10n, {
   required GuideDashboardSection section,
-  required GuideOfferDashboardTab offerTab,
-  required GuideBookingDashboardTab bookingTab,
+  required GuideOfferDashboardTab? offerTab,
+  required GuideBookingDashboardTab? bookingTab,
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
+      null => l10n.guideDashboardOffersEmpty,
       GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmpty,
       GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmpty,
       GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmpty,
@@ -1202,6 +1281,7 @@ String _emptyTitleFor(
       GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmpty,
     },
     GuideDashboardSection.bookings => switch (bookingTab) {
+      null => l10n.guideDashboardBookingsEmpty,
       GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmpty,
       GuideBookingDashboardTab.cancelled => l10n.guideDashboardCancelledEmpty,
       GuideBookingDashboardTab.completed => l10n.guideDashboardCompletedEmpty,
@@ -1212,11 +1292,12 @@ String _emptyTitleFor(
 String _emptyMessageFor(
   AppLocalizations l10n, {
   required GuideDashboardSection section,
-  required GuideOfferDashboardTab offerTab,
-  required GuideBookingDashboardTab bookingTab,
+  required GuideOfferDashboardTab? offerTab,
+  required GuideBookingDashboardTab? bookingTab,
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
+      null => l10n.guideDashboardOffersEmptyHint,
       GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmptyHint,
       GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmptyHint,
       GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmptyHint,
@@ -1224,6 +1305,7 @@ String _emptyMessageFor(
       GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmptyHint,
     },
     GuideDashboardSection.bookings => switch (bookingTab) {
+      null => l10n.guideDashboardBookingsEmptyHint,
       GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmptyHint,
       GuideBookingDashboardTab.cancelled =>
         l10n.guideDashboardCancelledEmptyHint,
@@ -1368,69 +1450,395 @@ class _GuideStatCard extends StatelessWidget {
   }
 }
 
-class _GuideDashboardSearchField extends StatelessWidget {
-  const _GuideDashboardSearchField({
-    required this.controller,
-    required this.focusNode,
-    required this.hintText,
+class _GuideDashboardFilters {
+  const _GuideDashboardFilters({
+    required this.offerStatusFilter,
+    required this.bookingStatusFilter,
   });
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String hintText;
+  final GuideOfferDashboardTab? offerStatusFilter;
+  final GuideBookingDashboardTab? bookingStatusFilter;
+}
+
+class _GuideStatusFilterOption {
+  const _GuideStatusFilterOption({
+    required this.label,
+    required this.count,
+    this.offerStatus,
+    this.bookingStatus,
+  });
+
+  final String label;
+  final int count;
+  final GuideOfferDashboardTab? offerStatus;
+  final GuideBookingDashboardTab? bookingStatus;
+}
+
+class _GuideDashboardStatusFiltersSheet extends StatefulWidget {
+  const _GuideDashboardStatusFiltersSheet({
+    required this.activeSection,
+    required this.initialOfferStatus,
+    required this.initialBookingStatus,
+    required this.offerCounts,
+    required this.bookingCounts,
+  });
+
+  final GuideDashboardSection activeSection;
+  final GuideOfferDashboardTab? initialOfferStatus;
+  final GuideBookingDashboardTab? initialBookingStatus;
+  final Map<GuideOfferDashboardTab, int> offerCounts;
+  final Map<GuideBookingDashboardTab, int> bookingCounts;
+
+  @override
+  State<_GuideDashboardStatusFiltersSheet> createState() =>
+      _GuideDashboardStatusFiltersSheetState();
+}
+
+class _GuideDashboardStatusFiltersSheetState
+    extends State<_GuideDashboardStatusFiltersSheet> {
+  late GuideOfferDashboardTab? _offerStatus;
+  late GuideBookingDashboardTab? _bookingStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _offerStatus = widget.initialOfferStatus;
+    _bookingStatus = widget.initialBookingStatus;
+  }
+
+  int get _previewCount {
+    return switch (widget.activeSection) {
+      GuideDashboardSection.offers =>
+        _offerStatus == null
+            ? _totalOfferCount
+            : widget.offerCounts[_offerStatus] ?? 0,
+      GuideDashboardSection.bookings =>
+        _bookingStatus == null
+            ? _totalBookingCount
+            : widget.bookingCounts[_bookingStatus] ?? 0,
+    };
+  }
+
+  int get _totalOfferCount {
+    return widget.offerCounts.values.fold<int>(0, (sum, count) => sum + count);
+  }
+
+  int get _totalBookingCount {
+    return widget.bookingCounts.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+  }
+
+  void _clearFilters() {
+    setState(() {
+      switch (widget.activeSection) {
+        case GuideDashboardSection.offers:
+          _offerStatus = null;
+        case GuideDashboardSection.bookings:
+          _bookingStatus = null;
+      }
+    });
+  }
+
+  void _applyFilters() {
+    Navigator.of(context).pop(
+      _GuideDashboardFilters(
+        offerStatusFilter: _offerStatus,
+        bookingStatusFilter: _bookingStatus,
+      ),
+    );
+  }
+
+  List<_GuideStatusFilterOption> _options(AppLocalizations l10n) {
+    return switch (widget.activeSection) {
+      GuideDashboardSection.offers => [
+        _GuideStatusFilterOption(
+          label: l10n.myActivitiesFilterAll,
+          count: _totalOfferCount,
+        ),
+        for (final status in [
+          GuideOfferDashboardTab.active,
+          GuideOfferDashboardTab.draft,
+          GuideOfferDashboardTab.review,
+          GuideOfferDashboardTab.archive,
+          GuideOfferDashboardTab.rejected,
+        ])
+          _GuideStatusFilterOption(
+            label: _guideOfferStatusFilterLabel(l10n, status),
+            count: widget.offerCounts[status] ?? 0,
+            offerStatus: status,
+          ),
+      ],
+      GuideDashboardSection.bookings => [
+        _GuideStatusFilterOption(
+          label: l10n.myActivitiesFilterAll,
+          count: _totalBookingCount,
+        ),
+        for (final status in [
+          GuideBookingDashboardTab.active,
+          GuideBookingDashboardTab.cancelled,
+          GuideBookingDashboardTab.completed,
+        ])
+          _GuideStatusFilterOption(
+            label: _guideBookingStatusFilterLabel(l10n, status),
+            count: widget.bookingCounts[status] ?? 0,
+            bookingStatus: status,
+          ),
+      ],
+    };
+  }
+
+  bool _isSelected(_GuideStatusFilterOption option) {
+    return switch (widget.activeSection) {
+      GuideDashboardSection.offers => _offerStatus == option.offerStatus,
+      GuideDashboardSection.bookings => _bookingStatus == option.bookingStatus,
+    };
+  }
+
+  void _select(_GuideStatusFilterOption option) {
+    setState(() {
+      switch (widget.activeSection) {
+        case GuideDashboardSection.offers:
+          _offerStatus = option.offerStatus;
+        case GuideDashboardSection.bookings:
+          _bookingStatus = option.bookingStatus;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              textInputAction: TextInputAction.search,
-              onTapOutside: (_) => FocusScope.of(context).unfocus(),
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: const TextStyle(
-                  color: Color(0xFFD3BFA9),
-                  fontWeight: FontWeight.w700,
+    final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final maxHeight = mediaQuery.size.height * 0.66;
+    final horizontalPadding = mediaQuery.size.width < 360 ? 16.0 : 20.0;
+    final options = _options(l10n);
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppFilterSheetHeader(
+                  title: l10n.myActivitiesFilterTitle,
+                  clearLabel: l10n.myActivitiesFilterClear,
+                  onClear: _clearFilters,
+                  height: 46,
+                  horizontalPadding: horizontalPadding,
+                  titleFontSize: 16,
+                  clearFontSize: 12,
                 ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      18,
+                      horizontalPadding,
+                      0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.fact_check_outlined,
+                              color: AppColors.accent,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.myActivitiesFilterStatus,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final useSingleColumn =
+                                constraints.maxWidth < 370 ||
+                                MediaQuery.textScalerOf(context).scale(1) >
+                                    1.08;
+                            final spacing = useSingleColumn ? 8.0 : 10.0;
+                            final columns = useSingleColumn ? 1 : 2;
+                            final itemWidth =
+                                (constraints.maxWidth -
+                                    spacing * (columns - 1)) /
+                                columns;
+
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: spacing,
+                              children: [
+                                for (final option in options)
+                                  SizedBox(
+                                    width: itemWidth,
+                                    child: _GuideStatusFilterChip(
+                                      label: option.label,
+                                      count: option.count,
+                                      selected: _isSelected(option),
+                                      onTap: () => _select(option),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    12,
+                    horizontalPadding,
+                    14 + mediaQuery.padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: AppColors.accent.withValues(alpha: 0.09),
+                      ),
+                    ),
+                    color: Colors.black.withValues(alpha: 0.06),
+                  ),
+                  child: AppFilterApplyButton(
+                    label:
+                        '${l10n.profileConnectionsFiltersShowResults} · $_previewCount',
+                    onTap: _applyFilters,
+                    minHeight: mediaQuery.size.width < 360 ? 50 : 56,
+                    fontSize: mediaQuery.size.width < 360 ? 15 : 17,
+                  ),
+                ),
+              ],
             ),
           ),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) {
-              if (value.text.trim().isEmpty) {
-                return const SizedBox(width: 12);
-              }
-              return IconButton(
-                tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                onPressed: controller.clear,
-                icon: const Icon(Icons.close_rounded),
-                color: const Color(0xFFD3BFA9),
-              );
-            },
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideStatusFilterChip extends StatelessWidget {
+  const _GuideStatusFilterChip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final foreground = selected
+        ? const Color(0xFFFFFAF2)
+        : const Color(0xFFEAD7C0);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Ink(
+          height: compact ? 54 : 58,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.025),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent
+                  : AppColors.accent.withValues(alpha: 0.14),
+              width: selected ? 1.4 : 1,
+            ),
           ),
-          const SizedBox(width: 6),
-        ],
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? AppColors.accent : Colors.transparent,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.56),
+                    width: 1.5,
+                  ),
+                ),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: const BoxConstraints(minWidth: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1577,108 +1985,67 @@ class _GuideDashboardSectionTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final tabs = [
-      (GuideDashboardSection.offers, l10n.guideDashboardOffersTab, offersCount),
-      (
-        GuideDashboardSection.bookings,
-        l10n.guideDashboardBookingsTab,
-        bookingsCount,
-      ),
-    ];
-
-    return _GuideHorizontalTabs(
-      children: [
-        for (final tab in tabs)
-          _GuideTabButton(
-            label: tab.$2,
-            count: tab.$3,
-            active: activeSection == tab.$1,
-            onTap: () => onChanged(tab.$1),
-          ),
-      ],
+    return _GuideDashboardSegmentedTabs(
+      activeSection: activeSection,
+      offersLabel: l10n.guideDashboardOffersTab,
+      bookingsLabel: l10n.guideDashboardBookingsTab,
+      offersCount: offersCount,
+      bookingsCount: bookingsCount,
+      onChanged: onChanged,
     );
   }
 }
 
-class _GuideDashboardSubTabs extends StatelessWidget {
-  const _GuideDashboardSubTabs({
+class _GuideDashboardSegmentedTabs extends StatelessWidget {
+  const _GuideDashboardSegmentedTabs({
     required this.activeSection,
-    required this.activeOfferTab,
-    required this.activeBookingTab,
-    required this.offerCounts,
-    required this.bookingCounts,
-    required this.onOfferChanged,
-    required this.onBookingChanged,
+    required this.offersLabel,
+    required this.bookingsLabel,
+    required this.offersCount,
+    required this.bookingsCount,
+    required this.onChanged,
   });
 
   final GuideDashboardSection activeSection;
-  final GuideOfferDashboardTab activeOfferTab;
-  final GuideBookingDashboardTab activeBookingTab;
-  final Map<GuideOfferDashboardTab, int> offerCounts;
-  final Map<GuideBookingDashboardTab, int> bookingCounts;
-  final ValueChanged<GuideOfferDashboardTab> onOfferChanged;
-  final ValueChanged<GuideBookingDashboardTab> onBookingChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final offerTabs = [
-      (GuideOfferDashboardTab.active, l10n.guideDashboardActiveTab),
-      (GuideOfferDashboardTab.draft, l10n.guideDashboardDraftTab),
-      (GuideOfferDashboardTab.review, l10n.guideDashboardReviewTab),
-      (GuideOfferDashboardTab.archive, l10n.guideDashboardArchiveTab),
-      (GuideOfferDashboardTab.rejected, l10n.guideDashboardRejectedTab),
-    ];
-    final bookingTabs = [
-      (GuideBookingDashboardTab.active, l10n.guideDashboardActiveTab),
-      (GuideBookingDashboardTab.cancelled, l10n.guideDashboardCancelledTab),
-      (GuideBookingDashboardTab.completed, l10n.guideDashboardCompletedTab),
-    ];
-
-    return _GuideHorizontalTabs(
-      children: switch (activeSection) {
-        GuideDashboardSection.offers => [
-          for (final tab in offerTabs)
-            _GuideTabButton(
-              label: tab.$2,
-              count: offerCounts[tab.$1] ?? 0,
-              active: activeOfferTab == tab.$1,
-              onTap: () => onOfferChanged(tab.$1),
-            ),
-        ],
-        GuideDashboardSection.bookings => [
-          for (final tab in bookingTabs)
-            _GuideTabButton(
-              label: tab.$2,
-              count: bookingCounts[tab.$1] ?? 0,
-              active: activeBookingTab == tab.$1,
-              onTap: () => onBookingChanged(tab.$1),
-            ),
-        ],
-      },
-    );
-  }
-}
-
-class _GuideHorizontalTabs extends StatelessWidget {
-  const _GuideHorizontalTabs({required this.children});
-
-  final List<Widget> children;
+  final String offersLabel;
+  final String bookingsLabel;
+  final int offersCount;
+  final int bookingsCount;
+  final ValueChanged<GuideDashboardSection> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
-        ),
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
         child: Row(
           children: [
-            for (final child in children) ...[child, const SizedBox(width: 24)],
+            Expanded(
+              child: _GuideSegmentedTabButton(
+                key: const ValueKey('guide-dashboard-tab-offers'),
+                label: offersLabel,
+                icon: Icons.explore_rounded,
+                count: offersCount,
+                selected: activeSection == GuideDashboardSection.offers,
+                onTap: () => onChanged(GuideDashboardSection.offers),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _GuideSegmentedTabButton(
+                key: const ValueKey('guide-dashboard-tab-bookings'),
+                label: bookingsLabel,
+                icon: Icons.confirmation_number_rounded,
+                count: bookingsCount,
+                selected: activeSection == GuideDashboardSection.bookings,
+                onTap: () => onChanged(GuideDashboardSection.bookings),
+              ),
+            ),
           ],
         ),
       ),
@@ -1686,64 +2053,54 @@ class _GuideHorizontalTabs extends StatelessWidget {
   }
 }
 
-class _GuideTabButton extends StatelessWidget {
-  const _GuideTabButton({
+class _GuideSegmentedTabButton extends StatelessWidget {
+  const _GuideSegmentedTabButton({
+    super.key,
     required this.label,
+    required this.icon,
     required this.count,
-    required this.active,
+    required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final IconData icon;
   final int count;
-  final bool active;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.accent : const Color(0xFFD3BFA9);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label.toUpperCase(),
-                  style: TextStyle(
+    final color = selected ? AppColors.textPrimary : const Color(0xFFFFE0B2);
+    return Material(
+      color: selected ? AppColors.accent : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: selected ? null : onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  '$label · $count',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: color,
-                    fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+                    height: 1,
                   ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '$count',
-                  style: TextStyle(
-                    color: color.withValues(alpha: active ? 0.92 : 0.62),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 13),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 2,
-              width: active ? 64 : 0,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(999),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1788,11 +2145,12 @@ class _GuideOfferCard extends StatelessWidget {
     final maxGroupLabel = excursion.maxGroupSize > 0
         ? l10n.guideDashboardMaxGuests(excursion.maxGroupSize)
         : l10n.guideDashboardFlexibleGroup;
+    final title = excursion.title.trim().isEmpty
+        ? l10n.myExcursionsUntitled
+        : excursion.title.trim();
 
     return _GuideJourneyCard(
-      title: excursion.title.trim().isEmpty
-          ? l10n.myExcursionsUntitled
-          : excursion.title.trim(),
+      title: title,
       statusLabel: statusLabel,
       actionLabel: actionLabel,
       muted: muted,
@@ -1822,7 +2180,6 @@ class _GuideBookingCard extends StatelessWidget {
     required this.now,
     required this.relatedBookings,
     required this.statusLabel,
-    required this.actionLabel,
     required this.onTap,
     this.secondaryActionLabel,
     this.onSecondaryActionTap,
@@ -1833,7 +2190,6 @@ class _GuideBookingCard extends StatelessWidget {
   final DateTime now;
   final List<ExcursionBookingVm> relatedBookings;
   final String statusLabel;
-  final String actionLabel;
   final VoidCallback onTap;
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryActionTap;
@@ -1843,6 +2199,10 @@ class _GuideBookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final localeName = Localizations.localeOf(context).toString();
     final l10n = AppLocalizations.of(context)!;
+    final title = booking.title.trim().isEmpty
+        ? l10n.myExcursionsUntitled
+        : booking.title.trim();
+    final subtitle = _guideBookingCardSubtitle(booking, title);
     final dateLabel = formatEventDateTime(
       booking.scheduledFor,
       timezoneId: booking.timezone,
@@ -1858,20 +2218,18 @@ class _GuideBookingCard extends StatelessWidget {
     final showAttendanceQr = booking.canShowAttendanceQr(now);
 
     return _GuideJourneyCard(
-      title: booking.title.trim().isEmpty
-          ? l10n.myExcursionsUntitled
-          : booking.title.trim(),
+      title: title,
       statusLabel: booking.isCancelled
           ? l10n.guideDashboardStatusCancelled
           : statusLabel,
-      actionLabel: actionLabel,
+      actionLabel: null,
       muted: muted || booking.isCancelled,
       imageUrl: resolveExcursionBookingCoverUrl(booking),
       categorySlug: booking.categorySlug,
       seed: booking.productId.hashCode,
       onTap: onTap,
-      secondaryActionLabel: secondaryActionLabel,
-      onSecondaryActionTap: onSecondaryActionTap,
+      destructiveActionLabel: secondaryActionLabel,
+      onDestructiveActionTap: onSecondaryActionTap,
       actionFooter: showAttendanceQr
           ? _ExcursionAttendanceQrAction(
               scheduleSlotId: scheduleSlotId,
@@ -1887,7 +2245,7 @@ class _GuideBookingCard extends StatelessWidget {
         ),
         _GuideMetaData(icon: Icons.payments_outlined, label: price),
       ],
-      subtitle: (booking.landmarkName ?? '').trim(),
+      subtitle: subtitle,
     );
   }
 }
@@ -3308,10 +3666,10 @@ class _GuideJourneyCard extends StatelessWidget {
   const _GuideJourneyCard({
     required this.title,
     required this.statusLabel,
-    required this.actionLabel,
     required this.meta,
     required this.seed,
     required this.onTap,
+    this.actionLabel,
     this.imageUrl,
     this.categorySlug,
     this.secondaryActionLabel,
@@ -3326,7 +3684,7 @@ class _GuideJourneyCard extends StatelessWidget {
 
   final String title;
   final String statusLabel;
-  final String actionLabel;
+  final String? actionLabel;
   final List<_GuideMetaData> meta;
   final int seed;
   final VoidCallback onTap;
@@ -3450,6 +3808,8 @@ class _GuideJourneyCard extends StatelessWidget {
                       const SizedBox(height: 20),
                       LayoutBuilder(
                         builder: (context, constraints) {
+                          final primary = actionLabel?.trim() ?? '';
+                          final hasPrimary = primary.isNotEmpty;
                           final secondary = secondaryActionLabel?.trim() ?? '';
                           final hasSecondary =
                               secondary.isNotEmpty &&
@@ -3460,31 +3820,30 @@ class _GuideJourneyCard extends StatelessWidget {
                               destructive.isNotEmpty &&
                               onDestructiveActionTap != null;
                           final stackActions = constraints.maxWidth < 360;
-                          final primaryButton = FilledButton(
-                            onPressed: onTap,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(0, 48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                            child: Text(
-                              actionLabel.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                          );
-                          if (!hasSecondary && !hasDestructive) {
-                            return SizedBox(
-                              width: double.infinity,
-                              child: primaryButton,
-                            );
+                          final primaryButton = hasPrimary
+                              ? FilledButton(
+                                  onPressed: onTap,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.accent,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(0, 48),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    primary.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                                )
+                              : null;
+                          if (!hasPrimary && !hasSecondary && !hasDestructive) {
+                            return const SizedBox.shrink();
                           }
 
                           final secondaryButton = OutlinedButton(
@@ -3538,11 +3897,30 @@ class _GuideJourneyCard extends StatelessWidget {
                             ),
                           );
 
+                          if (!hasPrimary) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (hasSecondary) secondaryButton,
+                                if (hasSecondary && hasDestructive)
+                                  const SizedBox(height: 10),
+                                if (hasDestructive) destructiveButton,
+                              ],
+                            );
+                          }
+
+                          if (!hasSecondary && !hasDestructive) {
+                            return SizedBox(
+                              width: double.infinity,
+                              child: primaryButton!,
+                            );
+                          }
+
                           if (stackActions || stackSecondaryAction) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                primaryButton,
+                                primaryButton!,
                                 if (hasSecondary) ...[
                                   const SizedBox(height: 10),
                                   secondaryButton,
@@ -3560,7 +3938,7 @@ class _GuideJourneyCard extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: primaryButton),
+                                  Expanded(child: primaryButton!),
                                   if (hasSecondary) ...[
                                     const SizedBox(width: 10),
                                     Expanded(child: secondaryButton),

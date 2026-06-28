@@ -236,6 +236,55 @@ func TestMarkUserNotificationsReadMarksOnlySelectedCategory(t *testing.T) {
 	}
 }
 
+func TestMarkUserNotificationReadMarksOnlySelectedNotification(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	targetID := uuid.New()
+	otherID := uuid.New()
+	foreignID := uuid.New()
+
+	uc.repo.requests[targetID] = &model.NotificationRequest{
+		ID:               targetID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "support",
+		Payload:          model.NotificationPayload{Title: "Support replied"},
+		CreatedAt:        uc.now,
+	}
+	uc.repo.requests[otherID] = &model.NotificationRequest{
+		ID:               otherID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "support",
+		Payload:          model.NotificationPayload{Title: "Other support"},
+		CreatedAt:        uc.now,
+	}
+	uc.repo.requests[foreignID] = &model.NotificationRequest{
+		ID:               foreignID,
+		RecipientUserIDs: []uuid.UUID{otherUserID},
+		Category:         "support",
+		Payload:          model.NotificationPayload{Title: "Foreign support"},
+		CreatedAt:        uc.now,
+	}
+
+	updated, err := uc.MarkUserNotificationRead(context.Background(), userID, targetID)
+	if err != nil {
+		t.Fatalf("MarkUserNotificationRead returned error: %v", err)
+	}
+
+	if updated != 1 {
+		t.Fatalf("expected one updated notification, got %d", updated)
+	}
+	if !uc.repo.isRead(userID, targetID) {
+		t.Fatalf("expected target notification to be read")
+	}
+	if uc.repo.isRead(userID, otherID) {
+		t.Fatalf("did not expect another same-category notification to be read")
+	}
+	if uc.repo.isRead(userID, foreignID) {
+		t.Fatalf("did not expect another user's notification to be read")
+	}
+}
+
 func TestSendNotificationRejectsOversizedFanoutAndPayload(t *testing.T) {
 	uc := newTestUseCase()
 	recipients := make([]uuid.UUID, MaxRecipientsPerRequest+1)
@@ -915,6 +964,22 @@ func (r *memoryRepository) MarkUserNotificationsRead(
 		updated++
 	}
 	return updated, nil
+}
+
+func (r *memoryRepository) MarkUserNotificationRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	notificationID uuid.UUID,
+) (int, error) {
+	request := r.requests[notificationID]
+	if request == nil || !requestRecipientContains(request, userID) {
+		return 0, nil
+	}
+	if r.isRead(userID, notificationID) {
+		return 0, nil
+	}
+	r.markRead(userID, notificationID, time.Now().UTC())
+	return 1, nil
 }
 
 func (r *memoryRepository) GetNotificationPreferences(

@@ -14,6 +14,7 @@ import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/activity_provider.dart';
 import 'package:inflap/providers/auth_provider.dart';
+import 'package:inflap/providers/currency_rate_provider.dart';
 import 'package:inflap/providers/home_location_provider.dart';
 import 'package:inflap/providers/locale_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
@@ -117,6 +118,29 @@ void main() {
     expect(headerLocation.cityName, 'Almaty');
     expect(headerLocation.countryCode, 'KZ');
     expect(headerLocation.includeCountry, isFalse);
+  });
+
+  testWidgets('home services preview does not show Help Center', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+          placeApi: _FakePlaceApi(),
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Services'), findsWidgets);
+    expect(find.text('Help Center'), findsNothing);
   });
 
   testWidgets('loads top destinations around current device coordinates', (
@@ -642,6 +666,9 @@ Widget _homeApp(
         ),
       ),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider<CurrencyRateProvider>(
+        create: (_) => CurrencyRateProvider(),
+      ),
       ChangeNotifierProvider<HomeLocationProvider>(
         create: (_) => _FakeHomeLocationProvider(
           location ??
@@ -703,10 +730,7 @@ class _FakeHomeLocationProvider extends HomeLocationProvider {
   bool get isLoaded => true;
 
   @override
-  Future<void> load({
-    String languageCode = 'en',
-    HomeLocationPreference? profileFallback,
-  }) async {}
+  Future<void> load({String languageCode = 'en'}) async {}
 }
 
 class _NoopActivityProvider extends ActivityProvider {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -5,8 +7,10 @@ import 'package:provider/provider.dart';
 import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/notifications/data/notification_api.dart';
+import '../../features/notifications/utils/notification_visibility.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/session_provider.dart';
+import '../../providers/home_location_provider.dart';
+import '../../providers/notification_badge_provider.dart';
 
 class NotificationsOverviewScreen extends StatefulWidget {
   const NotificationsOverviewScreen({super.key, this.notificationApi});
@@ -27,15 +31,22 @@ class _NotificationsOverviewScreenState
   @override
   void initState() {
     super.initState();
-    _categoriesFuture = _notificationApi.listNotificationCategories();
+    _categoriesFuture = _loadCategories();
+  }
+
+  Future<List<NotificationCategorySummary>> _loadCategories() async {
+    final categories = await _notificationApi.listNotificationCategories();
+    return visibleNotificationCategories(categories);
   }
 
   Future<void> _refresh() async {
-    final nextFuture = _notificationApi.listNotificationCategories();
+    final badgeProvider = _notificationBadgeProvider(context);
+    final nextFuture = _loadCategories();
     setState(() {
       _categoriesFuture = nextFuture;
     });
     await nextFuture;
+    await badgeProvider?.refresh(forceRefresh: true);
   }
 
   Future<void> _openCategory(NotificationCategorySummary summary) async {
@@ -152,9 +163,20 @@ class NotificationCategoryScreen extends StatefulWidget {
 
 class _NotificationCategoryScreenState
     extends State<NotificationCategoryScreen> {
+  static const _visibleReadCoverageThreshold = 0.55;
+  static const _visibleReadDebounce = Duration(milliseconds: 120);
+
   late final NotificationInboxClient _notificationApi =
       widget.notificationApi ?? NotificationApi();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _scrollViewKey = GlobalKey();
+  final Map<String, GlobalKey> _notificationReadKeys = {};
+  final Map<String, DateTime> _locallyReadAt = {};
+  final Set<String> _markingReadNotificationIds = {};
   late Future<List<UserNotification>> _notificationsFuture;
+  List<UserNotification> _renderedNotifications = const [];
+  Timer? _visibleReadTimer;
+  bool _visibleReadCheckScheduled = false;
   bool _markingRead = false;
 
   @override
@@ -163,8 +185,17 @@ class _NotificationCategoryScreenState
     _notificationsFuture = _loadNotifications();
   }
 
+  @override
+  void dispose() {
+    _visibleReadTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<List<UserNotification>> _loadNotifications() {
-    return _notificationApi.listNotifications(category: widget.category);
+    return _notificationApi
+        .listNotifications(category: widget.category)
+        .then(visibleUserNotifications);
   }
 
   Future<void> _refresh() async {
@@ -173,6 +204,144 @@ class _NotificationCategoryScreenState
       _notificationsFuture = nextFuture;
     });
     await nextFuture;
+  }
+
+  void _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification ||
+        notification is ScrollEndNotification ||
+        notification is UserScrollNotification) {
+      _scheduleVisibleReadCheck(delay: _visibleReadDebounce);
+    }
+  }
+
+  void _trackRenderedNotifications(List<UserNotification> notifications) {
+    _renderedNotifications = notifications;
+    final visibleIds = {
+      for (final notification in notifications)
+        if (notification.id.trim().isNotEmpty) notification.id.trim(),
+    };
+    _notificationReadKeys.removeWhere((id, _) => !visibleIds.contains(id));
+    _scheduleVisibleReadCheck();
+  }
+
+  void _scheduleVisibleReadCheck({Duration delay = Duration.zero}) {
+    if (!mounted) {
+      return;
+    }
+    _visibleReadTimer?.cancel();
+    if (delay > Duration.zero) {
+      _visibleReadTimer = Timer(delay, _queueVisibleReadCheck);
+      return;
+    }
+    _queueVisibleReadCheck();
+  }
+
+  void _queueVisibleReadCheck() {
+    if (_visibleReadCheckScheduled) {
+      return;
+    }
+    _visibleReadCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibleReadCheckScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      _markVisibleNotificationsRead();
+    });
+  }
+
+  void _markVisibleNotificationsRead() {
+    final viewportContext = _scrollViewKey.currentContext;
+    final viewportRenderObject = viewportContext?.findRenderObject();
+    if (viewportRenderObject is! RenderBox || !viewportRenderObject.hasSize) {
+      return;
+    }
+
+    final viewportOrigin = viewportRenderObject.localToGlobal(Offset.zero);
+    final viewportRect = viewportOrigin & viewportRenderObject.size;
+    for (final notification in _renderedNotifications) {
+      final notificationId = notification.id.trim();
+      if (notificationId.isEmpty ||
+          _isEffectivelyRead(notification) ||
+          _markingReadNotificationIds.contains(notificationId)) {
+        continue;
+      }
+      final key = _notificationReadKeys[notificationId];
+      final tileRenderObject = key?.currentContext?.findRenderObject();
+      if (tileRenderObject is! RenderBox || !tileRenderObject.hasSize) {
+        continue;
+      }
+      final tileOrigin = tileRenderObject.localToGlobal(Offset.zero);
+      final tileRect = tileOrigin & tileRenderObject.size;
+      final intersection = tileRect.intersect(viewportRect);
+      if (intersection.isEmpty) {
+        continue;
+      }
+      final visibleCoverage = intersection.height / tileRect.height;
+      if (visibleCoverage >= _visibleReadCoverageThreshold) {
+        unawaited(_markNotificationReadFromVisibility(notificationId));
+      }
+    }
+  }
+
+  Future<void> _markNotificationReadFromVisibility(
+    String notificationId,
+  ) async {
+    final normalizedId = notificationId.trim();
+    if (normalizedId.isEmpty ||
+        _locallyReadAt.containsKey(normalizedId) ||
+        _markingReadNotificationIds.contains(normalizedId)) {
+      return;
+    }
+
+    final badgeProvider = _notificationBadgeProvider(context);
+    _markingReadNotificationIds.add(normalizedId);
+    try {
+      await _notificationApi.markNotificationRead(notificationId: normalizedId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _locallyReadAt[normalizedId] = DateTime.now().toUtc();
+      });
+      unawaited(badgeProvider?.refresh(forceRefresh: true));
+    } catch (_) {
+      // Visibility-based read sync is best effort; the next focus/scroll will retry.
+    } finally {
+      _markingReadNotificationIds.remove(normalizedId);
+    }
+  }
+
+  bool _isEffectivelyRead(UserNotification notification) {
+    final notificationId = notification.id.trim();
+    return notification.isRead ||
+        notificationId.isNotEmpty && _locallyReadAt.containsKey(notificationId);
+  }
+
+  UserNotification _effectiveNotification(UserNotification notification) {
+    final notificationId = notification.id.trim();
+    final readAt = notificationId.isEmpty
+        ? null
+        : _locallyReadAt[notificationId];
+    if (readAt == null || notification.isRead) {
+      return notification;
+    }
+    return UserNotification(
+      id: notification.id,
+      category: notification.category,
+      priority: notification.priority,
+      title: notification.title,
+      body: notification.body,
+      imageUrl: notification.imageUrl,
+      deepLink: notification.deepLink,
+      data: notification.data,
+      createdAt: notification.createdAt,
+      readAt: readAt,
+    );
+  }
+
+  GlobalKey _notificationReadKey(String notificationId) {
+    return _notificationReadKeys.putIfAbsent(notificationId, GlobalKey.new);
   }
 
   Future<void> _markAllRead() async {
@@ -203,14 +372,30 @@ class _NotificationCategoryScreenState
     }
   }
 
-  void _openDeepLink(UserNotification notification) {
+  Future<void> _openDeepLink(UserNotification notification) async {
     final deepLink = notification.deepLink.trim();
     if (deepLink.isEmpty ||
         !deepLink.startsWith('/') ||
         deepLink.startsWith('//')) {
       return;
     }
-    context.push(deepLink);
+    final notificationId = notification.id.trim();
+    if (!_isEffectivelyRead(notification) && notificationId.isNotEmpty) {
+      try {
+        await _notificationApi.markNotificationRead(
+          notificationId: notificationId,
+        );
+      } catch (_) {
+        // Opening the destination matters more than blocking on read state.
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    await context.push(deepLink);
+    if (mounted) {
+      await _refresh();
+    }
   }
 
   @override
@@ -224,104 +409,123 @@ class _NotificationCategoryScreenState
         child: FutureBuilder<List<UserNotification>>(
           future: _notificationsFuture,
           builder: (context, snapshot) {
-            final notifications = snapshot.data ?? const [];
+            final notifications = (snapshot.data ?? const [])
+                .map(_effectiveNotification)
+                .toList(growable: false);
+            _trackRenderedNotifications(notifications);
             final hasUnread = notifications.any(
-              (notification) => !notification.isRead,
+              (notification) => !_isEffectivelyRead(notification),
             );
             return RefreshIndicator(
               color: AppColors.accent,
               backgroundColor: AppColors.surface,
               onRefresh: _refresh,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _NotificationsPageShell(
-                      child: _NotificationsHeader(
-                        title: meta.label,
-                        subtitle: l10n.notificationsSubtitle,
-                        action: FilledButton.icon(
-                          onPressed: hasUnread && !_markingRead
-                              ? _markAllRead
-                              : null,
-                          icon: _markingRead
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.background,
-                                  ),
-                                )
-                              : const Icon(Icons.done_all_rounded),
-                          label: Text(l10n.notificationsReadAll),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            disabledBackgroundColor: Colors.white.withValues(
-                              alpha: 0.08,
-                            ),
-                            foregroundColor: AppColors.textPrimary,
-                            disabledForegroundColor: AppColors.textCaption,
-                            minimumSize: const Size(0, 44),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  _handleScrollNotification(notification);
+                  return false;
+                },
+                child: CustomScrollView(
+                  key: _scrollViewKey,
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _NotificationsPageShell(
+                        child: _NotificationsHeader(
+                          title: meta.label,
+                          subtitle: l10n.notificationsSubtitle,
+                          action: FilledButton.icon(
+                            onPressed: hasUnread && !_markingRead
+                                ? _markAllRead
+                                : null,
+                            icon: _markingRead
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.background,
+                                    ),
+                                  )
+                                : const Icon(Icons.done_all_rounded),
+                            label: Text(l10n.notificationsReadAll),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              disabledBackgroundColor: Colors.white.withValues(
+                                alpha: 0.08,
+                              ),
+                              foregroundColor: AppColors.textPrimary,
+                              disabledForegroundColor: AppColors.textCaption,
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  if (snapshot.connectionState == ConnectionState.waiting &&
-                      notifications.isEmpty)
-                    const SliverToBoxAdapter(
-                      child: _NotificationsPageShell(child: _LoadingList()),
-                    )
-                  else if (snapshot.hasError && notifications.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _NotificationsPageShell(
-                        child: _StateMessage(
-                          icon: Icons.cloud_off_rounded,
-                          title: l10n.notificationsLoadFailedTitle,
-                          subtitle: l10n.notificationsLoadFailedSubtitle,
-                          actionLabel: l10n.retry,
-                          onAction: _refresh,
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        notifications.isEmpty)
+                      const SliverToBoxAdapter(
+                        child: _NotificationsPageShell(child: _LoadingList()),
+                      )
+                    else if (snapshot.hasError && notifications.isEmpty)
+                      SliverToBoxAdapter(
+                        child: _NotificationsPageShell(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: _StateMessage(
+                              icon: Icons.cloud_off_rounded,
+                              title: l10n.notificationsLoadFailedTitle,
+                              subtitle: l10n.notificationsLoadFailedSubtitle,
+                              actionLabel: l10n.retry,
+                              onAction: _refresh,
+                            ),
+                          ),
                         ),
-                      ),
-                    )
-                  else if (notifications.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _NotificationsPageShell(
-                        child: _StateMessage(
-                          icon: meta.icon,
-                          title: l10n.notificationsCategoryEmptyTitle,
-                          subtitle: l10n.notificationsCategoryEmptySubtitle,
+                      )
+                    else if (notifications.isEmpty)
+                      SliverToBoxAdapter(
+                        child: _NotificationsPageShell(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: _StateMessage(
+                              icon: meta.icon,
+                              title: l10n.notificationsCategoryEmptyTitle,
+                              subtitle: l10n.notificationsCategoryEmptySubtitle,
+                            ),
+                          ),
                         ),
-                      ),
-                    )
-                  else
-                    SliverToBoxAdapter(
-                      child: _NotificationsPageShell(
-                        child: Column(
-                          children: [
-                            for (final notification in notifications) ...[
-                              _NotificationTile(
-                                notification: notification,
-                                meta: meta,
-                                onTap: () => _openDeepLink(notification),
-                              ),
-                              const SizedBox(height: 12),
+                      )
+                    else
+                      SliverToBoxAdapter(
+                        child: _NotificationsPageShell(
+                          child: Column(
+                            children: [
+                              for (final notification in notifications) ...[
+                                KeyedSubtree(
+                                  key: _notificationReadKey(notification.id),
+                                  child: _NotificationTile(
+                                    notification: notification,
+                                    meta: meta,
+                                    onTap: () =>
+                                        unawaited(_openDeepLink(notification)),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              const SizedBox(height: 28),
                             ],
-                            const SizedBox(height: 28),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -499,7 +703,11 @@ class _NotificationCategoryTile extends StatelessWidget {
                     ),
                     if (summary.hasUnread)
                       _UnreadBadge(
-                        label: l10n.notificationsUnreadCount(
+                        label: _notificationCategoryUnreadBadgeLabel(
+                          l10n,
+                          summary.unreadCount,
+                        ),
+                        semanticLabel: l10n.notificationsUnreadCount(
                           summary.unreadCount,
                         ),
                       ),
@@ -710,6 +918,14 @@ class _LocalizedNotificationText {
   final String body;
 }
 
+NotificationBadgeProvider? _notificationBadgeProvider(BuildContext context) {
+  try {
+    return context.read<NotificationBadgeProvider>();
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
+
 _LocalizedNotificationText _localizedNotificationText(
   BuildContext context,
   UserNotification notification,
@@ -775,6 +991,25 @@ _LocalizedNotificationText _localizedNotificationText(
         body: notification.body.trim().isEmpty
             ? l10n.notificationsChatMessageBody
             : notification.body.trim(),
+      );
+    case 'support_ticket_replied':
+    case 'support_agent_replied':
+    case 'support_replied':
+    case 'ticket_replied':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsSupportRepliedTitle,
+        body: l10n.notificationsSupportRepliedBody,
+      );
+    case 'support_ticket_created':
+    case 'support_ticket_updated':
+    case 'support_ticket_resolved':
+    case 'support_request_updated':
+    case 'ticket_created':
+    case 'ticket_updated':
+    case 'ticket_resolved':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsSupportUpdatedTitle,
+        body: l10n.notificationsSupportUpdatedBody,
       );
     case 'activity_joined':
     case 'activity_join':
@@ -905,7 +1140,9 @@ String _notificationTemplateKey(UserNotification notification) {
     'excursionEvent',
     'chatEvent',
     'feedEvent',
+    'supportEvent',
     'eventType',
+    'event',
     'notificationType',
     'type',
     'action',
@@ -937,6 +1174,9 @@ String _legacyNotificationTemplateKey(UserNotification notification) {
     'how was your excursion?' => 'schedule_slot_completed',
     'excursion published' => 'moderation_approved',
     'excursion needs changes' => 'moderation_rejected',
+    'support replied' => 'support_ticket_replied',
+    'support replied to your ticket' => 'support_ticket_replied',
+    'support updated your request' => 'support_ticket_updated',
     _ => '',
   };
 }
@@ -1176,6 +1416,17 @@ class _InteractivePanel extends StatelessWidget {
   }
 }
 
+String _notificationCategoryUnreadBadgeLabel(
+  AppLocalizations l10n,
+  int unreadCount,
+) {
+  if (unreadCount > 99) {
+    return '99+';
+  }
+
+  return l10n.notificationsUnreadCount(unreadCount);
+}
+
 class _CategoryIcon extends StatelessWidget {
   const _CategoryIcon({required this.meta, required this.hasUnread});
 
@@ -1200,26 +1451,32 @@ class _CategoryIcon extends StatelessWidget {
 }
 
 class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.label});
+  const _UnreadBadge({required this.label, this.semanticLabel});
 
   final String label;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.accent,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
+    return Semantics(
+      label: semanticLabel ?? label,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ),
@@ -1492,6 +1749,14 @@ _NotificationCategoryMeta _categoryMeta(
         icon: Icons.verified_user_rounded,
         color: const Color(0xFFA78BFA),
       );
+    case 'support':
+    case 'help':
+    case 'help_center':
+      return _NotificationCategoryMeta(
+        label: l10n.notificationsCategorySupport,
+        icon: Icons.support_agent_rounded,
+        color: AppColors.accent,
+      );
     case '':
     case 'general':
       return _NotificationCategoryMeta(
@@ -1534,7 +1799,10 @@ String? _notificationEventTimeLabel(
 
   final l10n = AppLocalizations.of(context)!;
   final localeName = Localizations.localeOf(context).toLanguageTag();
-  final userTimezoneId = context.read<SessionProvider>().profile?.timezone;
+  final userTimezoneId = context
+      .read<HomeLocationProvider>()
+      .effectiveLocation
+      .timezone;
   final primary = formatEventDateTime(
     eventInstant,
     timezoneId: eventTimezone,

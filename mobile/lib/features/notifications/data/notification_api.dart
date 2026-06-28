@@ -313,6 +313,10 @@ abstract interface class NotificationInboxClient {
     required String category,
   });
 
+  Future<NotificationReadResult> markNotificationRead({
+    required String notificationId,
+  });
+
   Future<NotificationPreferences> getNotificationPreferences();
 
   Future<NotificationPreferences> updateNotificationPreferences(
@@ -396,6 +400,17 @@ class NotificationApi
     final response = await _apiClient.dio.post<Map<String, dynamic>>(
       '/notifications/read-all',
       data: <String, dynamic>{'category': category.trim()},
+    );
+    return NotificationReadResult.fromJson(response.data ?? {});
+  }
+
+  @override
+  Future<NotificationReadResult> markNotificationRead({
+    required String notificationId,
+  }) async {
+    final encodedNotificationId = Uri.encodeComponent(notificationId.trim());
+    final response = await _apiClient.dio.post<Map<String, dynamic>>(
+      '/notifications/$encodedNotificationId/read',
     );
     return NotificationReadResult.fromJson(response.data ?? {});
   }

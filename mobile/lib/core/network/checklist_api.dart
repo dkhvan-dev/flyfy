@@ -278,6 +278,7 @@ class TripChecklistPreviewRequest {
     this.transportModes = const [],
     this.activitySlugs = const [],
     this.hasChildren = false,
+    this.citizenshipCountryCode,
     this.preferredLanguage = 'ru',
   });
 
@@ -289,6 +290,7 @@ class TripChecklistPreviewRequest {
   final List<String> transportModes;
   final List<String> activitySlugs;
   final bool hasChildren;
+  final String? citizenshipCountryCode;
   final String preferredLanguage;
 
   Map<String, Object?> toJson() {
@@ -308,6 +310,10 @@ class TripChecklistPreviewRequest {
           .toList(),
       'travelerProfile': {
         if (hasChildren) 'hasChildren': true,
+        if ((citizenshipCountryCode ?? '').trim().isNotEmpty)
+          'citizenshipCountryCode': citizenshipCountryCode!
+              .trim()
+              .toUpperCase(),
         'preferredLanguage': preferredLanguage.trim().isNotEmpty
             ? preferredLanguage.trim()
             : 'ru',

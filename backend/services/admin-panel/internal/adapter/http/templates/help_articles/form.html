@@ -1,0 +1,211 @@
+{{define "help_articles/form"}}
+{{template "pageStart" .}}
+{{$input := .Data.Input}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "help.eyebrow"}}</p>
+      <h1>{{if .Data.IsEdit}}{{t .Locale "help.editTitle"}}{{else}}{{t .Locale "help.createTitle"}}{{end}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.ListURL}}">{{t .Locale "action.backToHelpArticles"}}</a>
+    </div>
+  </div>
+
+  <div class="split">
+    <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "help.content"}}</h2>
+      <div class="grid three">
+        <label>
+          <span>{{t .Locale "field.slug"}}</span>
+          <input name="slug" value="{{$input.Slug}}" required maxlength="160" placeholder="refund-policy">
+        </label>
+        <label>
+          <span>{{t .Locale "help.categoryId"}}</span>
+          <input name="category_id" value="{{$input.CategoryID}}" placeholder="payments">
+        </label>
+        <label>
+          <span>{{t .Locale "field.status"}}</span>
+          <select name="status" required>
+            {{range .Data.StatusOptions}}
+              {{if ne .Value "all"}}
+                <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+              {{end}}
+            {{end}}
+          </select>
+        </label>
+      </div>
+      <label>
+        <span>{{t .Locale "field.tags"}}</span>
+        <input name="tags" value="{{$input.Tags}}" placeholder="{{t .Locale "placeholder.helpTags"}}">
+      </label>
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "help.questionTemplate"}}</span>
+          <select name="question_template">
+            {{range .Data.QuestionTemplateOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+          <small>{{t .Locale "help.questionTemplateHint"}}</small>
+        </label>
+        <label class="checkline">
+          <input type="checkbox" name="is_popular" {{if $input.IsPopular}}checked{{end}}>
+          <span>
+            <strong>{{t .Locale "help.popularQA"}}</strong>
+            <small>{{t .Locale "help.popularQAHint"}}</small>
+          </span>
+        </label>
+      </div>
+
+      <h2>{{t .Locale "help.translations"}}</h2>
+      <div class="localized-fields">
+        <fieldset>
+          <legend>{{t .Locale "place.locale.en"}}</legend>
+          <label>
+            <span>{{t .Locale "field.title"}}</span>
+            <input name="title_en" value="{{$input.EN.Title}}" maxlength="200">
+          </label>
+          <label>
+            <span>{{t .Locale "help.shortAnswer"}}</span>
+            <textarea name="short_answer_en" rows="2" maxlength="700">{{$input.EN.ShortAnswer}}</textarea>
+          </label>
+          <label>
+            <span>{{t .Locale "help.body"}}</span>
+            <textarea name="body_en" rows="8">{{$input.EN.Body}}</textarea>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>{{t .Locale "place.locale.ru"}}</legend>
+          <label>
+            <span>{{t .Locale "field.title"}}</span>
+            <input name="title_ru" value="{{$input.RU.Title}}" maxlength="200">
+          </label>
+          <label>
+            <span>{{t .Locale "help.shortAnswer"}}</span>
+            <textarea name="short_answer_ru" rows="2" maxlength="700">{{$input.RU.ShortAnswer}}</textarea>
+          </label>
+          <label>
+            <span>{{t .Locale "help.body"}}</span>
+            <textarea name="body_ru" rows="8">{{$input.RU.Body}}</textarea>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>{{t .Locale "place.locale.kk"}}</legend>
+          <label>
+            <span>{{t .Locale "field.title"}}</span>
+            <input name="title_kk" value="{{$input.KK.Title}}" maxlength="200">
+          </label>
+          <label>
+            <span>{{t .Locale "help.shortAnswer"}}</span>
+            <textarea name="short_answer_kk" rows="2" maxlength="700">{{$input.KK.ShortAnswer}}</textarea>
+          </label>
+          <label>
+            <span>{{t .Locale "help.body"}}</span>
+            <textarea name="body_kk" rows="8">{{$input.KK.Body}}</textarea>
+          </label>
+        </fieldset>
+      </div>
+
+      <h2>{{t .Locale "help.contextRules"}}</h2>
+      <fieldset class="checks option-grid">
+        <legend>{{t .Locale "help.surfaces"}}</legend>
+        {{range .Data.SurfaceOptions}}
+          <label>
+            <input type="checkbox" name="surfaces" value="{{.Value}}" {{if .Selected}}checked{{end}}>
+            <span>{{t $.Locale .LabelKey}}</span>
+          </label>
+        {{end}}
+      </fieldset>
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "help.visibilityUserStates"}}</span>
+          <input name="visibility_user_states" value="{{$input.VisibilityUserStates}}" placeholder="booked, paid">
+        </label>
+        <label>
+          <span>{{t .Locale "help.visibilityPaymentStatuses"}}</span>
+          <input name="visibility_payment_statuses" value="{{$input.VisibilityPaymentStatuses}}" placeholder="paid, refunded">
+        </label>
+      </div>
+      <label>
+        <span>{{t .Locale "help.relatedArticles"}}</span>
+        <input name="related_article_ids" value="{{$input.RelatedArticleIDs}}" placeholder="payment-failed, refund-policy">
+      </label>
+
+      <h2>{{t .Locale "help.actionLink"}}</h2>
+      <div class="grid three">
+        <label>
+          <span>{{t .Locale "help.actionType"}}</span>
+          <input name="action_type" value="{{$input.ActionType}}" placeholder="contact_support">
+        </label>
+        <label>
+          <span>{{t .Locale "help.actionTarget"}}</span>
+          <input name="action_target" value="{{$input.ActionTarget}}" placeholder="support">
+        </label>
+        <label>
+          <span>{{t .Locale "help.actionLabel"}}</span>
+          <input name="action_label" value="{{$input.ActionLabel}}" placeholder="Contact support">
+        </label>
+      </div>
+
+      {{if .Data.CanEdit}}
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      {{end}}
+    </form>
+
+    <aside class="card">
+      <h2>{{t .Locale "help.workflow"}}</h2>
+      {{if .Data.IsEdit}}
+        <dl class="meta-grid">
+          <div><dt>ID</dt><dd><code>{{$input.ArticleID}}</code></dd></div>
+          <div><dt>{{t .Locale "field.status"}}</dt><dd><span class="{{statusClass $input.Status}}">{{t .Locale (printf "help.status.%s" $input.Status)}}</span></dd></div>
+        </dl>
+        {{if .Data.CanEdit}}
+          <form method="post" action="/admin/help/articles/{{$input.ArticleID}}/submit-review" class="form compact">
+            {{csrfField $.CSRFToken}}
+            <button type="submit">{{t .Locale "help.submitReview"}}</button>
+          </form>
+        {{end}}
+        {{if .Data.CanPublish}}
+          <form method="post" action="/admin/help/articles/{{$input.ArticleID}}/publish" class="form compact">
+            {{csrfField $.CSRFToken}}
+            <button class="primary" type="submit">{{t .Locale "help.publish"}}</button>
+          </form>
+          <form method="post" action="/admin/help/articles/{{$input.ArticleID}}/archive" class="form compact">
+            {{csrfField $.CSRFToken}}
+            <button type="submit">{{t .Locale "help.archive"}}</button>
+          </form>
+        {{end}}
+      {{else}}
+        <p class="muted">{{t .Locale "help.workflowNewHint"}}</p>
+      {{end}}
+
+      <h2>{{t .Locale "help.events"}}</h2>
+      {{if .Data.Events}}
+        <div class="timeline">
+          {{range .Data.Events}}
+            <article class="timeline-step">
+              <span class="timeline-marker"></span>
+              <div class="timeline-body">
+                <strong>{{.Item.EventType}}</strong>
+                <span class="muted block">{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}} · {{.Item.ActorType}} · {{.Item.ActorID}}</span>
+                {{if .Payload}}
+                  <dl class="meta-grid">
+                    {{range .Payload}}
+                      <div><dt>{{.Key}}</dt><dd>{{.Value}}</dd></div>
+                    {{end}}
+                  </dl>
+                {{end}}
+              </div>
+            </article>
+          {{end}}
+        </div>
+      {{else}}
+        <p class="muted">{{t .Locale "help.noEvents"}}</p>
+      {{end}}
+    </aside>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

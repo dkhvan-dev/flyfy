@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
@@ -104,6 +105,9 @@ func NewRenderer() (*Renderer, error) {
 			}
 			return staff.EffectiveTimezone()
 		},
+		"staffLastName":   staffLastNameFromDisplayName,
+		"staffFirstName":  staffFirstNameFromDisplayName,
+		"staffMiddleName": staffMiddleNameFromDisplayName,
 		"permissionText": func(locale any, permission enum.Permission) string {
 			return translatePermission(fmt.Sprint(locale), permission)
 		},
@@ -311,6 +315,9 @@ func NewRenderer() (*Renderer, error) {
 				return "badge"
 			}
 		},
+		"supportStatusClass": func(status any) string {
+			return supportTicketStatusBadgeClass(model.SupportTicketStatus(fmt.Sprint(status)))
+		},
 		"join": strings.Join,
 	}
 	tmpl, err := template.New("admin").Funcs(funcs).ParseFS(embeddedFiles, "templates/*.html", "templates/*/*.html")
@@ -324,13 +331,49 @@ func NewRenderer() (*Renderer, error) {
 	return &Renderer{templates: tmpl, static: static}, nil
 }
 
+func staffDisplayNameParts(displayName string) (string, string, string) {
+	parts := strings.Fields(displayName)
+	switch len(parts) {
+	case 0:
+		return "", "", ""
+	case 1:
+		return "", parts[0], ""
+	case 2:
+		return parts[0], parts[1], ""
+	default:
+		return parts[0], parts[1], strings.Join(parts[2:], " ")
+	}
+}
+
+func staffLastNameFromDisplayName(displayName string) string {
+	lastName, _, _ := staffDisplayNameParts(displayName)
+	return lastName
+}
+
+func staffFirstNameFromDisplayName(displayName string) string {
+	_, firstName, _ := staffDisplayNameParts(displayName)
+	return firstName
+}
+
+func staffMiddleNameFromDisplayName(displayName string) string {
+	_, _, middleName := staffDisplayNameParts(displayName)
+	return middleName
+}
+
 func (r *Renderer) Render(w http.ResponseWriter, status int, name string, data any) {
 	var buffer bytes.Buffer
 	if err := r.templates.ExecuteTemplate(&buffer, name, data); err != nil {
 		locale := defaultLocale
+		path := ""
 		if page, ok := data.(PageData); ok && strings.TrimSpace(page.Locale) != "" {
 			locale = page.Locale
+			path = page.Path
 		}
+		log.Error().
+			Err(err).
+			Str("template", name).
+			Str("path", path).
+			Msg("admin template render failed")
 		http.Error(w, translate(locale, "error.generic"), http.StatusInternalServerError)
 		return
 	}

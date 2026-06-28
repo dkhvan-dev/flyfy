@@ -30,6 +30,7 @@ const (
 	maxVisitInfoItems  = 8
 	maxVisitInfoCode   = 48
 	maxVisitInfoText   = 240
+	maxFeeDetailText   = 240
 	defaultListLimit   = 20
 	maxListLimit       = 100
 	defaultReviewLimit = 20
@@ -146,15 +147,44 @@ type PlaceCityLinkInput struct {
 }
 
 type PlaceVisitInfoInput struct {
-	BestTime        string
-	Accessibility   string
-	BookingRequired *bool
-	OpeningHours    string
-	Amenities       []string
-	Audience        []string
-	SafetyNotes     []string
-	NearbyIDs       []string
-	LocalizedTips   map[string]string
+	BestTime         string
+	Accessibility    string
+	BookingRequired  *bool
+	OpeningHours     *model.PlaceOpeningHours
+	Amenities        []string
+	Audience         []string
+	SafetyNotes      []string
+	NearbyIDs        []string
+	LocalizedTips    map[string]string
+	Season           *model.PlaceSeason
+	GettingThere     model.LocalizedText
+	Included         []model.LocalizedText
+	Excluded         []model.LocalizedText
+	Links            []model.PlaceLink
+	FeeDetails       []PlaceFeeDetailInput
+	PriceNote        model.LocalizedText
+	TimeOnSite       *model.PlaceVisitDuration
+	CarTravelTime    *model.PlaceVisitDuration
+	RoadCondition    string
+	FeeItems         []PlaceFeeDetailInput
+	AccessOptions    []model.PlaceAccessOption
+	PracticalNotes   []model.PlacePracticalNote
+	RecommendedItems []model.PlaceRecommendedItem
+}
+
+type PlaceFeeDetailInput struct {
+	Title         map[string]string
+	Description   map[string]string
+	Amount        *float64
+	Type          string
+	MinAmount     *float64
+	MaxAmount     *float64
+	Currency      string
+	Unit          string
+	Required      bool
+	IsApproximate bool
+	Note          map[string]string
+	SortOrder     int
 }
 
 type CreateReviewInput struct {
@@ -1420,18 +1450,470 @@ func normalizeVisitInfo(input *PlaceVisitInfoInput, existing *model.PlaceVisitIn
 	}
 
 	tips := normalizeLocalizedTips(input.LocalizedTips)
+	feeDetails, err := normalizeFeeDetails(input.FeeDetails)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	if len(feeDetails) == 0 && existing != nil {
+		feeDetails = existing.FeeDetails
+	}
+	feeItems, err := normalizeFeeItems(input.FeeItems)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	if len(feeItems) == 0 && existing != nil {
+		feeItems = existing.FeeItems
+	}
+	timeOnSite, err := normalizeVisitDuration(input.TimeOnSite)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	carTravelTime, err := normalizeVisitDuration(input.CarTravelTime)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	accessOptions, err := normalizeAccessOptions(input.AccessOptions)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
 
 	return model.PlaceVisitInfo{
-		BestTime:        normalizeVisitInfoCode(input.BestTime),
-		Accessibility:   normalizeVisitInfoCode(input.Accessibility),
-		BookingRequired: input.BookingRequired,
-		OpeningHours:    normalizeVisitInfoCode(input.OpeningHours),
-		Amenities:       normalizeVisitInfoCodes(input.Amenities),
-		Audience:        normalizeVisitInfoCodes(input.Audience),
-		SafetyNotes:     normalizeVisitInfoCodes(input.SafetyNotes),
-		NearbyIDs:       nearbyIDs,
-		LocalizedTips:   tips,
+		BestTime:         normalizeVisitInfoCode(input.BestTime),
+		Accessibility:    normalizeVisitInfoCode(input.Accessibility),
+		BookingRequired:  input.BookingRequired,
+		OpeningHours:     normalizeOpeningHours(input.OpeningHours),
+		Amenities:        normalizeVisitInfoCodes(input.Amenities),
+		Audience:         normalizeVisitInfoCodes(input.Audience),
+		SafetyNotes:      normalizeVisitInfoCodes(input.SafetyNotes),
+		NearbyIDs:        nearbyIDs,
+		LocalizedTips:    tips,
+		Season:           normalizeSeason(input.Season),
+		GettingThere:     normalizeFeeLocalizedText(input.GettingThere),
+		Included:         normalizeLocalizedTextList(input.Included),
+		Excluded:         normalizeLocalizedTextList(input.Excluded),
+		Links:            normalizeLinks(input.Links),
+		FeeDetails:       feeDetails,
+		PriceNote:        normalizeFeeLocalizedText(input.PriceNote),
+		TimeOnSite:       timeOnSite,
+		CarTravelTime:    carTravelTime,
+		RoadCondition:    normalizeVisitInfoCode(input.RoadCondition),
+		FeeItems:         feeItems,
+		AccessOptions:    accessOptions,
+		PracticalNotes:   normalizePracticalNotes(input.PracticalNotes),
+		RecommendedItems: normalizeRecommendedItems(input.RecommendedItems),
 	}, nil
+}
+
+func normalizeFeeDetails(input []PlaceFeeDetailInput) ([]model.PlaceFeeDetail, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	result := make([]model.PlaceFeeDetail, 0, len(input))
+	for _, raw := range input {
+		title := normalizeFeeLocalizedText(raw.Title)
+		description := normalizeFeeLocalizedText(raw.Description)
+		if len(title) == 0 && len(description) == 0 {
+			continue
+		}
+
+		currency := strings.ToUpper(strings.TrimSpace(raw.Currency))
+		if raw.Amount != nil {
+			if math.IsNaN(*raw.Amount) || math.IsInf(*raw.Amount, 0) || *raw.Amount < 0 {
+				return nil, ErrInvalidVisitInfo
+			}
+			if currency == "" || len(currency) != 3 {
+				return nil, ErrInvalidVisitInfo
+			}
+		}
+		unit := normalizeVisitInfoCode(raw.Unit)
+
+		result = append(result, model.PlaceFeeDetail{
+			Title:         title,
+			Description:   description,
+			Amount:        raw.Amount,
+			Currency:      currency,
+			Unit:          unit,
+			IsApproximate: raw.IsApproximate,
+			SortOrder:     raw.SortOrder,
+		})
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	return result, nil
+}
+
+func normalizeFeeItems(input []PlaceFeeDetailInput) ([]model.PlaceFeeItem, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	result := make([]model.PlaceFeeItem, 0, len(input))
+	for _, raw := range input {
+		title := normalizeFeeLocalizedText(raw.Title)
+		description := normalizeFeeLocalizedText(raw.Description)
+		note := normalizeFeeLocalizedText(raw.Note)
+		amount, err := normalizeMoneyAmount(raw.Amount)
+		if err != nil {
+			return nil, err
+		}
+		minAmount, err := normalizeMoneyAmount(raw.MinAmount)
+		if err != nil {
+			return nil, err
+		}
+		maxAmount, err := normalizeMoneyAmount(raw.MaxAmount)
+		if err != nil {
+			return nil, err
+		}
+		if minAmount == nil && amount != nil {
+			minAmount = copyFloat64Ptr(amount)
+		}
+		if maxAmount == nil && amount != nil {
+			maxAmount = copyFloat64Ptr(amount)
+		}
+		if minAmount != nil && maxAmount != nil && *maxAmount < *minAmount {
+			minAmount, maxAmount = maxAmount, minAmount
+		}
+		hasMoney := amount != nil || minAmount != nil || maxAmount != nil
+		currency := strings.ToUpper(strings.TrimSpace(raw.Currency))
+		if hasMoney && (currency == "" || len(currency) != 3) {
+			return nil, ErrInvalidVisitInfo
+		}
+
+		feeType := normalizeVisitInfoCode(raw.Type)
+		unit := normalizeVisitInfoCode(raw.Unit)
+		if feeType == "" && len(title) == 0 && len(description) == 0 && len(note) == 0 && !hasMoney {
+			continue
+		}
+
+		result = append(result, model.PlaceFeeItem{
+			Type:          feeType,
+			Title:         title,
+			Description:   description,
+			Amount:        amount,
+			MinAmount:     minAmount,
+			MaxAmount:     maxAmount,
+			Currency:      currency,
+			Unit:          unit,
+			Required:      raw.Required,
+			IsApproximate: raw.IsApproximate,
+			Note:          note,
+			SortOrder:     raw.SortOrder,
+		})
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return result, nil
+}
+
+func normalizeMoneyAmount(input *float64) (*float64, error) {
+	if input == nil {
+		return nil, nil
+	}
+	if math.IsNaN(*input) || math.IsInf(*input, 0) || *input < 0 {
+		return nil, ErrInvalidVisitInfo
+	}
+	return copyFloat64Ptr(input), nil
+}
+
+func copyFloat64Ptr(input *float64) *float64 {
+	if input == nil {
+		return nil
+	}
+	value := *input
+	return &value
+}
+
+func normalizeVisitDuration(input *model.PlaceVisitDuration) (*model.PlaceVisitDuration, error) {
+	if input == nil {
+		return nil, nil
+	}
+	minMinutes, err := normalizeMinutePointer(input.MinMinutes)
+	if err != nil {
+		return nil, err
+	}
+	maxMinutes, err := normalizeMinutePointer(input.MaxMinutes)
+	if err != nil {
+		return nil, err
+	}
+	if minMinutes != nil && maxMinutes != nil && *maxMinutes < *minMinutes {
+		minMinutes, maxMinutes = maxMinutes, minMinutes
+	}
+	note := normalizeFeeLocalizedText(input.Note)
+	if minMinutes == nil && maxMinutes == nil && len(note) == 0 {
+		return nil, nil
+	}
+	return &model.PlaceVisitDuration{
+		MinMinutes: minMinutes,
+		MaxMinutes: maxMinutes,
+		Note:       note,
+	}, nil
+}
+
+func normalizeMinutePointer(input *int) (*int, error) {
+	if input == nil {
+		return nil, nil
+	}
+	if *input < 0 {
+		return nil, ErrInvalidVisitInfo
+	}
+	value := *input
+	return &value, nil
+}
+
+func normalizeDistancePointer(input *float64) (*float64, error) {
+	if input == nil {
+		return nil, nil
+	}
+	if math.IsNaN(*input) || math.IsInf(*input, 0) || *input < 0 {
+		return nil, ErrInvalidVisitInfo
+	}
+	value := *input
+	return &value, nil
+}
+
+func normalizeAccessOptions(input []model.PlaceAccessOption) ([]model.PlaceAccessOption, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	result := make([]model.PlaceAccessOption, 0, len(input))
+	for _, raw := range input {
+		minMinutes, err := normalizeMinutePointer(raw.DurationMinMinutes)
+		if err != nil {
+			return nil, err
+		}
+		maxMinutes, err := normalizeMinutePointer(raw.DurationMaxMinutes)
+		if err != nil {
+			return nil, err
+		}
+		if minMinutes != nil && maxMinutes != nil && *maxMinutes < *minMinutes {
+			minMinutes, maxMinutes = maxMinutes, minMinutes
+		}
+		distanceKm, err := normalizeDistancePointer(raw.DistanceKm)
+		if err != nil {
+			return nil, err
+		}
+		option := model.PlaceAccessOption{
+			TransportType:      normalizeVisitInfoCode(raw.TransportType),
+			DurationMinMinutes: minMinutes,
+			DurationMaxMinutes: maxMinutes,
+			DistanceKm:         distanceKm,
+			RouteHint:          normalizeFeeLocalizedText(raw.RouteHint),
+			RoadCondition:      normalizeVisitInfoCode(raw.RoadCondition),
+			Requires4x4:        raw.Requires4x4,
+			ParkingNote:        normalizeFeeLocalizedText(raw.ParkingNote),
+			LastSegmentNote:    normalizeFeeLocalizedText(raw.LastSegmentNote),
+			Note:               normalizeFeeLocalizedText(raw.Note),
+			SortOrder:          raw.SortOrder,
+		}
+		if option.TransportType == "" &&
+			option.DurationMinMinutes == nil &&
+			option.DurationMaxMinutes == nil &&
+			option.DistanceKm == nil &&
+			len(option.RouteHint) == 0 &&
+			option.RoadCondition == "" &&
+			!option.Requires4x4 &&
+			len(option.ParkingNote) == 0 &&
+			len(option.LastSegmentNote) == 0 &&
+			len(option.Note) == 0 {
+			continue
+		}
+		result = append(result, option)
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return result, nil
+}
+
+func normalizePracticalNotes(input []model.PlacePracticalNote) []model.PlacePracticalNote {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]model.PlacePracticalNote, 0, len(input))
+	for _, raw := range input {
+		note := model.PlacePracticalNote{
+			NoteType:  normalizeVisitInfoCode(raw.NoteType),
+			Title:     normalizeFeeLocalizedText(raw.Title),
+			Body:      normalizeFeeLocalizedText(raw.Body),
+			Priority:  normalizeVisitInfoCode(raw.Priority),
+			SortOrder: raw.SortOrder,
+		}
+		if note.NoteType == "" && len(note.Title) == 0 && len(note.Body) == 0 {
+			continue
+		}
+		result = append(result, note)
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func normalizeRecommendedItems(input []model.PlaceRecommendedItem) []model.PlaceRecommendedItem {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]model.PlaceRecommendedItem, 0, len(input))
+	for _, raw := range input {
+		item := model.PlaceRecommendedItem{
+			ItemType:   normalizeVisitInfoCode(raw.ItemType),
+			Title:      normalizeFeeLocalizedText(raw.Title),
+			Note:       normalizeFeeLocalizedText(raw.Note),
+			Importance: normalizeVisitInfoCode(raw.Importance),
+			Season:     normalizeVisitInfoCode(raw.Season),
+			SortOrder:  raw.SortOrder,
+		}
+		if item.ItemType == "" && len(item.Title) == 0 && len(item.Note) == 0 {
+			continue
+		}
+		result = append(result, item)
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func normalizeFeeLocalizedText(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(input))
+	for rawLocale, rawText := range input {
+		locale, ok := normalizePlaceLocale(rawLocale)
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(rawText)
+		if text == "" {
+			continue
+		}
+		if utf8.RuneCountInString(text) > maxFeeDetailText {
+			text = string([]rune(text)[:maxFeeDetailText])
+		}
+		result[locale] = text
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+var validOpeningDays = map[string]struct{}{
+	"mon": {}, "tue": {}, "wed": {}, "thu": {}, "fri": {}, "sat": {}, "sun": {},
+}
+
+func normalizeOpeningHours(input *model.PlaceOpeningHours) *model.PlaceOpeningHours {
+	if input == nil {
+		return nil
+	}
+	out := &model.PlaceOpeningHours{
+		Is24Hours: input.Is24Hours,
+		Seasonal:  normalizeFeeLocalizedText(input.Seasonal),
+		Summary:   normalizeFeeLocalizedText(input.Summary),
+	}
+	if len(input.Days) > 0 {
+		days := make(map[string]any, len(input.Days))
+		for key, value := range input.Days {
+			normKey := strings.ToLower(strings.TrimSpace(key))
+			if _, ok := validOpeningDays[normKey]; !ok {
+				continue
+			}
+			days[normKey] = value
+		}
+		if len(days) > 0 {
+			out.Days = days
+		}
+	}
+	if !out.Is24Hours && out.Days == nil && len(out.Seasonal) == 0 && len(out.Summary) == 0 {
+		return nil
+	}
+	return out
+}
+
+func normalizeSeason(input *model.PlaceSeason) *model.PlaceSeason {
+	if input == nil {
+		return nil
+	}
+	seen := make(map[int]struct{}, len(input.Months))
+	months := make([]int, 0, len(input.Months))
+	for _, m := range input.Months {
+		if m < 1 || m > 12 {
+			continue
+		}
+		if _, ok := seen[m]; ok {
+			continue
+		}
+		seen[m] = struct{}{}
+		months = append(months, m)
+	}
+	note := normalizeFeeLocalizedText(input.Note)
+	if len(months) == 0 && len(note) == 0 {
+		return nil
+	}
+	out := &model.PlaceSeason{Note: note}
+	if len(months) > 0 {
+		out.Months = months
+	}
+	return out
+}
+
+func normalizeLocalizedTextList(input []model.LocalizedText) []model.LocalizedText {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]model.LocalizedText, 0, len(input))
+	for _, item := range input {
+		normalized := normalizeFeeLocalizedText(item)
+		if len(normalized) == 0 {
+			continue
+		}
+		result = append(result, normalized)
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func normalizeLinks(input []model.PlaceLink) []model.PlaceLink {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]model.PlaceLink, 0, len(input))
+	for _, item := range input {
+		url := strings.TrimSpace(item.URL)
+		if url == "" {
+			continue
+		}
+		result = append(result, model.PlaceLink{
+			Kind: normalizeVisitInfoCode(item.Kind),
+			URL:  url,
+		})
+		if len(result) >= maxVisitInfoItems {
+			break
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 func normalizeVisitInfoCodes(values []string) []string {

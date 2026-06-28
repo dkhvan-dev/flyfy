@@ -115,34 +115,16 @@ void main() {
     expect(sheetSource, contains('SingleChildScrollView'));
   });
 
-  test('logout confirmation uses excursions filter sheet palette', () async {
+  test('home screen no longer owns drawer logout confirmation UI', () async {
     final source = await File(
       'lib/screens/home/home_screen.dart',
     ).readAsString();
-    final confirmStart = source.indexOf('Future<void> _confirmLogout()');
-    final confirmEnd = source.indexOf('Future<void> _loadTopPlaces');
-    final dialogStart = source.indexOf('class _LogoutConfirmDialog');
-    final dialogEnd = source.indexOf('class _HomeHeader');
 
-    expect(confirmStart, isNonNegative);
-    expect(confirmEnd, greaterThan(confirmStart));
-    expect(dialogStart, isNonNegative);
-    expect(dialogEnd, greaterThan(dialogStart));
-
-    final confirmSource = source.substring(confirmStart, confirmEnd);
-    final dialogSource = source.substring(dialogStart, dialogEnd);
-
-    expect(confirmSource, contains('_LogoutConfirmDialog('));
-    expect(confirmSource, isNot(contains('AlertDialog(')));
-    expect(dialogSource, contains('Icons.logout_rounded'));
-    expect(dialogSource, contains('Color(0xFF21170D)'));
-    expect(dialogSource, contains('Color(0x293A270F)'));
-    expect(dialogSource, contains('Color(0xFF2C2118)'));
-    expect(dialogSource, contains('Color(0xFF3B260D)'));
-    expect(dialogSource, contains('Wrap('));
-    expect(dialogSource, contains('AppColors.accent'));
-    expect(dialogSource, isNot(contains('Color(0xFF243435)')));
-    expect(dialogSource, isNot(contains('Color(0xFF7ED7C1)')));
+    expect(source, isNot(contains('Future<void> _confirmLogout()')));
+    expect(source, isNot(contains('class _LogoutConfirmDialog')));
+    expect(source, isNot(contains('class _LogoutDialogActionButton')));
+    expect(source, isNot(contains('Icons.logout_rounded')));
+    expect(source, isNot(contains('AlertDialog(')));
   });
 
   test('excursions service opens the excursions list screen', () async {
@@ -215,6 +197,8 @@ void main() {
       expect(source, contains('HomeLocationPickerSheet'));
       expect(source, contains('AppLocalizedLocationText'));
       expect(source, contains('onLocationTap: _openLocationSheet'));
+      expect(source, isNot(contains('currentLocationLabel')));
+      expect(source, isNot(contains('homeCurrentLocationLabel')));
       expect(source, isNot(contains('_localizedCountryNames')));
       expect(source, isNot(contains('_localizedCityNames')));
     },
@@ -230,11 +214,19 @@ void main() {
 
       final previewStart = sheetSource.indexOf('class _CurrentLocationPreview');
       final previewEnd = sheetSource.indexOf('class _DetectLocationButton');
+      final cityTileStart = sheetSource.indexOf('class _CityResultTile');
+      final cityTileEnd = sheetSource.indexOf(
+        'class _LocationMessage',
+        cityTileStart,
+      );
 
       expect(previewStart, isNonNegative);
       expect(previewEnd, greaterThan(previewStart));
+      expect(cityTileStart, isNonNegative);
+      expect(cityTileEnd, greaterThan(cityTileStart));
 
       final previewSource = sheetSource.substring(previewStart, previewEnd);
+      final cityTileSource = sheetSource.substring(cityTileStart, cityTileEnd);
 
       expect(ruArb, contains('"homeLocationSearchHint": "Город"'));
       expect(previewSource, contains('AppLocalizedLocationText'));
@@ -242,6 +234,14 @@ void main() {
       expect(previewSource, contains('cityId: location.cityId'));
       expect(previewSource, contains('cityName: location.cityName'));
       expect(previewSource, isNot(contains('Text(\n                  value,')));
+      expect(cityTileSource, contains('AppLocalizedLocationText'));
+      expect(cityTileSource, contains('countryCode: city.countryCode'));
+      expect(cityTileSource, contains('fallbackText: city.countryCode'));
+      expect(cityTileSource, isNot(contains('city.countryCode.toUpperCase()')));
+      expect(sheetSource, contains('_loadInitialCountryCities();'));
+      expect(sheetSource, contains('_initialCountryCities'));
+      expect(sheetSource, contains('citiesByCountry('));
+      expect(sheetSource, contains('.take(_initialCountryCityLimit)'));
       expect(sheetSource, contains('Icons.location_off_rounded'));
       expect(sheetSource, contains('color: AppColors.accent'));
     },
@@ -305,59 +305,57 @@ void main() {
       expect(source, isNot(contains('_buildFeatureEntries(')));
       expect(source, isNot(contains('homeFeaturedStays')));
       expect(source, isNot(contains('homeCarRentals')));
-      expect(ruArb, contains('"servicesAllButton": "Все"'));
-      expect(enArb, contains('"servicesAllButton": "All"'));
-      expect(kkArb, contains('"servicesAllButton"'));
+      expect(ruArb, contains('"servicesAllButton": "Смотреть все"'));
+      expect(enArb, contains('"servicesAllButton": "See all"'));
+      expect(kkArb, contains('"servicesAllButton": "Барлығын көру"'));
+      expect(ruArb, contains('"homeRecommendedActivities": "Топ активности"'));
+      expect(enArb, contains('"homeRecommendedActivities": "Top activities"'));
+      expect(
+        kkArb,
+        contains('"homeRecommendedActivities": "Үздік белсенділіктер"'),
+      );
     },
   );
 
-  test('drawer opening refreshes verified guide badge state', () async {
-    final source = await File(
-      'lib/screens/home/home_screen.dart',
-    ).readAsString();
+  test(
+    'home header opens current profile from avatar instead of drawer',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
 
-    final ensureStart = source.indexOf('void _ensureGuideBadgeState(');
-    final buildStart = source.indexOf('@override\n  Widget build');
-    final scaffoldStart = source.indexOf('return Scaffold(', buildStart);
-    final scaffoldEnd = source.indexOf('drawer: AppSideDrawer(', scaffoldStart);
+      final buildStart = source.indexOf('@override\n  Widget build');
+      final scaffoldStart = source.indexOf('return Scaffold(', buildStart);
+      final headerStart = source.indexOf('class _HomeHeader');
+      final headerEnd = source.indexOf(
+        'class _HeaderActionButton',
+        headerStart,
+      );
 
-    expect(ensureStart, isNonNegative);
-    expect(buildStart, greaterThan(ensureStart));
-    expect(scaffoldStart, greaterThan(buildStart));
-    expect(scaffoldEnd, greaterThan(scaffoldStart));
+      expect(buildStart, isNonNegative);
+      expect(scaffoldStart, greaterThan(buildStart));
+      expect(headerStart, isNonNegative);
+      expect(headerEnd, greaterThan(headerStart));
 
-    final ensureSource = source.substring(ensureStart, buildStart);
-    final scaffoldSource = source.substring(scaffoldStart, scaffoldEnd);
+      final scaffoldSource = source.substring(scaffoldStart, headerStart);
+      final headerSource = source.substring(headerStart, headerEnd);
 
-    expect(ensureSource, contains('{bool force = false}'));
-    expect(
-      ensureSource,
-      contains('final isNewUser = _guideBadgeUserId != normalizedUserId'),
-    );
-    expect(ensureSource, contains('if (!force && !isNewUser)'));
-    expect(scaffoldSource, contains('onDrawerChanged:'));
-    expect(
-      scaffoldSource,
-      contains('_ensureGuideBadgeState(currentUserId, force: true)'),
-    );
-  });
-
-  test('home drawer opens saved checklist list', () async {
-    final source = await File(
-      'lib/screens/home/home_screen.dart',
-    ).readAsString();
-
-    final drawerStart = source.indexOf('drawer: AppSideDrawer(');
-    final drawerEnd = source.indexOf('bottomNavigationBar:', drawerStart);
-
-    expect(drawerStart, isNonNegative);
-    expect(drawerEnd, greaterThan(drawerStart));
-
-    final drawerSource = source.substring(drawerStart, drawerEnd);
-
-    expect(drawerSource, contains('onMyChecklistsTap:'));
-    expect(drawerSource, contains("context.push('/me/checklists')"));
-  });
+      expect(
+        source,
+        isNot(contains("import '../common/app_side_drawer.dart';")),
+      );
+      expect(scaffoldSource, isNot(contains('drawer: AppSideDrawer(')));
+      expect(scaffoldSource, isNot(contains('onDrawerChanged:')));
+      expect(source, isNot(contains('void _openDrawer()')));
+      expect(headerSource, contains('required this.profile'));
+      expect(headerSource, contains('required this.onProfileTap'));
+      expect(headerSource, contains('_HeaderAvatarButton('));
+      expect(headerSource, contains('onTap: onProfileTap'));
+      expect(headerSource, isNot(contains('Icons.menu_rounded')));
+      expect(source, contains('profile: profile'));
+      expect(source, contains('onProfileTap: _openProfile'));
+    },
+  );
 
   test(
     'promo carousel is passive and sizes cards from content metrics',

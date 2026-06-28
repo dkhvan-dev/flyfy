@@ -608,7 +608,6 @@ bool _isSystemStoryAuthor(StoryVm story) {
     ...story.tags,
   ].join(' ').toLowerCase();
   return values.contains('inflap') ||
-      values.contains('flyfy') ||
       values.contains('official') ||
       values.contains('system') ||
       values.contains('admin') ||

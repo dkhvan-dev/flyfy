@@ -8,7 +8,7 @@
 -- Rating policy:
 -- - rating is an editorial seed baseline from 4.5 to 4.8 for sorting curated import content.
 -- - review_count starts at 0; after users leave reviews, the service recalculates rating from place_reviews.
--- - price is left NULL because official fees, guide costs and transport costs vary by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 -- Location policy:
 -- - country_code stores the ISO-2 code from reference-service/data/countries.json (KZ).
 -- - city_id stores a reference-service/data/cities.json id; for regional/nature sites it points to the nearest practical hub city.
@@ -71,8 +71,37 @@ SELECT
     'KZ',
     seed_base.city_id,
     seed_base.category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE seed_base.id
+        -- Ile-Alatau NP (0.15 MRP = 650, 2026, src: Тарифы_2026)
+        WHEN '40e5320e-32fa-4160-8211-da015eb5195b'::uuid THEN 650::numeric    -- Big Almaty Lake (BAO)
+        -- Standard OOPT parks (0.2 MRP = 900, 2026)
+        WHEN 'a9b79956-5545-4218-8646-2e619c5214d5'::uuid THEN 900::numeric    -- Charyn Canyon NP
+        WHEN '62d4f3a1-6821-4ad9-a7f8-e947a8475dca'::uuid THEN 900::numeric    -- Kolsai Lakes NP
+        WHEN '9dca7991-e73e-4f92-92b7-41d30a6b8b49'::uuid THEN 900::numeric    -- Kaindy Lake (Kolsai NP zone)
+        WHEN '7763f114-9bed-4b3d-9d65-31fb78dfea29'::uuid THEN 900::numeric    -- Altyn-Emel NP
+        WHEN 'c128bdff-bdd1-4eba-a9c4-47fcd17ce16f'::uuid THEN 900::numeric    -- Bayanaul NP
+        WHEN '2b8cf2b3-78e3-41af-92c6-5ac00b1536d4'::uuid THEN 900::numeric    -- Katon-Karagay NP
+        WHEN '73ebd6ff-2960-4bee-b01b-7fd0704aaf45'::uuid THEN 900::numeric    -- Aksu-Zhabagly reserve
+        WHEN 'd58d55d5-f0f8-410f-9b62-f0accc1b8320'::uuid THEN 900::numeric    -- Saryarka/Korgalzhyn (UNESCO)
+        -- Resort cable car
+        WHEN 'a382cda5-4781-4840-8e56-a5237e35acd2'::uuid THEN 3000::numeric   -- Shymbulak gondola one-way base
+        -- Paid historic/museum sites
+        WHEN 'ffed49ce-ac1f-431b-8d9c-60d581956120'::uuid THEN 1000::numeric   -- Tamgaly petroglyphs (UNESCO), adult
+        WHEN 'f5d59a14-b4f4-45a5-931b-48e88baeb313'::uuid THEN 1000::numeric   -- Yasawi mausoleum (UNESCO), adult
+        -- Astana landmark
+        WHEN 'dbdd707a-bc65-478e-86b1-1eb229000495'::uuid THEN 2500::numeric   -- Bayterek observation deck, adult
+        -- Regional paid museums
+        WHEN 'e7016a75-1384-4bd7-a9bc-bd0e045fc7cf'::uuid THEN 500::numeric    -- Ancient Taraz open-air museum
+        WHEN '9b28f1b9-8fe0-4b14-b8b8-f6e4cf441442'::uuid THEN 500::numeric    -- Ulytau reserve-museum
+        -- Free: Medeu closed 2025-2027, Burabay pedestrian free, public beaches
+        WHEN '39f691c1-91e4-4544-8e80-045ccc32f45e'::uuid THEN 0::numeric      -- Medeu (closed for reconstruction until end 2027)
+        WHEN '114d51df-f9ad-42c0-85a3-c22a7837d68e'::uuid THEN 0::numeric      -- Burabay NP (pedestrian free; car 1750 set by mig 143)
+        WHEN 'f8bf4a72-9c35-4720-95bc-4b880f25f65c'::uuid THEN 0::numeric      -- Lake Alakol (public beach)
+        WHEN '83423d6a-b4c8-49f6-a43a-11915345dd32'::uuid THEN 0::numeric      -- Lake Balkhash (public beach)
+        WHEN '9f15a751-3cee-4a54-8fef-5f2926db9917'::uuid THEN 0::numeric      -- Bozjyra (no checkpoint fee)
+        ELSE 0::numeric
+    END,
+    'KZT',
     seed_base.duration_value,
     seed_base.duration_unit,
     seed_base.rating,

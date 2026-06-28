@@ -51,7 +51,7 @@ const conversationColumns = `id, type, title, avatar_file_id, activity_id, excur
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.excursion_schedule_slot_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
 const messageColumns = `id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, story_reply, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, moderation_status, moderation_reason_codes, moderation_risk_score, moderation_triggered_at, moderation_reviewed_at, moderation_reviewed_by, moderation_public_comment, moderation_internal_comment, moderation_revision, sent_at`
 const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.client_message_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.story_reply, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.moderation_status, m.moderation_reason_codes, m.moderation_risk_score, m.moderation_triggered_at, m.moderation_reviewed_at, m.moderation_reviewed_by, m.moderation_public_comment, m.moderation_internal_comment, m.moderation_revision, m.sent_at`
-const chatNotificationOutboxColumns = `id, event_type, conversation_id, message_id, actor_user_id, reaction_emoji, attempts, next_attempt_at, locked_at, processed_at, failed_at, last_error, created_at, updated_at`
+const chatNotificationOutboxReturningColumns = `outbox.id, outbox.event_type, outbox.conversation_id, outbox.message_id, outbox.actor_user_id, outbox.reaction_emoji, outbox.attempts, outbox.next_attempt_at, outbox.locked_at, outbox.processed_at, outbox.failed_at, outbox.last_error, outbox.created_at, outbox.updated_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -733,7 +733,7 @@ func (r *PGChatRepository) ClaimDueChatNotificationOutbox(
 		    updated_at = $1
 		FROM due
 		WHERE outbox.id = due.id
-		RETURNING `+chatNotificationOutboxColumns+`
+		RETURNING `+chatNotificationOutboxReturningColumns+`
 	`, now, limit)
 	if err != nil {
 		return nil, fmt.Errorf("claim chat notification outbox: %w", err)

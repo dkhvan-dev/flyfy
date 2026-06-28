@@ -215,6 +215,7 @@ type CarryItemMatch struct {
 
 func (uc *ChecklistUseCase) GenerateTripChecklist(input GenerateTripChecklistInput) (model.TripChecklist, error) {
 	month := input.StartAt.Month()
+	input.TravelerProfile = normalizedTravelerProfile(input.TravelerProfile)
 	seasonalProfile := uc.matchSeasonalProfile(input.Destination, month)
 	items := make([]model.ChecklistItem, 0, len(uc.repo.Templates()))
 
@@ -258,6 +259,7 @@ func (uc *ChecklistUseCase) GetOrCreateTripChecklist(
 	ctx context.Context,
 	input GenerateTripChecklistInput,
 ) (model.TripChecklist, error) {
+	input.TravelerProfile = normalizedTravelerProfile(input.TravelerProfile)
 	userID := strings.TrimSpace(input.UserID)
 	if userID == "" {
 		return model.TripChecklist{}, ErrChecklistUserRequired
@@ -272,7 +274,24 @@ func (uc *ChecklistUseCase) GetOrCreateTripChecklist(
 		return model.TripChecklist{}, fmt.Errorf("%w: %v", ErrChecklistPersistenceFailed, err)
 	}
 	if ok {
-		return uc.attachCustomItems(ctx, existing)
+		if !checklistTravelerProfileRequiresRegeneration(existing.TravelerProfile, input.TravelerProfile) {
+			return uc.attachCustomItems(ctx, existing)
+		}
+		regenerated, genErr := uc.GenerateTripChecklist(input)
+		if genErr != nil {
+			return model.TripChecklist{}, genErr
+		}
+		regenerated.InstanceID = existing.InstanceID
+		regenerated.UserID = userID
+		regenerated.TripID = tripID
+		regenerated.GeneratedAt = existing.GeneratedAt
+		regenerated.UpdatedAt = uc.now().UTC()
+		carryChecklistItemProgress(regenerated.Items, existing.Items)
+		regenerated.Readiness = uc.CalculateReadiness(regenerated.Items, uc.now())
+		if err = uc.repo.SaveTripChecklistInstance(ctx, regenerated); err != nil {
+			return model.TripChecklist{}, fmt.Errorf("%w: %v", ErrChecklistPersistenceFailed, err)
+		}
+		return uc.attachCustomItems(ctx, regenerated)
 	}
 
 	input.UserID = userID
@@ -1091,6 +1110,9 @@ func matchesCondition(condition model.RuleCondition, input GenerateTripChecklist
 	if condition.TravelerHasChildren && !input.TravelerProfile.HasChildren {
 		return false
 	}
+	if condition.InternationalTrip && !isInternationalTrip(input.Destination, input.TravelerProfile) {
+		return false
+	}
 	if condition.TransportMode != "" && !containsTransportMode(input.TransportModes, condition.TransportMode) {
 		return false
 	}
@@ -1233,6 +1255,46 @@ func normalizedTransportModes(values []model.TransportMode) []model.TransportMod
 		normalized = append(normalized, mode)
 	}
 	return normalized
+}
+
+func normalizedTravelerProfile(profile model.TravelerProfile) model.TravelerProfile {
+	profile.CitizenshipCountryCode = strings.ToUpper(strings.TrimSpace(profile.CitizenshipCountryCode))
+	profile.PreferredLanguage = strings.TrimSpace(profile.PreferredLanguage)
+	return profile
+}
+
+func checklistTravelerProfileRequiresRegeneration(existing model.TravelerProfile, next model.TravelerProfile) bool {
+	existing = normalizedTravelerProfile(existing)
+	next = normalizedTravelerProfile(next)
+	if next.CitizenshipCountryCode == "" {
+		return false
+	}
+	return existing.CitizenshipCountryCode != next.CitizenshipCountryCode
+}
+
+func carryChecklistItemProgress(nextItems []model.ChecklistItem, existingItems []model.ChecklistItem) {
+	existingByID := make(map[string]model.ChecklistItem, len(existingItems))
+	for _, item := range existingItems {
+		existingByID[item.ID] = item
+	}
+	for i := range nextItems {
+		existing, ok := existingByID[nextItems[i].ID]
+		if !ok {
+			continue
+		}
+		nextItems[i].Status = existing.Status
+		nextItems[i].AssignedUserID = existing.AssignedUserID
+		nextItems[i].DeadlineAt = existing.DeadlineAt
+	}
+}
+
+func isInternationalTrip(destination model.TripDestination, profile model.TravelerProfile) bool {
+	destinationCountry := strings.ToUpper(strings.TrimSpace(destination.CountryCode))
+	citizenshipCountry := strings.ToUpper(strings.TrimSpace(profile.CitizenshipCountryCode))
+	if destinationCountry == "" || citizenshipCountry == "" {
+		return true
+	}
+	return destinationCountry != citizenshipCountry
 }
 
 func normalizedStringTokens(values []string) []string {

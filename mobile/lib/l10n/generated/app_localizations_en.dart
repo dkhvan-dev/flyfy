@@ -457,7 +457,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get travelChecklistTransportFlight => 'Flight';
+  String get travelChecklistTransportFlight => 'Airplane';
 
   @override
   String get travelChecklistTransportTrain => 'Train';
@@ -469,7 +469,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get travelChecklistTransportCar => 'Car';
 
   @override
+  String get travelChecklistTransportMotorcycle => 'Motorcycle';
+
+  @override
   String get travelChecklistTransportFerry => 'Ferry';
+
+  @override
+  String get travelChecklistTransportOther => 'Other';
 
   @override
   String get travelChecklistActivityWalking => 'Walking';
@@ -950,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get profileCountry => 'Country';
+  String get profileCountry => 'Citizenship';
 
   @override
   String get profileCurrency => 'Currency';
@@ -1017,7 +1023,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVerificationIdentityNotice =>
-      'We use these details only to verify your identity and guide status.';
+      'We use these details only to verify your identity and guide status';
 
   @override
   String get guideVerificationContinueToDocuments => 'Continue to documents';
@@ -1043,14 +1049,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVerificationNoGlareHint =>
-      'Take the photo in even light so every detail remains readable.';
+      'Take the photo in even light so every detail remains readable';
 
   @override
   String get guideVerificationFullFrame => 'Full frame';
 
   @override
   String get guideVerificationFullFrameHint =>
-      'All edges of the document should be visible in the image.';
+      'All edges of the document should be visible in the image';
 
   @override
   String get guideVerificationTapToCapturePassport =>
@@ -1063,8 +1069,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideVerificationChooseFile => 'Choose file';
 
   @override
+  String get guideVerificationReplaceFile => 'Replace file';
+
+  @override
   String get guideVerificationDocumentConfirm =>
-      'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems.';
+      'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems';
 
   @override
   String get guideVerificationVerifyContinue => 'Continue verification';
@@ -1099,7 +1108,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVerificationUploadLicenseSubtitle =>
-      'A certificate, license, or other professional document works here.';
+      'A certificate, license, or other professional document works here';
 
   @override
   String get guideVerificationAdditionalCertifications => 'Additional skills';
@@ -1125,14 +1134,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVerificationFirstAidHint =>
-      'You have current first aid training or a valid certificate.';
+      'You have current first aid training or a valid certificate';
 
   @override
   String get guideVerificationLanguageProficiency => 'Foreign languages';
 
   @override
   String get guideVerificationLanguageProficiencyHint =>
-      'You can host activities and excursions in more than one language.';
+      'You can host activities and excursions in more than one language';
 
   @override
   String get guideVerificationTimelineTitle => 'Review timeline';
@@ -1185,14 +1194,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVerificationAgreement =>
-      'I agree to document review and data processing for guide status verification.';
+      'I agree to document review and data processing for guide status verification';
 
   @override
   String get guideVerificationSubmit => 'Submit application';
 
   @override
   String get guideVerificationReviewNote =>
-      'After submission, you can track the application status in your profile.';
+      'After submission, you can track the application status in your profile';
 
   @override
   String get guideVerificationPendingTitle =>
@@ -1298,7 +1307,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Fill in your nickname, first name, last name, and country to unlock all Inflap features';
+      'Fill in your nickname, first name, last name, and citizenship to unlock all Inflap features';
 
   @override
   String get fillNowButton => 'Fill now';
@@ -1355,14 +1364,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastNameRequired => 'Enter last name';
 
   @override
-  String get profileCountryRequired => 'Select your country';
+  String get profileCountryRequired => 'Select your citizenship';
 
   @override
   String get profileRequiredTitle => 'Complete your profile';
 
   @override
   String get profileRequiredDescription =>
-      'To continue, enter your nickname, first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.';
+      'To continue, enter your nickname, first name, last name, and citizenship in your profile. This helps reduce fake accounts and increases trust between users.';
 
   @override
   String get myProfileTitle => 'My Profile';
@@ -1381,7 +1390,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileEmptyBioPlaceholder =>
-      'There is no public description yet. Once the profile is filled in, a short bio will appear here.';
+      'A few words about yourself help others get to know you better';
 
   @override
   String get profileBecomeGuideTitle => 'Become a guide';
@@ -1512,6 +1521,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'New incoming friend requests will appear here.';
 
   @override
+  String get profileMyContentTitle => 'My space';
+
+  @override
   String get profileJourneyTitle => 'My journey';
 
   @override
@@ -1547,14 +1559,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNotificationsRowSubtitle =>
-      'Push, email, and SMS updates for your activity flow.';
+      'Push, email, and SMS updates for your activity flow';
 
   @override
   String get profileSecurityRowTitle => 'Security & data';
 
   @override
   String get profileSecurityRowSubtitle =>
-      'Account protection, data export, and privacy controls.';
+      'Account protection, data export, and privacy controls';
 
   @override
   String get profileHostedActivitiesTitle => 'Hosted activities';
@@ -1761,7 +1773,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSettingsEditSubtitle =>
-      'Update your name, photo, bio, and core profile details.';
+      'Update your name, photo, bio, and core profile details';
 
   @override
   String get profileOverviewSectionTitle => 'Profile overview';
@@ -1905,7 +1917,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String profileNotificationsQuietHoursTimezone(Object timezone) {
-    return 'Using profile timezone: $timezone';
+    return 'Using current timezone: $timezone';
   }
 
   @override
@@ -2545,7 +2557,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get servicesSectionTitle => 'Services';
 
   @override
-  String get servicesAllButton => 'All';
+  String get servicesAllButton => 'See all';
 
   @override
   String get homeExcursionsTitle => 'Excursions';
@@ -2649,7 +2661,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeCarRentals => 'Car Rentals';
 
   @override
-  String get homeRecommendedActivities => 'Recommended Activities';
+  String get homeRecommendedActivities => 'Top activities';
 
   @override
   String get homeFilterButton => 'Filter';
@@ -4075,16 +4087,181 @@ class AppLocalizationsEn extends AppLocalizations {
   String get placeExperienceSection => 'The experience';
 
   @override
+  String get placeFeeDetailsSection => 'Costs';
+
+  @override
+  String get placeFeeDetailsTitle => 'Approximate expenses';
+
+  @override
+  String get placeFeeDetailsNote =>
+      'Actual tariffs may change before your visit';
+
+  @override
   String get placeExpectSection => 'What to expect';
 
   @override
   String get placeVisitPlanSection => 'Plan your visit';
 
   @override
+  String get placeVisitOverviewTitle => 'At a glance';
+
+  @override
+  String get placeVisitCostTitle => 'Cost';
+
+  @override
+  String get placeVisitSeasonTitle => 'When to go';
+
+  @override
+  String get placeVisitAccessTitle => 'How to get there';
+
+  @override
+  String get placeVisitTimeTitle => 'Time to plan';
+
+  @override
+  String get placeVisitRecommendedItemsTitle => 'What to take';
+
+  @override
+  String get placeVisitPracticalNotesTitle => 'Practical tips';
+
+  @override
   String get placeInflapTipTitle => 'Inflap tip';
 
   @override
   String get placeVisitDurationLabel => 'Time needed';
+
+  @override
+  String get placeVisitCarTimeLabel => 'By car';
+
+  @override
+  String get placeVisitOpeningHoursLabel => 'Opening hours';
+
+  @override
+  String get placeVisitPriceNoteLabel => 'Price note';
+
+  @override
+  String get placeVisitRoadConditionLabel => 'Road';
+
+  @override
+  String get placeVisitRouteHintLabel => 'Landmark';
+
+  @override
+  String get placeVisitParkingLabel => 'Parking';
+
+  @override
+  String get placeVisitLastSegmentLabel => 'Last segment';
+
+  @override
+  String get placeVisitRequires4x4 => '4x4 needed';
+
+  @override
+  String get placeVisitRequiredLabel => 'Required';
+
+  @override
+  String get placeVisitOptionalLabel => 'Optional';
+
+  @override
+  String get placeVisitRecommendedLabel => 'Recommended';
+
+  @override
+  String get placeVisitItemWater => 'Water';
+
+  @override
+  String get placeVisitItemShoes => 'Comfortable shoes';
+
+  @override
+  String get placeVisitItemCash => 'Cash';
+
+  @override
+  String get placeVisitItemWarmClothes => 'Warm clothes';
+
+  @override
+  String get placeVisitItemPowerbank => 'Power bank';
+
+  @override
+  String get placeVisitItemDocuments => 'Documents';
+
+  @override
+  String get placeVisitItemFood => 'Food';
+
+  @override
+  String get placeVisitItemSpf => 'SPF and hat';
+
+  @override
+  String get placeVisitItemRain => 'Rain jacket';
+
+  @override
+  String get placeVisitItemMap => 'Offline map';
+
+  @override
+  String get placeVisitItemRepellent => 'Repellent';
+
+  @override
+  String get placeVisitItemFirstAid => 'First aid kit';
+
+  @override
+  String get placeVisitItemOther => 'Preparation';
+
+  @override
+  String get placeVisitTransportCar => 'Car';
+
+  @override
+  String get placeVisitTransportWalk => 'Walk';
+
+  @override
+  String get placeVisitTransportTaxi => 'Taxi';
+
+  @override
+  String get placeVisitTransportBus => 'Bus';
+
+  @override
+  String get placeVisitTransportCableCar => 'Cable car';
+
+  @override
+  String get placeVisitTransportShuttle => 'Shuttle';
+
+  @override
+  String get placeVisitTransportHorse => 'Horse';
+
+  @override
+  String get placeVisitTransportTrain => 'Train';
+
+  @override
+  String get placeVisitTransportBoat => 'Boat';
+
+  @override
+  String get placeVisitRoadPaved => 'Paved';
+
+  @override
+  String get placeVisitRoadGravel => 'Gravel';
+
+  @override
+  String get placeVisitRoadMountain => 'Mountain road';
+
+  @override
+  String get placeVisitRoadMixed => 'Mixed road';
+
+  @override
+  String get placeVisitRoadOffroad => 'Off-road';
+
+  @override
+  String placeVisitMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String placeVisitHoursOnly(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String placeVisitHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String placeVisitDistanceKm(String distance) {
+    return '$distance km';
+  }
 
   @override
   String get placeVisitDurationFlexible => 'Flexible';
@@ -4162,7 +4339,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check current hours and combine this stop with nearby activities to avoid losing time in transit.';
 
   @override
-  String get placeReviewsSection => 'Explorer\'s voice';
+  String get placeVisitPracticalGeneral => 'Practical tip';
+
+  @override
+  String get placeVisitPracticalConnection => 'Connection';
+
+  @override
+  String get placeVisitPracticalToilet => 'Toilets';
+
+  @override
+  String get placeVisitPracticalCafe => 'Cafe';
+
+  @override
+  String get placeVisitPracticalSafety => 'Safety';
+
+  @override
+  String get placeVisitPracticalKids => 'With kids';
+
+  @override
+  String get placeVisitPracticalWeather => 'Weather';
+
+  @override
+  String get placeReviewsSection => 'Tourist reviews';
 
   @override
   String placeSeeAllReviews(int count) {
@@ -4239,7 +4437,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get placeVerifiedNomad => 'Verified nomad';
 
   @override
-  String get placeReviewsTitle => 'Reviews';
+  String get placeReviewsTitle => 'Tourist reviews';
 
   @override
   String get placeTravelerFallback => 'Traveler';
@@ -4287,10 +4485,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pull to refresh or open the profile again.';
 
   @override
-  String get placePriceVaries => 'Price varies';
+  String get placePriceVaries => 'price to confirm';
 
   @override
-  String get placePriceVariesShort => 'Varies';
+  String get placePriceVariesShort => 'to confirm';
+
+  @override
+  String get placeFreeEntry => 'Free';
+
+  @override
+  String placePriceFrom(Object price) {
+    return 'from $price';
+  }
+
+  @override
+  String placeFeeApproxAmount(Object amount) {
+    return '~$amount';
+  }
+
+  @override
+  String placeFeePerUnit(Object amount, Object unit) {
+    return '$amount per $unit';
+  }
+
+  @override
+  String get placeFeeUnitPerson => 'person';
+
+  @override
+  String get placeFeeUnitCar => 'car';
+
+  @override
+  String get placeFeeUnitMotorcycle => 'motorcycle';
+
+  @override
+  String get placeFeeUnitTicket => 'ticket';
+
+  @override
+  String get placeFeeUnitGroup => 'group';
+
+  @override
+  String get placeFeeUnitItem => 'item';
 
   @override
   String placeDurationHours(int hours) {
@@ -6285,7 +6519,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardDirectGuideReviewsTab => 'Guide';
 
   @override
-  String get guideDashboardOffersStat => 'Total offers';
+  String get guideDashboardOffersStat => 'Offers';
 
   @override
   String get guideDashboardBookingsStat => 'Bookings';
@@ -6540,7 +6774,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardStatusRejected => 'Rejected';
 
   @override
-  String get guideDashboardStatusBooked => 'Booked';
+  String get guideDashboardStatusBooked => 'Active';
 
   @override
   String get guideDashboardStatusCompleted => 'Completed';
@@ -8779,6 +9013,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsCategorySystem => 'System';
 
   @override
+  String get notificationsCategorySupport => 'Support';
+
+  @override
   String get notificationsCategoryGeneral => 'General';
 
   @override
@@ -8833,6 +9070,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsChatMessageBody => 'Open chats to reply.';
+
+  @override
+  String get notificationsSupportRepliedTitle => 'Support replied';
+
+  @override
+  String get notificationsSupportRepliedBody =>
+      'Support replied to your ticket.';
+
+  @override
+  String get notificationsSupportUpdatedTitle => 'Support request updated';
+
+  @override
+  String get notificationsSupportUpdatedBody =>
+      'Open support chat to see the latest update.';
 
   @override
   String notificationsActivityJoinedTitle(Object actor) {
@@ -8974,4 +9225,241 @@ class AppLocalizationsEn extends AppLocalizations {
   String notificationsDaysAgo(Object days) {
     return '$days d ago';
   }
+
+  @override
+  String get helpCenterTitle => 'Help Center';
+
+  @override
+  String get helpCenterSubtitle =>
+      'Answers for bookings, guides, places, payments, currency, and account safety';
+
+  @override
+  String get helpCenterSearchHint => 'Questions, tips, instructions';
+
+  @override
+  String get helpCenterCategoryAll => 'All';
+
+  @override
+  String get helpCenterCategoryDocuments => 'Documents';
+
+  @override
+  String get helpCenterCategoryFlights => 'Flights';
+
+  @override
+  String get helpCenterCategoryAccommodation => 'Stay';
+
+  @override
+  String get helpCenterCategoryMoney => 'Money';
+
+  @override
+  String get helpCenterCategorySafety => 'Safety';
+
+  @override
+  String get helpCenterCategoryTransport => 'Transport';
+
+  @override
+  String get helpCenterCategoryPlanning => 'Planning';
+
+  @override
+  String get helpCenterCategoryCulture => 'Culture';
+
+  @override
+  String get helpCenterMoreCategories => 'More';
+
+  @override
+  String get helpCenterCategoriesTitle => 'Categories';
+
+  @override
+  String get helpCenterPopularTitle => 'Popular answers';
+
+  @override
+  String get helpCenterSearchResultsTitle => 'Search results';
+
+  @override
+  String get helpCenterNoResultsTitle => 'No answer found';
+
+  @override
+  String get helpCenterNoResultsMessage =>
+      'Try another phrase or open Support requests if the answer is still missing';
+
+  @override
+  String get helpCenterLoadFailedTitle => 'Could not load help';
+
+  @override
+  String get helpCenterRetry => 'Try again';
+
+  @override
+  String get helpCenterLoadMore => 'Load more';
+
+  @override
+  String get helpCenterContactSupport => 'Contact support';
+
+  @override
+  String get helpCenterOpenChat => 'Open chat';
+
+  @override
+  String get helpCenterSupportChatButton => 'Chat';
+
+  @override
+  String get helpCenterOpenRoute => 'Open';
+
+  @override
+  String get helpCenterWasHelpful => 'Was this helpful?';
+
+  @override
+  String get helpCenterHelpful => 'Helpful';
+
+  @override
+  String get helpCenterNotHelpful => 'Not helpful';
+
+  @override
+  String get helpCenterFeedbackSaved =>
+      'Thanks, your feedback helps improve answers';
+
+  @override
+  String get supportRequestsSubtitle =>
+      'Track conversations with Inflap support and reply when we need more details';
+
+  @override
+  String get supportRequestsLoadFailedTitle => 'Could not load requests';
+
+  @override
+  String get supportTicketDetailTitle => 'Support chat';
+
+  @override
+  String get supportTicketReplyHint => 'Write a reply';
+
+  @override
+  String get supportTicketClose => 'Close request';
+
+  @override
+  String get supportTicketNoMessagesTitle => 'No messages yet';
+
+  @override
+  String get supportTicketNoMessagesMessage =>
+      'Messages from support will appear here';
+
+  @override
+  String get supportReplyFailed => 'Could not send your reply';
+
+  @override
+  String get supportTicketCSATTitle => 'Rate support';
+
+  @override
+  String get supportTicketCSATCommentHint => 'Add a comment';
+
+  @override
+  String get supportTicketCSATSubmit => 'Send rating';
+
+  @override
+  String get supportTicketCSATThanks => 'Thanks for rating support';
+
+  @override
+  String get supportTicketCSATFailed => 'Could not save your rating';
+
+  @override
+  String get supportEventTicketClosedByUser => 'Request closed by user';
+
+  @override
+  String get supportEventCSATSubmitted => 'Support rating submitted';
+
+  @override
+  String get supportEventTicketResolved => 'Request resolved';
+
+  @override
+  String get supportEventSegmentCalculated => 'Support context updated';
+
+  @override
+  String get supportEventUserReplied => 'Message sent';
+
+  @override
+  String get supportEventAgentReplied => 'Support replied';
+
+  @override
+  String get supportEventUpdated => 'Support request updated';
+
+  @override
+  String get supportStatusNew => 'Received';
+
+  @override
+  String get supportStatusOpen => 'Open';
+
+  @override
+  String get supportStatusAssigned => 'Assigned';
+
+  @override
+  String get supportStatusWaitingUser => 'Waiting for your reply';
+
+  @override
+  String get supportStatusWaitingSupport => 'Waiting for support';
+
+  @override
+  String get supportStatusResolved => 'Resolved';
+
+  @override
+  String get supportStatusClosed => 'Closed';
+
+  @override
+  String get supportStatusReopened => 'Reopened';
+
+  @override
+  String get supportPreviewNew =>
+      'We received your request and will answer in this chat';
+
+  @override
+  String get supportPreviewWaitingUser => 'Support needs more details from you';
+
+  @override
+  String get supportPreviewWaitingSupport =>
+      'Your reply was sent. Support will get back to you here.';
+
+  @override
+  String get supportPreviewResolved =>
+      'This request is finished. You can rate support or create a new request.';
+
+  @override
+  String supportExpectedResponseWithin(Object time) {
+    return 'We usually answer within $time';
+  }
+
+  @override
+  String get supportMessageSending => 'Sending';
+
+  @override
+  String get supportMessageSent => 'Sent';
+
+  @override
+  String get supportMessageNotSent => 'Not sent';
+
+  @override
+  String get supportMessageRetry => 'Retry';
+
+  @override
+  String get supportEpisodeNewRequestCreated => 'Created new request';
+
+  @override
+  String supportEpisodeStarted(Object date) {
+    return 'Support request from $date';
+  }
+
+  @override
+  String get supportUserFallbackName => 'You';
+
+  @override
+  String get supportAgentFallbackName => 'Support';
+
+  @override
+  String get supportSystemFallbackName => 'System';
+
+  @override
+  String get contextualHelpTitle => 'Questions and help';
+
+  @override
+  String get contextualHelpOpenAll => 'All help';
+
+  @override
+  String get contextualHelpLoadFailed => 'Help is temporarily unavailable';
+
+  @override
+  String get contextualHelpTryAgain => 'Retry';
 }

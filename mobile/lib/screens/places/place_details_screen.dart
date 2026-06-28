@@ -21,8 +21,11 @@ import '../../features/places/models/place_vm.dart';
 import '../../features/routing/models/routing_models.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
+import '../../features/help_center/data/help_center_api.dart';
+import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/currency_rate_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
@@ -66,14 +69,30 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   String? _error;
   String? _locationLabel;
   int _currentImageIndex = 0;
+  bool _didResolveInitialPlace = false;
+  bool _didScheduleInitialLoad = false;
 
   @override
   void initState() {
     super.initState();
-    _place = widget.initialPlace;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didResolveInitialPlace) {
+      final locale = Localizations.localeOf(context);
+      if (canDisplayInitialPlaceForLocale(widget.initialPlace, locale)) {
+        _place = widget.initialPlace;
+      }
+      _didResolveInitialPlace = true;
+    }
+    if (!_didScheduleInitialLoad) {
+      _didScheduleInitialLoad = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadData();
+      });
+    }
   }
 
   @override
@@ -578,6 +597,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         builder: (context) {
           final adaptive = PlaceAdaptive.of(context);
           final l10n = AppLocalizations.of(context)!;
+          final waitingForLocalizedDetails =
+              _loading && (_place == null || _locationLabel == null);
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle.light,
@@ -585,7 +606,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               backgroundColor: const Color(0xFF211609),
               body: SafeArea(
                 bottom: false,
-                child: _loading && _place == null
+                child: waitingForLocalizedDetails
                     ? const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.accent,
@@ -969,6 +990,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     final place = _place!;
     final padX = a.scale(28);
     final mq = MediaQuery.of(context);
+    final hasStructuredVisitPlanning = _hasStructuredVisitPlanning(place);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -985,9 +1007,52 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           _buildLocationBlock(place, a, l10n),
           SizedBox(height: a.scale(46, minFactor: 0.72)),
           _buildExperience(place, a, l10n),
+          if (hasStructuredVisitPlanning) ...[
+            SizedBox(height: a.scale(46, minFactor: 0.72)),
+            _buildVisitOverview(place, a, l10n),
+            if (_hasVisitCostInfo(place)) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildVisitCostBlock(place, a, l10n),
+            ],
+            if (_hasVisitSeasonInfo(place)) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildVisitSeasonBlock(place, a, l10n),
+            ],
+            if (_hasVisitAccessInfo(place)) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildVisitAccessBlock(place, a, l10n),
+            ],
+            if (_hasVisitTimeInfo(place)) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildVisitTimeBlock(place, a, l10n),
+            ],
+            if (place.visitInfo.recommendedItems.isNotEmpty) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildRecommendedItemsBlock(place, a, l10n),
+            ],
+            if (place.visitInfo.practicalNotes.isNotEmpty) ...[
+              SizedBox(height: a.scale(16, minFactor: 0.72)),
+              _buildPracticalNotesBlock(place, a, l10n),
+            ],
+          ] else if (place.feeDetails.isNotEmpty) ...[
+            SizedBox(height: a.scale(46, minFactor: 0.72)),
+            _buildFeeDetails(place, a, l10n),
+          ],
+          if (!hasStructuredVisitPlanning) ...[
+            SizedBox(height: a.scale(56)),
+            _buildVisitPlan(place, a, l10n),
+          ],
           SizedBox(height: a.scale(56)),
-          _buildVisitPlan(place, a, l10n),
-          SizedBox(height: a.scale(56)),
+          ContextualHelpSection(
+            surface: HelpCenterSurface.placeDetails,
+            tags: const ['places', 'rules'],
+            supportContext: {
+              'screen': 'place_details',
+              'locale': Localizations.localeOf(context).languageCode,
+              'place_id': widget.placeId,
+            },
+          ),
+          SizedBox(height: a.scale(hasStructuredVisitPlanning ? 28 : 56)),
           _buildReviews(a, l10n),
         ],
       ),
@@ -1164,7 +1229,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     if (place.priceAmount == null) {
       return l10n.placePriceVariesShort;
     }
-    return formatPlacePriceLabel(context, l10n, place);
+    return formatPlacePriceLabel(
+      context,
+      l10n,
+      place,
+      preferredCurrency: context.watch<SessionProvider>().profile?.currency,
+      currencyRates: context.watch<CurrencyRateProvider>(),
+    );
   }
 
   Widget _statCell({
@@ -1236,6 +1307,478 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFeeDetails(PlaceVm v, PlaceAdaptive a, AppLocalizations l10n) {
+    final details = v.feeDetails;
+    if (details.isEmpty) return const SizedBox.shrink();
+    final radius = BorderRadius.circular(a.radius(16));
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        splashColor: AppColors.accent.withValues(alpha: 0.08),
+        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF332416),
+          borderRadius: radius,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: ExpansionTile(
+            key: PageStorageKey<String>('place-fee-details-${v.id}'),
+            initiallyExpanded: false,
+            maintainState: true,
+            tilePadding: EdgeInsets.fromLTRB(
+              a.scale(14),
+              a.scale(5, minFactor: 0.7),
+              a.scale(10),
+              a.scale(5, minFactor: 0.7),
+            ),
+            childrenPadding: EdgeInsets.fromLTRB(
+              a.scale(14),
+              0,
+              a.scale(14),
+              a.scale(14, minFactor: 0.72),
+            ),
+            iconColor: AppColors.accent,
+            collapsedIconColor: AppColors.accent,
+            textColor: AppColors.textPrimary,
+            collapsedTextColor: AppColors.textPrimary,
+            backgroundColor: const Color(0xFF332416),
+            collapsedBackgroundColor: const Color(0xFF332416),
+            shape: RoundedRectangleBorder(borderRadius: radius),
+            collapsedShape: RoundedRectangleBorder(borderRadius: radius),
+            leading: Container(
+              width: a.scale(34, minFactor: 0.78),
+              height: a.scale(34, minFactor: 0.78),
+              decoration: const BoxDecoration(
+                color: Color(0xFF5A350B),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.receipt_long_rounded,
+                color: AppColors.accent,
+                size: a.scale(17, minFactor: 0.8),
+              ),
+            ),
+            title: Text(
+              l10n.placeFeeDetailsTitle,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: a.scale(15, minFactor: 0.84),
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.25,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Padding(
+              padding: EdgeInsets.only(top: a.scale(2)),
+              child: Text(
+                l10n.placeFeeDetailsNote,
+                style: TextStyle(
+                  color: const Color(0xFFA9917B),
+                  fontSize: a.scale(11, minFactor: 0.82),
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            children: [
+              for (var i = 0; i < details.length; i++) ...[
+                _FeeDetailRow(place: v, fee: details[i], adaptive: a),
+                if (i < details.length - 1)
+                  Divider(
+                    height: a.scale(1),
+                    thickness: 1,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _hasStructuredVisitPlanning(PlaceVm place) {
+    return _hasVisitCostInfo(place) ||
+        _hasVisitSeasonInfo(place) ||
+        _hasVisitAccessInfo(place) ||
+        _hasVisitTimeInfo(place) ||
+        place.visitInfo.recommendedItems.isNotEmpty ||
+        place.visitInfo.practicalNotes.isNotEmpty;
+  }
+
+  bool _hasVisitCostInfo(PlaceVm place) {
+    return place.feeDetails.isNotEmpty ||
+        (place.visitInfo.priceNote ?? '').trim().isNotEmpty;
+  }
+
+  bool _hasVisitSeasonInfo(PlaceVm place) {
+    return (place.visitInfo.bestTime ?? '').trim().isNotEmpty ||
+        (place.visitInfo.season?.note ?? '').trim().isNotEmpty ||
+        (place.visitInfo.openingHours ?? '').trim().isNotEmpty;
+  }
+
+  bool _hasVisitAccessInfo(PlaceVm place) {
+    return place.visitInfo.accessOptions.isNotEmpty ||
+        (place.visitInfo.roadCondition ?? '').trim().isNotEmpty;
+  }
+
+  bool _hasVisitTimeInfo(PlaceVm place) {
+    return place.visitInfo.timeOnSite != null ||
+        place.visitInfo.carTravelTime != null;
+  }
+
+  Widget _buildVisitOverview(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final rows = <_VisitPlanItem>[
+      _VisitPlanItem(
+        icon: Icons.confirmation_number_outlined,
+        label: l10n.placeStatPrice,
+        value: _formatDetailsPriceLabel(context, l10n, place),
+      ),
+      if (place.visitInfo.timeOnSite != null)
+        _VisitPlanItem(
+          icon: Icons.schedule_rounded,
+          label: l10n.placeVisitDurationLabel,
+          value: _durationWithNote(l10n, place.visitInfo.timeOnSite!),
+        )
+      else
+        _VisitPlanItem(
+          icon: Icons.schedule_rounded,
+          label: l10n.placeVisitDurationLabel,
+          value: formatPlaceDurationLabel(l10n, place).trim().isEmpty
+              ? l10n.placeVisitDurationFlexible
+              : formatPlaceDurationLabel(l10n, place),
+        ),
+      if (place.visitInfo.carTravelTime != null)
+        _VisitPlanItem(
+          icon: Icons.directions_car_rounded,
+          label: l10n.placeVisitCarTimeLabel,
+          value: _durationWithNote(l10n, place.visitInfo.carTravelTime!),
+        ),
+      _VisitPlanItem(
+        icon: Icons.wb_twilight_rounded,
+        label: l10n.placeVisitBestTimeLabel,
+        value: _bestSeasonLabel(place, l10n),
+      ),
+    ].where((item) => item.value.trim().isNotEmpty).toList();
+
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitOverviewTitle,
+      icon: Icons.dashboard_customize_rounded,
+      a: a,
+      storageKey: 'place-visit-overview-${place.id}',
+      initiallyExpanded: true,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          _VisitPlanRow(item: rows[i], adaptive: a),
+          if (i < rows.length - 1) _visitInfoDivider(a),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildVisitCostBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final rows = <Widget>[];
+    for (var i = 0; i < place.feeDetails.length; i++) {
+      rows.add(
+        _FeeDetailRow(place: place, fee: place.feeDetails[i], adaptive: a),
+      );
+      if (i < place.feeDetails.length - 1) {
+        rows.add(_visitInfoDivider(a));
+      }
+    }
+    final priceNote = (place.visitInfo.priceNote ?? '').trim();
+    if (priceNote.isNotEmpty) {
+      if (rows.isNotEmpty) rows.add(_visitInfoDivider(a));
+      rows.add(
+        _VisitPlanRow(
+          item: _VisitPlanItem(
+            icon: Icons.info_outline_rounded,
+            label: l10n.placeVisitPriceNoteLabel,
+            value: priceNote,
+          ),
+          adaptive: a,
+        ),
+      );
+    }
+
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitCostTitle,
+      icon: Icons.receipt_long_rounded,
+      a: a,
+      storageKey: 'place-visit-cost-${place.id}',
+      children: rows,
+    );
+  }
+
+  Widget _buildVisitSeasonBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final rows = <_VisitPlanItem>[
+      if ((place.visitInfo.bestTime ?? '').trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.wb_twilight_rounded,
+          label: l10n.placeVisitBestTimeLabel,
+          value: _bestSeasonLabel(place, l10n),
+        ),
+      if ((place.visitInfo.bestTime ?? '').trim().isEmpty &&
+          (place.visitInfo.season?.note ?? '').trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.wb_twilight_rounded,
+          label: l10n.placeVisitBestTimeLabel,
+          value: _bestSeasonLabel(place, l10n),
+        ),
+      if ((place.visitInfo.openingHours ?? '').trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.access_time_rounded,
+          label: l10n.placeVisitOpeningHoursLabel,
+          value: place.visitInfo.openingHours!.trim(),
+        ),
+    ];
+
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitSeasonTitle,
+      icon: Icons.event_available_rounded,
+      a: a,
+      storageKey: 'place-visit-season-${place.id}',
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          _VisitPlanRow(item: rows[i], adaptive: a),
+          if (i < rows.length - 1) _visitInfoDivider(a),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildVisitAccessBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final children = <Widget>[];
+    for (var i = 0; i < place.visitInfo.accessOptions.length; i++) {
+      final option = place.visitInfo.accessOptions[i];
+      children.add(_AccessOptionCard(option: option, l10n: l10n, adaptive: a));
+      if (i < place.visitInfo.accessOptions.length - 1) {
+        children.add(SizedBox(height: a.scale(10, minFactor: 0.72)));
+      }
+    }
+    final roadCondition = _roadConditionLabel(
+      place.visitInfo.roadCondition,
+      l10n,
+    );
+    if (children.isEmpty && roadCondition.trim().isNotEmpty) {
+      children.add(
+        _VisitPlanRow(
+          item: _VisitPlanItem(
+            icon: Icons.route_rounded,
+            label: l10n.placeVisitRoadConditionLabel,
+            value: roadCondition,
+          ),
+          adaptive: a,
+        ),
+      );
+    }
+
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitAccessTitle,
+      icon: Icons.route_rounded,
+      a: a,
+      storageKey: 'place-visit-access-${place.id}',
+      children: children,
+    );
+  }
+
+  Widget _buildVisitTimeBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final rows = <_VisitPlanItem>[
+      if (place.visitInfo.timeOnSite != null)
+        _VisitPlanItem(
+          icon: Icons.schedule_rounded,
+          label: l10n.placeVisitDurationLabel,
+          value: _durationWithNote(l10n, place.visitInfo.timeOnSite!),
+        ),
+      if (place.visitInfo.carTravelTime != null)
+        _VisitPlanItem(
+          icon: Icons.directions_car_rounded,
+          label: l10n.placeVisitCarTimeLabel,
+          value: _durationWithNote(l10n, place.visitInfo.carTravelTime!),
+        ),
+    ];
+
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitTimeTitle,
+      icon: Icons.more_time_rounded,
+      a: a,
+      storageKey: 'place-visit-time-${place.id}',
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          _VisitPlanRow(item: rows[i], adaptive: a),
+          if (i < rows.length - 1) _visitInfoDivider(a),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRecommendedItemsBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    if (!place.visitInfo.recommendedItems.isNotEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitRecommendedItemsTitle,
+      icon: Icons.backpack_rounded,
+      a: a,
+      storageKey: 'place-visit-items-${place.id}',
+      children: [
+        Wrap(
+          spacing: a.scale(8, minFactor: 0.72),
+          runSpacing: a.scale(8, minFactor: 0.72),
+          children: [
+            for (final item in place.visitInfo.recommendedItems)
+              _RecommendedItemChip(item: item, l10n: l10n, adaptive: a),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPracticalNotesBlock(
+    PlaceVm place,
+    PlaceAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    return _buildVisitInfoBlock(
+      title: l10n.placeVisitPracticalNotesTitle,
+      icon: Icons.tips_and_updates_rounded,
+      a: a,
+      storageKey: 'place-visit-practical-${place.id}',
+      children: [
+        for (var i = 0; i < place.visitInfo.practicalNotes.length; i++) ...[
+          _PracticalNoteRow(
+            note: place.visitInfo.practicalNotes[i],
+            adaptive: a,
+            l10n: l10n,
+          ),
+          if (i < place.visitInfo.practicalNotes.length - 1)
+            _visitInfoDivider(a),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildVisitInfoBlock({
+    required String title,
+    required IconData icon,
+    required PlaceAdaptive a,
+    required String storageKey,
+    required List<Widget> children,
+    bool initiallyExpanded = false,
+  }) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    final radius = BorderRadius.circular(a.radius(16));
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        splashColor: AppColors.accent.withValues(alpha: 0.08),
+        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFF332416),
+          borderRadius: radius,
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: ExpansionTile(
+            key: PageStorageKey<String>(storageKey),
+            initiallyExpanded: initiallyExpanded,
+            maintainState: true,
+            tilePadding: EdgeInsets.fromLTRB(
+              a.scale(14),
+              a.scale(5, minFactor: 0.7),
+              a.scale(10),
+              a.scale(5, minFactor: 0.7),
+            ),
+            childrenPadding: EdgeInsets.fromLTRB(
+              a.scale(14),
+              0,
+              a.scale(14),
+              a.scale(14, minFactor: 0.72),
+            ),
+            iconColor: AppColors.accent,
+            collapsedIconColor: AppColors.accent,
+            textColor: AppColors.textPrimary,
+            collapsedTextColor: AppColors.textPrimary,
+            backgroundColor: const Color(0xFF332416),
+            collapsedBackgroundColor: const Color(0xFF332416),
+            shape: RoundedRectangleBorder(borderRadius: radius),
+            collapsedShape: RoundedRectangleBorder(borderRadius: radius),
+            leading: Container(
+              width: a.scale(34, minFactor: 0.78),
+              height: a.scale(34, minFactor: 0.78),
+              decoration: const BoxDecoration(
+                color: Color(0xFF5A350B),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.accent,
+                size: a.scale(17, minFactor: 0.8),
+              ),
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: a.scale(15, minFactor: 0.84),
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.25,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _visitInfoDivider(PlaceAdaptive a) {
+    return Divider(
+      height: a.scale(1),
+      thickness: 1,
+      color: Colors.white.withValues(alpha: 0.06),
     );
   }
 
@@ -1359,7 +1902,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Reviews section (orange eyebrow + Reviews title + Add review inline)
+  // Reviews section
   // ---------------------------------------------------------------------------
 
   Widget _buildReviews(PlaceAdaptive a, AppLocalizations l10n) {
@@ -1373,8 +1916,6 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _eyebrow(l10n.placeReviewsSection, a),
-        SizedBox(height: a.scale(14)),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -1417,31 +1958,62 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               ),
           ],
         ),
-        SizedBox(height: a.scale(20)),
+        SizedBox(height: a.scale(12, minFactor: 0.72)),
         if (!hasAnyReviews)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _shouldShowReviewAction ? _openReviewSheet : null,
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(a.scale(14, minFactor: 0.74)),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(a.radius(14)),
-              child: Ink(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: a.scale(28)),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(a.radius(14)),
-                ),
-                child: Center(
-                  child: Text(
-                    l10n.placeNoReviews,
-                    style: const TextStyle(
-                      color: AppColors.textCaption,
-                      fontSize: 13,
-                    ),
-                    textAlign: TextAlign.center,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.placeNoReviews,
+                  style: TextStyle(
+                    color: AppColors.textCaption,
+                    fontSize: a.scale(13, minFactor: 0.84),
+                    fontWeight: FontWeight.w600,
+                    height: 1.32,
                   ),
                 ),
-              ),
+                SizedBox(height: a.scale(12, minFactor: 0.72)),
+                ElevatedButton.icon(
+                  onPressed: _shouldShowReviewAction ? _openReviewSheet : null,
+                  icon: Icon(
+                    Icons.rate_review_rounded,
+                    size: a.scale(17, minFactor: 0.82),
+                  ),
+                  label: Text(
+                    l10n.placeAddReview,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    disabledBackgroundColor: AppColors.accent.withValues(
+                      alpha: 0.35,
+                    ),
+                    foregroundColor: AppColors.textPrimary,
+                    disabledForegroundColor: AppColors.textPrimary.withValues(
+                      alpha: 0.45,
+                    ),
+                    elevation: 0,
+                    minimumSize: Size(double.infinity, a.scale(44)),
+                    padding: EdgeInsets.symmetric(horizontal: a.scale(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(a.radius(12)),
+                    ),
+                    textStyle: TextStyle(
+                      fontSize: a.scale(13, minFactor: 0.84),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else
@@ -1470,7 +2042,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Bottom CTA — always visible "Find excursions →"
+  // Bottom CTA — always visible "Find excursions"
   // ---------------------------------------------------------------------------
 
   Widget _buildBottomCta(PlaceAdaptive a, AppLocalizations l10n) {
@@ -1530,19 +2102,19 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 ],
                 Flexible(
                   child: Text(
-                    l10n.placeFindExcursions.toUpperCase(),
+                    l10n.placeFindExcursions,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: a.scale(13),
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.6,
+                      fontSize: a.scale(15),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4,
                     ),
                   ),
                 ),
                 if (!_isOpeningExcursions) ...[
-                  SizedBox(width: a.scale(12)),
-                  Icon(Icons.arrow_forward_rounded, size: a.scale(20)),
+                  SizedBox(width: a.scale(10)),
+                  Icon(Icons.chevron_right_rounded, size: a.scale(22)),
                 ],
               ],
             ),
@@ -1756,6 +2328,122 @@ class _GalleryPlaceholder extends StatelessWidget {
 // Visit plan cards and copy
 // ---------------------------------------------------------------------------
 
+class _FeeDetailRow extends StatelessWidget {
+  const _FeeDetailRow({
+    required this.place,
+    required this.fee,
+    required this.adaptive,
+  });
+
+  final PlaceVm place;
+  final PlaceFeeDetailVm fee;
+  final PlaceAdaptive adaptive;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final amountLabel = formatPlaceFeeAmountLabel(
+      context,
+      l10n,
+      place,
+      fee,
+      preferredCurrency: context.watch<SessionProvider>().profile?.currency,
+      currencyRates: context.watch<CurrencyRateProvider>(),
+    );
+    final title = fee.title.trim();
+    final descriptionParts = <String>[
+      fee.description.trim(),
+      fee.isRequired
+          ? l10n.placeVisitRequiredLabel
+          : l10n.placeVisitOptionalLabel,
+      fee.note.trim(),
+    ].where((part) => part.isNotEmpty).toList();
+    final description = descriptionParts.join(' · ');
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackAmount =
+            constraints.maxWidth < adaptive.scale(300, minFactor: 0.9) ||
+            adaptive.textScaleFactor > 1.18;
+        final textColumn = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty)
+              Text(
+                title,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: adaptive.scale(13.5, minFactor: 0.84),
+                  fontWeight: FontWeight.w900,
+                  height: 1.16,
+                  letterSpacing: -0.1,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            if (description.isNotEmpty) ...[
+              SizedBox(height: adaptive.scale(3, minFactor: 0.72)),
+              Text(
+                description,
+                style: TextStyle(
+                  color: const Color(0xFFA9917B),
+                  fontSize: adaptive.scale(11.5, minFactor: 0.84),
+                  fontWeight: FontWeight.w600,
+                  height: 1.22,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        );
+
+        final amountText = amountLabel.trim().isEmpty
+            ? const SizedBox.shrink()
+            : Text(
+                amountLabel,
+                style: TextStyle(
+                  color: AppColors.accent,
+                  fontSize: adaptive.scale(13, minFactor: 0.84),
+                  fontWeight: FontWeight.w900,
+                  height: 1.12,
+                ),
+                textAlign: stackAmount ? TextAlign.start : TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              );
+
+        if (stackAmount) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              textColumn,
+              if (amountLabel.trim().isNotEmpty) ...[
+                SizedBox(height: adaptive.scale(6, minFactor: 0.72)),
+                amountText,
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: textColumn),
+            if (amountLabel.trim().isNotEmpty) ...[
+              SizedBox(width: adaptive.scale(12, minFactor: 0.74)),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: adaptive.scale(132)),
+                child: amountText,
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _VisitPlanItem {
   const _VisitPlanItem({
     required this.icon,
@@ -1824,6 +2512,293 @@ class _VisitPlanRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccessOptionCard extends StatelessWidget {
+  const _AccessOptionCard({
+    required this.option,
+    required this.l10n,
+    required this.adaptive,
+  });
+
+  final PlaceAccessOptionVm option;
+  final AppLocalizations l10n;
+  final PlaceAdaptive adaptive;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _transportTypeLabel(option.transportType, l10n);
+    final duration = _formatVisitDurationRange(
+      l10n,
+      option.durationMinMinutes,
+      option.durationMaxMinutes,
+    );
+    final distance = _formatDistanceKm(option.distanceKm, l10n);
+    final road = _roadConditionLabel(option.roadCondition, l10n);
+    final facts = <String>[
+      if (duration.isNotEmpty) duration,
+      if (distance.isNotEmpty) distance,
+      if (road.isNotEmpty) road,
+      if (option.requires4x4) l10n.placeVisitRequires4x4,
+    ];
+    final notes = <_VisitPlanItem>[
+      if (option.routeHint.trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.near_me_rounded,
+          label: l10n.placeVisitRouteHintLabel,
+          value: option.routeHint.trim(),
+        ),
+      if (option.parkingNote.trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.local_parking_rounded,
+          label: l10n.placeVisitParkingLabel,
+          value: option.parkingNote.trim(),
+        ),
+      if (option.lastSegmentNote.trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.hiking_rounded,
+          label: l10n.placeVisitLastSegmentLabel,
+          value: option.lastSegmentNote.trim(),
+        ),
+      if (option.note.trim().isNotEmpty)
+        _VisitPlanItem(
+          icon: Icons.info_outline_rounded,
+          label: l10n.placeInflapTipTitle,
+          value: option.note.trim(),
+        ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(adaptive.scale(12, minFactor: 0.74)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B2B1C),
+        borderRadius: BorderRadius.circular(adaptive.radius(12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.directions_car_rounded,
+                color: AppColors.accent,
+                size: adaptive.scale(18, minFactor: 0.82),
+              ),
+              SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: adaptive.scale(13.5, minFactor: 0.84),
+                        fontWeight: FontWeight.w900,
+                        height: 1.15,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (facts.isNotEmpty) ...[
+                      SizedBox(height: adaptive.scale(4, minFactor: 0.72)),
+                      Text(
+                        facts.join(' · '),
+                        style: TextStyle(
+                          color: const Color(0xFFD7BFAA),
+                          fontSize: adaptive.scale(11.5, minFactor: 0.84),
+                          fontWeight: FontWeight.w700,
+                          height: 1.24,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (notes.isNotEmpty) ...[
+            SizedBox(height: adaptive.scale(6, minFactor: 0.72)),
+            for (var i = 0; i < notes.length; i++) ...[
+              _VisitPlanRow(item: notes[i], adaptive: adaptive),
+              if (i < notes.length - 1)
+                Divider(
+                  height: adaptive.scale(1),
+                  thickness: 1,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendedItemChip extends StatelessWidget {
+  const _RecommendedItemChip({
+    required this.item,
+    required this.l10n,
+    required this.adaptive,
+  });
+
+  final PlaceRecommendedItemVm item;
+  final AppLocalizations l10n;
+  final PlaceAdaptive adaptive;
+
+  @override
+  Widget build(BuildContext context) {
+    final title =
+        _knownRecommendedItemLabel(item.itemType, l10n) ??
+        (item.title.trim().isNotEmpty
+            ? item.title.trim()
+            : _recommendedItemFallbackLabel(item.itemType, l10n));
+    final note = item.note.trim();
+    final importance = _code(item.importance) == 'REQUIRED'
+        ? l10n.placeVisitRequiredLabel
+        : l10n.placeVisitRecommendedLabel;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: adaptive.scale(132, minFactor: 0.74),
+        maxWidth: adaptive.width < 380
+            ? double.infinity
+            : adaptive.scale(184, minFactor: 0.82),
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: adaptive.scale(11, minFactor: 0.74),
+          vertical: adaptive.scale(10, minFactor: 0.74),
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3B2B1C),
+          borderRadius: BorderRadius.circular(adaptive.radius(12)),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _recommendedItemIcon(item.itemType),
+              color: AppColors.accent,
+              size: adaptive.scale(18, minFactor: 0.82),
+            ),
+            SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: adaptive.scale(12.5, minFactor: 0.84),
+                      fontWeight: FontWeight.w900,
+                      height: 1.14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: adaptive.scale(2, minFactor: 0.72)),
+                  Text(
+                    note.isEmpty ? importance : '$importance · $note',
+                    style: TextStyle(
+                      color: const Color(0xFFA9917B),
+                      fontSize: adaptive.scale(10.8, minFactor: 0.82),
+                      fontWeight: FontWeight.w700,
+                      height: 1.22,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PracticalNoteRow extends StatelessWidget {
+  const _PracticalNoteRow({
+    required this.note,
+    required this.adaptive,
+    required this.l10n,
+  });
+
+  final PlacePracticalNoteVm note;
+  final PlaceAdaptive adaptive;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _practicalNoteTitle(note, l10n);
+    final body = note.body.trim();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: adaptive.scale(9)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: adaptive.scale(30, minFactor: 0.78),
+            height: adaptive.scale(30, minFactor: 0.78),
+            decoration: const BoxDecoration(
+              color: Color(0xFF5A350B),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _practicalNoteIcon(note.noteType),
+              color: AppColors.accent,
+              size: adaptive.scale(15, minFactor: 0.82),
+            ),
+          ),
+          SizedBox(width: adaptive.scale(10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title.isNotEmpty)
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: adaptive.scale(12.5, minFactor: 0.84),
+                      fontWeight: FontWeight.w900,
+                      height: 1.16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (body.isNotEmpty) ...[
+                  SizedBox(height: adaptive.scale(2, minFactor: 0.72)),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: const Color(0xFFA9917B),
+                      fontSize: adaptive.scale(11.5, minFactor: 0.84),
+                      fontWeight: FontWeight.w600,
+                      height: 1.24,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
@@ -1910,6 +2885,221 @@ class _InflapTipCard extends StatelessWidget {
   }
 }
 
+String _durationWithNote(AppLocalizations l10n, PlaceVisitDurationVm duration) {
+  final label = _formatVisitDurationRange(
+    l10n,
+    duration.minMinutes,
+    duration.maxMinutes,
+  );
+  final note = duration.note.trim();
+  if (label.isEmpty) return note;
+  if (note.isEmpty) return label;
+  return '$label · $note';
+}
+
+String _formatVisitDurationRange(
+  AppLocalizations l10n,
+  int? minMinutes,
+  int? maxMinutes,
+) {
+  if (minMinutes == null && maxMinutes == null) return '';
+  if (minMinutes != null && maxMinutes != null) {
+    if (minMinutes == maxMinutes) return _formatVisitMinutes(l10n, minMinutes);
+    return '${_formatVisitMinutes(l10n, minMinutes)}–${_formatVisitMinutes(l10n, maxMinutes)}';
+  }
+  return _formatVisitMinutes(l10n, minMinutes ?? maxMinutes ?? 0);
+}
+
+String _formatVisitMinutes(AppLocalizations l10n, int minutes) {
+  if (minutes <= 0) return l10n.placeVisitMinutes(0);
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours == 0) return l10n.placeVisitMinutes(minutes);
+  if (rest == 0) return l10n.placeVisitHoursOnly(hours);
+  return l10n.placeVisitHoursMinutes(hours, rest);
+}
+
+String _formatDistanceKm(double? value, AppLocalizations l10n) {
+  if (value == null) return '';
+  final text = value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  return l10n.placeVisitDistanceKm(text);
+}
+
+String _transportTypeLabel(String? raw, AppLocalizations l10n) {
+  switch (_code(raw)) {
+    case 'CAR':
+      return l10n.placeVisitTransportCar;
+    case 'WALK':
+    case 'WALKING':
+      return l10n.placeVisitTransportWalk;
+    case 'TAXI':
+      return l10n.placeVisitTransportTaxi;
+    case 'BUS':
+      return l10n.placeVisitTransportBus;
+    case 'CABLE_CAR':
+    case 'CABLECAR':
+      return l10n.placeVisitTransportCableCar;
+    case 'SHUTTLE':
+      return l10n.placeVisitTransportShuttle;
+    case 'HORSE':
+      return l10n.placeVisitTransportHorse;
+    case 'TRAIN':
+      return l10n.placeVisitTransportTrain;
+    case 'BOAT':
+      return l10n.placeVisitTransportBoat;
+    default:
+      final value = (raw ?? '').trim();
+      return value.isEmpty ? l10n.placeVisitAccessLabel : value;
+  }
+}
+
+String _roadConditionLabel(String? raw, AppLocalizations l10n) {
+  switch (_code(raw)) {
+    case 'PAVED':
+    case 'ASPHALT':
+      return l10n.placeVisitRoadPaved;
+    case 'GRAVEL':
+      return l10n.placeVisitRoadGravel;
+    case 'MOUNTAIN':
+      return l10n.placeVisitRoadMountain;
+    case 'MIXED':
+      return l10n.placeVisitRoadMixed;
+    case 'OFFROAD':
+    case 'OFF_ROAD':
+    case 'DIRT':
+      return l10n.placeVisitRoadOffroad;
+    default:
+      return (raw ?? '').trim();
+  }
+}
+
+String _recommendedItemFallbackLabel(String? raw, AppLocalizations l10n) {
+  final localized = _knownRecommendedItemLabel(raw, l10n);
+  if (localized != null) return localized;
+  final value = (raw ?? '').trim();
+  return value.isEmpty ? l10n.placeVisitRecommendedLabel : value;
+}
+
+String? _knownRecommendedItemLabel(String? raw, AppLocalizations l10n) {
+  switch (_code(raw)) {
+    case 'WATER':
+      return l10n.placeVisitItemWater;
+    case 'SHOES':
+    case 'BOOTS':
+      return l10n.placeVisitItemShoes;
+    case 'CASH':
+      return l10n.placeVisitItemCash;
+    case 'WARM_CLOTHES':
+      return l10n.placeVisitItemWarmClothes;
+    case 'POWERBANK':
+      return l10n.placeVisitItemPowerbank;
+    case 'DOCUMENTS':
+      return l10n.placeVisitItemDocuments;
+    case 'FOOD':
+      return l10n.placeVisitItemFood;
+    case 'SPF':
+    case 'SUNSCREEN':
+    case 'HAT':
+      return l10n.placeVisitItemSpf;
+    case 'RAIN':
+    case 'RAINCOAT':
+      return l10n.placeVisitItemRain;
+    case 'MAP':
+    case 'OFFLINE_MAP':
+      return l10n.placeVisitItemMap;
+    case 'REPELLENT':
+      return l10n.placeVisitItemRepellent;
+    case 'FIRST_AID':
+    case 'MEDKIT':
+      return l10n.placeVisitItemFirstAid;
+    case 'OTHER':
+      return l10n.placeVisitItemOther;
+    default:
+      return null;
+  }
+}
+
+IconData _recommendedItemIcon(String? raw) {
+  switch (_code(raw)) {
+    case 'WATER':
+      return Icons.water_drop_rounded;
+    case 'SHOES':
+    case 'BOOTS':
+      return Icons.hiking_rounded;
+    case 'CASH':
+      return Icons.payments_rounded;
+    case 'WARM_CLOTHES':
+      return Icons.checkroom_rounded;
+    case 'POWERBANK':
+      return Icons.battery_charging_full_rounded;
+    case 'DOCUMENTS':
+      return Icons.badge_rounded;
+    case 'FOOD':
+      return Icons.restaurant_rounded;
+    case 'SPF':
+    case 'SUNSCREEN':
+    case 'HAT':
+      return Icons.wb_sunny_rounded;
+    case 'RAIN':
+    case 'RAINCOAT':
+      return Icons.umbrella_rounded;
+    case 'MAP':
+    case 'OFFLINE_MAP':
+      return Icons.map_rounded;
+    case 'REPELLENT':
+      return Icons.bug_report_rounded;
+    case 'FIRST_AID':
+    case 'MEDKIT':
+      return Icons.medical_services_rounded;
+    default:
+      return Icons.backpack_rounded;
+  }
+}
+
+String _practicalNoteTitle(PlacePracticalNoteVm note, AppLocalizations l10n) {
+  switch (_code(note.noteType)) {
+    case 'GENERAL':
+    case 'TEMPORARY_PLACEHOLDER':
+      return l10n.placeVisitPracticalGeneral;
+    case 'CONNECTION':
+      return l10n.placeVisitPracticalConnection;
+    case 'TOILET':
+      return l10n.placeVisitPracticalToilet;
+    case 'CAFE':
+    case 'FOOD':
+      return l10n.placeVisitPracticalCafe;
+    case 'SAFETY':
+      return l10n.placeVisitPracticalSafety;
+    case 'KIDS':
+      return l10n.placeVisitPracticalKids;
+    case 'WEATHER':
+      return l10n.placeVisitPracticalWeather;
+    default:
+      final title = note.title.trim();
+      return title.isNotEmpty ? title : note.noteType.trim();
+  }
+}
+
+IconData _practicalNoteIcon(String? raw) {
+  switch (_code(raw)) {
+    case 'CONNECTION':
+      return Icons.signal_cellular_alt_rounded;
+    case 'TOILET':
+      return Icons.wc_rounded;
+    case 'CAFE':
+    case 'FOOD':
+      return Icons.restaurant_rounded;
+    case 'SAFETY':
+      return Icons.health_and_safety_rounded;
+    case 'KIDS':
+      return Icons.family_restroom_rounded;
+    case 'WEATHER':
+      return Icons.cloud_rounded;
+    default:
+      return Icons.info_outline_rounded;
+  }
+}
+
 List<_VisitPlanItem> _visitPlanItems(
   BuildContext context,
   PlaceVm place,
@@ -1918,7 +3108,13 @@ List<_VisitPlanItem> _visitPlanItems(
   final duration = formatPlaceDurationLabel(l10n, place);
   final ticket = place.priceAmount == null
       ? l10n.placeVisitFreeEntry
-      : formatPlacePriceLabel(context, l10n, place);
+      : formatPlacePriceLabel(
+          context,
+          l10n,
+          place,
+          preferredCurrency: context.watch<SessionProvider>().profile?.currency,
+          currencyRates: context.watch<CurrencyRateProvider>(),
+        );
   final bookingSuffix = place.visitInfo.bookingRequired == true
       ? ' · ${l10n.placeVisitBookingRecommended}'
       : '';
@@ -2012,6 +3208,12 @@ String _bestTimeLabel(PlaceVm place, AppLocalizations l10n) {
     default:
       return l10n.placeVisitBestTimeAnytime;
   }
+}
+
+String _bestSeasonLabel(PlaceVm place, AppLocalizations l10n) {
+  final note = place.visitInfo.season?.note.trim() ?? '';
+  if (note.isNotEmpty) return note;
+  return _bestTimeLabel(place, l10n);
 }
 
 String _fallbackBestTimeCode(PlaceVm place) {

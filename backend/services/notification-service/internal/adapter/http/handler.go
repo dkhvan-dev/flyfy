@@ -24,6 +24,7 @@ type notificationUseCase interface {
 	ListUserNotificationCategories(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
 	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
 	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
+	MarkUserNotificationRead(ctx context.Context, userID uuid.UUID, notificationID uuid.UUID) (int, error)
 	GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (*model.NotificationPreferences, error)
 	UpdateNotificationPreferences(ctx context.Context, userID uuid.UUID, params model.UpdateNotificationPreferencesParams) (*model.NotificationPreferences, error)
 	SendNotification(ctx context.Context, input app.SendNotificationInput) (*model.NotificationRequest, error)
@@ -48,6 +49,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/notifications/categories", h.ListNotificationCategories)
 	mux.HandleFunc("GET /v1/notifications", h.ListNotifications)
 	mux.HandleFunc("POST /v1/notifications/read-all", h.MarkNotificationsRead)
+	mux.HandleFunc("POST /v1/notifications/{notificationID}/read", h.MarkNotificationRead)
 	mux.HandleFunc("GET /v1/notifications/preferences", h.GetNotificationPreferences)
 	mux.HandleFunc("PUT /v1/notifications/preferences", h.UpdateNotificationPreferences)
 	mux.HandleFunc("POST /internal/v1/notifications/send", h.SendInternalNotification)
@@ -308,6 +310,28 @@ func (h *Handler) MarkNotificationsRead(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	updated, err := h.useCase.MarkUserNotificationsRead(r.Context(), userID, req.Category)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updatedCount": updated})
+}
+
+func (h *Handler) MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	notificationID, err := uuid.Parse(strings.TrimSpace(r.PathValue("notificationID")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid notification id")
+		return
+	}
+	updated, err := h.useCase.MarkUserNotificationRead(r.Context(), userID, notificationID)
 	if err != nil {
 		writeAppError(w, err)
 		return

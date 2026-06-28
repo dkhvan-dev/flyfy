@@ -578,7 +578,7 @@ void main() {
   });
 
   test(
-    'details schedule prefers device timezone before profile timezone',
+    'details schedule uses device timezone without profile fallback',
     () async {
       final source = await File(
         'lib/screens/activities/activity_details_screen.dart',
@@ -590,10 +590,16 @@ void main() {
       );
       expect(
         source,
+        contains("import '../../providers/home_location_provider.dart';"),
+      );
+      expect(
+        source,
         contains('final DeviceContextService _deviceContextService'),
       );
       expect(source, contains('String? _deviceTimezone;'));
       expect(source, contains('Future<void> _loadDeviceTimezone() async'));
+      expect(source, contains('context.read<HomeLocationProvider>()'));
+      expect(source, contains('locationProvider.effectiveLocation.timezone'));
       expect(source, contains('_deviceContextService.getLocalTimezone()'));
 
       final helperStart = source.indexOf(
@@ -605,16 +611,14 @@ void main() {
 
       final helperSource = source.substring(helperStart, scheduleStart);
       expect(helperSource, contains('deviceTimezone'));
-      expect(helperSource, contains('profileTimezone'));
+      expect(helperSource, isNot(contains('profileTimezone')));
       expect(
         helperSource,
-        contains(
-          'return _normalizeActivityScheduleTimezone(deviceTimezone) ??',
-        ),
+        contains('return _normalizeActivityScheduleTimezone(deviceTimezone);'),
       );
       expect(
         helperSource,
-        contains('_normalizeActivityScheduleTimezone(profileTimezone);'),
+        isNot(contains('_normalizeActivityScheduleTimezone(profileTimezone)')),
       );
 
       final usageStart = source.indexOf('_ActivityScheduleCard(');
@@ -637,6 +641,7 @@ void main() {
         scheduleSource,
         isNot(contains('context.watch<SessionProvider>().profile?.timezone')),
       );
+      expect(scheduleSource, isNot(contains('session.profile?.timezone')));
     },
   );
 

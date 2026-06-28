@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/network/file_api.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/currency_rate_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
 import 'models/place_vm.dart';
 
@@ -165,6 +166,42 @@ String? resolvePlaceMediaUrl(PlaceMediaVm media, {int? targetWidth}) {
   return _optimizeExternalPlaceMediaUrl(uri, targetWidth) ?? externalUrl;
 }
 
+List<String> resolvePlaceMediaUrls(PlaceMediaVm media, {int? targetWidth}) {
+  final urls = <String>[];
+  final primaryUrl = resolvePlaceMediaUrl(media, targetWidth: targetWidth);
+  if (primaryUrl != null) {
+    urls.add(primaryUrl);
+  }
+
+  final sourceUrl = _wikimediaSpecialFilePathFromSourceUrl(
+    media.sourceUrl,
+    targetWidth: targetWidth,
+  );
+  if (sourceUrl != null) {
+    _addUniqueUrl(urls, sourceUrl);
+  }
+
+  final externalUrl = media.externalUrl.trim();
+  if (externalUrl.isNotEmpty) {
+    final uri = Uri.tryParse(externalUrl);
+    if (uri != null && (uri.isScheme('https') || uri.isScheme('http'))) {
+      final optimizedUrl = _optimizeExternalPlaceMediaUrl(uri, targetWidth);
+      if (optimizedUrl != null) {
+        _addUniqueUrl(urls, optimizedUrl);
+      }
+      _addUniqueUrl(urls, externalUrl);
+    }
+  }
+
+  return List.unmodifiable(urls);
+}
+
+void _addUniqueUrl(List<String> urls, String url) {
+  final normalized = url.trim();
+  if (normalized.isEmpty || urls.contains(normalized)) return;
+  urls.add(normalized);
+}
+
 Map<String, String>? placeImageRequestHeaders(String? url) {
   return null;
 }
@@ -194,6 +231,40 @@ String? _optimizeExternalPlaceMediaUrl(Uri uri, int? targetWidth) {
   }
 
   return null;
+}
+
+String? _wikimediaSpecialFilePathFromSourceUrl(
+  String sourceUrl, {
+  int? targetWidth,
+}) {
+  final uri = Uri.tryParse(sourceUrl.trim());
+  if (uri == null || (!uri.isScheme('https') && !uri.isScheme('http'))) {
+    return null;
+  }
+  final host = uri.host.toLowerCase();
+  if (host != 'commons.wikimedia.org' || uri.pathSegments.length < 2) {
+    return null;
+  }
+  if (uri.pathSegments.first != 'wiki') {
+    return null;
+  }
+
+  final rawFileSegment = Uri.decodeComponent(uri.pathSegments[1]);
+  if (!rawFileSegment.startsWith('File:')) {
+    return null;
+  }
+  final fileName = rawFileSegment
+      .substring('File:'.length)
+      .trim()
+      .replaceAll(' ', '_');
+  if (fileName.isEmpty) return null;
+
+  final width = _normalizedImageTargetWidth(targetWidth);
+  final encodedFileName = Uri.encodeComponent(
+    fileName,
+  ).replaceAll('%2C', ',').replaceAll('%28', '(').replaceAll('%29', ')');
+  final query = width == null ? '' : '?width=$width';
+  return 'https://commons.wikimedia.org/wiki/Special:FilePath/$encodedFileName$query';
 }
 
 String? _wikimediaUploadFileName(Uri uri) {
@@ -234,15 +305,132 @@ String formatPlaceDurationLabel(AppLocalizations l10n, PlaceVm place) {
 String formatPlacePriceLabel(
   BuildContext context,
   AppLocalizations l10n,
-  PlaceVm place,
-) {
+  PlaceVm place, {
+  String? preferredCurrency,
+  CurrencyRateProvider? currencyRates,
+}) {
   final amount = place.priceAmount;
-  if (amount == null) return l10n.placePriceVaries;
+  if (amount == null) {
+    final summary = place.priceSummaryLabel?.trim();
+    if (summary != null && summary.isNotEmpty) return summary;
+    return l10n.placePriceVaries;
+  }
+  if (amount <= 0) return l10n.placeFreeEntry;
 
   final locale = Localizations.localeOf(context).toLanguageTag();
-  return formatAppMoney(
-    amount: amount,
-    currency: place.priceCurrency ?? 'USD',
+  final sourceCurrency =
+      resolveAppCurrencyCode(
+        currency: place.priceCurrency,
+        countryCode: place.countryCode,
+      ) ??
+      'USD';
+  final targetCurrency = normalizeAppCurrencyCode(preferredCurrency);
+  var displayAmount = amount;
+  var displayCurrency = sourceCurrency;
+
+  if (targetCurrency != null && targetCurrency != sourceCurrency) {
+    final converted = currencyRates?.convertAmount(
+      amount: amount,
+      fromCurrency: sourceCurrency,
+      toCurrency: targetCurrency,
+    );
+    if (converted != null) {
+      displayAmount = converted;
+      displayCurrency = targetCurrency;
+    }
+  }
+
+  final formatted = formatAppMoney(
+    amount: displayAmount,
+    currency: displayCurrency,
     localeName: locale,
+    useListCurrencyFormat: true,
   );
+  return l10n.placePriceFrom(formatted);
+}
+
+String formatPlaceFeeAmountLabel(
+  BuildContext context,
+  AppLocalizations l10n,
+  PlaceVm place,
+  PlaceFeeDetailVm fee, {
+  String? preferredCurrency,
+  CurrencyRateProvider? currencyRates,
+}) {
+  final amount = fee.amount;
+  if (amount == null) return '';
+
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final sourceCurrency =
+      resolveAppCurrencyCode(
+        currency: fee.currency,
+        countryCode: place.countryCode,
+      ) ??
+      resolveAppCurrencyCode(
+        currency: place.priceCurrency,
+        countryCode: place.countryCode,
+      ) ??
+      'USD';
+  final targetCurrency = normalizeAppCurrencyCode(preferredCurrency);
+  var displayAmount = amount;
+  var displayCurrency = sourceCurrency;
+
+  if (targetCurrency != null && targetCurrency != sourceCurrency) {
+    final converted = currencyRates?.convertAmount(
+      amount: amount,
+      fromCurrency: sourceCurrency,
+      toCurrency: targetCurrency,
+    );
+    if (converted != null) {
+      displayAmount = converted;
+      displayCurrency = targetCurrency;
+    }
+  }
+
+  var formatted = formatAppMoney(
+    amount: displayAmount,
+    currency: displayCurrency,
+    localeName: locale,
+    useListCurrencyFormat: true,
+  );
+  if (fee.isApproximate) {
+    formatted = l10n.placeFeeApproxAmount(formatted);
+  }
+
+  final unit = localizedPlaceFeeUnitLabel(l10n, fee.unit);
+  if (unit.isEmpty) {
+    return formatted;
+  }
+  return l10n.placeFeePerUnit(formatted, unit);
+}
+
+String localizedPlaceFeeUnitLabel(AppLocalizations l10n, String? unit) {
+  switch (unit?.trim().toUpperCase()) {
+    case 'PERSON':
+      return l10n.placeFeeUnitPerson;
+    case 'CAR':
+      return l10n.placeFeeUnitCar;
+    case 'MOTORCYCLE':
+      return l10n.placeFeeUnitMotorcycle;
+    case 'TICKET':
+      return l10n.placeFeeUnitTicket;
+    case 'GROUP':
+      return l10n.placeFeeUnitGroup;
+    case 'ITEM':
+      return l10n.placeFeeUnitItem;
+    default:
+      return '';
+  }
+}
+
+bool canDisplayInitialPlaceForLocale(PlaceVm? place, Locale locale) {
+  if (place == null) return false;
+  final placeLanguage = _languageCode(place.locale);
+  final currentLanguage = _languageCode(locale.toLanguageTag());
+  if (placeLanguage.isEmpty || currentLanguage.isEmpty) return false;
+  return placeLanguage == currentLanguage;
+}
+
+String _languageCode(String localeName) {
+  return localeName.trim().toLowerCase().split(RegExp('[-_]')).first;
 }

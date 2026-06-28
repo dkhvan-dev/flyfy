@@ -175,3 +175,34 @@ func TestChecklistRouteContextMigrationContract(t *testing.T) {
 		}
 	}
 }
+
+func TestChecklistCitizenshipContextMigrationContract(t *testing.T) {
+	up, err := os.ReadFile("../../../migrations/006_checklist_citizenship_context.up.sql")
+	if err != nil {
+		t.Fatalf("read citizenship context up migration: %v", err)
+	}
+	down, err := os.ReadFile("../../../migrations/006_checklist_citizenship_context.down.sql")
+	if err != nil {
+		t.Fatalf("read citizenship context down migration: %v", err)
+	}
+
+	upSQL := strings.ToLower(string(up))
+	for _, required := range []string{
+		"add column citizenship_country_code text",
+		"checklist_instances_citizenship_country_code_format",
+	} {
+		if !strings.Contains(upSQL, required) {
+			t.Fatalf("citizenship context up migration missing %q:\n%s", required, string(up))
+		}
+	}
+
+	downSQL := strings.ToLower(string(down))
+	for _, required := range []string{
+		"drop constraint if exists checklist_instances_citizenship_country_code_format",
+		"drop column if exists citizenship_country_code",
+	} {
+		if !strings.Contains(downSQL, required) {
+			t.Fatalf("citizenship context down migration missing %q:\n%s", required, string(down))
+		}
+	}
+}

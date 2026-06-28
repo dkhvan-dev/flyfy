@@ -10,7 +10,7 @@
 -- - city_id stores the practical Indonesia tourist hub used for filtering and guide departures;
 -- - markets and night markets use the MARKET category;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
--- - price is left NULL because tickets, tours and opening conditions change by season/operator.
+-- - price_amount stores a conservative entry-price floor; 0 means free entry.
 
 DROP TABLE IF EXISTS seed_indonesia_resolved_places;
 DROP TABLE IF EXISTS seed_indonesia_priority_places;
@@ -223,8 +223,12 @@ SELECT
     'ID',
     city_id,
     category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 50000::numeric
+        ELSE 25000::numeric
+    END,
+    'IDR',
     duration_value,
     duration_unit,
     rating,

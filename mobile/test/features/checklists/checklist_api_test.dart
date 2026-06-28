@@ -39,6 +39,7 @@ void main() {
           endAt: DateTime.utc(2026, 7, 18, 10),
           transportModes: const ['flight'],
           activitySlugs: const ['hiking'],
+          citizenshipCountryCode: 'KZ',
           preferredLanguage: 'ru',
         ),
       );
@@ -51,7 +52,10 @@ void main() {
         'cityName': 'Tokyo',
       });
       expect(adapter.body?['transportModes'], ['flight']);
-      expect(adapter.body?['travelerProfile'], {'preferredLanguage': 'ru'});
+      expect(adapter.body?['travelerProfile'], {
+        'citizenshipCountryCode': 'KZ',
+        'preferredLanguage': 'ru',
+      });
       expect(checklist.readiness.score, 50);
     },
   );

@@ -9,6 +9,25 @@ import 'package:inflap/core/storage/secure_storage.dart';
 import 'package:inflap/features/places/data/place_api.dart';
 
 void main() {
+  test('getPlaces sends search query without requiring auth', () async {
+    final adapter = _JsonAdapter({'items': const [], 'total': 0});
+    final api = PlaceApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    await api.getPlaces(search: '  Алматы  ', limit: 24, offset: 0);
+
+    expect(adapter.requestPath, '/places');
+    expect(adapter.queryParameters['search'], 'Алматы');
+    expect(adapter.queryParameters['limit'], '24');
+    expect(adapter.queryParameters['offset'], '0');
+    expect(adapter.requiresAuth, isFalse);
+  });
+
   test('getPlaces sends device coordinates for nearby sorting', () async {
     final adapter = _JsonAdapter({'items': const [], 'total': 0});
     final api = PlaceApi(

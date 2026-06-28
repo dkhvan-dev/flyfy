@@ -207,8 +207,12 @@ SELECT
     'GE',
     city_id,
     category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 30::numeric
+        ELSE 15::numeric
+    END,
+    'GEL',
     duration_value,
     duration_unit,
     rating,

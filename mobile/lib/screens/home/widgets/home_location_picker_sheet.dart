@@ -22,17 +22,28 @@ class HomeLocationPickerSheet extends StatefulWidget {
 }
 
 class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
+  static const _initialCountryCityLimit = 8;
+
   final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _queryController = TextEditingController();
   Timer? _searchDebounce;
+  List<ReferenceCity> _initialCountryCities = const [];
   List<ReferenceCity> _results = const [];
+  bool _isLoadingInitialCities = false;
   bool _isSearching = false;
+  String? _initialCountryRequestKey;
   String? _errorText;
 
   @override
   void initState() {
     super.initState();
     _queryController.addListener(_handleQueryChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadInitialCountryCities();
   }
 
   @override
@@ -86,8 +97,60 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
     }
   }
 
+  Future<void> _loadInitialCountryCities() async {
+    final countryCode = _suggestedCountryCode();
+    if (countryCode == null) return;
+
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final requestKey = '$countryCode:$languageCode';
+    if (_initialCountryRequestKey == requestKey) return;
+
+    _initialCountryRequestKey = requestKey;
+    setState(() {
+      _initialCountryCities = const [];
+      _isLoadingInitialCities = true;
+      _errorText = null;
+    });
+
+    try {
+      final cities = await _referenceApi.citiesByCountry(
+        countryCode,
+        lang: languageCode,
+      );
+      if (!mounted || _initialCountryRequestKey != requestKey) return;
+      setState(() {
+        _initialCountryCities = cities
+            .take(_initialCountryCityLimit)
+            .toList(growable: false);
+        _isLoadingInitialCities = false;
+      });
+    } catch (_) {
+      if (!mounted || _initialCountryRequestKey != requestKey) return;
+      setState(() {
+        _isLoadingInitialCities = false;
+        _errorText = AppLocalizations.of(context)!.homeLocationSearchFailed;
+      });
+    }
+  }
+
+  String? _suggestedCountryCode() {
+    final providerCountryCode = context
+        .read<HomeLocationProvider>()
+        .effectiveLocation
+        .countryCode
+        ?.trim();
+    if (providerCountryCode != null && providerCountryCode.isNotEmpty) {
+      return providerCountryCode.toUpperCase();
+    }
+
+    return null;
+  }
+
   Future<void> _selectCity(ReferenceCity city) async {
-    await context.read<HomeLocationProvider>().selectCity(city);
+    await context.read<HomeLocationProvider>().selectCity(
+      city,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -117,6 +180,9 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
     final provider = context.watch<HomeLocationProvider>();
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final query = _queryController.text.trim();
+    final isSearchActive = query.length >= 2;
+    final visibleCities = isSearchActive ? _results : _initialCountryCities;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
@@ -171,7 +237,8 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                           hintText: l10n.homeLocationSearchHint,
                         ),
                         const SizedBox(height: 14),
-                        if (_isSearching)
+                        if (_isSearching ||
+                            (!isSearchActive && _isLoadingInitialCities))
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 18),
                             child: Center(
@@ -185,15 +252,14 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                             icon: Icons.cloud_off_rounded,
                             message: _errorText!,
                           )
-                        else if (_queryController.text.trim().length >= 2 &&
-                            _results.isEmpty)
+                        else if (isSearchActive && _results.isEmpty)
                           _LocationMessage(
                             icon: Icons.location_off_rounded,
                             message: l10n.homeLocationNoResults,
                             color: AppColors.accent,
                           )
                         else
-                          for (final city in _results)
+                          for (final city in visibleCities)
                             _CityResultTile(
                               city: city,
                               onTap: () => _selectCity(city),
@@ -419,8 +485,13 @@ class _CityResultTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        city.countryCode.toUpperCase(),
+                      AppLocalizedLocationText(
+                        countryCode: city.countryCode,
+                        cityId: null,
+                        cityName: null,
+                        fallbackText: city.countryCode,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textCaption,
                           fontSize: 12,

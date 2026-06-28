@@ -143,7 +143,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
       if (!ctx.mounted) return;
 
-      ctx.go(widget.from?.isNotEmpty == true ? widget.from! : '/');
+      _finishOtpAuthenticatedNavigation(ctx, widget.from);
     } else {
       await showErrorDialog(
         ctx,
@@ -861,4 +861,14 @@ class _OtpScreenState extends State<OtpScreen> {
       ),
     );
   }
+}
+
+void _finishOtpAuthenticatedNavigation(BuildContext ctx, String? from) {
+  final target = from?.trim();
+  if (target == null || target.isEmpty || target == '/') {
+    ctx.go('/');
+    return;
+  }
+
+  ctx.pushReplacement(target);
 }

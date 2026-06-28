@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
-
 final class AppConfig {
   AppConfig._();
 
@@ -18,26 +15,7 @@ final class AppConfig {
       return _normalize(_baseUrlFromDefine);
     }
 
-    const String testUrl =
-        "https://beads-employment-decide-metadata.trycloudflare.com/api/v1";
-
-    if (kIsWeb) {
-      return testUrl;
-      // return 'http://localhost:8080/api/v1';
-    }
-
-    if (Platform.isIOS || Platform.isMacOS) {
-      return testUrl;
-      // return 'http://localhost:8080/api/v1';
-    }
-
-    if (Platform.isAndroid) {
-      return testUrl;
-      // return 'http://10.0.2.2:8080/api/v1';
-    }
-
-    return testUrl;
-    // return 'http://localhost:8080/api/v1';
+    return 'https://api-dev.inflap.app/api/v1';
   }
 
   static String get mapStyleUrl {

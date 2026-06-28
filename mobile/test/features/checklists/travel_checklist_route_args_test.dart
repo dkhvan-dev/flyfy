@@ -72,10 +72,14 @@ void main() {
       ),
     );
 
-    final request = args.toRequest(preferredLanguage: 'en');
+    final request = args.toRequest(
+      preferredLanguage: 'en',
+      citizenshipCountryCode: ' kz ',
+    );
 
     expect(request.tripId, 'excursion_booking:booking-42');
     expect(request.destination.countryCode, 'TR');
+    expect(request.citizenshipCountryCode, 'KZ');
     expect(request.destination.cityName, 'Istanbul');
     expect(request.startAt, DateTime.utc(2026, 11, 9, 9));
     expect(request.endAt, DateTime.utc(2026, 11, 9, 12));

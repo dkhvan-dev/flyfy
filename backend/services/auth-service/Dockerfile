@@ -5,17 +5,21 @@ FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates
 
-WORKDIR /repo
+ENV GOWORK=off
 
-# Копируем весь репозиторий, чтобы были доступны:
-# - backend/services/auth-service
-# - proto (или contracts)
-COPY . .
+WORKDIR /app
 
-WORKDIR /repo/backend/services/auth-service
+COPY proto/go.mod proto/go.sum ./proto/
+COPY backend/services/auth-service/go.mod backend/services/auth-service/go.sum ./backend/services/auth-service/
 
-# Скачиваем зависимости уже в контексте монорепы
+WORKDIR /app/backend/services/auth-service
 RUN go mod download
+
+WORKDIR /app
+COPY proto ./proto
+COPY backend/services/auth-service ./backend/services/auth-service
+
+WORKDIR /app/backend/services/auth-service
 
 # Собираем бинарь
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -33,7 +37,7 @@ RUN apk add --no-cache ca-certificates tzdata \
 WORKDIR /app
 
 COPY --from=builder /build/auth-service .
-COPY --from=builder /repo/backend/services/auth-service/migrations ./migrations
+COPY --from=builder /app/backend/services/auth-service/migrations ./migrations
 
 USER appuser
 

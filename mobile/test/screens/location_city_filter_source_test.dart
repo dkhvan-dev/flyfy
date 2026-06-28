@@ -79,7 +79,7 @@ void main() {
   );
 
   test(
-    'home location provider resolves profile timezone city into reference city id',
+    'home location provider resolves raw city into reference city id',
     () async {
       final source = await File(
         'lib/providers/home_location_provider.dart',
@@ -99,7 +99,7 @@ void main() {
   );
 
   test(
-    'home location provider receives profile fallback from app bootstrap',
+    'home location provider is independent from profile country and timezone',
     () async {
       final mainSource = await File('lib/main.dart').readAsString();
       final providerSource = await File(
@@ -108,21 +108,18 @@ void main() {
 
       expect(
         mainSource,
-        matches(
-          RegExp(
-            r'ChangeNotifierProxyProvider2<\s*SessionProvider,\s*LocaleProvider,\s*HomeLocationProvider\s*>',
-            multiLine: true,
-          ),
+        contains(
+          'ChangeNotifierProvider(create: (_) => HomeLocationProvider())',
         ),
       );
-      expect(mainSource, contains('setProfileFallback('));
-      expect(mainSource, contains('session.profile?.countryCode'));
-      expect(mainSource, contains('session.profile?.timezone'));
+      expect(mainSource, isNot(contains('setProfileFallback(')));
+      expect(mainSource, isNot(contains('session.profile?.countryCode')));
+      expect(mainSource, isNot(contains('session.profile?.timezone')));
       expect(
         providerSource,
-        contains('static HomeLocationPreference? fromProfile'),
+        isNot(contains('static HomeLocationPreference? fromProfile')),
       );
-      expect(providerSource, contains('HomeLocationSource.profile'));
+      expect(providerSource, isNot(contains('_profileFallbackLocation')));
     },
   );
 

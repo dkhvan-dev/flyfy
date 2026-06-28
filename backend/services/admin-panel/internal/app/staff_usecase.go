@@ -60,6 +60,11 @@ type RegenerateStaffPasswordResult struct {
 	TemporaryPassword string
 }
 
+type StaffDisplayContact struct {
+	DisplayName string
+	Email       string
+}
+
 type BootstrapSuperAdminInput struct {
 	Email       string
 	DisplayName string
@@ -75,11 +80,53 @@ func NewStaffUseCase(staff port.StaffRepository, audit port.AuditRepository, ses
 	return &StaffUseCase{staff: staff, sessions: sessionRepo, audit: audit}
 }
 
+func canReadStaffDisplayName(actor *model.StaffUser) bool {
+	return actor.HasPermission(enum.PermissionStaffManage) ||
+		actor.HasPermission(enum.PermissionSupportRead) ||
+		actor.HasPermission(enum.PermissionSupportReply) ||
+		actor.HasPermission(enum.PermissionSupportManage)
+}
+
 func (u *StaffUseCase) ListStaff(ctx context.Context, actor *model.StaffUser, limit int, offset int) ([]*model.StaffUser, error) {
 	if actor == nil || !actor.HasPermission(enum.PermissionStaffManage) {
 		return nil, ErrPermissionDenied
 	}
 	return u.staff.List(ctx, clampLimit(limit), normalizeOffset(offset))
+}
+
+func (u *StaffUseCase) ListSupportAssignableStaff(ctx context.Context, actor *model.StaffUser, limit int, offset int) ([]*model.StaffUser, error) {
+	if actor == nil || (!actor.HasPermission(enum.PermissionSupportManage) && !actor.HasPermission(enum.PermissionStaffManage)) {
+		return nil, ErrPermissionDenied
+	}
+	if u == nil || u.staff == nil {
+		return nil, ErrIntegrationNotReady
+	}
+	items, err := u.staff.List(ctx, clampLimit(limit), normalizeOffset(offset))
+	if err != nil {
+		return nil, err
+	}
+	assignable := make([]*model.StaffUser, 0, len(items))
+	for _, item := range items {
+		enriched, err := u.staffWithPermissions(ctx, item)
+		if err != nil {
+			return nil, err
+		}
+		if supportStaffCanHandleTickets(enriched) {
+			assignable = append(assignable, enriched)
+		}
+	}
+	return assignable, nil
+}
+
+func supportStaffCanHandleTickets(staff *model.StaffUser) bool {
+	if staff == nil || staff.IsDisabled() || staff.Status == enum.StaffStatusLocked {
+		return false
+	}
+	return staff.HasPermission(enum.PermissionSupportReply) ||
+		staff.HasPermission(enum.PermissionSupportManage) ||
+		staff.HasRole(enum.StaffRoleSupportAgent) ||
+		staff.HasRole(enum.StaffRoleSupportLead) ||
+		staff.HasRole(enum.StaffRoleSupportAdmin)
 }
 
 func (u *StaffUseCase) GetStaff(ctx context.Context, actor *model.StaffUser, staffID uuid.UUID) (*model.StaffUser, error) {
@@ -94,6 +141,40 @@ func (u *StaffUseCase) GetStaff(ctx context.Context, actor *model.StaffUser, sta
 		return nil, ErrStaffNotFound
 	}
 	return target, nil
+}
+
+func (u *StaffUseCase) ResolveStaffDisplayName(ctx context.Context, actor *model.StaffUser, staffID uuid.UUID) (string, error) {
+	contact, err := u.ResolveStaffDisplayContact(ctx, actor, staffID)
+	if err != nil {
+		return "", err
+	}
+	if displayName := strings.TrimSpace(contact.DisplayName); displayName != "" {
+		return displayName, nil
+	}
+	return strings.TrimSpace(contact.Email), nil
+}
+
+func (u *StaffUseCase) ResolveStaffDisplayContact(ctx context.Context, actor *model.StaffUser, staffID uuid.UUID) (StaffDisplayContact, error) {
+	if actor == nil || !canReadStaffDisplayName(actor) {
+		return StaffDisplayContact{}, ErrPermissionDenied
+	}
+	if u == nil || u.staff == nil {
+		return StaffDisplayContact{}, ErrIntegrationNotReady
+	}
+	if staffID == uuid.Nil {
+		return StaffDisplayContact{}, ErrInvalidInput
+	}
+	target, err := u.staff.GetByID(ctx, staffID)
+	if err != nil {
+		return StaffDisplayContact{}, err
+	}
+	if target == nil {
+		return StaffDisplayContact{}, ErrStaffNotFound
+	}
+	return StaffDisplayContact{
+		DisplayName: strings.TrimSpace(target.DisplayName),
+		Email:       strings.TrimSpace(target.Email),
+	}, nil
 }
 
 func (u *StaffUseCase) CreateStaff(ctx context.Context, actor *model.StaffUser, input CreateStaffInput) (*CreateStaffResult, error) {
@@ -382,6 +463,72 @@ func (u *StaffUseCase) staffWithRoles(ctx context.Context, staffID uuid.UUID) (*
 	target.Permissions = permissions
 	target.Roles = roles
 	return target, nil
+}
+
+func (u *StaffUseCase) staffWithPermissions(ctx context.Context, staff *model.StaffUser) (*model.StaffUser, error) {
+	if staff == nil || staff.ID == uuid.Nil {
+		return staff, nil
+	}
+	permissions, roles, err := u.staff.GetPermissions(ctx, staff.ID)
+	if err != nil {
+		return nil, err
+	}
+	enriched := *staff
+	enriched.Permissions = mergeStaffPermissions(enriched.Permissions, permissions)
+	enriched.Roles = mergeStaffRoles(enriched.Roles, roles)
+	return &enriched, nil
+}
+
+func mergeStaffPermissions(base []enum.Permission, extra []enum.Permission) []enum.Permission {
+	seen := make(map[enum.Permission]struct{}, len(base)+len(extra))
+	out := make([]enum.Permission, 0, len(base)+len(extra))
+	for _, permission := range base {
+		if permission == "" {
+			continue
+		}
+		if _, ok := seen[permission]; ok {
+			continue
+		}
+		seen[permission] = struct{}{}
+		out = append(out, permission)
+	}
+	for _, permission := range extra {
+		if permission == "" {
+			continue
+		}
+		if _, ok := seen[permission]; ok {
+			continue
+		}
+		seen[permission] = struct{}{}
+		out = append(out, permission)
+	}
+	return out
+}
+
+func mergeStaffRoles(base []enum.StaffRole, extra []enum.StaffRole) []enum.StaffRole {
+	seen := make(map[enum.StaffRole]struct{}, len(base)+len(extra))
+	out := make([]enum.StaffRole, 0, len(base)+len(extra))
+	for _, role := range base {
+		if role == "" {
+			continue
+		}
+		if _, ok := seen[role]; ok {
+			continue
+		}
+		seen[role] = struct{}{}
+		out = append(out, role)
+	}
+	for _, role := range extra {
+		if role == "" {
+			continue
+		}
+		if _, ok := seen[role]; ok {
+			continue
+		}
+		seen[role] = struct{}{}
+		out = append(out, role)
+	}
+	return out
 }
 
 func normalizeRoles(input []enum.StaffRole) ([]enum.StaffRole, error) {

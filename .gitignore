@@ -46,4 +46,7 @@ graphify-out/
 .codex
 .superpowers
 .idea
+.omc/
+.goose/
+.agents/
 *.jsx

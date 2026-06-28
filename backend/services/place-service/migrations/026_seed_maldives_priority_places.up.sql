@@ -161,8 +161,12 @@ SELECT
     'MV',
     city_id,
     category,
-    NULL::numeric,
-    NULL::varchar(3),
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 20::numeric
+        ELSE 10::numeric
+    END,
+    'USD',
     duration_value,
     duration_unit,
     rating,

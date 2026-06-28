@@ -1,0 +1,197 @@
+{{define "support_agents/index"}}
+{{template "pageStart" .}}
+{{$agent := .Data.Input}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "support.eyebrow"}}</p>
+      <h1>{{t .Locale "support.agentsTitle"}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="/admin/support/tickets">{{t .Locale "nav.support"}}</a>
+      <a class="button" href="/admin/support/saved-replies">{{t .Locale "support.savedRepliesTitle"}}</a>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "support.agentStaffId"}}</th>
+            <th>{{t .Locale "support.agentName"}}</th>
+            <th>{{t .Locale "field.status"}}</th>
+            <th>{{t .Locale "support.agentLanguages"}}</th>
+            <th>{{t .Locale "support.agentSkills"}}</th>
+            <th>{{t .Locale "support.agentLevel"}}</th>
+            <th>{{t .Locale "support.agentLoad"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td><code>{{.Item.StaffID}}</code></td>
+              <td><strong>{{.Item.DisplayName}}</strong><span class="muted block">{{.Item.Timezone}}</span></td>
+              <td><span class="{{.BadgeClass}}">{{t $.Locale (printf "support.agentStatus.%s" .Item.Status)}}</span></td>
+              <td>{{if .Languages}}{{.Languages}}{{else}}-{{end}}</td>
+              <td>{{.Skills}}</td>
+              <td>{{t $.Locale (printf "support.agentLevel.%s" .Item.Level)}}</td>
+              <td>{{printf "%.1f" .Item.MaxActiveLoad}}</td>
+              <td>{{formatTime .Item.UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "support.agentsEmpty"}}</div>
+  {{end}}
+
+  {{if .Data.CanManage}}
+    <div class="grid">
+      <form class="form card" method="post" action="{{.Data.AgentSubmitURL}}">
+        {{csrfField .CSRFToken}}
+        <h2>{{t .Locale "support.agentFormTitle"}}</h2>
+        <div class="filter-field">
+          <span>{{t .Locale "support.agentStaff"}}</span>
+          <div class="filter-combobox" data-support-agent-staff-combobox>
+            <input type="hidden" name="staff_id" id="support-agent-staff-id" value="{{$agent.StaffID}}" data-support-agent-staff-id>
+            <input
+              type="search"
+              id="support-agent-staff-query"
+              name="staff_lookup"
+              value="{{$agent.StaffLookup}}"
+              required
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="support-agent-staff-suggestions"
+              data-support-agent-staff-input
+              placeholder="{{t .Locale "support.agentStaffPlaceholder"}}">
+            <div class="filter-suggestions" id="support-agent-staff-suggestions" data-support-agent-staff-suggestions role="listbox" hidden>
+            {{range .Data.StaffOptions}}
+              <button type="button" class="filter-suggestion" data-support-agent-staff-option data-value="{{.StaffID}}" data-label="{{.SearchValue}}" data-search="{{.SearchValue}} {{.DisplayName}} {{.Email}}" role="option">
+                <span>{{.SearchValue}}</span>
+              </button>
+            {{end}}
+            </div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>
+            <span>{{t .Locale "support.agentLastName"}}</span>
+            <input name="last_name" autocomplete="family-name" value="{{$agent.LastName}}" required>
+          </label>
+          <label>
+            <span>{{t .Locale "support.agentFirstName"}}</span>
+            <input name="first_name" autocomplete="given-name" value="{{$agent.FirstName}}" required>
+          </label>
+          <label>
+            <span>{{t .Locale "support.agentMiddleName"}}</span>
+            <input name="middle_name" autocomplete="additional-name" value="{{$agent.MiddleName}}">
+          </label>
+        </div>
+        <label>
+          <span>{{t .Locale "field.status"}}</span>
+          <select name="status">
+            {{range .Data.FormStatusOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+        </label>
+        <div class="filter-field">
+          <span>{{t .Locale "support.agentLanguages"}}</span>
+          <details class="filter-combobox support-language-dropdown" data-support-agent-language-dropdown>
+            <summary class="button support-language-button" aria-expanded="false" aria-controls="support-agent-language-options" data-support-agent-language-button>
+              <span data-support-agent-language-summary>{{t .Locale "support.agentLanguagesPlaceholder"}}</span>
+            </summary>
+            <div class="filter-suggestions support-language-options" id="support-agent-language-options" data-support-agent-language-options>
+            {{range .Data.LanguageOptions}}
+              <label class="filter-suggestion support-language-option">
+                <input type="checkbox" name="languages" value="{{.Value}}" {{if .Selected}}checked{{end}} data-support-agent-language-option>
+                <span>{{t $.Locale .LabelKey}}</span>
+              </label>
+            {{end}}
+            </div>
+          </details>
+        </div>
+        <label>
+          <span>{{t .Locale "support.agentSkills"}}</span>
+          <div class="check-grid">
+            {{range .Data.SkillOptions}}
+              <label><input type="checkbox" name="skills" value="{{.Value}}" {{if .Selected}}checked{{end}}> {{t $.Locale .LabelKey}}</label>
+            {{end}}
+          </div>
+        </label>
+        <label>
+          <span>{{t .Locale "support.agentLevel"}}</span>
+          <select name="level">
+            {{range .Data.LevelOptions}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          <span>{{t .Locale "support.agentLoad"}}</span>
+          <input type="number" step="0.5" min="0" name="max_active_load" value="{{printf "%.1f" $agent.MaxActiveLoad}}">
+        </label>
+        <div class="filter-field">
+          <span>{{t .Locale "support.agentTimezone"}}</span>
+          <div class="filter-combobox support-timezone-combobox" data-support-agent-timezone-combobox>
+            <input type="hidden" name="timezone" value="{{$agent.Timezone}}" data-support-agent-timezone-value>
+            <input
+              type="search"
+              value="{{range .Data.TimezoneOptions}}{{if .Selected}}{{.Label}}{{end}}{{end}}"
+              required
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="support-agent-timezone-suggestions"
+              data-support-agent-timezone-input
+              data-validation-message="{{t .Locale "support.agentTimezoneChoose"}}">
+            <div class="filter-suggestions support-timezone-suggestions" id="support-agent-timezone-suggestions" data-support-agent-timezone-suggestions role="listbox" hidden>
+            {{range .Data.TimezoneOptions}}
+              <button
+                type="button"
+                class="filter-suggestion support-timezone-suggestion"
+                data-support-agent-timezone-option
+                data-value="{{.Value}}"
+                data-label="{{.Label}}"
+                data-search="{{.Search}}"
+                role="option">
+                <span>{{.Value}}</span>
+                <small>{{if .Offset}}{{.Offset}}{{if .Hint}} · {{.Hint}}{{end}}{{else}}{{.Hint}}{{end}}</small>
+              </button>
+            {{end}}
+            </div>
+          </div>
+        </div>
+        <button class="primary" type="submit">{{t .Locale "support.saveAgent"}}</button>
+      </form>
+    </div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

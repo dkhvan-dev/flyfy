@@ -58,6 +58,29 @@ func TestModerationMigrationAddsRouteModerationColumns(t *testing.T) {
 	}
 }
 
+func TestUserRouteMigratorTracksAppliedMigrations(t *testing.T) {
+	scriptPath := filepath.Join("..", "..", "..", "..", "..", "..", "deploy", "init-scripts", "021_user_route_service_migrate.sh")
+	payload, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("read user-route migrator script: %v", err)
+	}
+	script := string(payload)
+	required := []string{
+		"CREATE TABLE IF NOT EXISTS schema_migrations",
+		"mark_applied \"001_user_routes.up.sql\"",
+		"mark_applied \"002_user_route_moderation.up.sql\"",
+		"SELECT 1 FROM schema_migrations WHERE filename = '$filename' LIMIT 1",
+		"Skipping $filename",
+		"mark_applied \"$filename\"",
+		"to_regclass('public.idx_user_routes_public_city_updated')",
+	}
+	for _, snippet := range required {
+		if !strings.Contains(script, snippet) {
+			t.Fatalf("user-route migrator script missing %q", snippet)
+		}
+	}
+}
+
 func TestRouteSelectAndListQueriesIncludeModerationFields(t *testing.T) {
 	selectSQL := routeSelectSQL()
 	if !strings.Contains(selectSQL, "r.moderation_status") ||

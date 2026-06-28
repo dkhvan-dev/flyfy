@@ -58,6 +58,80 @@ func TestAdminCannotAssignSuperAdminRole(t *testing.T) {
 	}
 }
 
+func TestListSupportAssignableStaffFiltersTicketCapableEmployees(t *testing.T) {
+	t.Parallel()
+
+	supportAgent := staffFixture(enum.StaffRoleSupportAgent)
+	supportAgent.DisplayName = "Aigerim Support"
+	supportLead := staffFixture(enum.StaffRoleSupportViewer)
+	supportLead.DisplayName = "Lead With Reply Permission"
+	supportLead.Permissions = []enum.Permission{enum.PermissionSupportReply}
+	viewer := staffFixture(enum.StaffRoleSupportViewer)
+	viewer.DisplayName = "Viewer Only"
+	disabled := staffFixture(enum.StaffRoleSupportAgent)
+	disabled.DisplayName = "Disabled Agent"
+	disabled.Status = enum.StaffStatusDisabled
+	ordinary := staffFixture(enum.StaffRoleAdmin)
+	ordinary.DisplayName = "Ordinary Admin"
+
+	repo := &staffRepoStub{items: []*model.StaffUser{viewer, supportAgent, disabled, ordinary, supportLead}}
+	uc := NewStaffUseCase(repo, &staffAuditRepoStub{}, &staffSessionRepoStub{})
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Permissions: []enum.Permission{enum.PermissionSupportManage},
+	}
+
+	items, err := uc.ListSupportAssignableStaff(context.Background(), actor, 100, 0)
+	if err != nil {
+		t.Fatalf("ListSupportAssignableStaff() error = %v", err)
+	}
+	got := staffDisplayNames(items)
+	want := []string{"Aigerim Support", "Lead With Reply Permission"}
+	if !sameStrings(got, want) {
+		t.Fatalf("assignable staff = %v, want %v", got, want)
+	}
+}
+
+func TestListSupportAssignableStaffLoadsPermissionsForListedEmployees(t *testing.T) {
+	t.Parallel()
+
+	superAdmin := staffFixture(enum.StaffRoleSuperAdmin)
+	superAdmin.DisplayName = "Super Admin"
+	supportAgent := staffFixture()
+	supportAgent.DisplayName = "Agent From Permissions"
+	viewer := staffFixture(enum.StaffRoleSupportViewer)
+	viewer.DisplayName = "Viewer Only"
+
+	repo := &staffRepoStub{
+		items: []*model.StaffUser{superAdmin, supportAgent, viewer},
+		permissionsByID: map[uuid.UUID][]enum.Permission{
+			superAdmin.ID:   {enum.PermissionSupportManage},
+			supportAgent.ID: {enum.PermissionSupportReply},
+			viewer.ID:       {enum.PermissionSupportRead},
+		},
+		rolesByID: map[uuid.UUID][]enum.StaffRole{
+			superAdmin.ID:   {enum.StaffRoleSuperAdmin},
+			supportAgent.ID: {enum.StaffRoleSupportViewer},
+			viewer.ID:       {enum.StaffRoleSupportViewer},
+		},
+	}
+	uc := NewStaffUseCase(repo, &staffAuditRepoStub{}, &staffSessionRepoStub{})
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Permissions: []enum.Permission{enum.PermissionSupportManage},
+	}
+
+	items, err := uc.ListSupportAssignableStaff(context.Background(), actor, 100, 0)
+	if err != nil {
+		t.Fatalf("ListSupportAssignableStaff() error = %v", err)
+	}
+	got := staffDisplayNames(items)
+	want := []string{"Super Admin", "Agent From Permissions"}
+	if !sameStrings(got, want) {
+		t.Fatalf("assignable staff = %v, want %v", got, want)
+	}
+}
+
 func TestAdminCannotEditSuperAdmin(t *testing.T) {
 	t.Parallel()
 
@@ -326,6 +400,9 @@ func staffFixture(roles ...enum.StaffRole) *model.StaffUser {
 
 type staffRepoStub struct {
 	target             *model.StaffUser
+	items              []*model.StaffUser
+	permissionsByID    map[uuid.UUID][]enum.Permission
+	rolesByID          map[uuid.UUID][]enum.StaffRole
 	updatedDisplayName string
 	updatedRoles       []enum.StaffRole
 	updatedTimezone    string
@@ -337,6 +414,11 @@ func newStaffRepoStub(target *model.StaffUser) *staffRepoStub {
 }
 
 func (r *staffRepoStub) GetByID(_ context.Context, id uuid.UUID) (*model.StaffUser, error) {
+	for _, item := range r.items {
+		if item != nil && item.ID == id {
+			return item, nil
+		}
+	}
 	if r.target != nil && r.target.ID == id {
 		return r.target, nil
 	}
@@ -348,6 +430,9 @@ func (r *staffRepoStub) GetByEmail(context.Context, string) (*model.StaffUser, e
 }
 
 func (r *staffRepoStub) List(context.Context, int, int) ([]*model.StaffUser, error) {
+	if r.items != nil {
+		return r.items, nil
+	}
 	return []*model.StaffUser{r.target}, nil
 }
 
@@ -398,11 +483,21 @@ func (r *staffRepoStub) SetStatus(_ context.Context, id uuid.UUID, status enum.S
 	return nil
 }
 
-func (r *staffRepoStub) GetPermissions(context.Context, uuid.UUID) ([]enum.Permission, []enum.StaffRole, error) {
-	if r.target == nil {
-		return nil, nil, nil
+func (r *staffRepoStub) GetPermissions(_ context.Context, staffID uuid.UUID) ([]enum.Permission, []enum.StaffRole, error) {
+	if r.permissionsByID != nil || r.rolesByID != nil {
+		permissions := append([]enum.Permission(nil), r.permissionsByID[staffID]...)
+		roles := append([]enum.StaffRole(nil), r.rolesByID[staffID]...)
+		return permissions, roles, nil
 	}
-	return nil, r.target.Roles, nil
+	if r.target != nil && r.target.ID == staffID {
+		return append([]enum.Permission(nil), r.target.Permissions...), append([]enum.StaffRole(nil), r.target.Roles...), nil
+	}
+	for _, item := range r.items {
+		if item != nil && item.ID == staffID {
+			return append([]enum.Permission(nil), item.Permissions...), append([]enum.StaffRole(nil), item.Roles...), nil
+		}
+	}
+	return nil, nil, nil
 }
 
 type staffSessionRepoStub struct {
@@ -444,6 +539,28 @@ func (r *staffAuditRepoStub) List(context.Context, model.AuditFilter) ([]*model.
 }
 
 func sameRoles(left []enum.StaffRole, right []enum.StaffRole) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func staffDisplayNames(items []*model.StaffUser) []string {
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		if item != nil {
+			names = append(names, item.DisplayName)
+		}
+	}
+	return names
+}
+
+func sameStrings(left []string, right []string) bool {
 	if len(left) != len(right) {
 		return false
 	}

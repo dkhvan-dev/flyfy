@@ -6,8 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/device/device_context_service.dart';
 import '../core/network/reference_api.dart';
+import '../core/reference/timezone_filter_utils.dart';
 
-enum HomeLocationSource { manual, detected, profile, fallback }
+enum HomeLocationSource { manual, detected, fallback }
 
 class HomeLocationPreference {
   const HomeLocationPreference({
@@ -15,6 +16,7 @@ class HomeLocationPreference {
     this.countryCode,
     this.cityId,
     this.cityName,
+    this.timezone,
     this.latitude,
     this.longitude,
     this.updatedAt,
@@ -24,6 +26,7 @@ class HomeLocationPreference {
   final String? countryCode;
   final String? cityId;
   final String? cityName;
+  final String? timezone;
   final double? latitude;
   final double? longitude;
   final DateTime? updatedAt;
@@ -46,6 +49,7 @@ class HomeLocationPreference {
       'countryCode': countryCode,
       'cityId': cityId,
       'cityName': cityName,
+      'timezone': timezone,
       'latitude': latitude,
       'longitude': longitude,
       'updatedAt': updatedAt?.toIso8601String(),
@@ -56,13 +60,14 @@ class HomeLocationPreference {
     final rawSource = json['source']?.toString();
     final source = HomeLocationSource.values.firstWhere(
       (item) => item.name == rawSource,
-      orElse: () => HomeLocationSource.manual,
+      orElse: () => HomeLocationSource.fallback,
     );
     return HomeLocationPreference(
       source: source,
       countryCode: _nullableText(json['countryCode']),
       cityId: _nullableText(json['cityId']),
       cityName: _nullableText(json['cityName']),
+      timezone: normalizeReferenceTimezoneId(json['timezone']?.toString()),
       latitude: _nullableDouble(json['latitude']),
       longitude: _nullableDouble(json['longitude']),
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? ''),
@@ -74,33 +79,20 @@ class HomeLocationPreference {
       source: HomeLocationSource.fallback,
       countryCode: 'KZ',
       cityName: 'Almaty',
-      updatedAt: DateTime.now().toUtc(),
-    );
-  }
-
-  static HomeLocationPreference? fromProfile({
-    required String? countryCode,
-    required String? timezone,
-  }) {
-    final normalizedCountryCode = _nullableText(countryCode)?.toUpperCase();
-    final cityName = _cityNameFromTimezone(timezone);
-    if (normalizedCountryCode == null && cityName == null) return null;
-
-    return HomeLocationPreference(
-      source: HomeLocationSource.profile,
-      countryCode: normalizedCountryCode,
-      cityName: cityName,
+      timezone: 'Asia/Almaty',
       updatedAt: DateTime.now().toUtc(),
     );
   }
 
   static HomeLocationPreference? fromDeviceTimezone(String? timezone) {
-    final cityName = _cityNameFromTimezone(timezone);
+    final normalizedTimezone = normalizeReferenceTimezoneId(timezone);
+    final cityName = _cityNameFromTimezone(normalizedTimezone);
     if (cityName == null) return null;
 
     return HomeLocationPreference(
       source: HomeLocationSource.detected,
       cityName: cityName,
+      timezone: normalizedTimezone,
       updatedAt: DateTime.now().toUtc(),
     );
   }
@@ -120,7 +112,6 @@ class HomeLocationProvider extends ChangeNotifier {
   final DeviceContextService _deviceContextService;
 
   HomeLocationPreference? _selectedLocation;
-  HomeLocationPreference? _profileFallbackLocation;
   HomeLocationPreference _effectiveLocation = HomeLocationPreference.fallback();
   Future<void>? _loadFuture;
   bool _isLoaded = false;
@@ -135,13 +126,7 @@ class HomeLocationProvider extends ChangeNotifier {
   bool get isDetecting => _isDetecting;
   String? get errorMessage => _errorMessage;
 
-  Future<void> load({
-    String languageCode = 'en',
-    HomeLocationPreference? profileFallback,
-  }) {
-    if (profileFallback != null) {
-      _profileFallbackLocation = profileFallback;
-    }
+  Future<void> load({String languageCode = 'en'}) {
     final currentLoad = _loadFuture;
     if (currentLoad != null) return currentLoad;
 
@@ -167,7 +152,6 @@ class HomeLocationProvider extends ChangeNotifier {
       _effectiveLocation =
           _selectedLocation ??
           deviceLocation ??
-          _profileFallbackLocation ??
           HomeLocationPreference.fallback();
       _effectiveLocation = await _resolveCityReference(
         _effectiveLocation,
@@ -178,35 +162,6 @@ class HomeLocationProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  Future<void> setProfileFallback(
-    HomeLocationPreference? profileFallback, {
-    required String languageCode,
-  }) async {
-    _profileFallbackLocation = profileFallback;
-    if (profileFallback == null || _selectedLocation != null) return;
-
-    final currentLoad = _loadFuture;
-    if (currentLoad != null) {
-      await currentLoad;
-      if (_selectedLocation != null ||
-          _effectiveLocation.source != HomeLocationSource.fallback) {
-        return;
-      }
-    } else if (!_isLoaded ||
-        _effectiveLocation.source != HomeLocationSource.fallback) {
-      return;
-    }
-
-    final resolved = await _resolveCityReference(
-      profileFallback,
-      languageCode: languageCode,
-    );
-    if (_sameLocation(_effectiveLocation, resolved)) return;
-
-    _effectiveLocation = resolved;
-    notifyListeners();
   }
 
   Future<HomeLocationPreference> resolveCityReference(
@@ -225,12 +180,22 @@ class HomeLocationProvider extends ChangeNotifier {
     return resolved;
   }
 
-  Future<void> selectCity(ReferenceCity city) async {
+  Future<void> selectCity(
+    ReferenceCity city, {
+    String languageCode = 'en',
+  }) async {
+    final countryCode = city.countryCode.trim().toUpperCase();
+    final cityName = city.name.trim();
     final preference = HomeLocationPreference(
       source: HomeLocationSource.manual,
-      countryCode: city.countryCode.trim().toUpperCase(),
+      countryCode: countryCode,
       cityId: city.id.trim().isEmpty ? null : city.id.trim(),
-      cityName: city.name.trim().isEmpty ? null : city.name.trim(),
+      cityName: cityName.isEmpty ? null : cityName,
+      timezone: await _resolveTimezoneForLocation(
+        cityName: cityName,
+        countryCode: countryCode,
+        languageCode: languageCode,
+      ),
       updatedAt: DateTime.now().toUtc(),
     );
     await _setSelectedLocation(preference);
@@ -270,7 +235,6 @@ class HomeLocationProvider extends ChangeNotifier {
           languageCode: languageCode,
           requestPermission: false,
         ) ??
-        _profileFallbackLocation ??
         HomeLocationPreference.fallback();
     _effectiveLocation = await _resolveCityReference(
       nextLocation,
@@ -336,18 +300,25 @@ class HomeLocationProvider extends ChangeNotifier {
           return city.countryCode.trim().toUpperCase() == countryCode;
         }, orElse: () => cities.isEmpty ? null : cities.first);
       }
+      final resolvedCountryCode = (matchedCity?.countryCode ?? countryCode)
+          ?.trim()
+          .toUpperCase();
+      final resolvedCityName = (matchedCity?.name.trim().isNotEmpty == true)
+          ? matchedCity!.name.trim()
+          : (cityName.isEmpty ? null : cityName);
 
       final preference = HomeLocationPreference(
         source: HomeLocationSource.detected,
-        countryCode: (matchedCity?.countryCode ?? countryCode)
-            ?.trim()
-            .toUpperCase(),
+        countryCode: resolvedCountryCode,
         cityId: matchedCity?.id.trim().isEmpty == true
             ? null
             : matchedCity?.id.trim(),
-        cityName: (matchedCity?.name.trim().isNotEmpty == true)
-            ? matchedCity!.name.trim()
-            : (cityName.isEmpty ? null : cityName),
+        cityName: resolvedCityName,
+        timezone: await _resolveTimezoneForLocation(
+          cityName: resolvedCityName,
+          countryCode: resolvedCountryCode,
+          languageCode: languageCode,
+        ),
         latitude: suggestion.latitude,
         longitude: suggestion.longitude,
         updatedAt: DateTime.now().toUtc(),
@@ -362,6 +333,54 @@ class HomeLocationProvider extends ChangeNotifier {
     }
 
     return _detectDeviceTimezone();
+  }
+
+  Future<String?> _resolveTimezoneForLocation({
+    required String languageCode,
+    String? cityName,
+    String? countryCode,
+  }) async {
+    final deviceTimezone = await _deviceContextService.getLocalTimezone();
+
+    try {
+      final timezones = await _referenceApi.listTimezones(lang: languageCode);
+      final aliases = await _timezoneAliasesForLocation(
+        timezones,
+        languageCode,
+      );
+      final timezone = resolveReferenceTimezoneForLocation(
+        timezones: timezones,
+        aliases: aliases,
+        cityName: cityName,
+        countryCode: countryCode,
+        deviceTimezoneId: deviceTimezone,
+      );
+      return normalizeReferenceTimezoneId(timezone?.id) ??
+          normalizeReferenceTimezoneId(deviceTimezone);
+    } catch (_) {
+      return normalizeReferenceTimezoneId(deviceTimezone);
+    }
+  }
+
+  Future<Map<String, Set<String>>> _timezoneAliasesForLocation(
+    List<ReferenceTimezone> timezones,
+    String languageCode,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(languageCode);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listTimezones(lang: lang);
+        } catch (_) {
+          return const <ReferenceTimezone>[];
+        }
+      }),
+    );
+
+    return timezoneSearchAliasMap([
+      ...timezones,
+      for (final localizedTimezones in localizedLists) ...localizedTimezones,
+    ]);
   }
 
   Future<HomeLocationPreference?> _detectDeviceTimezone() async {
@@ -415,6 +434,7 @@ class HomeLocationProvider extends ChangeNotifier {
         cityName: matchedCity.name.trim().isEmpty
             ? location.cityName
             : matchedCity.name.trim(),
+        timezone: location.timezone,
         latitude: location.latitude,
         longitude: location.longitude,
         updatedAt: location.updatedAt,
@@ -432,6 +452,7 @@ class HomeLocationProvider extends ChangeNotifier {
         first.countryCode == second.countryCode &&
         first.cityId == second.cityId &&
         first.cityName == second.cityName &&
+        first.timezone == second.timezone &&
         first.latitude == second.latitude &&
         first.longitude == second.longitude;
   }

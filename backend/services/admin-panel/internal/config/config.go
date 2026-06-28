@@ -19,6 +19,7 @@ type Config struct {
 	Activity     ActivityServiceConfig
 	Guide        GuideServiceConfig
 	Chat         ChatServiceConfig
+	Support      SupportServiceConfig
 	FeedService  FeedServiceConfig
 	UserRoute    UserRouteServiceConfig
 	User         UserServiceConfig
@@ -131,6 +132,11 @@ type GuideServiceConfig struct {
 type ChatServiceConfig struct {
 	BaseURL string        `env:"CHAT_SERVICE_URL, default=http://chat-service:8088"`
 	Timeout time.Duration `env:"CHAT_SERVICE_TIMEOUT, default=5s"`
+}
+
+type SupportServiceConfig struct {
+	BaseURL string        `env:"SUPPORT_SERVICE_URL, default=http://support-service:8100"`
+	Timeout time.Duration `env:"SUPPORT_SERVICE_TIMEOUT, default=5s"`
 }
 
 type FeedServiceConfig struct {

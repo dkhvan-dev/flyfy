@@ -10,15 +10,15 @@ void main() {
         'lib/screens/profile/edit_profile_screen.dart',
       ).readAsString();
       final countryStart = source.indexOf('label: l10n.profileCountry');
-      final timezoneStart = source.indexOf(
-        'label: l10n.profileTimezone',
+      final currencyStart = source.indexOf(
+        'label: l10n.profileCurrency',
         countryStart,
       );
 
       expect(countryStart, isNonNegative);
-      expect(timezoneStart, greaterThan(countryStart));
+      expect(currencyStart, greaterThan(countryStart));
 
-      final countrySection = source.substring(countryStart, timezoneStart);
+      final countrySection = source.substring(countryStart, currencyStart);
 
       expect(
         source,
@@ -67,15 +67,15 @@ void main() {
     final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
 
     final countryStart = source.indexOf('label: l10n.profileCountry');
-    final timezoneStart = source.indexOf(
-      'label: l10n.profileTimezone',
+    final currencyStart = source.indexOf(
+      'label: l10n.profileCurrency',
       countryStart,
     );
 
     expect(countryStart, isNonNegative);
-    expect(timezoneStart, greaterThan(countryStart));
+    expect(currencyStart, greaterThan(countryStart));
 
-    final countrySection = source.substring(countryStart, timezoneStart);
+    final countrySection = source.substring(countryStart, currencyStart);
     final countryFieldStart = source.indexOf(
       'class _ProfileCountrySearchField',
     );
@@ -164,75 +164,20 @@ void main() {
     },
   );
 
-  test(
-    'edit profile timezone uses localized searchable reference selector',
-    () async {
-      final source = await File(
-        'lib/screens/profile/edit_profile_screen.dart',
-      ).readAsString();
-      final referenceApiSource = await File(
-        'lib/core/network/reference_api.dart',
-      ).readAsString();
-      final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+  test('edit profile does not expose profile timezone setting', () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
 
-      final timezoneStart = source.indexOf('label: l10n.profileTimezone');
-      final currencyStart = source.indexOf(
-        'label: l10n.profileCurrency',
-        timezoneStart,
-      );
-
-      expect(timezoneStart, isNonNegative);
-      expect(currencyStart, greaterThan(timezoneStart));
-
-      final timezoneSection = source.substring(timezoneStart, currencyStart);
-
-      expect(referenceApiSource, contains('Future<List<ReferenceTimezone>>'));
-      expect(referenceApiSource, contains("'/reference/timezones'"));
-      expect(referenceApiSource, contains('class ReferenceTimezone'));
-      expect(l10nSource, contains('profileTimezoneSearchHint'));
-      expect(l10nSource, contains('profileTimezoneNoResults'));
-      expect(l10nSource, contains('profileTimezoneRecommendedForCountry'));
-      expect(source, contains('_timezoneSearchController'));
-      expect(source, contains('List<ReferenceTimezone> _timezones'));
-      expect(
-        source,
-        contains('Map<String, Set<String>> _timezoneSearchAliases'),
-      );
-      expect(source, contains('_loadTimezones'));
-      expect(source, contains('withDefaultReferenceTimezone('));
-      expect(source, contains('timezoneSearchAliasMap('));
-      expect(source, contains('timezoneFilterSearchHaystack('));
-      expect(source, contains('recommendedReferenceTimezonesForCountry('));
-      expect(source, contains('referenceTimezoneLabel('));
-      expect(source, contains('lang: timezoneLabelLang'));
-      expect(source, contains('_selectedTimezone()'));
-      expect(source, contains('_visibleTimezones()'));
-      expect(source, contains('_recommendedTimezonesForSelectedCountry()'));
-      expect(source, contains('_selectTimezone'));
-      expect(source, contains('class _ProfileTimezoneSearchField'));
-
-      expect(timezoneSection, contains('_ProfileTimezoneSearchField('));
-      expect(
-        timezoneSection,
-        contains('selectedTimezone: _selectedTimezone()'),
-      );
-      expect(
-        timezoneSection,
-        contains('visibleTimezones: _visibleTimezones()'),
-      );
-      expect(timezoneSection, contains('recommendedTimezones:'));
-      expect(
-        timezoneSection,
-        contains('searchHint: l10n.profileTimezoneSearchHint'),
-      );
-      expect(
-        timezoneSection,
-        contains('emptyLabel: l10n.profileTimezoneNoResults'),
-      );
-      expect(timezoneSection, contains('profileTimezoneRecommendedForCountry'));
-      expect(timezoneSection, isNot(contains('_StyledTextField(')));
-    },
-  );
+    expect(source, isNot(contains('label: l10n.profileTimezone')));
+    expect(source, isNot(contains('_timezoneController')));
+    expect(source, isNot(contains('_timezoneSearchController')));
+    expect(source, isNot(contains('List<ReferenceTimezone> _timezones')));
+    expect(source, isNot(contains('_loadTimezones')));
+    expect(source, isNot(contains('timezone: _timezoneController.text')));
+    expect(source, isNot(contains('class _ProfileTimezoneSearchField')));
+    expect(source, isNot(contains('_prefillTimezoneFromDevice')));
+  });
 
   test(
     'edit profile currency uses localized searchable reference selector',
@@ -246,17 +191,17 @@ void main() {
       final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
 
       final currencyStart = source.indexOf('label: l10n.profileCurrency');
-      final locationButtonStart = source.indexOf(
-        'onPressed: _isResolvingLocation',
+      final phoneVerificationStart = source.indexOf(
+        '_buildPhoneVerificationSection',
         currencyStart,
       );
 
       expect(currencyStart, isNonNegative);
-      expect(locationButtonStart, greaterThan(currencyStart));
+      expect(phoneVerificationStart, greaterThan(currencyStart));
 
       final currencySection = source.substring(
         currencyStart,
-        locationButtonStart,
+        phoneVerificationStart,
       );
 
       expect(referenceApiSource, contains('Future<List<ReferenceCurrency>>'));
@@ -305,30 +250,18 @@ void main() {
     },
   );
 
-  test('geolocation applies resolved timezone to the profile form', () async {
-    final source = await File(
-      'lib/screens/profile/edit_profile_screen.dart',
-    ).readAsString();
+  test(
+    'edit profile does not detect device location for citizenship',
+    () async {
+      final source = await File(
+        'lib/screens/profile/edit_profile_screen.dart',
+      ).readAsString();
 
-    final methodStart = source.indexOf(
-      'Future<void> _resolveLocationFromDevice()',
-    );
-    final methodEnd = source.indexOf(
-      'Future<bool?> _showLocationConfirmDialog',
-      methodStart,
-    );
-
-    expect(methodStart, isNonNegative);
-    expect(methodEnd, greaterThan(methodStart));
-
-    final methodSource = source.substring(methodStart, methodEnd);
-
-    expect(methodSource, contains('await _loadTimezones();'));
-    expect(methodSource, contains('resolveReferenceTimezoneForLocation('));
-    expect(methodSource, contains('cityName: suggestion.cityName'));
-    expect(methodSource, contains('countryCode: suggestion.countryCode'));
-    expect(methodSource, contains('deviceTimezoneId: detectedTimezone'));
-    expect(methodSource, contains('_timezoneController.text ='));
-    expect(methodSource, contains('_timezoneSearchController.clear();'));
-  });
+      expect(source, isNot(contains('DeviceContextService')));
+      expect(source, isNot(contains('_resolveLocationFromDevice')));
+      expect(source, isNot(contains('_showLocationConfirmDialog')));
+      expect(source, isNot(contains('detectLocationButton')));
+      expect(source, isNot(contains('useDetectedLocationTitle')));
+    },
+  );
 }

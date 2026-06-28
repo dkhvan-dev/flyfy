@@ -62,6 +62,33 @@ void main() {
     expect(currencies.single.name, 'Доллар США');
   });
 
+  test(
+    'latestRates requests public exchange rates and parses snapshot',
+    () async {
+      final adapter = _CurrencyRatesAdapter();
+      final api = CurrencyApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final rates = await api.latestRates(
+        baseCurrency: ' kzt ',
+        quoteCurrencies: const [' usd ', 'eur'],
+      );
+
+      expect(adapter.requestPath, '/api/v1/exchange-rates/latest');
+      expect(adapter.queryParameters, {'base': 'KZT', 'quotes': 'USD,EUR'});
+      expect(adapter.requiresAuth, isFalse);
+      expect(rates.baseCurrency, 'KZT');
+      expect(rates.rateFor('usd'), 0.0019);
+      expect(rates.rateFor('EUR'), 0.0017);
+      expect(rates.stale, isFalse);
+    },
+  );
+
   test('default currency fallback covers popular travel currencies', () {
     final codes = defaultCurrencyOptions
         .map((currency) => currency.code)
@@ -193,6 +220,40 @@ class _CurrencyListAdapter implements HttpClientAdapter {
         'items': [
           {'code': 'USD', 'name': 'Доллар США', 'symbol': r'$'},
         ],
+      }),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _CurrencyRatesAdapter implements HttpClientAdapter {
+  String? requestPath;
+  bool? requiresAuth;
+  Map<String, String>? queryParameters;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requestPath = options.uri.path;
+    requiresAuth = options.extra['requiresAuth'] as bool?;
+    queryParameters = options.uri.queryParameters;
+
+    return ResponseBody.fromString(
+      jsonEncode({
+        'baseCurrency': 'KZT',
+        'rates': {'USD': 0.0019, 'EUR': '0.0017'},
+        'rateAsOf': '2026-05-31T00:00:00Z',
+        'provider': 'open-er-api',
+        'stale': false,
       }),
       200,
       headers: {

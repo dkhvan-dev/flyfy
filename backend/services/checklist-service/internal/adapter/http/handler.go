@@ -510,8 +510,9 @@ type tripPreviewRequest struct {
 	TransportModes  []string           `json:"transportModes"`
 	ActivitySlugs   []string           `json:"activitySlugs"`
 	TravelerProfile struct {
-		HasChildren       bool   `json:"hasChildren"`
-		PreferredLanguage string `json:"preferredLanguage"`
+		HasChildren            bool   `json:"hasChildren"`
+		CitizenshipCountryCode string `json:"citizenshipCountryCode"`
+		PreferredLanguage      string `json:"preferredLanguage"`
 	} `json:"travelerProfile"`
 }
 
@@ -912,8 +913,9 @@ func tripPreviewInput(
 		TransportModes: mapTransportModes(req.TransportModes),
 		ActivitySlugs:  req.ActivitySlugs,
 		TravelerProfile: model.TravelerProfile{
-			HasChildren:       req.TravelerProfile.HasChildren,
-			PreferredLanguage: lang,
+			HasChildren:            req.TravelerProfile.HasChildren,
+			CitizenshipCountryCode: strings.ToUpper(strings.TrimSpace(req.TravelerProfile.CitizenshipCountryCode)),
+			PreferredLanguage:      lang,
 		},
 	}
 }

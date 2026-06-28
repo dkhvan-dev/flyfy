@@ -554,15 +554,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   Future<void> _prefillPricingContext() async {
     final profile = context.read<SessionProvider>().profile;
-    final profileCountryCode = normalizeAppCountryCode(profile?.countryCode);
     final profileCurrencyCode = normalizeAppCurrencyCode(profile?.currency);
     final currentCountryCode = normalizeAppCountryCode(_countryCodeCtrl.text);
     final currentCurrencyCode = normalizeAppCurrencyCode(_selectedCurrencyCode);
-    final initialCountryCode = widget.hasInitialActivity
-        ? currentCountryCode
-        : (_didApplyAuthorLocationSnapshot
-              ? (currentCountryCode ?? profileCountryCode)
-              : (profileCountryCode ?? currentCountryCode));
+    final initialCountryCode = currentCountryCode;
     final initialCurrencyCode = widget.hasInitialActivity
         ? (currentCurrencyCode ??
               _currencyForCountryCode(initialCountryCode) ??
@@ -602,7 +597,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         );
       });
     } catch (_) {
-      // Keep profile/default pricing context when device location is unavailable.
+      // Keep the current/default pricing context when device location is unavailable.
     }
   }
 

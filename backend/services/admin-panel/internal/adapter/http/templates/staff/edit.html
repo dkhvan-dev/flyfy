@@ -24,10 +24,20 @@
     <form method="post" action="/admin/staff/{{.Data.Staff.ID}}" class="form card">
       {{csrfField .CSRFToken}}
       <h2>{{t .Locale "section.profile"}}</h2>
-      <label>
-        <span>{{t .Locale "field.displayName"}}</span>
-        <input name="display_name" autocomplete="off" value="{{.Data.Staff.DisplayName}}" required>
-      </label>
+      <div class="form-grid">
+        <label>
+          <span>{{t .Locale "field.lastName"}}</span>
+          <input name="last_name" autocomplete="family-name" value="{{staffLastName .Data.Staff.DisplayName}}" required>
+        </label>
+        <label>
+          <span>{{t .Locale "field.firstName"}}</span>
+          <input name="first_name" autocomplete="given-name" value="{{staffFirstName .Data.Staff.DisplayName}}" required>
+        </label>
+        <label>
+          <span>{{t .Locale "field.middleName"}}</span>
+          <input name="middle_name" autocomplete="additional-name" value="{{staffMiddleName .Data.Staff.DisplayName}}">
+        </label>
+      </div>
       <fieldset class="checks">
         <legend>{{t .Locale "staff.roles"}}</legend>
         {{range .Data.AssignableRoles}}

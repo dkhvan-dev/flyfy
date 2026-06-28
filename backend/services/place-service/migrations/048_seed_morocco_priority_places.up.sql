@@ -244,7 +244,11 @@ SELECT
     'MA',
     city_id,
     category,
-    NULL::numeric,
+    CASE
+        WHEN category IN ('BEACH', 'FOOD', 'MARKET', 'SHOPPING') THEN 0::numeric
+        WHEN category = 'ENTERTAINMENT' THEN 100::numeric
+        ELSE 50::numeric
+    END,
     'MAD',
     duration_value,
     duration_unit,

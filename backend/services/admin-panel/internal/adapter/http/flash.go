@@ -20,6 +20,7 @@ var flashTranslationKeys = map[string]string{
 	"community.instancesMaterialized": "flash.communityInstancesMaterialized",
 	"place.updated":                   "flash.placeUpdated",
 	"place.mediaUpdated":              "flash.placeMediaUpdated",
+	"place.mediaBackfillStarted":      "flash.placeMediaBackfillStarted",
 	"fraud.blockReviewed":             "flash.fraudBlockReviewed",
 	"users.caseCreated":               "flash.userCaseCreated",
 	"users.caseResolved":              "flash.userCaseResolved",
@@ -31,6 +32,14 @@ var flashTranslationKeys = map[string]string{
 	"operations.featureFlagSaved":     "flash.operationsFeatureFlagSaved",
 	"operations.techBreakSaved":       "flash.operationsTechBreakSaved",
 	"operations.scopeSaved":           "flash.operationsScopeSaved",
+	"support.ticketUpdated":           "flash.supportTicketUpdated",
+	"support.savedReplySaved":         "flash.supportSavedReplySaved",
+	"support.agentSaved":              "flash.supportAgentSaved",
+	"help.categorySaved":              "flash.helpCategorySaved",
+	"help.articleSaved":               "flash.helpArticleSaved",
+	"help.articleSubmitted":           "flash.helpArticleSubmitted",
+	"help.articlePublished":           "flash.helpArticlePublished",
+	"help.articleArchived":            "flash.helpArticleArchived",
 }
 
 func flashMessageFromRequest(locale string, r *http.Request) string {
