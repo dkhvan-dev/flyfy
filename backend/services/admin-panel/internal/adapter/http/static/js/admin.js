@@ -1254,6 +1254,128 @@
     });
   });
 
+  document.querySelectorAll("[data-visit-modal-open]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      const modalKey = button.dataset.visitModalOpen || "";
+      const dialog = Array.from(document.querySelectorAll("[data-visit-info-modal]")).find((item) => item.dataset.visitInfoModal === modalKey);
+      if (!dialog) {
+        return;
+      }
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
+      const firstControl = dialog.querySelector("input:not([type='hidden']):not([disabled]), select:not([disabled]), textarea:not([disabled])");
+      if (firstControl) {
+        firstControl.focus();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-visit-info-modal]").forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) {
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
+      }
+    });
+    dialog.querySelectorAll("[data-visit-modal-close]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-visit-repeat-section]").forEach((controls) => {
+    const rowType = controls.dataset.visitRepeatSection || "";
+    const form = controls.closest("form");
+    const template = controls.querySelector("template[data-visit-repeat-template]");
+    const addButton = controls.querySelector("[data-visit-repeat-add]");
+    const maxRows = Number.parseInt(controls.dataset.visitRepeatMax || "24", 10);
+    let nextIndex = Number.parseInt(controls.dataset.visitRepeatNextIndex || "0", 10);
+
+    if (!rowType || !form || !template || !addButton) {
+      return;
+    }
+
+    const rows = () => Array.from(form.querySelectorAll("[data-visit-repeat-row]")).filter((row) => row.dataset.visitRepeatRow === rowType);
+    const removeText = locale === "ru" ? "Удалить" : "Delete";
+    const confirmRemoveText = locale === "ru" ? "Удалить этот пункт?" : "Delete this item?";
+
+    const ensureRemoveButton = (row) => {
+      if (!row || row.querySelector("[data-visit-repeat-remove]")) {
+        return;
+      }
+      const actions = document.createElement("div");
+      actions.className = "visit-repeat-row-actions";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button small";
+      button.dataset.visitRepeatRemove = "";
+      button.textContent = removeText;
+      actions.appendChild(button);
+      row.appendChild(actions);
+    };
+
+    const syncAddButton = () => {
+      addButton.disabled = Number.isFinite(maxRows) && rows().length >= maxRows;
+    };
+
+    rows().forEach(ensureRemoveButton);
+    syncAddButton();
+
+    addButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (addButton.disabled) {
+        return;
+      }
+      const index = nextIndex;
+      nextIndex += 1;
+      controls.dataset.visitRepeatNextIndex = String(nextIndex);
+
+      const holder = document.createElement("template");
+      holder.innerHTML = template.innerHTML.split("__INDEX__").join(String(index)).trim();
+      const row = holder.content.firstElementChild;
+      if (!row) {
+        return;
+      }
+      ensureRemoveButton(row);
+      controls.parentNode.insertBefore(row, controls);
+      const firstControl = row.querySelector("input:not([type='hidden']):not([disabled]), select:not([disabled]), textarea:not([disabled])");
+      if (firstControl) {
+        firstControl.focus();
+      }
+      syncAddButton();
+    });
+
+    form.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-visit-repeat-remove]");
+      if (!button) {
+        return;
+      }
+      const row = button.closest("[data-visit-repeat-row]");
+      if (!row || row.dataset.visitRepeatRow !== rowType) {
+        return;
+      }
+      event.preventDefault();
+      if (!window.confirm(confirmRemoveText)) {
+        return;
+      }
+      row.remove();
+      syncAddButton();
+    });
+  });
+
   document.querySelectorAll("[data-feature-flag-values]").forEach((container) => {
     const form = container.closest("form");
     const typeSelect = form ? form.querySelector("[data-feature-flag-type]") : null;

@@ -107,6 +107,204 @@ func TestParsePlaceFormDerivesCoordinatesFromMapURL(t *testing.T) {
 	}
 }
 
+func TestParsePlaceFormLeavesVisitPlanningDetailsForDedicatedPage(t *testing.T) {
+	t.Parallel()
+
+	values := url.Values{}
+	values.Set("default_locale", "ru")
+	values.Set("title_ru", "Чарынский каньон")
+	values.Set("description_ru", "Каньон.")
+	values.Set("country_code", "KZ")
+	values.Set("city_id", "almaty")
+	values.Set("category", "NATURE")
+	values.Set("status", "PUBLISHED")
+	values.Set("visit_price_note", "Билет и экосбор отдельно")
+	values.Set("visit_time_on_site_min", "90")
+	values.Set("visit_time_on_site_max", "150")
+	values.Set("visit_time_on_site_note", "Без трека к реке")
+	values.Set("visit_car_travel_time_min", "180")
+	values.Set("visit_car_travel_time_max", "240")
+	values.Set("visit_car_travel_time_note", "От Алматы")
+	values.Set("visit_road_condition", "PAVED")
+	values.Set("visit_fee_detail_title_0", "Вход")
+	values.Set("visit_fee_detail_description_0", "Базовый билет")
+	values.Set("visit_fee_detail_amount_0", "1000")
+	values.Set("visit_fee_detail_currency_0", "KZT")
+	values.Set("visit_fee_detail_unit_0", "PERSON")
+	values.Set("visit_fee_detail_approximate_0", "true")
+	values.Set("visit_fee_item_type_0", "ENTRANCE")
+	values.Set("visit_fee_item_title_0", "Вход в парк")
+	values.Set("visit_fee_item_min_amount_0", "1000")
+	values.Set("visit_fee_item_max_amount_0", "1000")
+	values.Set("visit_fee_item_currency_0", "KZT")
+	values.Set("visit_fee_item_unit_0", "PERSON")
+	values.Set("visit_fee_item_required_0", "true")
+	values.Set("visit_fee_item_approximate_0", "true")
+	values.Set("visit_fee_item_note_0", "Цена может меняться")
+	values.Set("visit_access_transport_type_0", "CAR")
+	values.Set("visit_access_min_minutes_0", "180")
+	values.Set("visit_access_max_minutes_0", "240")
+	values.Set("visit_access_route_hint_0", "Трасса на Кеген")
+	values.Set("visit_access_road_condition_0", "PAVED")
+	values.Set("visit_access_parking_note_0", "Парковка у входа")
+	values.Set("visit_practical_note_type_0", "WEATHER")
+	values.Set("visit_practical_title_0", "Жара")
+	values.Set("visit_practical_body_0", "Летом мало тени")
+	values.Set("visit_practical_priority_0", "IMPORTANT")
+	values.Set("visit_recommended_item_type_0", "WATER")
+	values.Set("visit_recommended_title_0", "Вода")
+	values.Set("visit_recommended_note_0", "Минимум 1 литр")
+	values.Set("visit_recommended_importance_0", "REQUIRED")
+	request := httptest.NewRequest(http.MethodPost, "/admin/places", strings.NewReader(values.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	input, _, err := parsePlaceForm(request)
+	if err != nil {
+		t.Fatalf("parsePlaceForm returned error: %v", err)
+	}
+	if input.VisitInfo != nil {
+		t.Fatalf("VisitInfo = %+v, want dedicated visit-info page to own these fields", input.VisitInfo)
+	}
+}
+
+func TestParsePlaceVisitInfoFormReadsAllLocales(t *testing.T) {
+	t.Parallel()
+
+	values := url.Values{}
+	values.Set("visit_opening_hours_ru", "Ежедневно 09:00-18:00")
+	values.Set("visit_opening_hours_en", "Daily 09:00-18:00")
+	values.Set("visit_opening_hours_kk", "Күн сайын 09:00-18:00")
+	values.Set("visit_price_note_ru", "Билет и экосбор отдельно")
+	values.Set("visit_price_note_en", "Ticket and eco fee are paid separately")
+	values.Set("visit_price_note_kk", "Билет пен экоалым бөлек төленеді")
+	values.Set("visit_time_on_site_min", "90")
+	values.Set("visit_time_on_site_max", "150")
+	values.Set("visit_time_on_site_note_ru", "Без трека к реке")
+	values.Set("visit_time_on_site_note_en", "Without the river trail")
+	values.Set("visit_time_on_site_note_kk", "Өзен соқпағынсыз")
+	values.Set("visit_fee_detail_title_ru_0", "Вход")
+	values.Set("visit_fee_detail_title_en_0", "Admission")
+	values.Set("visit_fee_detail_title_kk_0", "Кіру")
+	values.Set("visit_fee_detail_description_ru_0", "Базовый билет")
+	values.Set("visit_fee_detail_description_en_0", "Base ticket")
+	values.Set("visit_fee_detail_description_kk_0", "Негізгі билет")
+	values.Set("visit_fee_detail_amount_0", "1000")
+	values.Set("visit_fee_detail_currency_0", "KZT")
+	values.Set("visit_fee_detail_unit_0", "PERSON")
+	values.Set("visit_access_transport_type_0", "CAR")
+	values.Set("visit_access_route_hint_ru_0", "Трасса на Кеген")
+	values.Set("visit_access_route_hint_en_0", "Kegen highway")
+	values.Set("visit_access_route_hint_kk_0", "Кеген тас жолы")
+	values.Set("visit_practical_note_type_0", "WEATHER")
+	values.Set("visit_practical_title_ru_0", "Жара")
+	values.Set("visit_practical_title_en_0", "Heat")
+	values.Set("visit_practical_title_kk_0", "Ыстық")
+	values.Set("visit_practical_body_ru_0", "Летом мало тени")
+	values.Set("visit_practical_body_en_0", "There is little shade in summer")
+	values.Set("visit_practical_body_kk_0", "Жазда көлеңке аз")
+	values.Set("visit_recommended_item_type_0", "WATER")
+	values.Set("visit_recommended_title_ru_0", "Вода")
+	values.Set("visit_recommended_title_en_0", "Water")
+	values.Set("visit_recommended_title_kk_0", "Су")
+	values.Set("visit_recommended_note_ru_0", "Минимум 1 литр")
+	values.Set("visit_recommended_note_en_0", "At least 1 liter")
+	values.Set("visit_recommended_note_kk_0", "Кемінде 1 литр")
+	request := httptest.NewRequest(http.MethodPost, "/admin/places/id/visit-info", strings.NewReader(values.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	info, err := parsePlaceVisitInfoForm(request)
+	if err != nil {
+		t.Fatalf("parsePlaceVisitInfoForm returned error: %v", err)
+	}
+	if got := info.OpeningHoursLocales["en"]; got != "Daily 09:00-18:00" {
+		t.Fatalf("OpeningHoursLocales.en = %q", got)
+	}
+	if got := info.PriceNoteLocales["kk"]; got != "Билет пен экоалым бөлек төленеді" {
+		t.Fatalf("PriceNoteLocales.kk = %q", got)
+	}
+	if info.TimeOnSite == nil || info.TimeOnSite.NoteLocales["kk"] != "Өзен соқпағынсыз" {
+		t.Fatalf("TimeOnSite localized note = %#v", info.TimeOnSite)
+	}
+	if len(info.FeeDetails) != 1 || info.FeeDetails[0].TitleLocales["en"] != "Admission" || info.FeeDetails[0].DescriptionLocales["kk"] != "Негізгі билет" {
+		t.Fatalf("FeeDetails localized text = %#v", info.FeeDetails)
+	}
+	if len(info.AccessOptions) != 1 || info.AccessOptions[0].RouteHintLocales["kk"] != "Кеген тас жолы" {
+		t.Fatalf("AccessOptions localized text = %#v", info.AccessOptions)
+	}
+	if len(info.PracticalNotes) != 1 || info.PracticalNotes[0].TitleLocales["en"] != "Heat" || info.PracticalNotes[0].BodyLocales["kk"] != "Жазда көлеңке аз" {
+		t.Fatalf("PracticalNotes localized text = %#v", info.PracticalNotes)
+	}
+	if len(info.RecommendedItems) != 1 || info.RecommendedItems[0].TitleLocales["kk"] != "Су" || info.RecommendedItems[0].NoteLocales["en"] != "At least 1 liter" {
+		t.Fatalf("RecommendedItems localized text = %#v", info.RecommendedItems)
+	}
+}
+
+func TestParsePlaceVisitInfoFormIgnoresCurrencyOnlyRows(t *testing.T) {
+	t.Parallel()
+
+	values := url.Values{}
+	values.Set("visit_fee_detail_currency_0", "USD")
+	values.Set("visit_fee_item_currency_0", "EUR")
+	request := httptest.NewRequest(http.MethodPost, "/admin/places/id/visit-info", strings.NewReader(values.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	info, err := parsePlaceVisitInfoForm(request)
+	if err != nil {
+		t.Fatalf("parsePlaceVisitInfoForm returned error: %v", err)
+	}
+	if len(info.FeeDetails) != 0 {
+		t.Fatalf("FeeDetails = %#v, want currency-only rows ignored", info.FeeDetails)
+	}
+	if len(info.FeeItems) != 0 {
+		t.Fatalf("FeeItems = %#v, want currency-only rows ignored", info.FeeItems)
+	}
+}
+
+func TestParsePlaceVisitInfoFormReadsDynamicallyAddedRows(t *testing.T) {
+	t.Parallel()
+
+	values := url.Values{}
+	values.Set("visit_fee_detail_title_en_8", "Late access")
+	values.Set("visit_fee_detail_amount_8", "25")
+	values.Set("visit_fee_detail_unit_8", "PERSON")
+	values.Set("visit_fee_item_type_8", "PARKING")
+	values.Set("visit_fee_item_title_ru_8", "Парковка")
+	values.Set("visit_fee_item_min_amount_8", "10")
+	values.Set("visit_fee_item_unit_8", "CAR")
+	values.Set("visit_access_transport_type_8", "TAXI")
+	values.Set("visit_access_route_hint_en_8", "Taxi drop-off point")
+	values.Set("visit_access_min_minutes_8", "15")
+	values.Set("visit_practical_note_type_8", "PAYMENT")
+	values.Set("visit_practical_title_en_8", "Cash desk")
+	values.Set("visit_practical_body_en_8", "Keep the receipt")
+	values.Set("visit_practical_priority_8", "INFO")
+	values.Set("visit_recommended_item_type_8", "CASH")
+	values.Set("visit_recommended_title_kk_8", "Қолма-қол ақша")
+	values.Set("visit_recommended_importance_8", "RECOMMENDED")
+	request := httptest.NewRequest(http.MethodPost, "/admin/places/id/visit-info", strings.NewReader(values.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	info, err := parsePlaceVisitInfoForm(request)
+	if err != nil {
+		t.Fatalf("parsePlaceVisitInfoForm returned error: %v", err)
+	}
+	if len(info.FeeDetails) != 1 || info.FeeDetails[0].TitleLocales["en"] != "Late access" {
+		t.Fatalf("FeeDetails = %#v, want dynamically added index 8 row", info.FeeDetails)
+	}
+	if len(info.FeeItems) != 1 || info.FeeItems[0].Type != "PARKING" || info.FeeItems[0].TitleLocales["ru"] != "Парковка" {
+		t.Fatalf("FeeItems = %#v, want dynamically added index 8 row", info.FeeItems)
+	}
+	if len(info.AccessOptions) != 1 || info.AccessOptions[0].TransportType != "TAXI" || info.AccessOptions[0].RouteHintLocales["en"] != "Taxi drop-off point" {
+		t.Fatalf("AccessOptions = %#v, want dynamically added index 8 row", info.AccessOptions)
+	}
+	if len(info.PracticalNotes) != 1 || info.PracticalNotes[0].BodyLocales["en"] != "Keep the receipt" {
+		t.Fatalf("PracticalNotes = %#v, want dynamically added index 8 row", info.PracticalNotes)
+	}
+	if len(info.RecommendedItems) != 1 || info.RecommendedItems[0].ItemType != "CASH" || info.RecommendedItems[0].TitleLocales["kk"] != "Қолма-қол ақша" {
+		t.Fatalf("RecommendedItems = %#v, want dynamically added index 8 row", info.RecommendedItems)
+	}
+}
+
 func TestParseCityLinkValuesReadsCheckboxValues(t *testing.T) {
 	t.Parallel()
 

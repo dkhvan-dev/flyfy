@@ -354,6 +354,7 @@ type CommunityPostDecisionInput struct {
 type PlaceAdminClient interface {
 	ListPlaces(ctx context.Context, filter model.AdminPlaceFilter) ([]model.AdminPlace, int, error)
 	GetPlace(ctx context.Context, id uuid.UUID) (*model.AdminPlace, error)
+	ListVisitReferences(ctx context.Context, locale string) (model.PlaceVisitReferenceCatalog, error)
 	CreatePlace(ctx context.Context, input model.PlaceInput) (*model.AdminPlace, error)
 	UpdatePlace(ctx context.Context, id uuid.UUID, input model.PlaceInput) (*model.AdminPlace, error)
 	ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.PlaceMediaInput) error

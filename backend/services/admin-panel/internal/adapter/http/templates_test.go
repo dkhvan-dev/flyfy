@@ -1039,6 +1039,11 @@ func TestRendererRendersPlaceEditFormWithOptionalValues(t *testing.T) {
 	spots := 8
 	latitude := 43.243534
 	longitude := 76.904129
+	onSiteMin := 90
+	onSiteMax := 150
+	driveMin := 180
+	driveMax := 240
+	feeAmount := 1000.0
 	item := &model.AdminPlace{
 		ID:                uuid.New(),
 		DefaultLocale:     localeRU,
@@ -1055,6 +1060,27 @@ func TestRendererRendersPlaceEditFormWithOptionalValues(t *testing.T) {
 		DurationUnit:      &durationUnit,
 		Spots:             &spots,
 		Status:            "PUBLISHED",
+		VisitInfo: model.PlaceVisitInfo{
+			PriceNote:     "Билет и экосбор отдельно",
+			TimeOnSite:    &model.PlaceVisitDuration{MinMinutes: &onSiteMin, MaxMinutes: &onSiteMax, Note: "Без трека к реке"},
+			CarTravelTime: &model.PlaceVisitDuration{MinMinutes: &driveMin, MaxMinutes: &driveMax, Note: "От Алматы"},
+			RoadCondition: "PAVED",
+			FeeDetails: []model.PlaceFeeDetail{
+				{Title: "Вход", Description: "Базовый билет", Amount: &feeAmount, Currency: "KZT", Unit: "PERSON", IsApproximate: true, SortOrder: 10},
+			},
+			FeeItems: []model.PlaceFeeDetail{
+				{Type: "ENTRANCE", Title: "Вход в парк", MinAmount: &feeAmount, MaxAmount: &feeAmount, Currency: "KZT", Unit: "PERSON", Required: true, IsApproximate: true, Note: "Цена может меняться", SortOrder: 10},
+			},
+			AccessOptions: []model.PlaceAccessOption{
+				{TransportType: "CAR", DurationMinMinutes: &driveMin, DurationMaxMinutes: &driveMax, RouteHint: "Трасса на Кеген", RoadCondition: "PAVED", ParkingNote: "Парковка у входа", SortOrder: 10},
+			},
+			PracticalNotes: []model.PlacePracticalNote{
+				{NoteType: "WEATHER", Title: "Жара", Body: "Летом мало тени", Priority: "IMPORTANT", SortOrder: 10},
+			},
+			RecommendedItems: []model.PlaceRecommendedItem{
+				{ItemType: "WATER", Title: "Вода", Note: "Минимум 1 литр", Importance: "REQUIRED", SortOrder: 10},
+			},
+		},
 		Translations: map[string]model.PlaceTranslation{
 			localeRU: {
 				Title:       "Большое Алматинское озеро",
@@ -1094,6 +1120,7 @@ func TestRendererRendersPlaceEditFormWithOptionalValues(t *testing.T) {
 		`name="location_source_url" value="https://www.openstreetmap.org/" placeholder="https://maps..." data-map-url-input`,
 		`name="latitude" value="43.243534" inputmode="decimal" data-latitude-input`,
 		`name="longitude" value="76.904129" inputmode="decimal" data-longitude-input`,
+		`href="/admin/places/` + item.ID.String() + `/visit-info/edit"`,
 		`type="checkbox" name="access_cities" value="KZ:almaty"`,
 		`type="checkbox" name="departure_cities" value="KZ:almaty"`,
 		`data-place-media-form`,
@@ -1121,6 +1148,259 @@ func TestRendererRendersPlaceEditFormWithOptionalValues(t *testing.T) {
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("place edit form did not render expected control %q: %s", expected, body)
+		}
+	}
+	for _, unexpected := range []string{
+		`name="visit_price_note"`,
+		`name="visit_fee_detail_title_0"`,
+		`name="visit_access_route_hint_0"`,
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("place edit form still renders visit-info field %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestRendererRendersPlaceVisitInfoFormWithAllLocales(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	minOnSite := 90
+	maxOnSite := 150
+	feeAmount := 1000.0
+	priceCurrency := "KZT"
+	item := &model.AdminPlace{
+		ID:            uuid.New(),
+		DefaultLocale: localeRU,
+		Title:         "Чарынский каньон",
+		PriceCurrency: &priceCurrency,
+		VisitInfo: model.PlaceVisitInfo{
+			BestTime:            "MORNING",
+			OpeningHoursLocales: map[string]string{"ru": "Ежедневно 09:00-18:00", "en": "Daily 09:00-18:00", "kk": "Күн сайын 09:00-18:00"},
+			PriceNoteLocales:    map[string]string{"ru": "Билет и экосбор отдельно", "en": "Ticket and eco fee are paid separately", "kk": "Билет пен экоалым бөлек төленеді"},
+			TimeOnSite: &model.PlaceVisitDuration{
+				MinMinutes:  &minOnSite,
+				MaxMinutes:  &maxOnSite,
+				NoteLocales: map[string]string{"ru": "Без трека к реке", "en": "Without the river trail", "kk": "Өзен соқпағынсыз"},
+			},
+			FeeDetails: []model.PlaceFeeDetail{
+				{
+					TitleLocales:       map[string]string{"ru": "Вход", "en": "Admission", "kk": "Кіру"},
+					DescriptionLocales: map[string]string{"ru": "Базовый билет", "en": "Base ticket", "kk": "Негізгі билет"},
+					Amount:             &feeAmount,
+					Currency:           "KZT",
+					Unit:               "PERSON",
+					IsApproximate:      true,
+					SortOrder:          10,
+				},
+			},
+			FeeItems: []model.PlaceFeeDetail{
+				{
+					Type:          "ENTRANCE",
+					TitleLocales:  map[string]string{"ru": "Вход в парк", "en": "Park admission", "kk": "Паркке кіру"},
+					MinAmount:     &feeAmount,
+					MaxAmount:     &feeAmount,
+					Currency:      "KZT",
+					Unit:          "PERSON",
+					Required:      true,
+					IsApproximate: true,
+					SortOrder:     10,
+				},
+			},
+			RoadCondition: "PAVED",
+			AccessOptions: []model.PlaceAccessOption{
+				{TransportType: "CAR", RoadCondition: "PAVED", SortOrder: 10},
+			},
+			PracticalNotes: []model.PlacePracticalNote{
+				{NoteType: "GENERAL", Priority: "IMPORTANT", SortOrder: 10},
+			},
+			RecommendedItems: []model.PlaceRecommendedItem{
+				{
+					ItemType:     "WATER",
+					TitleLocales: map[string]string{"ru": "Вода", "en": "Water", "kk": "Су"},
+					NoteLocales:  map[string]string{"ru": "Минимум 1 литр", "en": "At least 1 liter", "kk": "Кемінде 1 литр"},
+					Importance:   "REQUIRED",
+					Season:       "SUMMER",
+					SortOrder:    10,
+				},
+				{
+					ItemType:     "SHOES",
+					TitleLocales: map[string]string{"ru": "Удобная обувь", "en": "Comfortable shoes", "kk": "Ыңғайлы аяқ киім"},
+					Importance:   "REQUIRED",
+					SortOrder:    20,
+				},
+			},
+		},
+	}
+	pageData := PageData{
+		Title:     "Visit information",
+		Locale:    localeRU,
+		Path:      "/admin/places/" + item.ID.String() + "/visit-info/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data: NewPlaceVisitInfoFormViewData(item, "", model.PlaceVisitReferenceCatalog{
+			Categories: map[string][]model.PlaceVisitReferenceValue{
+				"best_time":                   {model.PlaceVisitReferenceValue{Code: "MORNING", Label: "Утро", Labels: map[string]string{"ru": "Утро", "en": "Morning", "kk": "Таң"}, SortOrder: 10, Active: true}},
+				"fee_type":                    {model.PlaceVisitReferenceValue{Code: "ENTRANCE", Label: "Вход", Labels: map[string]string{"ru": "Вход", "en": "Entrance", "kk": "Кіру"}, SortOrder: 10, Active: true}},
+				"fee_unit":                    {model.PlaceVisitReferenceValue{Code: "PERSON", Label: "Человек", Labels: map[string]string{"ru": "Человек", "en": "Person", "kk": "Адам"}, SortOrder: 10, Active: true}},
+				"road_condition":              {model.PlaceVisitReferenceValue{Code: "PAVED", Label: "Асфальтированная дорога", Labels: map[string]string{"ru": "Асфальтированная дорога", "en": "Paved road", "kk": "Асфальт жол"}, SortOrder: 10, Active: true}},
+				"transport_type":              {model.PlaceVisitReferenceValue{Code: "CAR", Label: "Автомобиль", Labels: map[string]string{"ru": "Автомобиль", "en": "Car", "kk": "Автокөлік"}, SortOrder: 10, Active: true}},
+				"practical_note_type":         {model.PlaceVisitReferenceValue{Code: "GENERAL", Label: "Общее", Labels: map[string]string{"ru": "Общее", "en": "General", "kk": "Жалпы"}, SortOrder: 10, Active: true}},
+				"practical_note_priority":     {model.PlaceVisitReferenceValue{Code: "IMPORTANT", Label: "Важно", Labels: map[string]string{"ru": "Важно", "en": "Important", "kk": "Маңызды"}, SortOrder: 10, Active: true}},
+				"recommended_item_type":       {model.PlaceVisitReferenceValue{Code: "WATER", Label: "Вода", Labels: map[string]string{"ru": "Вода", "en": "Water", "kk": "Су"}, SortOrder: 10, Active: true}},
+				"recommended_item_importance": {model.PlaceVisitReferenceValue{Code: "REQUIRED", Label: "Обязательно", Labels: map[string]string{"ru": "Обязательно", "en": "Required", "kk": "Міндетті"}, SortOrder: 10, Active: true}},
+				"season":                      {model.PlaceVisitReferenceValue{Code: "SUMMER", Label: "Лето", Labels: map[string]string{"ru": "Лето", "en": "Summer", "kk": "Жаз"}, SortOrder: 10, Active: true}},
+			},
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/visit_info_form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		`action="/admin/places/` + item.ID.String() + `/visit-info"`,
+		`name="visit_opening_hours_ru"`,
+		`<select name="visit_best_time">`,
+		`<option value="MORNING" selected>Утро</option>`,
+		`value="Ежедневно 09:00-18:00"`,
+		`name="visit_opening_hours_en"`,
+		`value="Daily 09:00-18:00"`,
+		`name="visit_opening_hours_kk"`,
+		`value="Күн сайын 09:00-18:00"`,
+		`name="visit_price_note_en"`,
+		`Ticket and eco fee are paid separately`,
+		`name="visit_time_on_site_note_kk"`,
+		`value="Өзен соқпағынсыз"`,
+		`name="visit_fee_detail_title_en_0" value="Admission"`,
+		`name="visit_fee_detail_description_kk_0" value="Негізгі билет"`,
+		`<select name="visit_fee_item_type_0">`,
+		`<option value="ENTRANCE" selected>Вход</option>`,
+		`<select name="visit_fee_item_unit_0">`,
+		`<option value="PERSON" selected>Человек</option>`,
+		`<select name="visit_access_transport_type_0">`,
+		`<option value="CAR" selected>Автомобиль</option>`,
+		`<select name="visit_access_road_condition_0">`,
+		`<option value="PAVED" selected>Асфальтированная дорога</option>`,
+		`<select name="visit_practical_priority_0">`,
+		`<option value="IMPORTANT" selected>Важно</option>`,
+		`<select name="visit_recommended_item_type_0">`,
+		`<option value="WATER" selected>Вода</option>`,
+		`<select name="visit_recommended_season_0">`,
+		`<option value="SUMMER" selected>Лето</option>`,
+		`data-visit-currency="KZT"`,
+		`data-visit-default-currency="KZT"`,
+		`data-visit-currency="KZT"><span>Валюта</span><strong>KZT</strong>`,
+		`data-visit-repeat-row="recommended-item"`,
+		`href="/admin/places/` + item.ID.String() + `/edit"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("visit-info form missing %q in body: %s", expected, body)
+		}
+	}
+	for _, unexpected := range []string{
+		`name="visit_fee_detail_currency_0"`,
+		`name="visit_fee_item_currency_0"`,
+		`<input name="visit_best_time"`,
+		`<input name="visit_fee_item_type_0"`,
+		`<input name="visit_recommended_item_type_0"`,
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("visit-info form renders editable currency field %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestRendererRendersPlaceVisitInfoFormWithLocalizedPlaceTitle(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	item := &model.AdminPlace{
+		ID:            uuid.New(),
+		DefaultLocale: localeRU,
+		Title:         "Русское название",
+		Translations: map[string]model.PlaceTranslation{
+			localeEN: {Title: "English title"},
+			localeRU: {Title: "Русское название"},
+		},
+	}
+	pageData := PageData{
+		Title:     "Visit information",
+		Locale:    localeEN,
+		Path:      "/admin/places/" + item.ID.String() + "/visit-info/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewPlaceVisitInfoFormViewData(item, ""),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/visit_info_form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	if !strings.Contains(body, "English title") {
+		t.Fatalf("visit-info form missing localized place title: %s", body)
+	}
+	if strings.Contains(body, ">Русское название<") {
+		t.Fatalf("visit-info form rendered default title instead of locale title: %s", body)
+	}
+}
+
+func TestRendererRendersPlaceVisitInfoDynamicRowControls(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	item := &model.AdminPlace{ID: uuid.New(), DefaultLocale: localeRU, Title: "Чарынский каньон"}
+	pageData := PageData{
+		Title:     "Visit information",
+		Locale:    localeRU,
+		Path:      "/admin/places/" + item.ID.String() + "/visit-info/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewPlaceVisitInfoFormViewData(item, ""),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "places/visit_info_form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		`data-visit-repeat-section="fee-detail"`,
+		`data-visit-repeat-section="fee-item"`,
+		`data-visit-repeat-section="access-option"`,
+		`data-visit-repeat-section="practical-note"`,
+		`data-visit-repeat-section="recommended-item"`,
+		`data-visit-info-modal="fee-detail"`,
+		`data-visit-info-modal="fee-item"`,
+		`data-visit-info-modal="access-option"`,
+		`data-visit-info-modal="practical-note"`,
+		`data-visit-info-modal="recommended-item"`,
+		`action="/admin/places/` + item.ID.String() + `/visit-info/fee-details"`,
+		`action="/admin/places/` + item.ID.String() + `/visit-info/fee-items"`,
+		`action="/admin/places/` + item.ID.String() + `/visit-info/access-options"`,
+		`action="/admin/places/` + item.ID.String() + `/visit-info/practical-notes"`,
+		`action="/admin/places/` + item.ID.String() + `/visit-info/recommended-items"`,
+		`data-visit-repeat-add="fee-item"`,
+		`data-visit-repeat-template="access-option"`,
+		`data-visit-repeat-remove`,
+		`name="visit_fee_item_title_ru___INDEX__"`,
+		`name="visit_access_route_hint_ru___INDEX__"`,
+		`name="visit_practical_body_en___INDEX__"`,
+		`name="visit_recommended_note_kk___INDEX__"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("visit-info dynamic form missing %q in body: %s", expected, body)
 		}
 	}
 }
@@ -8092,6 +8372,30 @@ func TestAdminJSFeatureFlagArrayValuesStayControlledByType(t *testing.T) {
 	confirmationDialogEarlyReturn := strings.Index(js, "if (!dialog) {\n    return;\n  }")
 	if confirmationDialogEarlyReturn >= 0 && confirmationDialogEarlyReturn < featureFlagInit {
 		t.Fatal("feature flag array value JS must not be skipped when the moderation confirmation dialog is absent")
+	}
+}
+
+func TestAdminJSConfirmsVisitInfoRepeatRowDeletion(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, expected := range []string{
+		`const confirmRemoveText = locale === "ru" ? "Удалить этот пункт?" : "Delete this item?";`,
+		`if (!window.confirm(confirmRemoveText)) {`,
+		`row.remove();`,
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("visit-info repeat row deletion should require confirmation, missing %q", expected)
+		}
+	}
+	confirmIndex := strings.Index(js, `if (!window.confirm(confirmRemoveText)) {`)
+	removeIndex := strings.Index(js, `row.remove();`)
+	if confirmIndex < 0 || removeIndex < 0 || confirmIndex > removeIndex {
+		t.Fatal("visit-info repeat row confirmation must run before row.remove()")
 	}
 }
 

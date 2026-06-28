@@ -630,6 +630,107 @@ h3 {
   font-weight: 600;
 }
 
+.readonly-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.readonly-field strong {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.visit-repeat-row {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.visit-repeat-row + .visit-repeat-row {
+  margin-top: 12px;
+}
+
+.visit-repeat-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+.visit-repeat-row-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-start;
+}
+
+.visit-info-blocks {
+  display: grid;
+  gap: 12px;
+}
+
+.visit-info-block-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.visit-info-block-summary h2 {
+  font-size: 1rem;
+}
+
+.visit-info-modal {
+  width: min(1100px, calc(100% - 32px));
+  max-height: min(88vh, 900px);
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0;
+  box-shadow: 0 24px 70px rgba(23, 32, 51, 0.28);
+}
+
+.visit-info-modal::backdrop {
+  background: rgba(23, 32, 51, 0.45);
+}
+
+.visit-info-modal-form {
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  padding: 20px;
+}
+
+.visit-info-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: 14px;
+}
+
+.visit-info-modal-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-top: 14px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1740,6 +1841,27 @@ tr:last-child td {
   .dashboard-item > .button,
   .dashboard-panel-head > .button {
     width: fit-content;
+  }
+
+  .visit-info-block-summary,
+  .visit-info-modal-head,
+  .visit-info-modal-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .visit-info-block-summary .button,
+  .visit-info-modal-head .button,
+  .visit-info-modal-actions button {
+    width: 100%;
+  }
+
+  .visit-info-modal {
+    width: calc(100% - 16px);
+  }
+
+  .visit-info-modal-form {
+    padding: 16px;
   }
 
   .support-chat-bubble {

@@ -85,15 +85,102 @@ type PlaceCityLink struct {
 }
 
 type PlaceVisitInfo struct {
-	BestTime        string
-	Accessibility   string
-	BookingRequired *bool
-	OpeningHours    string
-	Amenities       []string
-	Audience        []string
-	SafetyNotes     []string
-	NearbyIDs       []string
-	LocalizedTips   map[string]string
+	BestTime            string
+	Accessibility       string
+	BookingRequired     *bool
+	OpeningHours        string
+	OpeningHoursLocales map[string]string
+	Amenities           []string
+	Audience            []string
+	SafetyNotes         []string
+	NearbyIDs           []string
+	LocalizedTips       map[string]string
+	PriceNote           string
+	PriceNoteLocales    map[string]string
+	TimeOnSite          *PlaceVisitDuration
+	CarTravelTime       *PlaceVisitDuration
+	RoadCondition       string
+	FeeDetails          []PlaceFeeDetail
+	FeeItems            []PlaceFeeDetail
+	AccessOptions       []PlaceAccessOption
+	PracticalNotes      []PlacePracticalNote
+	RecommendedItems    []PlaceRecommendedItem
+}
+
+type PlaceVisitReferenceCatalog struct {
+	Categories map[string][]PlaceVisitReferenceValue
+}
+
+type PlaceVisitReferenceValue struct {
+	Code      string
+	Label     string
+	Labels    map[string]string
+	SortOrder int
+	Active    bool
+}
+
+type PlaceVisitDuration struct {
+	MinMinutes  *int
+	MaxMinutes  *int
+	Note        string
+	NoteLocales map[string]string
+}
+
+type PlaceFeeDetail struct {
+	Title              string
+	TitleLocales       map[string]string
+	Description        string
+	DescriptionLocales map[string]string
+	Amount             *float64
+	Type               string
+	MinAmount          *float64
+	MaxAmount          *float64
+	Currency           string
+	Unit               string
+	Required           bool
+	IsApproximate      bool
+	Note               string
+	NoteLocales        map[string]string
+	SortOrder          int
+}
+
+type PlaceAccessOption struct {
+	TransportType          string
+	DurationMinMinutes     *int
+	DurationMaxMinutes     *int
+	DistanceKm             *float64
+	RouteHint              string
+	RouteHintLocales       map[string]string
+	RoadCondition          string
+	Requires4x4            bool
+	ParkingNote            string
+	ParkingNoteLocales     map[string]string
+	LastSegmentNote        string
+	LastSegmentNoteLocales map[string]string
+	Note                   string
+	NoteLocales            map[string]string
+	SortOrder              int
+}
+
+type PlacePracticalNote struct {
+	NoteType     string
+	Title        string
+	TitleLocales map[string]string
+	Body         string
+	BodyLocales  map[string]string
+	Priority     string
+	SortOrder    int
+}
+
+type PlaceRecommendedItem struct {
+	ItemType     string
+	Title        string
+	TitleLocales map[string]string
+	Note         string
+	NoteLocales  map[string]string
+	Importance   string
+	Season       string
+	SortOrder    int
 }
 
 type AdminPlaceMedia struct {

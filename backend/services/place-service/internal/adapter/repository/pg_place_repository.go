@@ -597,6 +597,66 @@ func (r *PGPlaceRepository) ReplacePlaceMedia(ctx context.Context, placeID uuid.
 	return nil
 }
 
+func (r *PGPlaceRepository) ListVisitReferenceValues(ctx context.Context, locale string) ([]model.PlaceVisitReferenceValue, error) {
+	locale = normalizeDBLocale(locale)
+	const query = `
+		SELECT
+			v.category,
+			v.code,
+			COALESCE(current_locale.label, fallback_locale.label, v.code) AS label,
+			COALESCE(
+				jsonb_object_agg(all_locale.locale, all_locale.label)
+					FILTER (WHERE all_locale.locale IS NOT NULL),
+				'{}'::jsonb
+			) AS labels,
+			v.sort_order,
+			v.is_active
+		FROM place_visit_reference_values v
+		LEFT JOIN place_visit_reference_translations current_locale
+			ON current_locale.category = v.category
+			AND current_locale.code = v.code
+			AND current_locale.locale = $1
+		LEFT JOIN place_visit_reference_translations fallback_locale
+			ON fallback_locale.category = v.category
+			AND fallback_locale.code = v.code
+			AND fallback_locale.locale = 'en'
+		LEFT JOIN place_visit_reference_translations all_locale
+			ON all_locale.category = v.category
+			AND all_locale.code = v.code
+		WHERE v.is_active = true
+		GROUP BY v.category, v.code, current_locale.label, fallback_locale.label, v.sort_order, v.is_active
+		ORDER BY v.category, v.sort_order, v.code
+	`
+	rows, err := r.pool.Query(ctx, query, locale)
+	if err != nil {
+		return nil, fmt.Errorf("query place visit references: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]model.PlaceVisitReferenceValue, 0)
+	for rows.Next() {
+		var item model.PlaceVisitReferenceValue
+		var labelsJSON []byte
+		if err = rows.Scan(
+			&item.Category,
+			&item.Code,
+			&item.Label,
+			&labelsJSON,
+			&item.SortOrder,
+			&item.Active,
+		); err != nil {
+			return nil, fmt.Errorf("scan place visit reference: %w", err)
+		}
+		if len(labelsJSON) > 0 {
+			if err = json.Unmarshal(labelsJSON, &item.Labels); err != nil {
+				return nil, fmt.Errorf("decode place visit reference labels: %w", err)
+			}
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
 func (r *PGPlaceRepository) getPlaceMedia(ctx context.Context, placeID uuid.UUID) ([]model.PlaceMedia, error) {
 	const query = `
 		SELECT id, place_id, file_id, external_url, source_url, credit, license, media_type, position, created_at

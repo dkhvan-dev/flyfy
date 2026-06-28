@@ -52,6 +52,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /internal/v1/admin/places", h.ListPlaces)
 	mux.HandleFunc("POST /internal/v1/admin/places", h.AdminCreatePlace)
+	mux.HandleFunc("GET /internal/v1/admin/place-visit-references", h.ListPlaceVisitReferences)
 	mux.HandleFunc("POST /internal/v1/admin/places/media/backfill", h.StartPlaceMediaBackfill)
 	mux.HandleFunc("GET /internal/v1/admin/places/{id}", h.GetPlace)
 	mux.HandleFunc("PUT /internal/v1/admin/places/{id}", h.AdminUpdatePlace)
@@ -64,6 +65,15 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) ListPlaceVisitReferences(w http.ResponseWriter, r *http.Request) {
+	items, err := h.useCase.ListPlaceVisitReferences(r.Context(), localeFromRequest(r))
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to list place visit references")
+		return
+	}
+	writeJSON(w, http.StatusOK, toPlaceVisitReferenceListResponse(items))
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +153,7 @@ func (h *Handler) AdminCreatePlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toPlaceResponse(view))
+	writeJSON(w, http.StatusCreated, toAdminPlaceResponse(view))
 }
 
 func (h *Handler) GetPlace(w http.ResponseWriter, r *http.Request) {
@@ -159,6 +169,10 @@ func (h *Handler) GetPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.HasPrefix(r.URL.Path, "/internal/v1/admin/") {
+		writeJSON(w, http.StatusOK, toAdminPlaceResponse(view))
+		return
+	}
 	writeJSON(w, http.StatusOK, toPlaceResponse(view))
 }
 
@@ -245,7 +259,7 @@ func (h *Handler) AdminUpdatePlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toPlaceResponse(view))
+	writeJSON(w, http.StatusOK, toAdminPlaceResponse(view))
 }
 
 func (h *Handler) DeletePlace(w http.ResponseWriter, r *http.Request) {
@@ -678,6 +692,27 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, err error, fallback s
 // Response mappers
 // ---------------------------------------------------------------------------
 
+func toPlaceVisitReferenceListResponse(items []model.PlaceVisitReferenceValue) dto.PlaceVisitReferenceListResponse {
+	resp := dto.PlaceVisitReferenceListResponse{
+		Categories: make(map[string][]dto.PlaceVisitReferenceValueResponse),
+	}
+	for _, item := range items {
+		category := strings.TrimSpace(item.Category)
+		code := strings.TrimSpace(item.Code)
+		if category == "" || code == "" {
+			continue
+		}
+		resp.Categories[category] = append(resp.Categories[category], dto.PlaceVisitReferenceValueResponse{
+			Code:      code,
+			Label:     strings.TrimSpace(item.Label),
+			Labels:    item.Labels,
+			SortOrder: item.SortOrder,
+			Active:    item.Active,
+		})
+	}
+	return resp
+}
+
 func toPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
 	if v == nil || v.Place == nil {
 		return nil
@@ -754,6 +789,15 @@ func toPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
 		UpdatedAt: a.UpdatedAt.UTC().Format(time.RFC3339),
 		DeletedAt: deletedAt,
 	}
+}
+
+func toAdminPlaceResponse(v *app.PlaceView) *dto.PlaceResponse {
+	response := toPlaceResponse(v)
+	if response == nil || v == nil || v.Place == nil {
+		return response
+	}
+	response.VisitInfoLocales = toVisitInfoLocalizedResponse(v.Place.VisitInfo)
+	return response
 }
 
 func placePriceSummaryLabel(place *model.Place) string {
@@ -1254,6 +1298,20 @@ func toVisitInfoResponse(input model.PlaceVisitInfo, locale string, defaultLocal
 	}
 }
 
+func toVisitInfoLocalizedResponse(input model.PlaceVisitInfo) *dto.PlaceVisitInfoLocalizedResponse {
+	return &dto.PlaceVisitInfoLocalizedResponse{
+		OpeningHours:     localizedOpeningHoursSummary(input.OpeningHours),
+		PriceNote:        copyLocalizedTextMap(input.PriceNote),
+		TimeOnSite:       toVisitDurationLocalizedResponse(input.TimeOnSite),
+		CarTravelTime:    toVisitDurationLocalizedResponse(input.CarTravelTime),
+		FeeDetails:       toFeeDetailLocalizedResponses(input.FeeDetails),
+		FeeItems:         toFeeItemLocalizedResponses(input.FeeItems),
+		AccessOptions:    toAccessOptionLocalizedResponses(input.AccessOptions),
+		PracticalNotes:   toPracticalNoteLocalizedResponses(input.PracticalNotes),
+		RecommendedItems: toRecommendedItemLocalizedResponses(input.RecommendedItems),
+	}
+}
+
 func toOpeningHoursResponse(in *model.PlaceOpeningHours, locale, defaultLocale string) *dto.OpeningHoursResponse {
 	if in == nil {
 		return nil
@@ -1264,6 +1322,16 @@ func toOpeningHoursResponse(in *model.PlaceOpeningHours, locale, defaultLocale s
 		Seasonal:  localizedFeeDetailText(in.Seasonal, locale, defaultLocale),
 		Summary:   localizedFeeDetailText(in.Summary, locale, defaultLocale),
 	}
+}
+
+func localizedOpeningHoursSummary(in *model.PlaceOpeningHours) map[string]string {
+	if in == nil {
+		return nil
+	}
+	if summary := copyLocalizedTextMap(in.Summary); len(summary) > 0 {
+		return summary
+	}
+	return copyLocalizedTextMap(in.Seasonal)
 }
 
 func toSeasonResponse(in *model.PlaceSeason, locale, defaultLocale string) *dto.SeasonResponse {
@@ -1285,6 +1353,136 @@ func toVisitDurationResponse(in *model.PlaceVisitDuration, locale, defaultLocale
 		MaxMinutes: in.MaxMinutes,
 		Note:       localizedFeeDetailText(in.Note, locale, defaultLocale),
 	}
+}
+
+func toVisitDurationLocalizedResponse(in *model.PlaceVisitDuration) *dto.VisitDurationLocalizedResponse {
+	if in == nil {
+		return nil
+	}
+	return &dto.VisitDurationLocalizedResponse{
+		MinMinutes: in.MinMinutes,
+		MaxMinutes: in.MaxMinutes,
+		Note:       copyLocalizedTextMap(in.Note),
+	}
+}
+
+func toFeeDetailLocalizedResponses(in []model.PlaceFeeDetail) []dto.FeeDetailLocalizedResponse {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.FeeDetailLocalizedResponse, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.FeeDetailLocalizedResponse{
+			Title:         copyLocalizedTextMap(item.Title),
+			Description:   copyLocalizedTextMap(item.Description),
+			Amount:        item.Amount,
+			Currency:      item.Currency,
+			Unit:          item.Unit,
+			IsApproximate: item.IsApproximate,
+			SortOrder:     item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toFeeItemLocalizedResponses(in []model.PlaceFeeItem) []dto.FeeDetailLocalizedResponse {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.FeeDetailLocalizedResponse, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.FeeDetailLocalizedResponse{
+			Title:         copyLocalizedTextMap(item.Title),
+			Description:   copyLocalizedTextMap(item.Description),
+			Amount:        item.Amount,
+			Type:          item.Type,
+			MinAmount:     item.MinAmount,
+			MaxAmount:     item.MaxAmount,
+			Currency:      item.Currency,
+			Unit:          item.Unit,
+			Required:      item.Required,
+			IsApproximate: item.IsApproximate,
+			Note:          copyLocalizedTextMap(item.Note),
+			SortOrder:     item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toAccessOptionLocalizedResponses(in []model.PlaceAccessOption) []dto.AccessOptionLocalizedResponse {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.AccessOptionLocalizedResponse, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.AccessOptionLocalizedResponse{
+			TransportType:      item.TransportType,
+			DurationMinMinutes: item.DurationMinMinutes,
+			DurationMaxMinutes: item.DurationMaxMinutes,
+			DistanceKm:         item.DistanceKm,
+			RouteHint:          copyLocalizedTextMap(item.RouteHint),
+			RoadCondition:      item.RoadCondition,
+			Requires4x4:        item.Requires4x4,
+			ParkingNote:        copyLocalizedTextMap(item.ParkingNote),
+			LastSegmentNote:    copyLocalizedTextMap(item.LastSegmentNote),
+			Note:               copyLocalizedTextMap(item.Note),
+			SortOrder:          item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toPracticalNoteLocalizedResponses(in []model.PlacePracticalNote) []dto.PracticalNoteLocalizedResponse {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.PracticalNoteLocalizedResponse, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.PracticalNoteLocalizedResponse{
+			NoteType:  item.NoteType,
+			Title:     copyLocalizedTextMap(item.Title),
+			Body:      copyLocalizedTextMap(item.Body),
+			Priority:  item.Priority,
+			SortOrder: item.SortOrder,
+		})
+	}
+	return result
+}
+
+func toRecommendedItemLocalizedResponses(in []model.PlaceRecommendedItem) []dto.RecommendedItemLocalizedResponse {
+	if len(in) == 0 {
+		return nil
+	}
+	result := make([]dto.RecommendedItemLocalizedResponse, 0, len(in))
+	for _, item := range in {
+		result = append(result, dto.RecommendedItemLocalizedResponse{
+			ItemType:   item.ItemType,
+			Title:      copyLocalizedTextMap(item.Title),
+			Note:       copyLocalizedTextMap(item.Note),
+			Importance: item.Importance,
+			Season:     item.Season,
+			SortOrder:  item.SortOrder,
+		})
+	}
+	return result
+}
+
+func copyLocalizedTextMap(values model.LocalizedText) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(values))
+	for locale, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		out[app.NormalizePlaceLocale(locale)] = value
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func localizedTextList(in []model.LocalizedText, locale, defaultLocale string) []string {

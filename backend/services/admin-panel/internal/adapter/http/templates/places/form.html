@@ -176,29 +176,13 @@
         <input name="tags" value="{{placeTags .Data.Input.Tags}}" placeholder="mountains, family">
       </label>
 
-      <h2>{{t .Locale "place.visitInfo"}}</h2>
-      <div class="grid three">
-        <label>
-          <span>{{t .Locale "field.bestTime"}}</span>
-          <input name="visit_best_time" value="{{placeVisitInfoValue .Data.Input.VisitInfo "bestTime"}}">
-        </label>
-        <label>
-          <span>{{t .Locale "field.openingHours"}}</span>
-          <input name="visit_opening_hours" value="{{placeVisitInfoValue .Data.Input.VisitInfo "openingHours"}}">
-        </label>
-        <label>
-          <span>{{t .Locale "field.bookingRequired"}}</span>
-          <select name="booking_required">
-            <option value=""></option>
-            <option value="true">{{t .Locale "common.yes"}}</option>
-            <option value="false">{{t .Locale "common.no"}}</option>
-          </select>
-        </label>
-      </div>
-      <label>
-        <span>{{t .Locale "field.accessibility"}}</span>
-        <textarea name="visit_accessibility" rows="2">{{placeVisitInfoValue .Data.Input.VisitInfo "accessibility"}}</textarea>
-      </label>
+      {{if .Data.IsEdit}}
+        <div class="card subtle">
+          <h2>{{t .Locale "place.visitInfo"}}</h2>
+          <p>{{t .Locale "place.visitInfoSeparateHelp"}}</p>
+          <a class="button" href="{{.Data.VisitInfoURL}}">{{t .Locale "action.editVisitInfo"}}</a>
+        </div>
+      {{end}}
 
       {{if not .Data.IsEdit}}
         <label>

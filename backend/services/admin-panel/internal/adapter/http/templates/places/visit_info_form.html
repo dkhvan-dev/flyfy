@@ -1,0 +1,512 @@
+{{define "places/visit_info_form"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "place.eyebrow"}}</p>
+      <h1>{{t .Locale "place.visitInfo"}}</h1>
+      {{with placeAdminTitle .Locale .Data.Item}}<p>{{.}}</p>{{end}}
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.BackURL}}">{{t .Locale "action.backToPlace"}}</a>
+    </div>
+  </div>
+
+  {{$feeDetailRows := placeFeeDetailRows .Data.Input}}
+  {{$feeItemRows := placeFeeItemRows .Data.Input}}
+  {{$accessOptionRows := placeAccessOptionRows .Data.Input}}
+  {{$practicalNoteRows := placePracticalNoteRows .Data.Input}}
+  {{$recommendedItemRows := placeRecommendedItemRows .Data.Input}}
+  {{$defaultCurrency := .Data.DefaultCurrency}}
+
+  <form method="post" action="{{.Data.SubmitURL}}" class="form card">
+    {{csrfField .CSRFToken}}
+
+    <h2>{{t .Locale "place.visitInfoGeneral"}}</h2>
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.bestTime"}}</span>
+        <select name="visit_best_time">
+          <option value=""></option>
+          {{range placeVisitReferenceOptions .Locale .Data.References "best_time" (placeVisitInfoValue .Data.Input "bestTime")}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.bookingRequired"}}</span>
+        <select name="booking_required">
+          <option value=""></option>
+          <option value="true" {{if placeVisitBoolEquals .Data.Input.BookingRequired true}}selected{{end}}>{{t .Locale "common.yes"}}</option>
+          <option value="false" {{if placeVisitBoolEquals .Data.Input.BookingRequired false}}selected{{end}}>{{t .Locale "common.no"}}</option>
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.roadCondition"}}</span>
+        <select name="visit_road_condition">
+          <option value=""></option>
+          {{range placeVisitReferenceOptions .Locale .Data.References "road_condition" (placeVisitInfoValue .Data.Input "roadCondition")}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </label>
+    </div>
+    <label>
+      <span>{{t .Locale "field.accessibility"}}</span>
+      <textarea name="visit_accessibility" rows="2">{{placeVisitInfoValue .Data.Input "accessibility"}}</textarea>
+    </label>
+
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.openingHours"}} · RU</span>
+        <input name="visit_opening_hours_ru" value="{{index .Data.Input.OpeningHoursLocales "ru"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.openingHours"}} · EN</span>
+        <input name="visit_opening_hours_en" value="{{index .Data.Input.OpeningHoursLocales "en"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.openingHours"}} · KK</span>
+        <input name="visit_opening_hours_kk" value="{{index .Data.Input.OpeningHoursLocales "kk"}}">
+      </label>
+    </div>
+
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.priceNote"}} · RU</span>
+        <textarea name="visit_price_note_ru" rows="2">{{index .Data.Input.PriceNoteLocales "ru"}}</textarea>
+      </label>
+      <label>
+        <span>{{t .Locale "field.priceNote"}} · EN</span>
+        <textarea name="visit_price_note_en" rows="2">{{index .Data.Input.PriceNoteLocales "en"}}</textarea>
+      </label>
+      <label>
+        <span>{{t .Locale "field.priceNote"}} · KK</span>
+        <textarea name="visit_price_note_kk" rows="2">{{index .Data.Input.PriceNoteLocales "kk"}}</textarea>
+      </label>
+    </div>
+
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.timeOnSiteMin"}}</span>
+        <input name="visit_time_on_site_min" value="{{placeVisitInfoValue .Data.Input "timeOnSiteMin"}}" inputmode="numeric">
+      </label>
+      <label>
+        <span>{{t .Locale "field.timeOnSiteMax"}}</span>
+        <input name="visit_time_on_site_max" value="{{placeVisitInfoValue .Data.Input "timeOnSiteMax"}}" inputmode="numeric">
+      </label>
+      <label>
+        <span>{{t .Locale "field.carTravelTimeMin"}}</span>
+        <input name="visit_car_travel_time_min" value="{{placeVisitInfoValue .Data.Input "carTravelTimeMin"}}" inputmode="numeric">
+      </label>
+      <label>
+        <span>{{t .Locale "field.carTravelTimeMax"}}</span>
+        <input name="visit_car_travel_time_max" value="{{placeVisitInfoValue .Data.Input "carTravelTimeMax"}}" inputmode="numeric">
+      </label>
+    </div>
+
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.timeOnSiteNote"}} · RU</span>
+        <input name="visit_time_on_site_note_ru" value="{{with .Data.Input.TimeOnSite}}{{index .NoteLocales "ru"}}{{end}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.timeOnSiteNote"}} · EN</span>
+        <input name="visit_time_on_site_note_en" value="{{with .Data.Input.TimeOnSite}}{{index .NoteLocales "en"}}{{end}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.timeOnSiteNote"}} · KK</span>
+        <input name="visit_time_on_site_note_kk" value="{{with .Data.Input.TimeOnSite}}{{index .NoteLocales "kk"}}{{end}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.carTravelTimeNote"}} · RU</span>
+        <input name="visit_car_travel_time_note_ru" value="{{with .Data.Input.CarTravelTime}}{{index .NoteLocales "ru"}}{{end}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.carTravelTimeNote"}} · EN</span>
+        <input name="visit_car_travel_time_note_en" value="{{with .Data.Input.CarTravelTime}}{{index .NoteLocales "en"}}{{end}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.carTravelTimeNote"}} · KK</span>
+        <input name="visit_car_travel_time_note_kk" value="{{with .Data.Input.CarTravelTime}}{{index .NoteLocales "kk"}}{{end}}">
+      </label>
+    </div>
+
+    <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+  </form>
+
+  <div class="visit-info-blocks">
+    <section class="card visit-info-block-summary">
+      <div>
+        <h2>{{t .Locale "place.feeDetails"}}</h2>
+      </div>
+      <button class="button" type="button" data-visit-modal-open="fee-detail">{{t .Locale "action.edit"}}</button>
+    </section>
+    <section class="card visit-info-block-summary">
+      <div>
+        <h2>{{t .Locale "place.feeItems"}}</h2>
+      </div>
+      <button class="button" type="button" data-visit-modal-open="fee-item">{{t .Locale "action.edit"}}</button>
+    </section>
+    <section class="card visit-info-block-summary">
+      <div>
+        <h2>{{t .Locale "place.accessOptions"}}</h2>
+      </div>
+      <button class="button" type="button" data-visit-modal-open="access-option">{{t .Locale "action.edit"}}</button>
+    </section>
+    <section class="card visit-info-block-summary">
+      <div>
+        <h2>{{t .Locale "place.practicalNotes"}}</h2>
+      </div>
+      <button class="button" type="button" data-visit-modal-open="practical-note">{{t .Locale "action.edit"}}</button>
+    </section>
+    <section class="card visit-info-block-summary">
+      <div>
+        <h2>{{t .Locale "place.recommendedItems"}}</h2>
+      </div>
+      <button class="button" type="button" data-visit-modal-open="recommended-item">{{t .Locale "action.edit"}}</button>
+    </section>
+  </div>
+
+  <dialog class="visit-info-modal" data-visit-info-modal="fee-detail">
+    <form method="post" action="{{.Data.FeeDetailsURL}}" class="form visit-info-modal-form">
+      {{csrfField .CSRFToken}}
+      <div class="visit-info-modal-head">
+        <h2>{{t .Locale "place.feeDetails"}}</h2>
+        <button class="button small" type="button" data-visit-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{range $i, $fee := $feeDetailRows}}
+        <div class="grid three visit-repeat-row" data-visit-repeat-row="fee-detail">
+          <label><span>{{t $.Locale "field.feeTitle"}} · RU</span><input name="visit_fee_detail_title_ru_{{$i}}" value="{{index $fee.TitleLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.feeTitle"}} · EN</span><input name="visit_fee_detail_title_en_{{$i}}" value="{{index $fee.TitleLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.feeTitle"}} · KK</span><input name="visit_fee_detail_title_kk_{{$i}}" value="{{index $fee.TitleLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · RU</span><input name="visit_fee_detail_description_ru_{{$i}}" value="{{index $fee.DescriptionLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · EN</span><input name="visit_fee_detail_description_en_{{$i}}" value="{{index $fee.DescriptionLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · KK</span><input name="visit_fee_detail_description_kk_{{$i}}" value="{{index $fee.DescriptionLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.feeAmount"}}</span><input name="visit_fee_detail_amount_{{$i}}" value="{{with $fee.Amount}}{{.}}{{end}}" inputmode="decimal"></label>
+          <div class="readonly-field" data-visit-currency="{{if $fee.Currency}}{{$fee.Currency}}{{else}}{{$defaultCurrency}}{{end}}"><span>{{t $.Locale "field.currency"}}</span><strong>{{if $fee.Currency}}{{$fee.Currency}}{{else}}{{if $defaultCurrency}}{{$defaultCurrency}}{{else}}-{{end}}{{end}}</strong></div>
+          <label><span>{{t $.Locale "field.feeUnit"}}</span><select name="visit_fee_detail_unit_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "fee_unit" $fee.Unit}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label class="checkline"><input type="checkbox" name="visit_fee_detail_approximate_{{$i}}" value="true" {{if $fee.IsApproximate}}checked{{end}}><span>{{t $.Locale "field.isApproximate"}}</span></label>
+        </div>
+      {{end}}
+      <div class="visit-repeat-actions" data-visit-repeat-section="fee-detail" data-visit-repeat-next-index="{{len $feeDetailRows}}" data-visit-repeat-max="{{.Data.MaxRepeatRows}}" data-visit-default-currency="{{$defaultCurrency}}">
+        <button class="button small" type="button" data-visit-repeat-add="fee-detail">{{t .Locale "action.addVisitInfoRow"}}</button>
+        <template data-visit-repeat-template="fee-detail">
+          <div class="grid three visit-repeat-row" data-visit-repeat-row="fee-detail">
+            <label><span>{{t .Locale "field.feeTitle"}} · RU</span><input name="visit_fee_detail_title_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeTitle"}} · EN</span><input name="visit_fee_detail_title_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeTitle"}} · KK</span><input name="visit_fee_detail_title_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · RU</span><input name="visit_fee_detail_description_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · EN</span><input name="visit_fee_detail_description_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · KK</span><input name="visit_fee_detail_description_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeAmount"}}</span><input name="visit_fee_detail_amount___INDEX__" value="" inputmode="decimal"></label>
+            <div class="readonly-field" data-visit-currency="{{$defaultCurrency}}"><span>{{t .Locale "field.currency"}}</span><strong>{{if $defaultCurrency}}{{$defaultCurrency}}{{else}}-{{end}}</strong></div>
+            <label><span>{{t .Locale "field.feeUnit"}}</span><select name="visit_fee_detail_unit___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "fee_unit" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label class="checkline"><input type="checkbox" name="visit_fee_detail_approximate___INDEX__" value="true"><span>{{t .Locale "field.isApproximate"}}</span></label>
+            <div class="visit-repeat-row-actions"><button class="button small" type="button" data-visit-repeat-remove>{{t .Locale "action.delete"}}</button></div>
+          </div>
+        </template>
+      </div>
+      <div class="visit-info-modal-actions">
+        <button class="button" type="button" data-visit-modal-close>{{t .Locale "action.cancel"}}</button>
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="visit-info-modal" data-visit-info-modal="fee-item">
+    <form method="post" action="{{.Data.FeeItemsURL}}" class="form visit-info-modal-form">
+      {{csrfField .CSRFToken}}
+      <div class="visit-info-modal-head">
+        <h2>{{t .Locale "place.feeItems"}}</h2>
+        <button class="button small" type="button" data-visit-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{range $i, $fee := $feeItemRows}}
+        <div class="grid three visit-repeat-row" data-visit-repeat-row="fee-item">
+          <label><span>{{t $.Locale "field.feeType"}}</span><select name="visit_fee_item_type_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "fee_type" $fee.Type}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.feeMinAmount"}}</span><input name="visit_fee_item_min_amount_{{$i}}" value="{{with $fee.MinAmount}}{{.}}{{end}}" inputmode="decimal"></label>
+          <label><span>{{t $.Locale "field.feeMaxAmount"}}</span><input name="visit_fee_item_max_amount_{{$i}}" value="{{with $fee.MaxAmount}}{{.}}{{end}}" inputmode="decimal"></label>
+          <label><span>{{t $.Locale "field.feeTitle"}} · RU</span><input name="visit_fee_item_title_ru_{{$i}}" value="{{index $fee.TitleLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.feeTitle"}} · EN</span><input name="visit_fee_item_title_en_{{$i}}" value="{{index $fee.TitleLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.feeTitle"}} · KK</span><input name="visit_fee_item_title_kk_{{$i}}" value="{{index $fee.TitleLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · RU</span><input name="visit_fee_item_description_ru_{{$i}}" value="{{index $fee.DescriptionLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · EN</span><input name="visit_fee_item_description_en_{{$i}}" value="{{index $fee.DescriptionLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.feeDescription"}} · KK</span><input name="visit_fee_item_description_kk_{{$i}}" value="{{index $fee.DescriptionLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.feeNote"}} · RU</span><input name="visit_fee_item_note_ru_{{$i}}" value="{{index $fee.NoteLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.feeNote"}} · EN</span><input name="visit_fee_item_note_en_{{$i}}" value="{{index $fee.NoteLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.feeNote"}} · KK</span><input name="visit_fee_item_note_kk_{{$i}}" value="{{index $fee.NoteLocales "kk"}}"></label>
+          <div class="readonly-field" data-visit-currency="{{if $fee.Currency}}{{$fee.Currency}}{{else}}{{$defaultCurrency}}{{end}}"><span>{{t $.Locale "field.currency"}}</span><strong>{{if $fee.Currency}}{{$fee.Currency}}{{else}}{{if $defaultCurrency}}{{$defaultCurrency}}{{else}}-{{end}}{{end}}</strong></div>
+          <label><span>{{t $.Locale "field.feeUnit"}}</span><select name="visit_fee_item_unit_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "fee_unit" $fee.Unit}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label class="checkline"><input type="checkbox" name="visit_fee_item_required_{{$i}}" value="true" {{if $fee.Required}}checked{{end}}><span>{{t $.Locale "field.requiredFee"}}</span></label>
+          <label class="checkline"><input type="checkbox" name="visit_fee_item_approximate_{{$i}}" value="true" {{if $fee.IsApproximate}}checked{{end}}><span>{{t $.Locale "field.isApproximate"}}</span></label>
+        </div>
+      {{end}}
+      <div class="visit-repeat-actions" data-visit-repeat-section="fee-item" data-visit-repeat-next-index="{{len $feeItemRows}}" data-visit-repeat-max="{{.Data.MaxRepeatRows}}" data-visit-default-currency="{{$defaultCurrency}}">
+        <button class="button small" type="button" data-visit-repeat-add="fee-item">{{t .Locale "action.addVisitInfoRow"}}</button>
+        <template data-visit-repeat-template="fee-item">
+          <div class="grid three visit-repeat-row" data-visit-repeat-row="fee-item">
+            <label><span>{{t .Locale "field.feeType"}}</span><select name="visit_fee_item_type___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "fee_type" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.feeMinAmount"}}</span><input name="visit_fee_item_min_amount___INDEX__" value="" inputmode="decimal"></label>
+            <label><span>{{t .Locale "field.feeMaxAmount"}}</span><input name="visit_fee_item_max_amount___INDEX__" value="" inputmode="decimal"></label>
+            <label><span>{{t .Locale "field.feeTitle"}} · RU</span><input name="visit_fee_item_title_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeTitle"}} · EN</span><input name="visit_fee_item_title_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeTitle"}} · KK</span><input name="visit_fee_item_title_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · RU</span><input name="visit_fee_item_description_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · EN</span><input name="visit_fee_item_description_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeDescription"}} · KK</span><input name="visit_fee_item_description_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeNote"}} · RU</span><input name="visit_fee_item_note_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeNote"}} · EN</span><input name="visit_fee_item_note_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.feeNote"}} · KK</span><input name="visit_fee_item_note_kk___INDEX__" value=""></label>
+            <div class="readonly-field" data-visit-currency="{{$defaultCurrency}}"><span>{{t .Locale "field.currency"}}</span><strong>{{if $defaultCurrency}}{{$defaultCurrency}}{{else}}-{{end}}</strong></div>
+            <label><span>{{t .Locale "field.feeUnit"}}</span><select name="visit_fee_item_unit___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "fee_unit" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label class="checkline"><input type="checkbox" name="visit_fee_item_required___INDEX__" value="true"><span>{{t .Locale "field.requiredFee"}}</span></label>
+            <label class="checkline"><input type="checkbox" name="visit_fee_item_approximate___INDEX__" value="true"><span>{{t .Locale "field.isApproximate"}}</span></label>
+            <div class="visit-repeat-row-actions"><button class="button small" type="button" data-visit-repeat-remove>{{t .Locale "action.delete"}}</button></div>
+          </div>
+        </template>
+      </div>
+      <div class="visit-info-modal-actions">
+        <button class="button" type="button" data-visit-modal-close>{{t .Locale "action.cancel"}}</button>
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="visit-info-modal" data-visit-info-modal="access-option">
+    <form method="post" action="{{.Data.AccessOptionsURL}}" class="form visit-info-modal-form">
+      {{csrfField .CSRFToken}}
+      <div class="visit-info-modal-head">
+        <h2>{{t .Locale "place.accessOptions"}}</h2>
+        <button class="button small" type="button" data-visit-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{range $i, $option := $accessOptionRows}}
+        <div class="grid three visit-repeat-row" data-visit-repeat-row="access-option">
+          <label><span>{{t $.Locale "field.transportType"}}</span><select name="visit_access_transport_type_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "transport_type" $option.TransportType}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.accessMinMinutes"}}</span><input name="visit_access_min_minutes_{{$i}}" value="{{with $option.DurationMinMinutes}}{{.}}{{end}}" inputmode="numeric"></label>
+          <label><span>{{t $.Locale "field.accessMaxMinutes"}}</span><input name="visit_access_max_minutes_{{$i}}" value="{{with $option.DurationMaxMinutes}}{{.}}{{end}}" inputmode="numeric"></label>
+          <label><span>{{t $.Locale "field.distanceKm"}}</span><input name="visit_access_distance_km_{{$i}}" value="{{with $option.DistanceKm}}{{.}}{{end}}" inputmode="decimal"></label>
+          <label><span>{{t $.Locale "field.routeHint"}} · RU</span><input name="visit_access_route_hint_ru_{{$i}}" value="{{index $option.RouteHintLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.routeHint"}} · EN</span><input name="visit_access_route_hint_en_{{$i}}" value="{{index $option.RouteHintLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.routeHint"}} · KK</span><input name="visit_access_route_hint_kk_{{$i}}" value="{{index $option.RouteHintLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.roadCondition"}}</span><select name="visit_access_road_condition_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "road_condition" $option.RoadCondition}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.parkingNote"}} · RU</span><input name="visit_access_parking_note_ru_{{$i}}" value="{{index $option.ParkingNoteLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.parkingNote"}} · EN</span><input name="visit_access_parking_note_en_{{$i}}" value="{{index $option.ParkingNoteLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.parkingNote"}} · KK</span><input name="visit_access_parking_note_kk_{{$i}}" value="{{index $option.ParkingNoteLocales "kk"}}"></label>
+          <label class="checkline"><input type="checkbox" name="visit_access_requires_4x4_{{$i}}" value="true" {{if $option.Requires4x4}}checked{{end}}><span>{{t $.Locale "field.requires4x4"}}</span></label>
+        </div>
+      {{end}}
+      <div class="visit-repeat-actions" data-visit-repeat-section="access-option" data-visit-repeat-next-index="{{len $accessOptionRows}}" data-visit-repeat-max="{{.Data.MaxRepeatRows}}">
+        <button class="button small" type="button" data-visit-repeat-add="access-option">{{t .Locale "action.addVisitInfoRow"}}</button>
+        <template data-visit-repeat-template="access-option">
+          <div class="grid three visit-repeat-row" data-visit-repeat-row="access-option">
+            <label><span>{{t .Locale "field.transportType"}}</span><select name="visit_access_transport_type___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "transport_type" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.accessMinMinutes"}}</span><input name="visit_access_min_minutes___INDEX__" value="" inputmode="numeric"></label>
+            <label><span>{{t .Locale "field.accessMaxMinutes"}}</span><input name="visit_access_max_minutes___INDEX__" value="" inputmode="numeric"></label>
+            <label><span>{{t .Locale "field.distanceKm"}}</span><input name="visit_access_distance_km___INDEX__" value="" inputmode="decimal"></label>
+            <label><span>{{t .Locale "field.routeHint"}} · RU</span><input name="visit_access_route_hint_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.routeHint"}} · EN</span><input name="visit_access_route_hint_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.routeHint"}} · KK</span><input name="visit_access_route_hint_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.roadCondition"}}</span><select name="visit_access_road_condition___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "road_condition" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.parkingNote"}} · RU</span><input name="visit_access_parking_note_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.parkingNote"}} · EN</span><input name="visit_access_parking_note_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.parkingNote"}} · KK</span><input name="visit_access_parking_note_kk___INDEX__" value=""></label>
+            <label class="checkline"><input type="checkbox" name="visit_access_requires_4x4___INDEX__" value="true"><span>{{t .Locale "field.requires4x4"}}</span></label>
+            <div class="visit-repeat-row-actions"><button class="button small" type="button" data-visit-repeat-remove>{{t .Locale "action.delete"}}</button></div>
+          </div>
+        </template>
+      </div>
+      <div class="visit-info-modal-actions">
+        <button class="button" type="button" data-visit-modal-close>{{t .Locale "action.cancel"}}</button>
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="visit-info-modal" data-visit-info-modal="practical-note">
+    <form method="post" action="{{.Data.PracticalNotesURL}}" class="form visit-info-modal-form">
+      {{csrfField .CSRFToken}}
+      <div class="visit-info-modal-head">
+        <h2>{{t .Locale "place.practicalNotes"}}</h2>
+        <button class="button small" type="button" data-visit-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{range $i, $note := $practicalNoteRows}}
+        <div class="grid three visit-repeat-row" data-visit-repeat-row="practical-note">
+          <label><span>{{t $.Locale "field.noteType"}}</span><select name="visit_practical_note_type_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "practical_note_type" $note.NoteType}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.priority"}}</span><select name="visit_practical_priority_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "practical_note_priority" $note.Priority}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.title"}} · RU</span><input name="visit_practical_title_ru_{{$i}}" value="{{index $note.TitleLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.title"}} · EN</span><input name="visit_practical_title_en_{{$i}}" value="{{index $note.TitleLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.title"}} · KK</span><input name="visit_practical_title_kk_{{$i}}" value="{{index $note.TitleLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.body"}} · RU</span><textarea name="visit_practical_body_ru_{{$i}}" rows="2">{{index $note.BodyLocales "ru"}}</textarea></label>
+          <label><span>{{t $.Locale "field.body"}} · EN</span><textarea name="visit_practical_body_en_{{$i}}" rows="2">{{index $note.BodyLocales "en"}}</textarea></label>
+          <label><span>{{t $.Locale "field.body"}} · KK</span><textarea name="visit_practical_body_kk_{{$i}}" rows="2">{{index $note.BodyLocales "kk"}}</textarea></label>
+        </div>
+      {{end}}
+      <div class="visit-repeat-actions" data-visit-repeat-section="practical-note" data-visit-repeat-next-index="{{len $practicalNoteRows}}" data-visit-repeat-max="{{.Data.MaxRepeatRows}}">
+        <button class="button small" type="button" data-visit-repeat-add="practical-note">{{t .Locale "action.addVisitInfoRow"}}</button>
+        <template data-visit-repeat-template="practical-note">
+          <div class="grid three visit-repeat-row" data-visit-repeat-row="practical-note">
+            <label><span>{{t .Locale "field.noteType"}}</span><select name="visit_practical_note_type___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "practical_note_type" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.priority"}}</span><select name="visit_practical_priority___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "practical_note_priority" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.title"}} · RU</span><input name="visit_practical_title_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.title"}} · EN</span><input name="visit_practical_title_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.title"}} · KK</span><input name="visit_practical_title_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.body"}} · RU</span><textarea name="visit_practical_body_ru___INDEX__" rows="2"></textarea></label>
+            <label><span>{{t .Locale "field.body"}} · EN</span><textarea name="visit_practical_body_en___INDEX__" rows="2"></textarea></label>
+            <label><span>{{t .Locale "field.body"}} · KK</span><textarea name="visit_practical_body_kk___INDEX__" rows="2"></textarea></label>
+            <div class="visit-repeat-row-actions"><button class="button small" type="button" data-visit-repeat-remove>{{t .Locale "action.delete"}}</button></div>
+          </div>
+        </template>
+      </div>
+      <div class="visit-info-modal-actions">
+        <button class="button" type="button" data-visit-modal-close>{{t .Locale "action.cancel"}}</button>
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="visit-info-modal" data-visit-info-modal="recommended-item">
+    <form method="post" action="{{.Data.RecommendedItemsURL}}" class="form visit-info-modal-form">
+      {{csrfField .CSRFToken}}
+      <div class="visit-info-modal-head">
+        <h2>{{t .Locale "place.recommendedItems"}}</h2>
+        <button class="button small" type="button" data-visit-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{range $i, $item := $recommendedItemRows}}
+        <div class="grid three visit-repeat-row" data-visit-repeat-row="recommended-item">
+          <label><span>{{t $.Locale "field.itemType"}}</span><select name="visit_recommended_item_type_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "recommended_item_type" $item.ItemType}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.importance"}}</span><select name="visit_recommended_importance_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "recommended_item_importance" $item.Importance}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.season"}}</span><select name="visit_recommended_season_{{$i}}">
+            <option value=""></option>
+            {{range placeVisitReferenceOptions $.Locale $.Data.References "season" $item.Season}}
+              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select></label>
+          <label><span>{{t $.Locale "field.title"}} · RU</span><input name="visit_recommended_title_ru_{{$i}}" value="{{index $item.TitleLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.title"}} · EN</span><input name="visit_recommended_title_en_{{$i}}" value="{{index $item.TitleLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.title"}} · KK</span><input name="visit_recommended_title_kk_{{$i}}" value="{{index $item.TitleLocales "kk"}}"></label>
+          <label><span>{{t $.Locale "field.note"}} · RU</span><input name="visit_recommended_note_ru_{{$i}}" value="{{index $item.NoteLocales "ru"}}"></label>
+          <label><span>{{t $.Locale "field.note"}} · EN</span><input name="visit_recommended_note_en_{{$i}}" value="{{index $item.NoteLocales "en"}}"></label>
+          <label><span>{{t $.Locale "field.note"}} · KK</span><input name="visit_recommended_note_kk_{{$i}}" value="{{index $item.NoteLocales "kk"}}"></label>
+        </div>
+      {{end}}
+      <div class="visit-repeat-actions" data-visit-repeat-section="recommended-item" data-visit-repeat-next-index="{{len $recommendedItemRows}}" data-visit-repeat-max="{{.Data.MaxRepeatRows}}">
+        <button class="button small" type="button" data-visit-repeat-add="recommended-item">{{t .Locale "action.addVisitInfoRow"}}</button>
+        <template data-visit-repeat-template="recommended-item">
+          <div class="grid three visit-repeat-row" data-visit-repeat-row="recommended-item">
+            <label><span>{{t .Locale "field.itemType"}}</span><select name="visit_recommended_item_type___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "recommended_item_type" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.importance"}}</span><select name="visit_recommended_importance___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "recommended_item_importance" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.season"}}</span><select name="visit_recommended_season___INDEX__">
+              <option value=""></option>
+              {{range placeVisitReferenceOptions .Locale .Data.References "season" ""}}
+                <option value="{{.Value}}">{{.Label}}</option>
+              {{end}}
+            </select></label>
+            <label><span>{{t .Locale "field.title"}} · RU</span><input name="visit_recommended_title_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.title"}} · EN</span><input name="visit_recommended_title_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.title"}} · KK</span><input name="visit_recommended_title_kk___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.note"}} · RU</span><input name="visit_recommended_note_ru___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.note"}} · EN</span><input name="visit_recommended_note_en___INDEX__" value=""></label>
+            <label><span>{{t .Locale "field.note"}} · KK</span><input name="visit_recommended_note_kk___INDEX__" value=""></label>
+            <div class="visit-repeat-row-actions"><button class="button small" type="button" data-visit-repeat-remove>{{t .Locale "action.delete"}}</button></div>
+          </div>
+        </template>
+      </div>
+      <div class="visit-info-modal-actions">
+        <button class="button" type="button" data-visit-modal-close>{{t .Locale "action.cancel"}}</button>
+        <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  </dialog>
+</section>
+{{template "pageEnd" .}}
+{{end}}

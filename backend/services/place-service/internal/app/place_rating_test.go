@@ -32,6 +32,9 @@ func (s *ratingRepoStub) ListPlaces(context.Context, model.PlaceListFilter) ([]*
 func (s *ratingRepoStub) ReplacePlaceMedia(context.Context, uuid.UUID, []model.PlaceMedia) error {
 	return nil
 }
+func (s *ratingRepoStub) ListVisitReferenceValues(context.Context, string) ([]model.PlaceVisitReferenceValue, error) {
+	return nil, nil
+}
 func (s *ratingRepoStub) ReplaceTags(context.Context, uuid.UUID, []string) error { return nil }
 func (s *ratingRepoStub) CreateReview(context.Context, *model.PlaceReview) error {
 	return nil

@@ -76,6 +76,15 @@ type PlaceFeeDetail struct {
 
 type LocalizedText map[string]string
 
+type PlaceVisitReferenceValue struct {
+	Category  string        `json:"category,omitempty"`
+	Code      string        `json:"code,omitempty"`
+	Label     string        `json:"label,omitempty"`
+	Labels    LocalizedText `json:"labels,omitempty"`
+	SortOrder int           `json:"sortOrder,omitempty"`
+	Active    bool          `json:"active,omitempty"`
+}
+
 type PlaceVisitDuration struct {
 	MinMinutes *int          `json:"minMinutes,omitempty"`
 	MaxMinutes *int          `json:"maxMinutes,omitempty"`

@@ -89,9 +89,40 @@ func TestReplacePlaceMediaByAdminPreservesImportedMediaMetadata(t *testing.T) {
 	}
 }
 
+func TestListPlaceVisitReferencesNormalizesLocale(t *testing.T) {
+	t.Parallel()
+
+	repo := &adminPlaceRepoStub{
+		visitReferences: []model.PlaceVisitReferenceValue{
+			{
+				Category:  "fee_type",
+				Code:      "ENTRANCE",
+				Label:     "Вход",
+				Labels:    model.LocalizedText{"ru": "Вход", "en": "Entrance", "kk": "Кіру"},
+				SortOrder: 10,
+				Active:    true,
+			},
+		},
+	}
+	uc := NewPlaceUseCase(repo, &adminPlaceUserClientStub{})
+
+	items, err := uc.ListPlaceVisitReferences(context.Background(), "ru-RU")
+	if err != nil {
+		t.Fatalf("ListPlaceVisitReferences() error = %v", err)
+	}
+	if repo.lastVisitReferenceLocale != "ru" {
+		t.Fatalf("reference locale = %q, want ru", repo.lastVisitReferenceLocale)
+	}
+	if len(items) != 1 || items[0].Code != "ENTRANCE" || items[0].Label != "Вход" {
+		t.Fatalf("references = %#v, want localized entrance reference", items)
+	}
+}
+
 type adminPlaceRepoStub struct {
-	created       *model.Place
-	replacedMedia []model.PlaceMedia
+	created                  *model.Place
+	replacedMedia            []model.PlaceMedia
+	visitReferences          []model.PlaceVisitReferenceValue
+	lastVisitReferenceLocale string
 }
 
 func (r *adminPlaceRepoStub) CreatePlace(_ context.Context, place *model.Place) error {
@@ -164,6 +195,11 @@ func (r *adminPlaceRepoStub) RecalcRating(_ context.Context, _ uuid.UUID) (float
 
 func (r *adminPlaceRepoStub) ApplyRatingSourceSnapshot(_ context.Context, _ uuid.UUID, _ string, _ float64, _ int) (float64, int, error) {
 	return 0, 0, nil
+}
+
+func (r *adminPlaceRepoStub) ListVisitReferenceValues(_ context.Context, locale string) ([]model.PlaceVisitReferenceValue, error) {
+	r.lastVisitReferenceLocale = locale
+	return r.visitReferences, nil
 }
 
 type adminPlaceUserClientStub struct {

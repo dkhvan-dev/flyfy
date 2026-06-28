@@ -2258,9 +2258,294 @@ func placeVisitInfoValue(item *model.PlaceVisitInfo, field string) string {
 		return item.Accessibility
 	case "openingHours":
 		return item.OpeningHours
+	case "priceNote":
+		return item.PriceNote
+	case "timeOnSiteMin":
+		return optionalIntText(item.TimeOnSite, "min")
+	case "timeOnSiteMax":
+		return optionalIntText(item.TimeOnSite, "max")
+	case "timeOnSiteNote":
+		if item.TimeOnSite == nil {
+			return ""
+		}
+		return item.TimeOnSite.Note
+	case "carTravelTimeMin":
+		return optionalIntText(item.CarTravelTime, "min")
+	case "carTravelTimeMax":
+		return optionalIntText(item.CarTravelTime, "max")
+	case "carTravelTimeNote":
+		if item.CarTravelTime == nil {
+			return ""
+		}
+		return item.CarTravelTime.Note
+	case "roadCondition":
+		return item.RoadCondition
 	default:
 		return ""
 	}
+}
+
+func optionalIntText(value *model.PlaceVisitDuration, field string) string {
+	if value == nil {
+		return ""
+	}
+	var ptr *int
+	switch field {
+	case "min":
+		ptr = value.MinMinutes
+	case "max":
+		ptr = value.MaxMinutes
+	}
+	if ptr == nil {
+		return ""
+	}
+	return strconv.Itoa(*ptr)
+}
+
+func placeFeeDetailRows(item *model.PlaceVisitInfo) []model.PlaceFeeDetail {
+	if item == nil {
+		return paddedPlaceFeeDetails(nil)
+	}
+	return paddedPlaceFeeDetails(item.FeeDetails)
+}
+
+func placeFeeItemRows(item *model.PlaceVisitInfo) []model.PlaceFeeDetail {
+	if item == nil {
+		return paddedPlaceFeeDetails(nil)
+	}
+	return paddedPlaceFeeDetails(item.FeeItems)
+}
+
+func paddedPlaceFeeDetails(values []model.PlaceFeeDetail) []model.PlaceFeeDetail {
+	const minRows = 3
+	const maxRows = adminVisitInfoMaxRepeatRows
+	count := len(values)
+	if count < minRows {
+		count = minRows
+	}
+	if count > maxRows {
+		count = maxRows
+	}
+	out := make([]model.PlaceFeeDetail, count)
+	copy(out, values[:min(len(values), count)])
+	return out
+}
+
+func placeAccessOptionRows(item *model.PlaceVisitInfo) []model.PlaceAccessOption {
+	const minRows = 2
+	const maxRows = adminVisitInfoMaxRepeatRows
+	var values []model.PlaceAccessOption
+	if item != nil {
+		values = item.AccessOptions
+	}
+	count := len(values)
+	if count < minRows {
+		count = minRows
+	}
+	if count > maxRows {
+		count = maxRows
+	}
+	out := make([]model.PlaceAccessOption, count)
+	copy(out, values[:min(len(values), count)])
+	return out
+}
+
+func placePracticalNoteRows(item *model.PlaceVisitInfo) []model.PlacePracticalNote {
+	const minRows = 3
+	const maxRows = adminVisitInfoMaxRepeatRows
+	var values []model.PlacePracticalNote
+	if item != nil {
+		values = item.PracticalNotes
+	}
+	count := len(values)
+	if count < minRows {
+		count = minRows
+	}
+	if count > maxRows {
+		count = maxRows
+	}
+	out := make([]model.PlacePracticalNote, count)
+	copy(out, values[:min(len(values), count)])
+	return out
+}
+
+func placeRecommendedItemRows(item *model.PlaceVisitInfo) []model.PlaceRecommendedItem {
+	const minRows = 3
+	const maxRows = adminVisitInfoMaxRepeatRows
+	var values []model.PlaceRecommendedItem
+	if item != nil {
+		values = item.RecommendedItems
+	}
+	count := len(values)
+	if count < minRows {
+		count = minRows
+	}
+	if count > maxRows {
+		count = maxRows
+	}
+	out := make([]model.PlaceRecommendedItem, count)
+	copy(out, values[:min(len(values), count)])
+	return out
+}
+
+func placeVisitReferenceOptions(locale string, catalog model.PlaceVisitReferenceCatalog, category string, selected string) []PlaceOptionView {
+	category = strings.ToLower(strings.TrimSpace(category))
+	selected = strings.ToUpper(strings.TrimSpace(selected))
+	values := catalog.Categories[category]
+	out := make([]PlaceOptionView, 0, len(values)+1)
+	seen := make(map[string]struct{}, len(values)+1)
+	for _, value := range values {
+		code := strings.ToUpper(strings.TrimSpace(value.Code))
+		if code == "" {
+			continue
+		}
+		seen[code] = struct{}{}
+		out = append(out, PlaceOptionView{
+			Value:    code,
+			Label:    placeVisitReferenceLabel(locale, value),
+			Selected: selected == code,
+		})
+	}
+	if selected != "" {
+		if _, ok := seen[selected]; !ok {
+			out = append(out, PlaceOptionView{
+				Value:    selected,
+				Label:    humanizeCityID(strings.ToLower(selected)),
+				Selected: true,
+			})
+		}
+	}
+	return out
+}
+
+func placeVisitReferenceLabel(locale string, value model.PlaceVisitReferenceValue) string {
+	if normalized, ok := normalizeLocale(locale); ok {
+		locale = normalized
+	} else {
+		locale = localeRU
+	}
+	if value.Labels != nil {
+		if label := strings.TrimSpace(value.Labels[locale]); label != "" {
+			return label
+		}
+	}
+	if label := strings.TrimSpace(value.Label); label != "" {
+		return label
+	}
+	for _, fallback := range []string{"ru", "en", "kk"} {
+		if label := strings.TrimSpace(value.Labels[fallback]); label != "" {
+			return label
+		}
+	}
+	return humanizeCityID(strings.ToLower(value.Code))
+}
+
+func defaultPlaceVisitReferenceCatalog() model.PlaceVisitReferenceCatalog {
+	catalog := model.PlaceVisitReferenceCatalog{Categories: map[string][]model.PlaceVisitReferenceValue{}}
+	addPlaceVisitReference := func(category string, sortOrder int, code string, ru string, en string, kk string) {
+		catalog.Categories[category] = append(catalog.Categories[category], model.PlaceVisitReferenceValue{
+			Code:      code,
+			Label:     ru,
+			Labels:    map[string]string{"ru": ru, "en": en, "kk": kk},
+			SortOrder: sortOrder,
+			Active:    true,
+		})
+	}
+
+	addPlaceVisitReference("best_time", 10, "MORNING", "Утро", "Morning", "Таң")
+	addPlaceVisitReference("best_time", 20, "AFTERNOON", "День", "Afternoon", "Күндіз")
+	addPlaceVisitReference("best_time", 30, "EVENING", "Вечер", "Evening", "Кеш")
+	addPlaceVisitReference("best_time", 40, "SUNRISE", "Рассвет", "Sunrise", "Күн шығуы")
+	addPlaceVisitReference("best_time", 50, "SUNSET", "Закат", "Sunset", "Күн батуы")
+	addPlaceVisitReference("best_time", 60, "ANYTIME", "В любое время", "Any time", "Кез келген уақыт")
+
+	addPlaceVisitReference("fee_type", 10, "ENTRANCE", "Вход", "Entrance", "Кіру")
+	addPlaceVisitReference("fee_type", 20, "TRANSPORT", "Дополнительный транспорт", "Additional transport", "Қосымша көлік")
+	addPlaceVisitReference("fee_type", 30, "GUIDE", "Гид", "Guide", "Гид")
+	addPlaceVisitReference("fee_type", 40, "TOUR", "Экскурсия", "Tour", "Экскурсия")
+	addPlaceVisitReference("fee_type", 50, "PARKING", "Парковка", "Parking", "Тұрақ")
+	addPlaceVisitReference("fee_type", 60, "AUDIO_GUIDE", "Аудиогид", "Audio guide", "Аудиогид")
+	addPlaceVisitReference("fee_type", 900, "OTHER", "Другое", "Other", "Басқа")
+
+	addPlaceVisitReference("fee_unit", 10, "PERSON", "Человек", "Person", "Адам")
+	addPlaceVisitReference("fee_unit", 20, "ADULT", "Взрослый", "Adult", "Ересек")
+	addPlaceVisitReference("fee_unit", 30, "CHILD", "Ребенок", "Child", "Бала")
+	addPlaceVisitReference("fee_unit", 40, "CAR", "Автомобиль", "Car", "Автокөлік")
+	addPlaceVisitReference("fee_unit", 50, "VEHICLE", "Транспорт", "Vehicle", "Көлік")
+	addPlaceVisitReference("fee_unit", 60, "GROUP", "Группа", "Group", "Топ")
+	addPlaceVisitReference("fee_unit", 70, "TICKET", "Билет", "Ticket", "Билет")
+	addPlaceVisitReference("fee_unit", 900, "OTHER", "Другое", "Other", "Басқа")
+
+	addPlaceVisitReference("road_condition", 10, "PAVED", "Асфальтированная дорога", "Paved road", "Асфальт жол")
+	addPlaceVisitReference("road_condition", 20, "GRAVEL", "Гравийная дорога", "Gravel road", "Қиыршық тас жол")
+	addPlaceVisitReference("road_condition", 30, "MIXED", "Смешанное покрытие", "Mixed surface", "Аралас жол")
+	addPlaceVisitReference("road_condition", 40, "DIRT", "Грунтовая дорога", "Dirt road", "Топырақ жол")
+	addPlaceVisitReference("road_condition", 50, "ROUGH", "Сложная дорога", "Rough road", "Қиын жол")
+	addPlaceVisitReference("road_condition", 60, "OFFROAD", "Бездорожье", "Off-road", "Жолсыз жер")
+	addPlaceVisitReference("road_condition", 70, "WALK_ONLY", "Только пешком", "Walk only", "Тек жаяу")
+	addPlaceVisitReference("road_condition", 900, "UNKNOWN", "Уточнить перед поездкой", "Check before travel", "Сапар алдында нақтылау")
+
+	addPlaceVisitReference("transport_type", 10, "CAR", "Автомобиль", "Car", "Автокөлік")
+	addPlaceVisitReference("transport_type", 20, "WALK", "Пешком", "Walk", "Жаяу")
+	addPlaceVisitReference("transport_type", 30, "PUBLIC_TRANSPORT", "Общественный транспорт", "Public transport", "Қоғамдық көлік")
+	addPlaceVisitReference("transport_type", 40, "TAXI", "Такси", "Taxi", "Такси")
+	addPlaceVisitReference("transport_type", 50, "BUS", "Автобус", "Bus", "Автобус")
+	addPlaceVisitReference("transport_type", 60, "BOAT", "Лодка / катер", "Boat", "Қайық / катер")
+	addPlaceVisitReference("transport_type", 70, "CABLE_CAR", "Канатная дорога", "Cable car", "Аспалы жол")
+	addPlaceVisitReference("transport_type", 900, "OTHER", "Другое", "Other", "Басқа")
+
+	addPlaceVisitReference("practical_note_type", 10, "GENERAL", "Общее", "General", "Жалпы")
+	addPlaceVisitReference("practical_note_type", 20, "WEATHER", "Погода", "Weather", "Ауа райы")
+	addPlaceVisitReference("practical_note_type", 30, "SAFETY", "Безопасность", "Safety", "Қауіпсіздік")
+	addPlaceVisitReference("practical_note_type", 40, "ACCESS", "Доступ", "Access", "Қолжетімділік")
+	addPlaceVisitReference("practical_note_type", 50, "BOOKING", "Бронирование", "Booking", "Брондау")
+	addPlaceVisitReference("practical_note_type", 60, "PAYMENT", "Оплата", "Payment", "Төлем")
+	addPlaceVisitReference("practical_note_type", 900, "OTHER", "Другое", "Other", "Басқа")
+
+	addPlaceVisitReference("practical_note_priority", 10, "INFO", "Информация", "Information", "Ақпарат")
+	addPlaceVisitReference("practical_note_priority", 20, "IMPORTANT", "Важно", "Important", "Маңызды")
+	addPlaceVisitReference("practical_note_priority", 30, "WARNING", "Предупреждение", "Warning", "Ескерту")
+	addPlaceVisitReference("practical_note_priority", 40, "CRITICAL", "Критично", "Critical", "Өте маңызды")
+
+	addPlaceVisitReference("recommended_item_type", 10, "WATER", "Вода", "Water", "Су")
+	addPlaceVisitReference("recommended_item_type", 20, "SHOES", "Удобная обувь", "Comfortable shoes", "Ыңғайлы аяқ киім")
+	addPlaceVisitReference("recommended_item_type", 30, "POWERBANK", "Power bank", "Power bank", "Қуаттағыш")
+	addPlaceVisitReference("recommended_item_type", 40, "DOCUMENTS", "Документы", "Documents", "Құжаттар")
+	addPlaceVisitReference("recommended_item_type", 50, "CASH", "Наличные", "Cash", "Қолма-қол ақша")
+	addPlaceVisitReference("recommended_item_type", 60, "SPF", "SPF / защита от солнца", "SPF / sun protection", "SPF / күннен қорғаныс")
+	addPlaceVisitReference("recommended_item_type", 70, "MAP", "Офлайн-карта", "Offline map", "Офлайн карта")
+	addPlaceVisitReference("recommended_item_type", 80, "FOOD", "Еда", "Food", "Тамақ")
+	addPlaceVisitReference("recommended_item_type", 90, "RAIN", "Дождевик", "Rain jacket", "Жаңбырлық")
+	addPlaceVisitReference("recommended_item_type", 100, "REPELLENT", "Репеллент", "Repellent", "Репеллент")
+	addPlaceVisitReference("recommended_item_type", 900, "OTHER", "Другое", "Other", "Басқа")
+
+	addPlaceVisitReference("recommended_item_importance", 10, "REQUIRED", "Обязательно", "Required", "Міндетті")
+	addPlaceVisitReference("recommended_item_importance", 20, "RECOMMENDED", "Рекомендуется", "Recommended", "Ұсынылады")
+	addPlaceVisitReference("recommended_item_importance", 30, "OPTIONAL", "По желанию", "Optional", "Қалауыңызша")
+
+	addPlaceVisitReference("season", 10, "SPRING", "Весна", "Spring", "Көктем")
+	addPlaceVisitReference("season", 20, "SUMMER", "Лето", "Summer", "Жаз")
+	addPlaceVisitReference("season", 30, "AUTUMN", "Осень", "Autumn", "Күз")
+	addPlaceVisitReference("season", 40, "WINTER", "Зима", "Winter", "Қыс")
+	addPlaceVisitReference("season", 50, "ALL_SEASON", "Круглый год", "All season", "Жыл бойы")
+	addPlaceVisitReference("season", 60, "DRY_SEASON", "Сухой сезон", "Dry season", "Құрғақ маусым")
+	addPlaceVisitReference("season", 70, "WET_SEASON", "Сезон дождей", "Wet season", "Жаңбырлы маусым")
+
+	return catalog
+}
+
+func mergePlaceVisitReferenceCatalog(base model.PlaceVisitReferenceCatalog, override model.PlaceVisitReferenceCatalog) model.PlaceVisitReferenceCatalog {
+	if base.Categories == nil {
+		base.Categories = map[string][]model.PlaceVisitReferenceValue{}
+	}
+	for category, values := range override.Categories {
+		category = strings.ToLower(strings.TrimSpace(category))
+		if category == "" || len(values) == 0 {
+			continue
+		}
+		base.Categories[category] = values
+	}
+	return base
 }
 
 func placeOptionalStringEquals(value *string, expected string) bool {
@@ -2268,6 +2553,48 @@ func placeOptionalStringEquals(value *string, expected string) bool {
 		return strings.TrimSpace(expected) == ""
 	}
 	return strings.EqualFold(strings.TrimSpace(*value), strings.TrimSpace(expected))
+}
+
+func placeVisitBoolEquals(value *bool, expected bool) bool {
+	return value != nil && *value == expected
+}
+
+func placeAdminTitleText(locale string, item *model.AdminPlace) string {
+	if item == nil {
+		return ""
+	}
+	if title := placeAdminTranslationTitle(item, locale); title != "" {
+		return title
+	}
+	if title := placeAdminTranslationTitle(item, item.DefaultLocale); title != "" {
+		return title
+	}
+	if title := strings.TrimSpace(item.Title); title != "" {
+		return title
+	}
+	for _, fallbackLocale := range []string{localeRU, localeEN, "kk"} {
+		if title := placeAdminTranslationTitle(item, fallbackLocale); title != "" {
+			return title
+		}
+	}
+	return ""
+}
+
+func placeAdminTranslationTitle(item *model.AdminPlace, locale string) string {
+	if item == nil {
+		return ""
+	}
+	locale = strings.ToLower(strings.TrimSpace(locale))
+	if locale == "" {
+		return ""
+	}
+	if normalized, ok := normalizeLocale(locale); ok {
+		locale = normalized
+	}
+	if tr, ok := item.Translations[locale]; ok {
+		return strings.TrimSpace(tr.Title)
+	}
+	return ""
 }
 
 func placeTranslationTitle(input model.PlaceInput, locale string) string {
@@ -2472,6 +2799,33 @@ func placeListURL(query string) string {
 
 func placeEditURL(id uuid.UUID, query string) string {
 	path := "/admin/places/" + id.String() + "/edit"
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return path
+	}
+	return path + "?" + query
+}
+
+func placeVisitInfoUpdateURL(id uuid.UUID, query string) string {
+	path := "/admin/places/" + id.String() + "/visit-info"
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return path
+	}
+	return path + "?" + query
+}
+
+func placeVisitInfoBlockUpdateURL(id uuid.UUID, block string, query string) string {
+	path := "/admin/places/" + id.String() + "/visit-info/" + strings.Trim(strings.TrimSpace(block), "/")
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return path
+	}
+	return path + "?" + query
+}
+
+func placeVisitInfoEditURL(id uuid.UUID, query string) string {
+	path := "/admin/places/" + id.String() + "/visit-info/edit"
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return path

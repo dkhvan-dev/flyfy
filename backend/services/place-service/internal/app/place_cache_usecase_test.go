@@ -348,6 +348,10 @@ func (r *cachePlaceRepoStub) ReplacePlaceMedia(_ context.Context, id uuid.UUID, 
 	return nil
 }
 
+func (r *cachePlaceRepoStub) ListVisitReferenceValues(context.Context, string) ([]model.PlaceVisitReferenceValue, error) {
+	return nil, nil
+}
+
 func (r *cachePlaceRepoStub) ReplaceTags(context.Context, uuid.UUID, []string) error { return nil }
 func (r *cachePlaceRepoStub) CreateReview(context.Context, *model.PlaceReview) error {
 	return nil

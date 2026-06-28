@@ -18,6 +18,7 @@ type PlaceRepository interface {
 
 	// Media
 	ReplacePlaceMedia(ctx context.Context, placeID uuid.UUID, media []model.PlaceMedia) error
+	ListVisitReferenceValues(ctx context.Context, locale string) ([]model.PlaceVisitReferenceValue, error)
 
 	// Tags
 	ReplaceTags(ctx context.Context, placeID uuid.UUID, tags []string) error

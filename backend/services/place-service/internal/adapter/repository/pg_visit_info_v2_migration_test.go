@@ -80,6 +80,53 @@ func TestVisitPlanningTablesMigrationContract(t *testing.T) {
 	}
 }
 
+func TestPlaceVisitReferenceValuesMigrationContract(t *testing.T) {
+	up := readMigration(t, "213_place_visit_reference_values.up.sql")
+
+	for _, fragment := range []string{
+		"CREATE TABLE IF NOT EXISTS place_visit_reference_values",
+		"CREATE TABLE IF NOT EXISTS place_visit_reference_translations",
+		"PRIMARY KEY (category, code)",
+		"REFERENCES place_visit_reference_values(category, code) ON DELETE CASCADE",
+		"place_visit_reference_values_active_idx",
+		"'fee_type'",
+		"'fee_unit'",
+		"'road_condition'",
+		"'transport_type'",
+		"'best_time'",
+		"'practical_note_type'",
+		"'practical_note_priority'",
+		"'recommended_item_type'",
+		"'recommended_item_importance'",
+		"'season'",
+		"'ENTRANCE'",
+		"'PERSON'",
+		"'PAVED'",
+		"'CAR'",
+		"'MORNING'",
+		"'REQUIRED'",
+		"'WATER'",
+		"'SUMMER'",
+		"'ru'",
+		"'en'",
+		"'kk'",
+	} {
+		if !strings.Contains(up, fragment) {
+			t.Fatalf("213 visit reference migration must contain %q", fragment)
+		}
+	}
+
+	down := readMigration(t, "213_place_visit_reference_values.down.sql")
+	for _, table := range []string{
+		"place_visit_reference_translations",
+		"place_visit_reference_values",
+	} {
+		if !strings.Contains(down, "DROP TABLE IF EXISTS "+table) {
+			t.Fatalf("213 rollback must drop %s", table)
+		}
+	}
+}
+
 func TestKazakhstanVisitPlanningSeedMigrationUsesWorkbookDataWithoutSources(t *testing.T) {
 	up := readMigration(t, "147_seed_kazakhstan_visit_planning_from_workbook.up.sql")
 

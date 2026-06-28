@@ -190,7 +190,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/places/media/backfill", s.StartPlaceMediaBackfill)
 	mux.HandleFunc("GET /admin/place-media/{fileID}", s.PlaceMedia)
 	mux.HandleFunc("GET /admin/places/{placeID}/edit", s.EditPlacePage)
+	mux.HandleFunc("GET /admin/places/{placeID}/visit-info/edit", s.EditPlaceVisitInfoPage)
 	mux.HandleFunc("POST /admin/places/{placeID}", s.UpdatePlace)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info", s.UpdatePlaceVisitInfo)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info/fee-details", s.UpdatePlaceVisitFeeDetails)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info/fee-items", s.UpdatePlaceVisitFeeItems)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info/access-options", s.UpdatePlaceVisitAccessOptions)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info/practical-notes", s.UpdatePlaceVisitPracticalNotes)
+	mux.HandleFunc("POST /admin/places/{placeID}/visit-info/recommended-items", s.UpdatePlaceVisitRecommendedItems)
 	mux.HandleFunc("POST /admin/places/{placeID}/media", s.ReplacePlaceMedia)
 	mux.HandleFunc("GET /admin/communities", s.CommunityPlatformPage)
 	mux.HandleFunc("GET /admin/communities/new", s.NewCommunityPage)
@@ -1181,6 +1188,23 @@ func (s *Server) EditPlacePage(w http.ResponseWriter, r *http.Request) {
 	s.renderPage(w, http.StatusOK, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), "")
 }
 
+func (s *Server) EditPlaceVisitInfoPage(w http.ResponseWriter, r *http.Request) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
+	if !ok {
+		return
+	}
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	staff := staffFromContext(r.Context())
+	item, err := s.places.GetPlace(r.Context(), staff, placeID)
+	if err != nil {
+		data := s.placeVisitInfoFormViewData(r, staff, &model.AdminPlace{ID: placeID}, returnQuery)
+		s.renderPage(w, errorStatus(err), r, "places/visit_info_form", "place.visitInfo", "places", data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	data := s.placeVisitInfoFormViewData(r, staff, item, returnQuery)
+	s.renderPage(w, http.StatusOK, r, "places/visit_info_form", "place.visitInfo", "places", data, "")
+}
+
 func (s *Server) UpdatePlace(w http.ResponseWriter, r *http.Request) {
 	placeID, ok := parsePathUUID(w, r, "placeID")
 	if !ok {
@@ -1200,6 +1224,106 @@ func (s *Server) UpdatePlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash(placeEditURL(item.ID, returnQuery), "place.updated"), http.StatusSeeOther)
+}
+
+func (s *Server) UpdatePlaceVisitInfo(w http.ResponseWriter, r *http.Request) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
+	if !ok {
+		return
+	}
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	staff := staffFromContext(r.Context())
+	input, err := parsePlaceVisitInfoForm(r)
+	if err != nil {
+		data := s.placeVisitInfoFormViewData(r, staff, &model.AdminPlace{ID: placeID, VisitInfo: input}, returnQuery)
+		s.renderPage(w, http.StatusBadRequest, r, "places/visit_info_form", "place.visitInfo", "places", data, publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	item, err := s.places.UpdatePlaceVisitInfoGeneral(r.Context(), staff, placeID, input, requestMetadata(r))
+	if err != nil {
+		data := s.placeVisitInfoFormViewData(r, staff, &model.AdminPlace{ID: placeID, VisitInfo: input}, returnQuery)
+		s.renderPage(w, errorStatus(err), r, "places/visit_info_form", "place.visitInfo", "places", data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(placeVisitInfoEditURL(item.ID, returnQuery), "place.visitInfoUpdated"), http.StatusSeeOther)
+}
+
+func (s *Server) UpdatePlaceVisitFeeDetails(w http.ResponseWriter, r *http.Request) {
+	s.updatePlaceVisitInfoBlock(w, r, func(r *http.Request) (any, error) {
+		return parsePlaceVisitFeeDetailsForm(r)
+	}, func(ctx context.Context, staff *model.StaffUser, placeID uuid.UUID, value any, meta app.RequestMetadata) (*model.AdminPlace, error) {
+		return s.places.UpdatePlaceVisitFeeDetails(ctx, staff, placeID, value.([]model.PlaceFeeDetail), meta)
+	})
+}
+
+func (s *Server) UpdatePlaceVisitFeeItems(w http.ResponseWriter, r *http.Request) {
+	s.updatePlaceVisitInfoBlock(w, r, func(r *http.Request) (any, error) {
+		return parsePlaceVisitFeeItemsForm(r)
+	}, func(ctx context.Context, staff *model.StaffUser, placeID uuid.UUID, value any, meta app.RequestMetadata) (*model.AdminPlace, error) {
+		return s.places.UpdatePlaceVisitFeeItems(ctx, staff, placeID, value.([]model.PlaceFeeDetail), meta)
+	})
+}
+
+func (s *Server) UpdatePlaceVisitAccessOptions(w http.ResponseWriter, r *http.Request) {
+	s.updatePlaceVisitInfoBlock(w, r, func(r *http.Request) (any, error) {
+		return parsePlaceVisitAccessOptionsForm(r)
+	}, func(ctx context.Context, staff *model.StaffUser, placeID uuid.UUID, value any, meta app.RequestMetadata) (*model.AdminPlace, error) {
+		return s.places.UpdatePlaceVisitAccessOptions(ctx, staff, placeID, value.([]model.PlaceAccessOption), meta)
+	})
+}
+
+func (s *Server) UpdatePlaceVisitPracticalNotes(w http.ResponseWriter, r *http.Request) {
+	s.updatePlaceVisitInfoBlock(w, r, func(r *http.Request) (any, error) {
+		return parsePlaceVisitPracticalNotesForm(r)
+	}, func(ctx context.Context, staff *model.StaffUser, placeID uuid.UUID, value any, meta app.RequestMetadata) (*model.AdminPlace, error) {
+		return s.places.UpdatePlaceVisitPracticalNotes(ctx, staff, placeID, value.([]model.PlacePracticalNote), meta)
+	})
+}
+
+func (s *Server) UpdatePlaceVisitRecommendedItems(w http.ResponseWriter, r *http.Request) {
+	s.updatePlaceVisitInfoBlock(w, r, func(r *http.Request) (any, error) {
+		return parsePlaceVisitRecommendedItemsForm(r)
+	}, func(ctx context.Context, staff *model.StaffUser, placeID uuid.UUID, value any, meta app.RequestMetadata) (*model.AdminPlace, error) {
+		return s.places.UpdatePlaceVisitRecommendedItems(ctx, staff, placeID, value.([]model.PlaceRecommendedItem), meta)
+	})
+}
+
+func (s *Server) updatePlaceVisitInfoBlock(
+	w http.ResponseWriter,
+	r *http.Request,
+	parse func(*http.Request) (any, error),
+	update func(context.Context, *model.StaffUser, uuid.UUID, any, app.RequestMetadata) (*model.AdminPlace, error),
+) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
+	if !ok {
+		return
+	}
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	staff := staffFromContext(r.Context())
+	value, err := parse(r)
+	if err != nil {
+		data := s.placeVisitInfoFormViewData(r, staff, &model.AdminPlace{ID: placeID}, returnQuery)
+		s.renderPage(w, http.StatusBadRequest, r, "places/visit_info_form", "place.visitInfo", "places", data, publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	item, err := update(r.Context(), staff, placeID, value, requestMetadata(r))
+	if err != nil {
+		data := s.placeVisitInfoFormViewData(r, staff, &model.AdminPlace{ID: placeID}, returnQuery)
+		s.renderPage(w, errorStatus(err), r, "places/visit_info_form", "place.visitInfo", "places", data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(placeVisitInfoEditURL(item.ID, returnQuery), "place.visitInfoUpdated"), http.StatusSeeOther)
+}
+
+func (s *Server) placeVisitInfoFormViewData(r *http.Request, staff *model.StaffUser, item *model.AdminPlace, query string) PlaceVisitInfoFormViewData {
+	if s.places == nil {
+		return NewPlaceVisitInfoFormViewData(item, query)
+	}
+	catalog, err := s.places.ListVisitReferences(r.Context(), staff, localeFromContext(r.Context()))
+	if err != nil {
+		return NewPlaceVisitInfoFormViewData(item, query)
+	}
+	return NewPlaceVisitInfoFormViewData(item, query, catalog)
 }
 
 func (s *Server) ReplacePlaceMedia(w http.ResponseWriter, r *http.Request) {
@@ -1824,16 +1948,6 @@ func parsePlaceForm(r *http.Request) (model.PlaceInput, []app.PlaceImageUploadIn
 	defaultTranslation := translations[normalizeFormLocale(defaultLocale)]
 	priceCurrency := optionalString(r.Form.Get("price_currency"))
 	durationUnit := optionalString(r.Form.Get("duration_unit"))
-	bookingRequired := optionalBool(r.Form.Get("booking_required"))
-	visitInfo := &model.PlaceVisitInfo{
-		BestTime:        strings.TrimSpace(r.Form.Get("visit_best_time")),
-		Accessibility:   strings.TrimSpace(r.Form.Get("visit_accessibility")),
-		BookingRequired: bookingRequired,
-		OpeningHours:    strings.TrimSpace(r.Form.Get("visit_opening_hours")),
-		Amenities:       splitCSV(r.Form.Get("visit_amenities")),
-		Audience:        splitCSV(r.Form.Get("visit_audience")),
-		SafetyNotes:     splitCSV(r.Form.Get("visit_safety_notes")),
-	}
 	input := model.PlaceInput{
 		Title:             defaultTranslation.Title,
 		Description:       defaultTranslation.Description,
@@ -1854,10 +1968,477 @@ func parsePlaceForm(r *http.Request) (model.PlaceInput, []app.PlaceImageUploadIn
 		Spots:             spots,
 		Status:            r.Form.Get("status"),
 		Tags:              splitCSV(r.Form.Get("tags")),
-		VisitInfo:         visitInfo,
 	}
 	images, err := parsePlaceImages(r)
 	return input, images, err
+}
+
+func parsePlaceVisitInfoForm(r *http.Request) (model.PlaceVisitInfo, error) {
+	if err := parseRequestForm(r); err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	timeOnSite, err := parseVisitDurationLocalizedFields(r.Form, "visit_time_on_site")
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	carTravelTime, err := parseVisitDurationLocalizedFields(r.Form, "visit_car_travel_time")
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	feeDetails, err := parseVisitFeeDetailLocalizedRows(r.Form, "visit_fee_detail", false)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	feeItems, err := parseVisitFeeDetailLocalizedRows(r.Form, "visit_fee_item", true)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	accessOptions, err := parseVisitAccessOptionLocalizedRows(r.Form)
+	if err != nil {
+		return model.PlaceVisitInfo{}, err
+	}
+	openingHours := parseLocalizedTextFields(r.Form, "visit_opening_hours")
+	priceNote := parseLocalizedTextFields(r.Form, "visit_price_note")
+	return model.PlaceVisitInfo{
+		BestTime:            strings.TrimSpace(r.Form.Get("visit_best_time")),
+		Accessibility:       strings.TrimSpace(r.Form.Get("visit_accessibility")),
+		BookingRequired:     optionalBool(r.Form.Get("booking_required")),
+		OpeningHours:        firstFormLocalizedText(openingHours),
+		OpeningHoursLocales: openingHours,
+		Amenities:           splitCSV(r.Form.Get("visit_amenities")),
+		Audience:            splitCSV(r.Form.Get("visit_audience")),
+		SafetyNotes:         splitCSV(r.Form.Get("visit_safety_notes")),
+		PriceNote:           firstFormLocalizedText(priceNote),
+		PriceNoteLocales:    priceNote,
+		TimeOnSite:          timeOnSite,
+		CarTravelTime:       carTravelTime,
+		RoadCondition:       strings.ToUpper(strings.TrimSpace(r.Form.Get("visit_road_condition"))),
+		FeeDetails:          feeDetails,
+		FeeItems:            feeItems,
+		AccessOptions:       accessOptions,
+		PracticalNotes:      parseVisitPracticalNoteLocalizedRows(r.Form),
+		RecommendedItems:    parseVisitRecommendedItemLocalizedRows(r.Form),
+	}, nil
+}
+
+func parsePlaceVisitFeeDetailsForm(r *http.Request) ([]model.PlaceFeeDetail, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	return parseVisitFeeDetailLocalizedRows(r.Form, "visit_fee_detail", false)
+}
+
+func parsePlaceVisitFeeItemsForm(r *http.Request) ([]model.PlaceFeeDetail, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	return parseVisitFeeDetailLocalizedRows(r.Form, "visit_fee_item", true)
+}
+
+func parsePlaceVisitAccessOptionsForm(r *http.Request) ([]model.PlaceAccessOption, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	return parseVisitAccessOptionLocalizedRows(r.Form)
+}
+
+func parsePlaceVisitPracticalNotesForm(r *http.Request) ([]model.PlacePracticalNote, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	return parseVisitPracticalNoteLocalizedRows(r.Form), nil
+}
+
+func parsePlaceVisitRecommendedItemsForm(r *http.Request) ([]model.PlaceRecommendedItem, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	return parseVisitRecommendedItemLocalizedRows(r.Form), nil
+}
+
+const adminVisitInfoMaxRepeatRows = 24
+
+var adminVisitInfoLocales = []string{"ru", "en", "kk"}
+
+func parseLocalizedTextFields(values url.Values, prefix string) map[string]string {
+	out := make(map[string]string, len(adminVisitInfoLocales))
+	for _, locale := range adminVisitInfoLocales {
+		if value := strings.TrimSpace(values.Get(prefix + "_" + locale)); value != "" {
+			out[locale] = value
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func parseLocalizedTextRowFields(values url.Values, prefix string, idx int) map[string]string {
+	out := make(map[string]string, len(adminVisitInfoLocales))
+	suffix := "_" + strconv.Itoa(idx)
+	for _, locale := range adminVisitInfoLocales {
+		if value := strings.TrimSpace(values.Get(prefix + "_" + locale + suffix)); value != "" {
+			out[locale] = value
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func firstFormLocalizedText(values map[string]string) string {
+	for _, locale := range adminVisitInfoLocales {
+		if value := strings.TrimSpace(values[locale]); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func parseVisitDurationLocalizedFields(values url.Values, prefix string) (*model.PlaceVisitDuration, error) {
+	minMinutes, err := parseOptionalInt(values.Get(prefix + "_min"))
+	if err != nil {
+		return nil, err
+	}
+	maxMinutes, err := parseOptionalInt(values.Get(prefix + "_max"))
+	if err != nil {
+		return nil, err
+	}
+	noteLocales := parseLocalizedTextFields(values, prefix+"_note")
+	if minMinutes == nil && maxMinutes == nil && len(noteLocales) == 0 {
+		return nil, nil
+	}
+	return &model.PlaceVisitDuration{
+		MinMinutes:  minMinutes,
+		MaxMinutes:  maxMinutes,
+		Note:        firstFormLocalizedText(noteLocales),
+		NoteLocales: noteLocales,
+	}, nil
+}
+
+func parseVisitFeeDetailLocalizedRows(values url.Values, prefix string, includeType bool) ([]model.PlaceFeeDetail, error) {
+	const maxRows = adminVisitInfoMaxRepeatRows
+	out := make([]model.PlaceFeeDetail, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		amount, err := parseOptionalFloat(values.Get(prefix + "_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		minAmount, err := parseOptionalFloat(values.Get(prefix + "_min_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		maxAmount, err := parseOptionalFloat(values.Get(prefix + "_max_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		titleLocales := parseLocalizedTextRowFields(values, prefix+"_title", idx)
+		descriptionLocales := parseLocalizedTextRowFields(values, prefix+"_description", idx)
+		noteLocales := parseLocalizedTextRowFields(values, prefix+"_note", idx)
+		item := model.PlaceFeeDetail{
+			Title:              firstFormLocalizedText(titleLocales),
+			TitleLocales:       titleLocales,
+			Description:        firstFormLocalizedText(descriptionLocales),
+			DescriptionLocales: descriptionLocales,
+			Amount:             amount,
+			MinAmount:          minAmount,
+			MaxAmount:          maxAmount,
+			Unit:               strings.ToUpper(strings.TrimSpace(values.Get(prefix + "_unit" + suffix))),
+			Required:           boolFormValue(values.Get(prefix + "_required" + suffix)),
+			IsApproximate:      boolFormValue(values.Get(prefix + "_approximate" + suffix)),
+			Note:               firstFormLocalizedText(noteLocales),
+			NoteLocales:        noteLocales,
+			SortOrder:          (idx + 1) * 10,
+		}
+		if includeType {
+			item.Type = strings.ToUpper(strings.TrimSpace(values.Get(prefix + "_type" + suffix)))
+		}
+		if item.Title == "" &&
+			item.Description == "" &&
+			item.Amount == nil &&
+			item.Type == "" &&
+			item.MinAmount == nil &&
+			item.MaxAmount == nil &&
+			item.Currency == "" &&
+			item.Unit == "" &&
+			!item.Required &&
+			!item.IsApproximate &&
+			item.Note == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func parseVisitAccessOptionLocalizedRows(values url.Values) ([]model.PlaceAccessOption, error) {
+	const maxRows = adminVisitInfoMaxRepeatRows
+	out := make([]model.PlaceAccessOption, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		minMinutes, err := parseOptionalInt(values.Get("visit_access_min_minutes" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		maxMinutes, err := parseOptionalInt(values.Get("visit_access_max_minutes" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		distanceKm, err := parseOptionalFloat(values.Get("visit_access_distance_km" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		routeHintLocales := parseLocalizedTextRowFields(values, "visit_access_route_hint", idx)
+		parkingNoteLocales := parseLocalizedTextRowFields(values, "visit_access_parking_note", idx)
+		lastSegmentNoteLocales := parseLocalizedTextRowFields(values, "visit_access_last_segment_note", idx)
+		noteLocales := parseLocalizedTextRowFields(values, "visit_access_note", idx)
+		item := model.PlaceAccessOption{
+			TransportType:          strings.ToUpper(strings.TrimSpace(values.Get("visit_access_transport_type" + suffix))),
+			DurationMinMinutes:     minMinutes,
+			DurationMaxMinutes:     maxMinutes,
+			DistanceKm:             distanceKm,
+			RouteHint:              firstFormLocalizedText(routeHintLocales),
+			RouteHintLocales:       routeHintLocales,
+			RoadCondition:          strings.ToUpper(strings.TrimSpace(values.Get("visit_access_road_condition" + suffix))),
+			Requires4x4:            boolFormValue(values.Get("visit_access_requires_4x4" + suffix)),
+			ParkingNote:            firstFormLocalizedText(parkingNoteLocales),
+			ParkingNoteLocales:     parkingNoteLocales,
+			LastSegmentNote:        firstFormLocalizedText(lastSegmentNoteLocales),
+			LastSegmentNoteLocales: lastSegmentNoteLocales,
+			Note:                   firstFormLocalizedText(noteLocales),
+			NoteLocales:            noteLocales,
+			SortOrder:              (idx + 1) * 10,
+		}
+		if item.TransportType == "" &&
+			item.DurationMinMinutes == nil &&
+			item.DurationMaxMinutes == nil &&
+			item.DistanceKm == nil &&
+			item.RouteHint == "" &&
+			item.RoadCondition == "" &&
+			!item.Requires4x4 &&
+			item.ParkingNote == "" &&
+			item.LastSegmentNote == "" &&
+			item.Note == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func parseVisitPracticalNoteLocalizedRows(values url.Values) []model.PlacePracticalNote {
+	const maxRows = adminVisitInfoMaxRepeatRows
+	out := make([]model.PlacePracticalNote, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		titleLocales := parseLocalizedTextRowFields(values, "visit_practical_title", idx)
+		bodyLocales := parseLocalizedTextRowFields(values, "visit_practical_body", idx)
+		item := model.PlacePracticalNote{
+			NoteType:     strings.ToUpper(strings.TrimSpace(values.Get("visit_practical_note_type" + suffix))),
+			Title:        firstFormLocalizedText(titleLocales),
+			TitleLocales: titleLocales,
+			Body:         firstFormLocalizedText(bodyLocales),
+			BodyLocales:  bodyLocales,
+			Priority:     strings.ToUpper(strings.TrimSpace(values.Get("visit_practical_priority" + suffix))),
+			SortOrder:    (idx + 1) * 10,
+		}
+		if item.NoteType == "" && item.Title == "" && item.Body == "" && item.Priority == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func parseVisitRecommendedItemLocalizedRows(values url.Values) []model.PlaceRecommendedItem {
+	const maxRows = adminVisitInfoMaxRepeatRows
+	out := make([]model.PlaceRecommendedItem, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		titleLocales := parseLocalizedTextRowFields(values, "visit_recommended_title", idx)
+		noteLocales := parseLocalizedTextRowFields(values, "visit_recommended_note", idx)
+		item := model.PlaceRecommendedItem{
+			ItemType:     strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_item_type" + suffix))),
+			Title:        firstFormLocalizedText(titleLocales),
+			TitleLocales: titleLocales,
+			Note:         firstFormLocalizedText(noteLocales),
+			NoteLocales:  noteLocales,
+			Importance:   strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_importance" + suffix))),
+			Season:       strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_season" + suffix))),
+			SortOrder:    (idx + 1) * 10,
+		}
+		if item.ItemType == "" && item.Title == "" && item.Note == "" && item.Importance == "" && item.Season == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func parseVisitDurationFields(values url.Values, prefix string) (*model.PlaceVisitDuration, error) {
+	minMinutes, err := parseOptionalInt(values.Get(prefix + "_min"))
+	if err != nil {
+		return nil, err
+	}
+	maxMinutes, err := parseOptionalInt(values.Get(prefix + "_max"))
+	if err != nil {
+		return nil, err
+	}
+	note := strings.TrimSpace(values.Get(prefix + "_note"))
+	if minMinutes == nil && maxMinutes == nil && note == "" {
+		return nil, nil
+	}
+	return &model.PlaceVisitDuration{
+		MinMinutes: minMinutes,
+		MaxMinutes: maxMinutes,
+		Note:       note,
+	}, nil
+}
+
+func parseVisitFeeDetailRows(values url.Values, prefix string, includeType bool) ([]model.PlaceFeeDetail, error) {
+	const maxRows = 8
+	out := make([]model.PlaceFeeDetail, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		amount, err := parseOptionalFloat(values.Get(prefix + "_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		minAmount, err := parseOptionalFloat(values.Get(prefix + "_min_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		maxAmount, err := parseOptionalFloat(values.Get(prefix + "_max_amount" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		item := model.PlaceFeeDetail{
+			Title:         strings.TrimSpace(values.Get(prefix + "_title" + suffix)),
+			Description:   strings.TrimSpace(values.Get(prefix + "_description" + suffix)),
+			Amount:        amount,
+			MinAmount:     minAmount,
+			MaxAmount:     maxAmount,
+			Currency:      strings.ToUpper(strings.TrimSpace(values.Get(prefix + "_currency" + suffix))),
+			Unit:          strings.ToUpper(strings.TrimSpace(values.Get(prefix + "_unit" + suffix))),
+			Required:      boolFormValue(values.Get(prefix + "_required" + suffix)),
+			IsApproximate: boolFormValue(values.Get(prefix + "_approximate" + suffix)),
+			Note:          strings.TrimSpace(values.Get(prefix + "_note" + suffix)),
+			SortOrder:     (idx + 1) * 10,
+		}
+		if includeType {
+			item.Type = strings.ToUpper(strings.TrimSpace(values.Get(prefix + "_type" + suffix)))
+		}
+		if item.Title == "" &&
+			item.Description == "" &&
+			item.Amount == nil &&
+			item.Type == "" &&
+			item.MinAmount == nil &&
+			item.MaxAmount == nil &&
+			item.Currency == "" &&
+			item.Unit == "" &&
+			!item.Required &&
+			!item.IsApproximate &&
+			item.Note == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func parseVisitAccessOptionRows(values url.Values) ([]model.PlaceAccessOption, error) {
+	const maxRows = 8
+	out := make([]model.PlaceAccessOption, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		minMinutes, err := parseOptionalInt(values.Get("visit_access_min_minutes" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		maxMinutes, err := parseOptionalInt(values.Get("visit_access_max_minutes" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		distanceKm, err := parseOptionalFloat(values.Get("visit_access_distance_km" + suffix))
+		if err != nil {
+			return nil, err
+		}
+		item := model.PlaceAccessOption{
+			TransportType:      strings.ToUpper(strings.TrimSpace(values.Get("visit_access_transport_type" + suffix))),
+			DurationMinMinutes: minMinutes,
+			DurationMaxMinutes: maxMinutes,
+			DistanceKm:         distanceKm,
+			RouteHint:          strings.TrimSpace(values.Get("visit_access_route_hint" + suffix)),
+			RoadCondition:      strings.ToUpper(strings.TrimSpace(values.Get("visit_access_road_condition" + suffix))),
+			Requires4x4:        boolFormValue(values.Get("visit_access_requires_4x4" + suffix)),
+			ParkingNote:        strings.TrimSpace(values.Get("visit_access_parking_note" + suffix)),
+			LastSegmentNote:    strings.TrimSpace(values.Get("visit_access_last_segment_note" + suffix)),
+			Note:               strings.TrimSpace(values.Get("visit_access_note" + suffix)),
+			SortOrder:          (idx + 1) * 10,
+		}
+		if item.TransportType == "" &&
+			item.DurationMinMinutes == nil &&
+			item.DurationMaxMinutes == nil &&
+			item.DistanceKm == nil &&
+			item.RouteHint == "" &&
+			item.RoadCondition == "" &&
+			!item.Requires4x4 &&
+			item.ParkingNote == "" &&
+			item.LastSegmentNote == "" &&
+			item.Note == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func parseVisitPracticalNoteRows(values url.Values) []model.PlacePracticalNote {
+	const maxRows = 8
+	out := make([]model.PlacePracticalNote, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		item := model.PlacePracticalNote{
+			NoteType:  strings.ToUpper(strings.TrimSpace(values.Get("visit_practical_note_type" + suffix))),
+			Title:     strings.TrimSpace(values.Get("visit_practical_title" + suffix)),
+			Body:      strings.TrimSpace(values.Get("visit_practical_body" + suffix)),
+			Priority:  strings.ToUpper(strings.TrimSpace(values.Get("visit_practical_priority" + suffix))),
+			SortOrder: (idx + 1) * 10,
+		}
+		if item.NoteType == "" && item.Title == "" && item.Body == "" && item.Priority == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func parseVisitRecommendedItemRows(values url.Values) []model.PlaceRecommendedItem {
+	const maxRows = 8
+	out := make([]model.PlaceRecommendedItem, 0, maxRows)
+	for idx := 0; idx < maxRows; idx++ {
+		suffix := "_" + strconv.Itoa(idx)
+		item := model.PlaceRecommendedItem{
+			ItemType:   strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_item_type" + suffix))),
+			Title:      strings.TrimSpace(values.Get("visit_recommended_title" + suffix)),
+			Note:       strings.TrimSpace(values.Get("visit_recommended_note" + suffix)),
+			Importance: strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_importance" + suffix))),
+			Season:     strings.ToUpper(strings.TrimSpace(values.Get("visit_recommended_season" + suffix))),
+			SortOrder:  (idx + 1) * 10,
+		}
+		if item.ItemType == "" && item.Title == "" && item.Note == "" && item.Importance == "" && item.Season == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func boolFormValue(raw string) bool {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	return raw == "true" || raw == "1" || raw == "on" || raw == "yes"
 }
 
 func parsePlaceImages(r *http.Request) ([]app.PlaceImageUploadInput, error) {

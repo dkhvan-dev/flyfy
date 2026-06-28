@@ -285,6 +285,246 @@ func TestUpdatePlaceCarouselImagesAllowsDeletingAllMedia(t *testing.T) {
 	}
 }
 
+func TestUpdatePlaceVisitInfoPreservesExistingFeeCurrencies(t *testing.T) {
+	t.Parallel()
+
+	placeID := uuid.New()
+	client := &placeAdminClientStub{
+		item: &model.AdminPlace{
+			ID:            placeID,
+			Title:         "Charyn Canyon",
+			Description:   "Canyon",
+			DefaultLocale: "en",
+			CountryCode:   "KZ",
+			CityID:        "almaty",
+			Category:      "NATURE",
+			Status:        "PUBLISHED",
+			VisitInfo: model.PlaceVisitInfo{
+				FeeDetails: []model.PlaceFeeDetail{
+					{Title: "Admission", Amount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", SortOrder: 10},
+					{Title: "Guide", Amount: floatPtrForPlaceContentTest(5000), Currency: "USD", Unit: "GROUP", SortOrder: 20},
+				},
+				FeeItems: []model.PlaceFeeDetail{
+					{Type: "ENTRANCE", Title: "Park admission", MinAmount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", Required: true, SortOrder: 10},
+					{Type: "GUIDE", Title: "Guide", MinAmount: floatPtrForPlaceContentTest(5000), Currency: "USD", Unit: "GROUP", Required: false, SortOrder: 20},
+				},
+			},
+		},
+	}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	_, err := uc.UpdatePlaceVisitInfo(context.Background(), placeManagerActor(), placeID, model.PlaceVisitInfo{
+		FeeDetails: []model.PlaceFeeDetail{
+			{Title: "Guide updated", Amount: floatPtrForPlaceContentTest(5500), Currency: "EUR", Unit: "GROUP", SortOrder: 20},
+		},
+		FeeItems: []model.PlaceFeeDetail{
+			{Type: "GUIDE", Title: "Guide updated", MinAmount: floatPtrForPlaceContentTest(5500), Currency: "EUR", Unit: "GROUP", Required: false, SortOrder: 20},
+		},
+	}, RequestMetadata{})
+	if err != nil {
+		t.Fatalf("UpdatePlaceVisitInfo() error = %v", err)
+	}
+	if client.lastUpdatedPlaceInput.VisitInfo == nil {
+		t.Fatal("VisitInfo was not sent")
+	}
+	if got := client.lastUpdatedPlaceInput.VisitInfo.FeeDetails[0].Currency; got != "USD" {
+		t.Fatalf("fee detail currency = %q, want existing USD", got)
+	}
+	if got := client.lastUpdatedPlaceInput.VisitInfo.FeeItems[0].Currency; got != "USD" {
+		t.Fatalf("fee item currency = %q, want existing USD", got)
+	}
+}
+
+func TestUpdatePlaceVisitInfoGeneralPreservesRepeatedBlocks(t *testing.T) {
+	t.Parallel()
+
+	placeID := uuid.New()
+	client := &placeAdminClientStub{
+		item: &model.AdminPlace{
+			ID:            placeID,
+			Title:         "Charyn Canyon",
+			Description:   "Canyon",
+			DefaultLocale: "en",
+			CountryCode:   "KZ",
+			CityID:        "almaty",
+			Category:      "NATURE",
+			Status:        "PUBLISHED",
+			VisitInfo: model.PlaceVisitInfo{
+				PriceNoteLocales: map[string]string{"en": "Old note"},
+				FeeItems: []model.PlaceFeeDetail{
+					{Type: "ENTRANCE", Title: "Park admission", MinAmount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", Required: true, SortOrder: 10},
+				},
+				AccessOptions: []model.PlaceAccessOption{
+					{TransportType: "CAR", RouteHint: "Keep route", SortOrder: 10},
+				},
+				PracticalNotes: []model.PlacePracticalNote{
+					{NoteType: "SAFETY", Body: "Keep tip", SortOrder: 10},
+				},
+				RecommendedItems: []model.PlaceRecommendedItem{
+					{ItemType: "WATER", Title: "Water", SortOrder: 10},
+				},
+			},
+		},
+	}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	_, err := uc.UpdatePlaceVisitInfoGeneral(context.Background(), placeManagerActor(), placeID, model.PlaceVisitInfo{
+		PriceNoteLocales: map[string]string{"en": "Updated note"},
+		PriceNote:        "Updated note",
+		BestTime:         "MORNING",
+	}, RequestMetadata{})
+	if err != nil {
+		t.Fatalf("UpdatePlaceVisitInfoGeneral() error = %v", err)
+	}
+	got := client.lastUpdatedPlaceInput.VisitInfo
+	if got == nil {
+		t.Fatal("VisitInfo was not sent")
+	}
+	if got.PriceNoteLocales["en"] != "Updated note" {
+		t.Fatalf("PriceNoteLocales[en] = %q, want updated note", got.PriceNoteLocales["en"])
+	}
+	if len(got.FeeItems) != 1 || got.FeeItems[0].Title != "Park admission" {
+		t.Fatalf("FeeItems = %+v, want existing block preserved", got.FeeItems)
+	}
+	if len(got.AccessOptions) != 1 || got.AccessOptions[0].RouteHint != "Keep route" {
+		t.Fatalf("AccessOptions = %+v, want existing block preserved", got.AccessOptions)
+	}
+	if len(got.PracticalNotes) != 1 || got.PracticalNotes[0].Body != "Keep tip" {
+		t.Fatalf("PracticalNotes = %+v, want existing block preserved", got.PracticalNotes)
+	}
+	if len(got.RecommendedItems) != 1 || got.RecommendedItems[0].Title != "Water" {
+		t.Fatalf("RecommendedItems = %+v, want existing block preserved", got.RecommendedItems)
+	}
+}
+
+func TestUpdatePlaceVisitFeeItemsReplacesOnlyFeeItems(t *testing.T) {
+	t.Parallel()
+
+	placeID := uuid.New()
+	client := &placeAdminClientStub{
+		item: &model.AdminPlace{
+			ID:            placeID,
+			Title:         "Charyn Canyon",
+			Description:   "Canyon",
+			DefaultLocale: "en",
+			CountryCode:   "KZ",
+			CityID:        "almaty",
+			Category:      "NATURE",
+			Status:        "PUBLISHED",
+			VisitInfo: model.PlaceVisitInfo{
+				PriceNoteLocales: map[string]string{"en": "Keep this note"},
+				FeeDetails: []model.PlaceFeeDetail{
+					{Title: "Admission", Amount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", SortOrder: 10},
+				},
+				FeeItems: []model.PlaceFeeDetail{
+					{Type: "ENTRANCE", Title: "Old admission", MinAmount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", SortOrder: 10},
+				},
+				AccessOptions: []model.PlaceAccessOption{
+					{TransportType: "CAR", RouteHint: "Keep route", SortOrder: 10},
+				},
+			},
+		},
+	}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	_, err := uc.UpdatePlaceVisitFeeItems(context.Background(), placeManagerActor(), placeID, []model.PlaceFeeDetail{
+		{Type: "GUIDE", Title: "Guide updated", MinAmount: floatPtrForPlaceContentTest(5500), Unit: "GROUP", SortOrder: 10},
+	}, RequestMetadata{})
+	if err != nil {
+		t.Fatalf("UpdatePlaceVisitFeeItems() error = %v", err)
+	}
+	if client.lastUpdatedPlaceInput.VisitInfo == nil {
+		t.Fatal("VisitInfo was not sent")
+	}
+	updated := client.lastUpdatedPlaceInput.VisitInfo
+	if got := updated.PriceNoteLocales["en"]; got != "Keep this note" {
+		t.Fatalf("PriceNoteLocales.en = %q, want existing note preserved", got)
+	}
+	if len(updated.FeeDetails) != 1 || updated.FeeDetails[0].Title != "Admission" {
+		t.Fatalf("FeeDetails = %#v, want existing fee details preserved", updated.FeeDetails)
+	}
+	if len(updated.AccessOptions) != 1 || updated.AccessOptions[0].RouteHint != "Keep route" {
+		t.Fatalf("AccessOptions = %#v, want existing access options preserved", updated.AccessOptions)
+	}
+	if len(updated.FeeItems) != 1 || updated.FeeItems[0].Type != "GUIDE" || updated.FeeItems[0].Title != "Guide updated" {
+		t.Fatalf("FeeItems = %#v, want replacement fee items", updated.FeeItems)
+	}
+}
+
+func TestUpdatePlaceVisitFeeItemsDefaultsNewItemCurrencyFromPlace(t *testing.T) {
+	t.Parallel()
+
+	placeID := uuid.New()
+	priceCurrency := "KZT"
+	client := &placeAdminClientStub{
+		item: &model.AdminPlace{
+			ID:            placeID,
+			Title:         "Charyn Canyon",
+			Description:   "Canyon",
+			DefaultLocale: "en",
+			CountryCode:   "KZ",
+			CityID:        "almaty",
+			Category:      "NATURE",
+			PriceCurrency: &priceCurrency,
+			Status:        "PUBLISHED",
+		},
+	}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	_, err := uc.UpdatePlaceVisitFeeItems(context.Background(), placeManagerActor(), placeID, []model.PlaceFeeDetail{
+		{Type: "GUIDE", Title: "Guide", MinAmount: floatPtrForPlaceContentTest(5500), Unit: "GROUP", SortOrder: 10},
+	}, RequestMetadata{})
+	if err != nil {
+		t.Fatalf("UpdatePlaceVisitFeeItems() error = %v", err)
+	}
+	got := client.lastUpdatedPlaceInput.VisitInfo
+	if got == nil || len(got.FeeItems) != 1 {
+		t.Fatalf("FeeItems = %+v, want one item", got)
+	}
+	if got.FeeItems[0].Currency != "KZT" {
+		t.Fatalf("new fee item currency = %q, want KZT", got.FeeItems[0].Currency)
+	}
+}
+
+func TestUpdatePlaceVisitFeeItemsPreservesCurrencyWhenRowsAreDeleted(t *testing.T) {
+	t.Parallel()
+
+	placeID := uuid.New()
+	client := &placeAdminClientStub{
+		item: &model.AdminPlace{
+			ID:            placeID,
+			Title:         "Charyn Canyon",
+			Description:   "Canyon",
+			DefaultLocale: "en",
+			CountryCode:   "KZ",
+			CityID:        "almaty",
+			Category:      "NATURE",
+			Status:        "PUBLISHED",
+			VisitInfo: model.PlaceVisitInfo{
+				FeeItems: []model.PlaceFeeDetail{
+					{Type: "ENTRANCE", Title: "Park admission", MinAmount: floatPtrForPlaceContentTest(1000), Currency: "KZT", Unit: "PERSON", Required: true, SortOrder: 10},
+					{Type: "GUIDE", Title: "Guide", MinAmount: floatPtrForPlaceContentTest(5000), Currency: "USD", Unit: "GROUP", Required: false, SortOrder: 20},
+				},
+			},
+		},
+	}
+	uc := NewPlaceContentUseCase(client, &fileUploadClientStub{}, nil, PlaceContentConfig{})
+
+	_, err := uc.UpdatePlaceVisitFeeItems(context.Background(), placeManagerActor(), placeID, []model.PlaceFeeDetail{
+		{Type: "GUIDE", Title: "Guide", MinAmount: floatPtrForPlaceContentTest(5000), Unit: "GROUP", Required: false, SortOrder: 10},
+	}, RequestMetadata{})
+	if err != nil {
+		t.Fatalf("UpdatePlaceVisitFeeItems() error = %v", err)
+	}
+	got := client.lastUpdatedPlaceInput.VisitInfo
+	if got == nil || len(got.FeeItems) != 1 {
+		t.Fatalf("FeeItems = %+v, want one preserved item", got)
+	}
+	if got.FeeItems[0].Currency != "USD" {
+		t.Fatalf("remaining fee item currency = %q, want USD", got.FeeItems[0].Currency)
+	}
+}
+
 func placeManagerActor() *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
@@ -306,6 +546,7 @@ type placeAdminClientStub struct {
 	replacedMedia          []model.PlaceMediaInput
 	startedBackfillCountry string
 	backfillJob            model.PlaceMediaBackfillJob
+	lastUpdatedPlaceInput  model.PlaceInput
 }
 
 func (c *placeAdminClientStub) ListPlaces(context.Context, model.AdminPlaceFilter) ([]model.AdminPlace, int, error) {
@@ -319,11 +560,16 @@ func (c *placeAdminClientStub) GetPlace(_ context.Context, id uuid.UUID) (*model
 	return nil, nil
 }
 
+func (c *placeAdminClientStub) ListVisitReferences(context.Context, string) (model.PlaceVisitReferenceCatalog, error) {
+	return model.PlaceVisitReferenceCatalog{}, nil
+}
+
 func (c *placeAdminClientStub) CreatePlace(_ context.Context, input model.PlaceInput) (*model.AdminPlace, error) {
 	return &model.AdminPlace{ID: uuid.New(), Title: input.Title}, nil
 }
 
 func (c *placeAdminClientStub) UpdatePlace(_ context.Context, id uuid.UUID, input model.PlaceInput) (*model.AdminPlace, error) {
+	c.lastUpdatedPlaceInput = input
 	return &model.AdminPlace{ID: id, Title: input.Title}, nil
 }
 
@@ -370,4 +616,8 @@ func (r *placeAuditRepoStub) Append(_ context.Context, event *model.AuditEvent) 
 
 func (r *placeAuditRepoStub) List(context.Context, model.AuditFilter) ([]*model.AuditEvent, error) {
 	return nil, nil
+}
+
+func floatPtrForPlaceContentTest(value float64) *float64 {
+	return &value
 }

@@ -215,6 +215,7 @@ type PlaceResponse struct {
 	Status            string                              `json:"status"`
 	Tags              []string                            `json:"tags"`
 	VisitInfo         PlaceVisitInfoResponse              `json:"visitInfo"`
+	VisitInfoLocales  *PlaceVisitInfoLocalizedResponse    `json:"visitInfoLocales,omitempty"`
 	Translations      map[string]PlaceTranslationResponse `json:"translations,omitempty"`
 	Media             []MediaResponse                     `json:"media"`
 	Author            AuthorResponse                      `json:"author"`
@@ -282,6 +283,18 @@ type RecommendedItemResponse struct {
 	SortOrder  int    `json:"sortOrder,omitempty"`
 }
 
+type PlaceVisitReferenceListResponse struct {
+	Categories map[string][]PlaceVisitReferenceValueResponse `json:"categories"`
+}
+
+type PlaceVisitReferenceValueResponse struct {
+	Code      string            `json:"code"`
+	Label     string            `json:"label"`
+	Labels    map[string]string `json:"labels,omitempty"`
+	SortOrder int               `json:"sortOrder"`
+	Active    bool              `json:"active"`
+}
+
 type PlaceVisitInfoResponse struct {
 	BestTime         string                    `json:"bestTime,omitempty"`
 	Accessibility    string                    `json:"accessibility,omitempty"`
@@ -306,6 +319,70 @@ type PlaceVisitInfoResponse struct {
 	AccessOptions    []AccessOptionResponse    `json:"accessOptions,omitempty"`
 	PracticalNotes   []PracticalNoteResponse   `json:"practicalNotes,omitempty"`
 	RecommendedItems []RecommendedItemResponse `json:"recommendedItems,omitempty"`
+}
+
+type PlaceVisitInfoLocalizedResponse struct {
+	OpeningHours     map[string]string                  `json:"openingHours,omitempty"`
+	PriceNote        map[string]string                  `json:"priceNote,omitempty"`
+	TimeOnSite       *VisitDurationLocalizedResponse    `json:"timeOnSite,omitempty"`
+	CarTravelTime    *VisitDurationLocalizedResponse    `json:"carTravelTime,omitempty"`
+	FeeDetails       []FeeDetailLocalizedResponse       `json:"feeDetails,omitempty"`
+	FeeItems         []FeeDetailLocalizedResponse       `json:"feeItems,omitempty"`
+	AccessOptions    []AccessOptionLocalizedResponse    `json:"accessOptions,omitempty"`
+	PracticalNotes   []PracticalNoteLocalizedResponse   `json:"practicalNotes,omitempty"`
+	RecommendedItems []RecommendedItemLocalizedResponse `json:"recommendedItems,omitempty"`
+}
+
+type VisitDurationLocalizedResponse struct {
+	MinMinutes *int              `json:"minMinutes,omitempty"`
+	MaxMinutes *int              `json:"maxMinutes,omitempty"`
+	Note       map[string]string `json:"note,omitempty"`
+}
+
+type FeeDetailLocalizedResponse struct {
+	Title         map[string]string `json:"title,omitempty"`
+	Description   map[string]string `json:"description,omitempty"`
+	Amount        *float64          `json:"amount,omitempty"`
+	Type          string            `json:"type,omitempty"`
+	MinAmount     *float64          `json:"minAmount,omitempty"`
+	MaxAmount     *float64          `json:"maxAmount,omitempty"`
+	Currency      string            `json:"currency,omitempty"`
+	Unit          string            `json:"unit,omitempty"`
+	Required      bool              `json:"required,omitempty"`
+	IsApproximate bool              `json:"isApproximate,omitempty"`
+	Note          map[string]string `json:"note,omitempty"`
+	SortOrder     int               `json:"sortOrder,omitempty"`
+}
+
+type AccessOptionLocalizedResponse struct {
+	TransportType      string            `json:"transportType,omitempty"`
+	DurationMinMinutes *int              `json:"durationMinMinutes,omitempty"`
+	DurationMaxMinutes *int              `json:"durationMaxMinutes,omitempty"`
+	DistanceKm         *float64          `json:"distanceKm,omitempty"`
+	RouteHint          map[string]string `json:"routeHint,omitempty"`
+	RoadCondition      string            `json:"roadCondition,omitempty"`
+	Requires4x4        bool              `json:"requires4x4,omitempty"`
+	ParkingNote        map[string]string `json:"parkingNote,omitempty"`
+	LastSegmentNote    map[string]string `json:"lastSegmentNote,omitempty"`
+	Note               map[string]string `json:"note,omitempty"`
+	SortOrder          int               `json:"sortOrder,omitempty"`
+}
+
+type PracticalNoteLocalizedResponse struct {
+	NoteType  string            `json:"noteType,omitempty"`
+	Title     map[string]string `json:"title,omitempty"`
+	Body      map[string]string `json:"body,omitempty"`
+	Priority  string            `json:"priority,omitempty"`
+	SortOrder int               `json:"sortOrder,omitempty"`
+}
+
+type RecommendedItemLocalizedResponse struct {
+	ItemType   string            `json:"itemType,omitempty"`
+	Title      map[string]string `json:"title,omitempty"`
+	Note       map[string]string `json:"note,omitempty"`
+	Importance string            `json:"importance,omitempty"`
+	Season     string            `json:"season,omitempty"`
+	SortOrder  int               `json:"sortOrder,omitempty"`
 }
 
 type FeeDetailResponse struct {

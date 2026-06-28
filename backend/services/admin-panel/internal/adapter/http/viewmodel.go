@@ -227,6 +227,7 @@ type PlaceFormViewData struct {
 	IsEdit               bool
 	SubmitURL            string
 	MediaURL             string
+	VisitInfoURL         string
 	ListURL              string
 	Categories           []PlaceOptionView
 	Statuses             []PlaceOptionView
@@ -236,6 +237,22 @@ type PlaceFormViewData struct {
 	Currencies           []PlaceOptionView
 	AccessCityOptions    []PlaceCityLinkOptionView
 	DepartureCityOptions []PlaceCityLinkOptionView
+}
+
+type PlaceVisitInfoFormViewData struct {
+	Item                *model.AdminPlace
+	Input               *model.PlaceVisitInfo
+	SubmitURL           string
+	FeeDetailsURL       string
+	FeeItemsURL         string
+	AccessOptionsURL    string
+	PracticalNotesURL   string
+	RecommendedItemsURL string
+	DefaultCurrency     string
+	BackURL             string
+	Locales             []PlaceOptionView
+	References          model.PlaceVisitReferenceCatalog
+	MaxRepeatRows       int
 }
 
 type CommunityFormViewData struct {
@@ -353,6 +370,7 @@ type CommunityFormInput struct {
 
 type PlaceOptionView struct {
 	Value       string
+	Label       string
 	LabelKey    string
 	Selected    bool
 	CountryCode string
@@ -871,12 +889,17 @@ func NewPlaceFormViewData(item *model.AdminPlace, input model.PlaceInput, listUR
 		submitURL = "/admin/places/" + item.ID.String() + actionQuerySuffix
 		mediaURL = "/admin/places/" + item.ID.String() + "/media" + actionQuerySuffix
 	}
+	visitInfoURL := ""
+	if isEdit {
+		visitInfoURL = placeVisitInfoEditURL(item.ID, strings.TrimPrefix(actionQuerySuffix, "?"))
+	}
 	return PlaceFormViewData{
 		Item:                 item,
 		Input:                input,
 		IsEdit:               isEdit,
 		SubmitURL:            submitURL,
 		MediaURL:             mediaURL,
+		VisitInfoURL:         visitInfoURL,
 		ListURL:              backURL,
 		Categories:           placeCategoryOptions(input.Category),
 		Statuses:             placeStatusOptions(input.Status),
@@ -886,6 +909,52 @@ func NewPlaceFormViewData(item *model.AdminPlace, input model.PlaceInput, listUR
 		Currencies:           placeCurrencyOptions(input.PriceCurrency),
 		AccessCityOptions:    placeCityLinkOptions(input.AccessCities, input.CountryCode),
 		DepartureCityOptions: placeCityLinkOptions(input.DepartureCities, input.CountryCode),
+	}
+}
+
+func NewPlaceVisitInfoFormViewData(item *model.AdminPlace, query string, references ...model.PlaceVisitReferenceCatalog) PlaceVisitInfoFormViewData {
+	input := model.PlaceVisitInfo{}
+	submitURL := "/admin/places"
+	feeDetailsURL := "/admin/places"
+	feeItemsURL := "/admin/places"
+	accessOptionsURL := "/admin/places"
+	practicalNotesURL := "/admin/places"
+	recommendedItemsURL := "/admin/places"
+	defaultCurrency := ""
+	backURL := "/admin/places"
+	if item != nil && item.ID != uuid.Nil {
+		input = item.VisitInfo
+		submitURL = placeVisitInfoUpdateURL(item.ID, query)
+		feeDetailsURL = placeVisitInfoBlockUpdateURL(item.ID, "fee-details", query)
+		feeItemsURL = placeVisitInfoBlockUpdateURL(item.ID, "fee-items", query)
+		accessOptionsURL = placeVisitInfoBlockUpdateURL(item.ID, "access-options", query)
+		practicalNotesURL = placeVisitInfoBlockUpdateURL(item.ID, "practical-notes", query)
+		recommendedItemsURL = placeVisitInfoBlockUpdateURL(item.ID, "recommended-items", query)
+		defaultCurrency = strings.ToUpper(strings.TrimSpace(stringValue(item.PriceCurrency)))
+		backURL = placeEditURL(item.ID, query)
+	}
+	catalog := defaultPlaceVisitReferenceCatalog()
+	if len(references) > 0 {
+		catalog = mergePlaceVisitReferenceCatalog(catalog, references[0])
+	}
+	return PlaceVisitInfoFormViewData{
+		Item:                item,
+		Input:               &input,
+		SubmitURL:           submitURL,
+		FeeDetailsURL:       feeDetailsURL,
+		FeeItemsURL:         feeItemsURL,
+		AccessOptionsURL:    accessOptionsURL,
+		PracticalNotesURL:   practicalNotesURL,
+		RecommendedItemsURL: recommendedItemsURL,
+		DefaultCurrency:     defaultCurrency,
+		BackURL:             backURL,
+		References:          catalog,
+		MaxRepeatRows:       adminVisitInfoMaxRepeatRows,
+		Locales: []PlaceOptionView{
+			{Value: "ru", LabelKey: "place.locale.ru", Selected: true},
+			{Value: "en", LabelKey: "place.locale.en"},
+			{Value: "kk", LabelKey: "place.locale.kk"},
+		},
 	}
 }
 

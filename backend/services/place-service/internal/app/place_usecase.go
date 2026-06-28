@@ -257,6 +257,10 @@ func NormalizePlaceLocale(raw string) string {
 	return locale
 }
 
+func (u *PlaceUseCase) ListPlaceVisitReferences(ctx context.Context, locale string) ([]model.PlaceVisitReferenceValue, error) {
+	return u.repo.ListVisitReferenceValues(ctx, NormalizePlaceLocale(locale))
+}
+
 // ---------------------------------------------------------------------------
 // Places CRUD
 // ---------------------------------------------------------------------------
@@ -1455,26 +1459,62 @@ func normalizeVisitInfo(input *PlaceVisitInfoInput, existing *model.PlaceVisitIn
 		return model.PlaceVisitInfo{}, err
 	}
 	if len(feeDetails) == 0 && existing != nil {
-		feeDetails = existing.FeeDetails
+		feeDetails = copyFeeDetails(existing.FeeDetails)
+	}
+	if existing != nil {
+		feeDetails = mergeFeeDetailLocalizedText(feeDetails, existing.FeeDetails)
 	}
 	feeItems, err := normalizeFeeItems(input.FeeItems)
 	if err != nil {
 		return model.PlaceVisitInfo{}, err
 	}
 	if len(feeItems) == 0 && existing != nil {
-		feeItems = existing.FeeItems
+		feeItems = copyFeeItems(existing.FeeItems)
+	}
+	if existing != nil {
+		feeItems = mergeFeeItemLocalizedText(feeItems, existing.FeeItems)
 	}
 	timeOnSite, err := normalizeVisitDuration(input.TimeOnSite)
 	if err != nil {
 		return model.PlaceVisitInfo{}, err
 	}
+	if existing != nil {
+		timeOnSite = mergeVisitDurationLocalizedText(timeOnSite, existing.TimeOnSite)
+	}
 	carTravelTime, err := normalizeVisitDuration(input.CarTravelTime)
 	if err != nil {
 		return model.PlaceVisitInfo{}, err
 	}
+	if existing != nil {
+		carTravelTime = mergeVisitDurationLocalizedText(carTravelTime, existing.CarTravelTime)
+	}
 	accessOptions, err := normalizeAccessOptions(input.AccessOptions)
 	if err != nil {
 		return model.PlaceVisitInfo{}, err
+	}
+	if len(accessOptions) == 0 && existing != nil {
+		accessOptions = copyAccessOptions(existing.AccessOptions)
+	}
+	if existing != nil {
+		accessOptions = mergeAccessOptionLocalizedText(accessOptions, existing.AccessOptions)
+	}
+	practicalNotes := normalizePracticalNotes(input.PracticalNotes)
+	if len(practicalNotes) == 0 && existing != nil {
+		practicalNotes = copyPracticalNotes(existing.PracticalNotes)
+	}
+	if existing != nil {
+		practicalNotes = mergePracticalNoteLocalizedText(practicalNotes, existing.PracticalNotes)
+	}
+	recommendedItems := normalizeRecommendedItems(input.RecommendedItems)
+	if len(recommendedItems) == 0 && existing != nil {
+		recommendedItems = copyRecommendedItems(existing.RecommendedItems)
+	}
+	if existing != nil {
+		recommendedItems = mergeRecommendedItemLocalizedText(recommendedItems, existing.RecommendedItems)
+	}
+	priceNote := normalizeFeeLocalizedText(input.PriceNote)
+	if existing != nil {
+		priceNote = mergeLocalizedText(priceNote, existing.PriceNote)
 	}
 
 	return model.PlaceVisitInfo{
@@ -1493,15 +1533,184 @@ func normalizeVisitInfo(input *PlaceVisitInfoInput, existing *model.PlaceVisitIn
 		Excluded:         normalizeLocalizedTextList(input.Excluded),
 		Links:            normalizeLinks(input.Links),
 		FeeDetails:       feeDetails,
-		PriceNote:        normalizeFeeLocalizedText(input.PriceNote),
+		PriceNote:        priceNote,
 		TimeOnSite:       timeOnSite,
 		CarTravelTime:    carTravelTime,
 		RoadCondition:    normalizeVisitInfoCode(input.RoadCondition),
 		FeeItems:         feeItems,
 		AccessOptions:    accessOptions,
-		PracticalNotes:   normalizePracticalNotes(input.PracticalNotes),
-		RecommendedItems: normalizeRecommendedItems(input.RecommendedItems),
+		PracticalNotes:   practicalNotes,
+		RecommendedItems: recommendedItems,
 	}, nil
+}
+
+func mergeLocalizedText(update model.LocalizedText, existing model.LocalizedText) model.LocalizedText {
+	if len(update) == 0 {
+		if len(existing) == 0 {
+			return nil
+		}
+		return copyLocalizedText(existing)
+	}
+	merged := copyLocalizedText(existing)
+	if merged == nil {
+		merged = model.LocalizedText{}
+	}
+	for locale, value := range update {
+		merged[locale] = value
+	}
+	return merged
+}
+
+func copyLocalizedText(value model.LocalizedText) model.LocalizedText {
+	if len(value) == 0 {
+		return nil
+	}
+	out := make(model.LocalizedText, len(value))
+	for locale, text := range value {
+		out[locale] = text
+	}
+	return out
+}
+
+func mergeVisitDurationLocalizedText(update *model.PlaceVisitDuration, existing *model.PlaceVisitDuration) *model.PlaceVisitDuration {
+	if update == nil {
+		if existing == nil {
+			return nil
+		}
+		copied := *existing
+		copied.Note = copyLocalizedText(existing.Note)
+		return &copied
+	}
+	if existing != nil {
+		update.Note = mergeLocalizedText(update.Note, existing.Note)
+	}
+	return update
+}
+
+func mergeFeeDetailLocalizedText(update []model.PlaceFeeDetail, existing []model.PlaceFeeDetail) []model.PlaceFeeDetail {
+	for i := range update {
+		if i >= len(existing) {
+			continue
+		}
+		update[i].Title = mergeLocalizedText(update[i].Title, existing[i].Title)
+		update[i].Description = mergeLocalizedText(update[i].Description, existing[i].Description)
+	}
+	return update
+}
+
+func copyFeeDetails(values []model.PlaceFeeDetail) []model.PlaceFeeDetail {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]model.PlaceFeeDetail, len(values))
+	for i, value := range values {
+		out[i] = value
+		out[i].Title = mergeLocalizedText(nil, value.Title)
+		out[i].Description = mergeLocalizedText(nil, value.Description)
+	}
+	return out
+}
+
+func mergeFeeItemLocalizedText(update []model.PlaceFeeItem, existing []model.PlaceFeeItem) []model.PlaceFeeItem {
+	for i := range update {
+		if i >= len(existing) {
+			continue
+		}
+		update[i].Title = mergeLocalizedText(update[i].Title, existing[i].Title)
+		update[i].Description = mergeLocalizedText(update[i].Description, existing[i].Description)
+		update[i].Note = mergeLocalizedText(update[i].Note, existing[i].Note)
+	}
+	return update
+}
+
+func copyFeeItems(values []model.PlaceFeeItem) []model.PlaceFeeItem {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]model.PlaceFeeItem, len(values))
+	for i, value := range values {
+		out[i] = value
+		out[i].Title = mergeLocalizedText(nil, value.Title)
+		out[i].Description = mergeLocalizedText(nil, value.Description)
+		out[i].Note = mergeLocalizedText(nil, value.Note)
+	}
+	return out
+}
+
+func mergeAccessOptionLocalizedText(update []model.PlaceAccessOption, existing []model.PlaceAccessOption) []model.PlaceAccessOption {
+	for i := range update {
+		if i >= len(existing) {
+			continue
+		}
+		update[i].RouteHint = mergeLocalizedText(update[i].RouteHint, existing[i].RouteHint)
+		update[i].ParkingNote = mergeLocalizedText(update[i].ParkingNote, existing[i].ParkingNote)
+		update[i].LastSegmentNote = mergeLocalizedText(update[i].LastSegmentNote, existing[i].LastSegmentNote)
+		update[i].Note = mergeLocalizedText(update[i].Note, existing[i].Note)
+	}
+	return update
+}
+
+func copyAccessOptions(values []model.PlaceAccessOption) []model.PlaceAccessOption {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]model.PlaceAccessOption, len(values))
+	for i, value := range values {
+		out[i] = value
+		out[i].RouteHint = mergeLocalizedText(nil, value.RouteHint)
+		out[i].ParkingNote = mergeLocalizedText(nil, value.ParkingNote)
+		out[i].LastSegmentNote = mergeLocalizedText(nil, value.LastSegmentNote)
+		out[i].Note = mergeLocalizedText(nil, value.Note)
+	}
+	return out
+}
+
+func mergePracticalNoteLocalizedText(update []model.PlacePracticalNote, existing []model.PlacePracticalNote) []model.PlacePracticalNote {
+	for i := range update {
+		if i >= len(existing) {
+			continue
+		}
+		update[i].Title = mergeLocalizedText(update[i].Title, existing[i].Title)
+		update[i].Body = mergeLocalizedText(update[i].Body, existing[i].Body)
+	}
+	return update
+}
+
+func copyPracticalNotes(values []model.PlacePracticalNote) []model.PlacePracticalNote {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]model.PlacePracticalNote, len(values))
+	for i, value := range values {
+		out[i] = value
+		out[i].Title = mergeLocalizedText(nil, value.Title)
+		out[i].Body = mergeLocalizedText(nil, value.Body)
+	}
+	return out
+}
+
+func mergeRecommendedItemLocalizedText(update []model.PlaceRecommendedItem, existing []model.PlaceRecommendedItem) []model.PlaceRecommendedItem {
+	for i := range update {
+		if i >= len(existing) {
+			continue
+		}
+		update[i].Title = mergeLocalizedText(update[i].Title, existing[i].Title)
+		update[i].Note = mergeLocalizedText(update[i].Note, existing[i].Note)
+	}
+	return update
+}
+
+func copyRecommendedItems(values []model.PlaceRecommendedItem) []model.PlaceRecommendedItem {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]model.PlaceRecommendedItem, len(values))
+	for i, value := range values {
+		out[i] = value
+		out[i].Title = mergeLocalizedText(nil, value.Title)
+		out[i].Note = mergeLocalizedText(nil, value.Note)
+	}
+	return out
 }
 
 func normalizeFeeDetails(input []PlaceFeeDetailInput) ([]model.PlaceFeeDetail, error) {

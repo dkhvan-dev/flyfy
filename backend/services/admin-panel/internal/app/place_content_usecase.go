@@ -105,6 +105,13 @@ func (u *PlaceContentUseCase) GetPlace(ctx context.Context, actor *model.StaffUs
 	return item, nil
 }
 
+func (u *PlaceContentUseCase) ListVisitReferences(ctx context.Context, actor *model.StaffUser, locale string) (model.PlaceVisitReferenceCatalog, error) {
+	if actor == nil || !actor.HasPermission(enum.PermissionPlaceManage) {
+		return model.PlaceVisitReferenceCatalog{}, ErrPermissionDenied
+	}
+	return u.places.ListVisitReferences(ctx, normalizeAdminLocale(locale))
+}
+
 func (u *PlaceContentUseCase) CreatePlace(ctx context.Context, actor *model.StaffUser, input model.PlaceInput, metadata ...RequestMetadata) (*model.AdminPlace, error) {
 	if actor == nil || !actor.HasPermission(enum.PermissionPlaceManage) {
 		return nil, ErrPermissionDenied
@@ -141,6 +148,102 @@ func (u *PlaceContentUseCase) UpdatePlace(ctx context.Context, actor *model.Staf
 	}
 	u.appendPlaceAudit(ctx, actor, "place.updated", id, before, item, inputAuditMeta(input), meta)
 	return item, nil
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitInfo(ctx context.Context, actor *model.StaffUser, id uuid.UUID, visitInfo model.PlaceVisitInfo, meta RequestMetadata) (*model.AdminPlace, error) {
+	if actor == nil || !actor.HasPermission(enum.PermissionPlaceManage) {
+		return nil, ErrPermissionDenied
+	}
+	if id == uuid.Nil {
+		return nil, ErrInvalidInput
+	}
+	before, err := u.places.GetPlace(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if before == nil {
+		return nil, ErrPlaceNotFound
+	}
+	input := placeInputFromAdminPlace(before)
+	visitInfo = preserveVisitInfoFeeCurrencies(visitInfo, before.VisitInfo, stringValueOrEmpty(before.PriceCurrency))
+	input.VisitInfo = &visitInfo
+	normalized, err := normalizePlaceInput(input)
+	if err != nil {
+		return nil, err
+	}
+	item, err := u.places.UpdatePlace(ctx, id, normalized)
+	if err != nil {
+		return nil, err
+	}
+	u.appendPlaceAudit(ctx, actor, "place.visit_info.updated", id, before, item, inputAuditMeta(input), meta)
+	return item, nil
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitInfoGeneral(ctx context.Context, actor *model.StaffUser, id uuid.UUID, general model.PlaceVisitInfo, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.BestTime = general.BestTime
+		visitInfo.Accessibility = general.Accessibility
+		visitInfo.BookingRequired = general.BookingRequired
+		visitInfo.OpeningHours = general.OpeningHours
+		visitInfo.OpeningHoursLocales = general.OpeningHoursLocales
+		visitInfo.Amenities = general.Amenities
+		visitInfo.Audience = general.Audience
+		visitInfo.SafetyNotes = general.SafetyNotes
+		visitInfo.PriceNote = general.PriceNote
+		visitInfo.PriceNoteLocales = general.PriceNoteLocales
+		visitInfo.TimeOnSite = general.TimeOnSite
+		visitInfo.CarTravelTime = general.CarTravelTime
+		visitInfo.RoadCondition = general.RoadCondition
+	})
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitFeeDetails(ctx context.Context, actor *model.StaffUser, id uuid.UUID, feeDetails []model.PlaceFeeDetail, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.FeeDetails = feeDetails
+	})
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitFeeItems(ctx context.Context, actor *model.StaffUser, id uuid.UUID, feeItems []model.PlaceFeeDetail, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.FeeItems = feeItems
+	})
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitAccessOptions(ctx context.Context, actor *model.StaffUser, id uuid.UUID, accessOptions []model.PlaceAccessOption, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.AccessOptions = accessOptions
+	})
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitPracticalNotes(ctx context.Context, actor *model.StaffUser, id uuid.UUID, notes []model.PlacePracticalNote, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.PracticalNotes = notes
+	})
+}
+
+func (u *PlaceContentUseCase) UpdatePlaceVisitRecommendedItems(ctx context.Context, actor *model.StaffUser, id uuid.UUID, items []model.PlaceRecommendedItem, meta RequestMetadata) (*model.AdminPlace, error) {
+	return u.updatePlaceVisitInfoBlock(ctx, actor, id, meta, func(visitInfo *model.PlaceVisitInfo) {
+		visitInfo.RecommendedItems = items
+	})
+}
+
+func (u *PlaceContentUseCase) updatePlaceVisitInfoBlock(ctx context.Context, actor *model.StaffUser, id uuid.UUID, meta RequestMetadata, mutate func(*model.PlaceVisitInfo)) (*model.AdminPlace, error) {
+	if actor == nil || !actor.HasPermission(enum.PermissionPlaceManage) {
+		return nil, ErrPermissionDenied
+	}
+	if id == uuid.Nil {
+		return nil, ErrInvalidInput
+	}
+	before, err := u.places.GetPlace(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if before == nil {
+		return nil, ErrPlaceNotFound
+	}
+	visitInfo := before.VisitInfo
+	mutate(&visitInfo)
+	return u.UpdatePlaceVisitInfo(ctx, actor, id, visitInfo, meta)
 }
 
 func (u *PlaceContentUseCase) ReplaceCoverImage(ctx context.Context, actor *model.StaffUser, placeID uuid.UUID, input PlaceImageUploadInput) error {
@@ -462,6 +565,102 @@ func normalizePlaceInput(input model.PlaceInput) (model.PlaceInput, error) {
 	input.AccessCities = normalizeCityLinks(input.AccessCities, input.CountryCode)
 	input.DepartureCities = normalizeCityLinks(input.DepartureCities, input.CountryCode)
 	return input, nil
+}
+
+func preserveVisitInfoFeeCurrencies(next model.PlaceVisitInfo, existing model.PlaceVisitInfo, defaultCurrency string) model.PlaceVisitInfo {
+	next.FeeDetails = preserveFeeDetailCurrencies(next.FeeDetails, existing.FeeDetails, defaultCurrency)
+	next.FeeItems = preserveFeeDetailCurrencies(next.FeeItems, existing.FeeItems, defaultCurrency)
+	return next
+}
+
+func preserveFeeDetailCurrencies(next []model.PlaceFeeDetail, existing []model.PlaceFeeDetail, defaultCurrency string) []model.PlaceFeeDetail {
+	defaultCurrency = strings.ToUpper(strings.TrimSpace(defaultCurrency))
+	existingBySignature := make(map[string][]string, len(existing))
+	existingBySortOrder := make(map[int]string, len(existing))
+	hasExistingSortOrder := false
+	for _, item := range existing {
+		if key := feeDetailCurrencySignature(item); key != "" {
+			existingBySignature[key] = append(existingBySignature[key], item.Currency)
+		}
+		if item.SortOrder <= 0 {
+			continue
+		}
+		existingBySortOrder[item.SortOrder] = item.Currency
+		hasExistingSortOrder = true
+	}
+	for idx := range next {
+		if key := feeDetailCurrencySignature(next[idx]); key != "" {
+			if values := existingBySignature[key]; len(values) > 0 {
+				next[idx].Currency = firstNonEmptyCurrency(values[0], defaultCurrency)
+				existingBySignature[key] = values[1:]
+				continue
+			}
+		}
+		if hasExistingSortOrder && next[idx].SortOrder > 0 {
+			next[idx].Currency = firstNonEmptyCurrency(existingBySortOrder[next[idx].SortOrder], defaultCurrency)
+			continue
+		}
+		if idx >= len(existing) {
+			next[idx].Currency = defaultCurrency
+			continue
+		}
+		next[idx].Currency = firstNonEmptyCurrency(existing[idx].Currency, defaultCurrency)
+	}
+	return next
+}
+
+func firstNonEmptyCurrency(value string, fallback string) string {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value != "" {
+		return value
+	}
+	return strings.ToUpper(strings.TrimSpace(fallback))
+}
+
+func stringValueOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func feeDetailCurrencySignature(item model.PlaceFeeDetail) string {
+	item.Currency = ""
+	item.SortOrder = 0
+	raw, err := json.Marshal(item)
+	if err != nil {
+		return ""
+	}
+	return string(raw)
+}
+
+func placeInputFromAdminPlace(item *model.AdminPlace) model.PlaceInput {
+	if item == nil {
+		return model.PlaceInput{}
+	}
+	visitInfo := item.VisitInfo
+	return model.PlaceInput{
+		Title:             item.Title,
+		Description:       item.Description,
+		DefaultLocale:     item.DefaultLocale,
+		Translations:      item.Translations,
+		CountryCode:       item.CountryCode,
+		CityID:            item.CityID,
+		AccessCities:      item.AccessCities,
+		DepartureCities:   item.DepartureCities,
+		Latitude:          item.Latitude,
+		Longitude:         item.Longitude,
+		LocationSourceURL: item.LocationSourceURL,
+		Category:          item.Category,
+		PriceAmount:       item.PriceAmount,
+		PriceCurrency:     item.PriceCurrency,
+		DurationValue:     item.DurationValue,
+		DurationUnit:      item.DurationUnit,
+		Spots:             item.Spots,
+		Status:            item.Status,
+		Tags:              item.Tags,
+		VisitInfo:         &visitInfo,
+	}
 }
 
 func normalizeCityLinks(items []model.PlaceCityLink, fallbackCountry string) []model.PlaceCityLink {

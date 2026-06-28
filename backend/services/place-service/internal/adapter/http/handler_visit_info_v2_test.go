@@ -133,6 +133,42 @@ func TestToPlaceResponse_PriceSummaryLabelUsesShortCardCopy(t *testing.T) {
 	}
 }
 
+func TestToPlaceVisitReferenceListResponseGroupsValuesByCategory(t *testing.T) {
+	items := []model.PlaceVisitReferenceValue{
+		{
+			Category:  "fee_type",
+			Code:      "ENTRANCE",
+			Label:     "Вход",
+			Labels:    model.LocalizedText{"ru": "Вход", "en": "Entrance", "kk": "Кіру"},
+			SortOrder: 10,
+			Active:    true,
+		},
+		{
+			Category:  "fee_unit",
+			Code:      "PERSON",
+			Label:     "Человек",
+			Labels:    model.LocalizedText{"ru": "Человек", "en": "Person", "kk": "Адам"},
+			SortOrder: 10,
+			Active:    true,
+		},
+	}
+
+	resp := toPlaceVisitReferenceListResponse(items)
+
+	if len(resp.Categories["fee_type"]) != 1 || resp.Categories["fee_type"][0].Code != "ENTRANCE" {
+		t.Fatalf("fee_type references = %#v", resp.Categories["fee_type"])
+	}
+	if got := resp.Categories["fee_type"][0].Label; got != "Вход" {
+		t.Fatalf("fee_type label = %q, want localized label", got)
+	}
+	if got := resp.Categories["fee_type"][0].Labels["kk"]; got != "Кіру" {
+		t.Fatalf("fee_type labels.kk = %q, want Кіру", got)
+	}
+	if len(resp.Categories["fee_unit"]) != 1 || resp.Categories["fee_unit"][0].Code != "PERSON" {
+		t.Fatalf("fee_unit references = %#v", resp.Categories["fee_unit"])
+	}
+}
+
 func intPtrHTTPV2(value int) *int {
 	return &value
 }
