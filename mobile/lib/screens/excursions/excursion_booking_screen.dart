@@ -19,6 +19,7 @@ import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ExcursionBookingRouteArgs {
   const ExcursionBookingRouteArgs({this.excursion, this.selectedOfferId});
@@ -327,7 +328,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
   Future<_BookingCompletionAction> _showBookingChecklistSheet(
     TravelChecklistRouteArgs checklistArgs,
   ) async {
-    final action = await showModalBottomSheet<_BookingCompletionAction>(
+    final action = await showAppModalBottomSheet<_BookingCompletionAction>(
       context: context,
       isDismissible: true,
       useSafeArea: true,
@@ -937,13 +938,13 @@ class _BookingScheduleSection extends StatelessWidget {
       return;
     }
 
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
-        return DraggableScrollableSheet(
+        return AppModalDraggableSheet(
           expand: false,
           initialChildSize: 0.62,
           minChildSize: 0.38,

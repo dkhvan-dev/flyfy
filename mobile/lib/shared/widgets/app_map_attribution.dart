@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../map/app_map_links.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class AppMapAttribution extends StatelessWidget {
   const AppMapAttribution({
@@ -84,7 +85,7 @@ class AppMapAttribution extends StatelessWidget {
   }
 
   void _showAttributionSheet(BuildContext context) {
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,

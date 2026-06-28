@@ -10,6 +10,7 @@ import '../../../features/excursions/models/excursion_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/excursion_provider.dart';
 import '../../../providers/excursion_schedule_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _slotSheetFieldIconColor = AppPalette.orangeSoft11;
 
@@ -98,7 +99,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
     final isReadonly = widget.slot?.isReadonly == true;
 
     return SafeArea(
-      child: DraggableScrollableSheet(
+      child: AppModalDraggableSheet(
         expand: false,
         initialChildSize: 0.78,
         minChildSize: 0.45,
@@ -647,7 +648,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   }
 
   Future<void> _cancelSlot(ExcursionScheduleProvider provider) async {
-    final reason = await showModalBottomSheet<String>(
+    final reason = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

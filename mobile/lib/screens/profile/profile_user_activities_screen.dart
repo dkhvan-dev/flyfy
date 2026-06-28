@@ -15,6 +15,7 @@ import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _ProfileUserActivitiesTab { hosted, visited }
 
@@ -130,13 +131,13 @@ class _ProfileUserActivitiesScreenState
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
 
-    final result = await showModalBottomSheet<_ProfileActivityFilters>(
+    final result = await showAppModalBottomSheet<_ProfileActivityFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
-        return AppDismissibleModalSheet(
+        return AppModalSheetFrame(
           safeAreaBottom: false,
           child: _ProfileActivityFiltersSheet(
             l10n: AppLocalizations.of(sheetContext)!,

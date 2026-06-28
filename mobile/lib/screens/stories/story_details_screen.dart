@@ -23,6 +23,7 @@ import '../../features/stories/widgets/story_document_renderer.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class StoryDetailsScreen extends StatefulWidget {
   const StoryDetailsScreen({
@@ -472,7 +473,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
 
-    final report = await showModalBottomSheet<_StoryReportFormResult>(
+    final report = await showAppModalBottomSheet<_StoryReportFormResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -870,7 +871,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
     final page = initialIndex.clamp(0, visibleImages.length - 1).toInt();
-    await showGeneralDialog<int>(
+    await showAppModalDialog<int>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -962,10 +963,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     if (detail == null) {
       return;
     }
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),
@@ -1065,10 +1066,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),

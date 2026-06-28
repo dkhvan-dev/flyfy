@@ -6,12 +6,13 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/locale_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 Future<void> showAppLanguageSheet(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final localeProvider = context.read<LocaleProvider>();
   final currentCode = localeProvider.locale.languageCode;
-  final selectedCode = await showModalBottomSheet<String>(
+  final selectedCode = await showAppModalBottomSheet<String>(
     context: context,
     isDismissible: true,
     backgroundColor: AppPalette.transparent,

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
+import 'package:inflap/core/ui/error_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -219,7 +221,11 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      await _showSharedFileError(l10n.chatAttachmentDownloadFailed);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.chatAttachmentDownloadFailed,
+      );
     } finally {
       if (mounted) {
         setState(() => _busyFileIds.remove(item.fileId));
@@ -258,35 +264,19 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       final result = await _fileCache.open(downloaded);
       if (!mounted || result.isDone) return;
 
-      await _showSharedFileError(l10n.chatAttachmentOpenFailed);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.chatAttachmentOpenFailed,
+      );
     } catch (_) {
       if (!mounted) return;
-      await _showSharedFileError(l10n.chatAttachmentOpenFailed);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.chatAttachmentOpenFailed,
+      );
     }
-  }
-
-  Future<void> _showSharedFileError(String message) {
-    final l10n = AppLocalizations.of(context)!;
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppPalette.warmInk55,
-        title: Text(
-          l10n.error,
-          style: const AppTextStyle(color: AppPalette.white),
-        ),
-        content: Text(
-          message,
-          style: const AppTextStyle(color: AppPalette.orangeWash10),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.ok),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _showGoToMessageAction(String messageId) async {
@@ -294,7 +284,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     if (normalizedMessageId.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.warmInk55,
@@ -355,17 +345,20 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (mounted && !opened) {
-      await _showSharedFileError(
-        AppLocalizations.of(context)!.chatExternalLinkOpenFailed,
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.chatExternalLinkOpenFailed,
       );
     }
   }
 
   Future<bool> _confirmExternalLinkOpen(Uri uri) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppModalDialogCard(
         backgroundColor: AppPalette.warmInk55,
         title: Text(
           l10n.chatExternalLinkTitle,

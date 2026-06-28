@@ -3,6 +3,7 @@ import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../formatters/app_money_formatter.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class AppCurrencyPickerField extends StatelessWidget {
   const AppCurrencyPickerField({
@@ -33,7 +34,7 @@ class AppCurrencyPickerField extends StatelessWidget {
   Future<void> _openPicker(BuildContext context) async {
     if (!enabled) return;
 
-    final result = await showModalBottomSheet<String>(
+    final result = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.transparent,

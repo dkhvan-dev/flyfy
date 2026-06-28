@@ -31,6 +31,7 @@ import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
 import 'widgets/profile_post_card.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
@@ -407,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<bool>(
+    final result = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return _ProfileRelationshipConfirmDialog(

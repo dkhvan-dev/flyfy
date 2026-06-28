@@ -57,7 +57,7 @@ void main() {
       expect(source, contains('SessionProvider'));
       expect(source, contains('route.ownerUserId'));
       expect(source, contains('_editRoute('));
-      expect(source, contains('showModalBottomSheet'));
+      expect(source, contains('showAppModalBottomSheet'));
       expect(source, contains('UpdateUserRouteRequestVm('));
       expect(source, contains('updateRoute('));
       expect(source, contains('userRoutesEditRoute'));

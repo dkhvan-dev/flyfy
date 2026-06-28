@@ -5,6 +5,7 @@ import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/community_moderation_api.dart';
 import '../models/community_moderation_vm.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class CommunityMembersScreen extends StatefulWidget {
   const CommunityMembersScreen({
@@ -169,7 +170,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
   }
 
   Future<void> _showRoleSheet(CommunityMemberVm member) async {
-    final selectedRole = await showModalBottomSheet<String>(
+    final selectedRole = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.surfaceCool,
@@ -232,7 +233,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       offset: 0,
     );
 
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -244,7 +245,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
   }
 
   Future<void> _showStatusSheet(CommunityMemberVm member) async {
-    final selectedStatus = await showModalBottomSheet<String>(
+    final selectedStatus = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.surfaceCool,

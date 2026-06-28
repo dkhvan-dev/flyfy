@@ -16,6 +16,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
 import 'widgets/chat_video_preview.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _videoPreviewDownloadLimitBytes = 25 * 1024 * 1024;
 
@@ -355,7 +356,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   Future<void> _showConversationActions(ConversationVm conversation) async {
     final l10n = AppLocalizations.of(context)!;
     final isMuted = conversation.isMutedNow;
-    final action = await showModalBottomSheet<_ConversationAction>(
+    final action = await showAppModalBottomSheet<_ConversationAction>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.warmInk55,

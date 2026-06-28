@@ -15,6 +15,7 @@ import '../data/feed_api.dart';
 import '../models/feed_block_vm.dart';
 import 'community_display_helpers.dart';
 import 'community_location_text.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class MySubscriptionsBlock extends StatelessWidget {
   const MySubscriptionsBlock({
@@ -247,7 +248,7 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
 
   Future<void> _openFilters() async {
     final query = _searchController.text.trim().toLowerCase();
-    final result = await showModalBottomSheet<_MySubscriptionsFiltersResult>(
+    final result = await showAppModalBottomSheet<_MySubscriptionsFiltersResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

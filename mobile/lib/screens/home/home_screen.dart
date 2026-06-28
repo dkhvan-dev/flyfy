@@ -36,6 +36,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import 'widgets/home_location_picker_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -441,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openLocationSheet() async {
-    final changed = await showModalBottomSheet<bool>(
+    final changed = await showAppModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,

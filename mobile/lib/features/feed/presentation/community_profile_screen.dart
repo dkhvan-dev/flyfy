@@ -22,6 +22,7 @@ import '../models/feed_block_vm.dart';
 import '../widgets/community_display_helpers.dart';
 import '../widgets/feed_post_card.dart';
 import '../widgets/quick_post_thread_card.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class CommunityProfileScreen extends StatefulWidget {
   const CommunityProfileScreen({
@@ -331,10 +332,10 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
   Future<bool?> _confirmUnfollowCommunity() {
     final l10n = AppLocalizations.of(context)!;
 
-    return showDialog<bool>(
+    return showAppModalDialog<bool>(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: _communityAmberPanelColor(),
           surfaceTintColor: AppPalette.transparent,
           shape: RoundedRectangleBorder(

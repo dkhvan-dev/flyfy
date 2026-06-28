@@ -29,6 +29,7 @@ import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_map_card.dart';
 import 'excursion_select_location_screen.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class CreateExcursionScreen extends StatefulWidget {
   const CreateExcursionScreen({
@@ -1120,7 +1121,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   Future<void> _openIncludedItemsEditor() async {
     final result =
-        await showModalBottomSheet<List<_ExcursionIncludedItemDraft>>(
+        await showAppModalBottomSheet<List<_ExcursionIncludedItemDraft>>(
           context: context,
           isDismissible: true,
           isScrollControlled: true,
@@ -1764,7 +1765,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final isCombinedRoute =
         _creationMode == _ExcursionCreationMode.combinedRoute;
     final itemIndex = item == null ? -1 : _itinerary.indexOf(item);
-    final result = await showModalBottomSheet<_ExcursionItineraryDraft>(
+    final result = await showAppModalBottomSheet<_ExcursionItineraryDraft>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1898,7 +1899,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     required String cancelLabel,
     required String confirmLabel,
   }) async {
-    final result = await showDialog<bool>(
+    final result = await showAppModalDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {

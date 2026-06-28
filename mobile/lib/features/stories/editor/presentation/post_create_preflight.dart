@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/network/post_api.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../providers/auth_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 Future<bool> ensurePostCreateAllowed(
   BuildContext context, {
@@ -59,7 +60,7 @@ Future<void> _showPostRateLimitSheet(
   final l10n = AppLocalizations.of(context)!;
   final retrySeconds = eligibility.retryAfter.inSeconds;
   final retryMinutes = retrySeconds <= 0 ? 1 : ((retrySeconds + 59) ~/ 60);
-  return showModalBottomSheet<void>(
+  return showAppModalBottomSheet<void>(
     context: context,
     isDismissible: true,
     showDragHandle: true,

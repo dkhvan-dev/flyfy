@@ -5,6 +5,7 @@ import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/excursions/models/create_excursion_review_request.dart';
 import '../../../features/excursions/models/excursion_booking_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum ExcursionReviewAction { edit, delete }
 
@@ -23,14 +24,14 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
   BuildContext context,
 ) {
   final l10n = AppLocalizations.of(context)!;
-  return showModalBottomSheet<ExcursionReviewAction>(
+  return showAppModalBottomSheet<ExcursionReviewAction>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: AppPalette.transparent,
     builder: (context) {
-      return AppDismissibleModalSheet(
+      return AppModalSheetFrame(
         child: Container(
           width: double.infinity,
           padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 22),
@@ -92,7 +93,7 @@ Future<ExcursionReviewEditDraft?> showExcursionReviewEditSheet(
   BuildContext context, {
   required ExcursionReviewVm review,
 }) {
-  return showModalBottomSheet<ExcursionReviewEditDraft>(
+  return showAppModalBottomSheet<ExcursionReviewEditDraft>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,
@@ -186,7 +187,7 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: Container(
         width: double.infinity,
         padding: AppEdgeInsets.only(

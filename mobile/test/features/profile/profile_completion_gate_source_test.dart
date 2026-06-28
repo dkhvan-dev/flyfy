@@ -3,29 +3,25 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('profile completion gate uses excursions filter sheet palette', () {
+  test('profile completion gate uses app modal template', () {
     final gateSource = File(
       'lib/features/profile/profile_completion_gate.dart',
     ).readAsStringSync();
-    final chromeSource = File(
-      'lib/core/ui/filter_sheet_chrome.dart',
+    final modalSource = File(
+      'lib/core/ui/app_modal_templates.dart',
     ).readAsStringSync();
 
     expect(
       gateSource,
-      contains("import '../../core/ui/filter_sheet_chrome.dart';"),
+      contains("import 'package:inflap/core/ui/app_modal_templates.dart';"),
     );
-    expect(gateSource, contains('AppFilterPaletteDialog('));
+    expect(gateSource, contains('showAppModalDialog<bool>('));
+    expect(gateSource, contains('AppModalAction<bool>('));
     expect(gateSource, contains('Icons.manage_accounts_rounded'));
     expect(gateSource, isNot(contains('AlertDialog(')));
+    expect(gateSource, isNot(contains('AppFilterPaletteDialog(')));
 
-    expect(chromeSource, contains('class AppFilterPaletteDialog'));
-    expect(chromeSource, contains('AppPalette.surface'));
-    expect(chromeSource, contains('AppPalette.border'));
-    expect(chromeSource, contains('AppPalette.warmSurface28'));
-    expect(chromeSource, contains('AppPalette.warmSurface66'));
-    expect(chromeSource, contains('AppPalette.primary'));
-    expect(chromeSource, contains('SingleChildScrollView'));
-    expect(chromeSource, contains('Wrap('));
+    expect(modalSource, contains('class AppModalScaffold'));
+    expect(modalSource, contains('class AppModalAction'));
   });
 }

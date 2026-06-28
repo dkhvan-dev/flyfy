@@ -25,6 +25,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _GuideSortMode { rating, experience }
 
@@ -302,7 +303,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
     if (!mounted) return;
 
     final l10n = AppLocalizations.of(context)!;
-    final selected = await showModalBottomSheet<_GuideFilters>(
+    final selected = await showAppModalBottomSheet<_GuideFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1568,7 +1569,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.86,

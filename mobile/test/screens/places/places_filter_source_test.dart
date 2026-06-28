@@ -118,7 +118,7 @@ void main() {
       'lib/screens/places/places_filter_sheet.dart',
     ).readAsString();
 
-    expect(sheetSource, contains('AppDismissibleModalSheet('));
+    expect(sheetSource, contains('AppModalSheetFrame('));
     expect(sheetSource, contains('BoxConstraints(maxWidth: 520)'));
     expect(sheetSource, isNot(contains('BoxConstraints(maxWidth: 393)')));
     expect(sheetSource, isNot(contains('horizontal: sideInset')));

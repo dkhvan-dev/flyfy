@@ -32,7 +32,7 @@ void main() {
       expect(source, contains('guidesSortRating'));
       expect(source, contains('guidesSortExperience'));
       expect(source, contains('guidesSearchHint'));
-      expect(source, contains('showModalBottomSheet<_GuideFilters>'));
+      expect(source, contains('showAppModalBottomSheet<_GuideFilters>'));
       expect(source, contains('class _GuidesFiltersSheet'));
       expect(
         source,

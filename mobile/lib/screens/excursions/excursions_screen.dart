@@ -28,6 +28,7 @@ import '../../providers/excursion_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ExcursionsRouteArgs {
   const ExcursionsRouteArgs({
@@ -612,7 +613,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
 
   Future<void> _showFilters() async {
     final excursionsSnapshot = context.read<ExcursionProvider>().excursions;
-    final selectedFilters = await showModalBottomSheet<_ExcursionsFilters>(
+    final selectedFilters = await showAppModalBottomSheet<_ExcursionsFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1511,7 +1512,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.86,

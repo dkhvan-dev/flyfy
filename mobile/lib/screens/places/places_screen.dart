@@ -25,6 +25,7 @@ import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import 'places_filter_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _PlaceSortField { rating, duration, price }
 
@@ -234,7 +235,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
 
-    final result = await showModalBottomSheet<PlaceFilterResult>(
+    final result = await showAppModalBottomSheet<PlaceFilterResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

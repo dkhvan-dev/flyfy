@@ -41,6 +41,7 @@ import '../../shared/widgets/trip_preparation_cta.dart';
 import '../map/map_screen.dart';
 import 'excursion_booking_screen.dart';
 import 'widgets/excursion_review_management_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ExcursionDetailsScreen extends StatefulWidget {
   const ExcursionDetailsScreen({
@@ -2180,7 +2181,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   }
 
   Future<void> _showFilters() async {
-    final next = await showModalBottomSheet<_ExcursionOfferFilters>(
+    final next = await showAppModalBottomSheet<_ExcursionOfferFilters>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
@@ -2820,7 +2821,7 @@ class _ExcursionOffersFilterSheetState
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       safeAreaBottom: true,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: size.height * 0.86),

@@ -29,6 +29,7 @@ import 'widgets/story_editor_style.dart';
 import 'widgets/story_editor_toolbar.dart';
 import 'widgets/story_metadata_panel.dart';
 import 'widgets/story_publish_panel.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum StoryEditorImagePickPurpose { cover, inlineImage, gallery }
 
@@ -1041,13 +1042,13 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
     }
     final found = await _controller.loadRecoverySnapshot();
     if (!found || !mounted) return;
-    await showDialog<void>(
+    await showAppModalDialog<void>(
       context: context,
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
         return Theme(
           data: storyEditorTheme(context),
-          child: AlertDialog(
+          child: AppModalDialogCard(
             title: Text(l10n.storyEditorRecoveryTitle),
             content: Text(l10n.storyEditorRecoveryMessage),
             actions: [
@@ -1074,7 +1075,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
 
   Future<void> _openAddBlockSheet() async {
     FocusScope.of(context).unfocus();
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1149,7 +1150,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
 
   Future<void> _addRouteReferenceBlock() async {
     FocusScope.of(context).unfocus();
-    final route = await showModalBottomSheet<UserRouteVm>(
+    final route = await showAppModalBottomSheet<UserRouteVm>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1583,7 +1584,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   Future<_StoryTemplateConflictAction?> _showTemplateConflictSheet(
     _StoryTemplateDefinition template,
   ) {
-    return showModalBottomSheet<_StoryTemplateConflictAction>(
+    return showAppModalBottomSheet<_StoryTemplateConflictAction>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1636,13 +1637,13 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   }
 
   Future<bool> _confirmDiscardChanges() async {
-    final result = await showDialog<_UnsavedDecision>(
+    final result = await showAppModalDialog<_UnsavedDecision>(
       context: context,
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
         return Theme(
           data: storyEditorTheme(context),
-          child: AlertDialog(
+          child: AppModalDialogCard(
             title: Text(l10n.storyEditorDiscardChangesTitle),
             content: Text(l10n.storyEditorDiscardChangesMessage),
             actions: [

@@ -2225,7 +2225,7 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                   style: IconButton.styleFrom(
                     fixedSize: const Size(48, 48),
                     minimumSize: const Size(48, 48),
-                    padding: EdgeInsets.zero,
+                    padding: AppInsets.none,
                     foregroundColor: AppPalette.primary,
                     backgroundColor: isSelected
                         ? AppPalette.primary.withValues(alpha: 0.16)

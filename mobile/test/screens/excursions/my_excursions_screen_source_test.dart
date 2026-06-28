@@ -52,7 +52,7 @@ void main() {
       expect(source, contains('AppListScreenHeader('));
       expect(source, contains('AppListSearchField('));
       expect(source, contains('AppInlineSortRow<MyExcursionBookingSortMode>'));
-      expect(source, contains('showModalBottomSheet<_MyExcursionsFilters>'));
+      expect(source, contains('showAppModalBottomSheet<_MyExcursionsFilters>'));
       expect(source, contains('InflapPaginationBar('));
     },
   );
@@ -111,7 +111,7 @@ void main() {
       expect(source, contains('myExcursionsExcursionReviewSectionTitle'));
       expect(source, contains('myExcursionsGuideReviewSectionTitle'));
       expect(source, contains('booking.guideReview'));
-      expect(source, contains('DraggableScrollableSheet'));
+      expect(source, contains('AppModalDraggableSheet'));
       expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
     },
   );

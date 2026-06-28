@@ -15,7 +15,7 @@ void main() {
       expect(source, contains('AppInlineSortRow<_ConnectionSortMode>'));
       expect(source, contains('AppFilterSheetHeader('));
       expect(source, contains('AppFilterApplyButton('));
-      expect(source, contains('showModalBottomSheet<_ConnectionFilters>'));
+      expect(source, contains('showAppModalBottomSheet<_ConnectionFilters>'));
       expect(source, contains('TabBar('));
       expect(source, contains('TabBarView('));
       expect(source, isNot(contains('_ConnectionSortMode.online')));

@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -141,7 +142,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.read<AuthProvider>();
     final sessionProvider = context.read<SessionProvider>();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return _LogoutConfirmDialog(

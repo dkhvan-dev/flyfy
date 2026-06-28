@@ -14,6 +14,7 @@ import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../places/places_filter_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ExcursionLocationSelection {
   const ExcursionLocationSelection({
@@ -310,7 +311,7 @@ class _ExcursionSelectLocationScreenState
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
 
-    final result = await showModalBottomSheet<PlaceFilterResult>(
+    final result = await showAppModalBottomSheet<PlaceFilterResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

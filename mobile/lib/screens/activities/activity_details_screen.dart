@@ -48,6 +48,7 @@ import '../../shared/widgets/trip_preparation_cta.dart';
 import '../map/map_screen.dart';
 import 'activity_payment_screen.dart';
 import 'widgets/activity_review_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
   const ActivityDetailsScreen({
@@ -403,7 +404,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<bool?> _showPrivateJoinDialog(AppLocalizations l10n) {
-    return showGeneralDialog<bool>(
+    return showAppModalDialog<bool>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -733,7 +734,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<String?> _showCancelActivitySheet(AppLocalizations l10n) {
-    return showModalBottomSheet<String>(
+    return showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -743,7 +744,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<String?> _showCompleteActivitySheet(AppLocalizations l10n) {
-    return showModalBottomSheet<String>(
+    return showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -753,7 +754,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<String?> _showCancelInsteadSheet(AppLocalizations l10n) {
-    return showModalBottomSheet<String>(
+    return showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1152,7 +1153,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
 
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1357,7 +1358,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         if (participant.userId.trim().isNotEmpty) participant.userId.trim(),
     };
 
-    final invited = await showModalBottomSheet<bool>(
+    final invited = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -2605,7 +2606,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
     final compact = mediaQuery.size.width < 390;
 
     return _DetailsResponsiveTextScope(
-      child: AppDismissibleModalSheet(
+      child: AppModalSheetFrame(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),

@@ -23,6 +23,7 @@ import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum GuideDashboardSection { offers, bookings }
 
@@ -137,7 +138,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final offerCounts = _guideOfferStatusCounts(filteredExcursions);
     final bookingCounts = _guideBookingStatusCounts(filteredBookings, now);
 
-    final result = await showModalBottomSheet<_GuideDashboardFilters>(
+    final result = await showAppModalBottomSheet<_GuideDashboardFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -197,7 +198,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     ExcursionBookingVm booking,
     List<ExcursionBookingVm> relatedBookings,
   ) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -226,7 +227,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
     final refundAmount = _totalRevenue(relatedBookings);
     final refundCurrency = _primaryCurrency(relatedBookings);
-    final reason = await showModalBottomSheet<String>(
+    final reason = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -292,9 +293,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     if (excursionId.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppModalDialogCard(
         backgroundColor: AppPalette.surface,
         surfaceTintColor: AppPalette.transparent,
         shape: RoundedRectangleBorder(
@@ -2276,7 +2277,7 @@ class _ExcursionAttendanceQrAction extends StatelessWidget {
   final List<ExcursionBookingVm> relatedBookings;
 
   Future<void> _openSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -2458,7 +2459,7 @@ class _ExcursionAttendanceQrSheetState
     final compact = mediaQuery.size.width < 390;
     final bottomLift = mediaQuery.padding.bottom + 18;
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
@@ -2886,7 +2887,7 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
       useExcursionListCurrencyFormat: true,
     );
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
@@ -3239,7 +3240,7 @@ class _GuideCancelExcursionSheetState
       useExcursionListCurrencyFormat: true,
     );
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,

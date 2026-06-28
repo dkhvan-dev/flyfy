@@ -453,7 +453,7 @@ void main() {
       expect(source, contains('_openIncludedItemsEditor'));
       expect(
         source,
-        contains('showModalBottomSheet<List<_ExcursionIncludedItemDraft>>'),
+        contains('showAppModalBottomSheet<List<_ExcursionIncludedItemDraft>>'),
       );
       expect(source, contains('includedItems: _includedItems'));
       expect(source, contains('String toPayload() => type.name'));

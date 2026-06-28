@@ -16,6 +16,7 @@ import '../../../providers/routing_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../providers/user_routes_provider.dart';
 import '../../../screens/map/map_screen.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class UserRouteDetailsScreen extends StatefulWidget {
   const UserRouteDetailsScreen({
@@ -137,7 +138,7 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
     }
     if (!mounted) return;
 
-    final result = await showModalBottomSheet<_RouteEditResult>(
+    final result = await showAppModalBottomSheet<_RouteEditResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -180,7 +181,7 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
     }
     if (!mounted) return;
 
-    final result = await showModalBottomSheet<_RoutePointsEditResult>(
+    final result = await showAppModalBottomSheet<_RoutePointsEditResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -430,7 +431,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
 
     return Padding(
       padding: AppEdgeInsets.only(bottom: bottomInset),
-      child: DraggableScrollableSheet(
+      child: AppModalDraggableSheet(
         initialChildSize: 0.56,
         minChildSize: 0.36,
         maxChildSize: 0.88,
@@ -697,7 +698,7 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
 
     return Padding(
       padding: AppEdgeInsets.only(bottom: bottomInset),
-      child: DraggableScrollableSheet(
+      child: AppModalDraggableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.42,
         maxChildSize: 0.92,

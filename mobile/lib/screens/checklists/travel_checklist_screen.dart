@@ -13,6 +13,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/routing_provider.dart';
 import '../../shared/reference/app_country_names.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 abstract final class _ChecklistAmber {
   static const backgroundTop = AppPalette.warmSurface43;
@@ -701,7 +702,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
 
   Future<void> _openCreateCustomItemSheet() async {
     if (_requireRouteArgs().isPreview) return;
-    final draft = await showModalBottomSheet<_CustomChecklistItemDraft>(
+    final draft = await showAppModalBottomSheet<_CustomChecklistItemDraft>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -714,7 +715,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
 
   Future<void> _openEditCustomItemSheet(CustomChecklistItemVm item) async {
     if (_requireRouteArgs().isPreview) return;
-    final draft = await showModalBottomSheet<_CustomChecklistItemDraft>(
+    final draft = await showAppModalBottomSheet<_CustomChecklistItemDraft>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

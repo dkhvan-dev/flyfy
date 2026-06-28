@@ -321,7 +321,7 @@ void main() {
     expect(startComment, greaterThan(openStart));
     final openSource = detailSource.substring(openStart, startComment);
 
-    expect(openSource, contains('showGeneralDialog<int>('));
+    expect(openSource, contains('showAppModalDialog<int>('));
     expect(openSource, contains('barrierColor: AppPalette.black'));
     expect(openSource, contains('FadeTransition('));
     expect(openSource, isNot(contains('PageRouteBuilder<int>(')));

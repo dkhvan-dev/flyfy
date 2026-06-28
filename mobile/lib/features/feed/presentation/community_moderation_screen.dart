@@ -7,6 +7,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 import '../data/community_moderation_api.dart';
 import '../models/community_moderation_vm.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class CommunityModerationScreen extends StatefulWidget {
   const CommunityModerationScreen({
@@ -199,7 +200,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
   }
 
   Future<String?> _showRejectSheet(PostVm story) {
-    return showModalBottomSheet<String>(
+    return showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -302,7 +303,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
       offset: 0,
     );
 
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

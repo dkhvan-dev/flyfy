@@ -13,6 +13,7 @@ import '../../core/network/file_api.dart';
 import '../../core/network/story_api.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _storyCaptureMaxVideoDuration = Duration(seconds: 30);
 
@@ -394,7 +395,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
 
   Future<void> _showGallerySourceSheet() async {
     final l10n = AppLocalizations.of(context)!;
-    final selected = await showModalBottomSheet<_StoryCaptureMediaKind>(
+    final selected = await showAppModalBottomSheet<_StoryCaptureMediaKind>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.warmInk40,

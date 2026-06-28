@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/activities/models/activity_review_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 Future<SaveActivityReviewsRequest?> showActivityReviewSheet(
   BuildContext context, {
@@ -11,7 +11,7 @@ Future<SaveActivityReviewsRequest?> showActivityReviewSheet(
   ActivityOrganizerReviewVm? organizerReview,
   required bool allowOrganizerReview,
 }) {
-  return showModalBottomSheet<SaveActivityReviewsRequest>(
+  return showAppModalBottomSheet<SaveActivityReviewsRequest>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,
@@ -112,7 +112,7 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       barrierColor: AppPalette.black.withValues(alpha: 0.72),
       builder: (dialogContext) => Dialog(
@@ -222,7 +222,7 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(

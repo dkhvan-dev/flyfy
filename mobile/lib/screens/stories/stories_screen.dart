@@ -21,6 +21,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../common/app_side_drawer.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _StorySortDirection { asc, desc }
 
@@ -324,7 +325,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     FocusScope.of(context).unfocus();
     if (!mounted) return;
 
-    final selected = await showModalBottomSheet<_StoryFiltersResult>(
+    final selected = await showAppModalBottomSheet<_StoryFiltersResult>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.transparent,
@@ -627,10 +628,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final authProvider = context.read<AuthProvider>();
     final sessionProvider = context.read<SessionProvider>();
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(22),

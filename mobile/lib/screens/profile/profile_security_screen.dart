@@ -9,6 +9,7 @@ import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'profile_style.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ProfileSecurityScreen extends StatelessWidget {
   const ProfileSecurityScreen({super.key});
@@ -87,7 +88,7 @@ class ProfileSecurityScreen extends StatelessWidget {
 }
 
 void _showChangePasswordSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  showAppModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     isDismissible: true,

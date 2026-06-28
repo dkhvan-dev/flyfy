@@ -107,8 +107,8 @@ void main() {
         userActivitiesSource,
         contains('AlignmentDirectional.centerStart'),
       );
-      expect(userActivitiesSource, contains('showModalBottomSheet'));
-      expect(userActivitiesSource, contains('AppDismissibleModalSheet('));
+      expect(userActivitiesSource, contains('showAppModalBottomSheet'));
+      expect(userActivitiesSource, contains('AppModalSheetFrame('));
       expect(userActivitiesSource, contains('_ProfileActivityFilters'));
       expect(userActivitiesSource, contains('previewCountBuilder'));
       expect(userActivitiesSource, contains('activitiesShowResults('));

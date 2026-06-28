@@ -9,6 +9,7 @@ import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 /// Result handed back to the discover screen when the user taps "Show N spots".
 class PlaceFilterResult {
@@ -395,7 +396,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
               )
               .toDouble();
 
-          return AppDismissibleModalSheet(
+          return AppModalSheetFrame(
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,

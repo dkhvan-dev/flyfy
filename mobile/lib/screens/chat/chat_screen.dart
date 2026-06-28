@@ -44,6 +44,7 @@ import 'chat_shared_content_screen.dart';
 import 'chat_video_viewer_screen.dart';
 import 'widgets/chat_video_preview.dart';
 import 'widgets/chat_voice_attachment_player.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -512,7 +513,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _PickedChatAttachment attachment,
   ) async {
     if (!mounted) return;
-    final shouldSend = await showModalBottomSheet<bool>(
+    final shouldSend = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -749,7 +750,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (peerUserId == null || peerUserId.isEmpty) return;
 
     final isBlocked = conversation.isBlockedByMe;
-    final shouldBlock = await showModalBottomSheet<bool>(
+    final shouldBlock = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.warmInk55,
@@ -1059,9 +1060,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<bool> _confirmExternalLinkOpen(Uri uri) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppModalDialogCard(
         backgroundColor: AppPalette.warmInk55,
         title: Text(
           l10n.chatExternalLinkTitle,
@@ -1114,7 +1115,7 @@ class _ChatScreenState extends State<ChatScreen> {
         readReceipts.isNotEmpty;
 
     final l10n = AppLocalizations.of(context)!;
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,
@@ -1350,7 +1351,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final currentUserId =
         context.read<SessionProvider>().profile?.userId.trim() ?? '';
-    final selected = await showModalBottomSheet<ConversationVm>(
+    final selected = await showAppModalBottomSheet<ConversationVm>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,
@@ -1396,7 +1397,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _showReadReceiptsSheet(List<_ReadReceiptInfo> receipts) async {
     if (receipts.isEmpty) return;
 
-    final selectedUserId = await showModalBottomSheet<String>(
+    final selectedUserId = await showAppModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,
@@ -1417,7 +1418,7 @@ class _ChatScreenState extends State<ChatScreen> {
   ) async {
     if (reactionInfos.isEmpty) return;
 
-    final selectedUserId = await showModalBottomSheet<String>(
+    final selectedUserId = await showAppModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,
@@ -7485,7 +7486,7 @@ void _showAdaptiveAttachmentSheet({
   required String cancelLabel,
   required List<_ComposerSheetAction> actions,
 }) {
-  showModalBottomSheet<void>(
+  showAppModalBottomSheet<void>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,

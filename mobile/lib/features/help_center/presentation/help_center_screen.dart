@@ -8,6 +8,7 @@ import '../../../core/ui/app_bottom_navigation_bars.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/help_center_api.dart';
 import '../widgets/help_article_tile.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _helpCenterBackground = AppPalette.warmInk22;
 const _helpCenterBackgroundTop = AppPalette.warmSurface22;
@@ -324,7 +325,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     List<_HelpCenterCategoryOption> categories,
   ) async {
     if (categories.length <= _helpCenterCompactCategoryLimit) return;
-    final selectedCategoryId = await showModalBottomSheet<String>(
+    final selectedCategoryId = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

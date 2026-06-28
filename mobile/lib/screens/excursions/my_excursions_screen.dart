@@ -27,6 +27,7 @@ import '../../providers/excursion_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class MyExcursionsScreen extends StatefulWidget {
   const MyExcursionsScreen({super.key});
@@ -232,7 +233,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     AppLocalizations l10n,
     List<ExcursionBookingVm> sourceItems,
   ) async {
-    final result = await showModalBottomSheet<_MyExcursionsFilters>(
+    final result = await showAppModalBottomSheet<_MyExcursionsFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -301,7 +302,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   Future<void> _openReviewSheet(ExcursionBookingVm booking) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ExcursionProvider>();
-    final success = await showModalBottomSheet<bool>(
+    final success = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -356,7 +357,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   Future<void> _openEditGuestsSheet(ExcursionBookingVm booking) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ExcursionProvider>();
-    final success = await showModalBottomSheet<bool>(
+    final success = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -395,7 +396,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   Future<void> _openCancelBookingSheet(ExcursionBookingVm booking) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ExcursionProvider>();
-    final success = await showModalBottomSheet<bool>(
+    final success = await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -2336,7 +2337,7 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
     final previewCount = widget.previewCountBuilder(_draftFilters());
     final showStatusFilter = widget.tab == MyExcursionsTab.booked;
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
@@ -2878,8 +2879,8 @@ class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return AppDismissibleModalSheet(
-      child: DraggableScrollableSheet(
+    return AppModalSheetFrame(
+      child: AppModalDraggableSheet(
         initialChildSize: 0.72,
         minChildSize: 0.42,
         maxChildSize: 0.92,

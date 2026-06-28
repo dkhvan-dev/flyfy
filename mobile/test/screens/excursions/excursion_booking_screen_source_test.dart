@@ -27,7 +27,7 @@ void main() {
       expect(source, contains('_BookingSummarySection'));
       expect(source, contains('_BookingFooter'));
       expect(source, contains('resolveExcursionCoverUrl(excursion)'));
-      expect(source, contains('showModalBottomSheet'));
+      expect(source, contains('showAppModalBottomSheet'));
       expect(source, contains('selectedSlot?.availableSeats'));
       expect(source, contains('_selectedSlotUnavailableMessage'));
       expect(source, contains('excursionBookingSelectedSlotUnavailable'));

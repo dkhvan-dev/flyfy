@@ -24,7 +24,7 @@ void main() {
       expect(source, isNot(contains('_showCategorySheet')));
       expect(source, isNot(contains('_showPlaceSheet')));
       expect(source, contains('Future<void> _openFilters()'));
-      expect(source, contains('showModalBottomSheet<_StoryFiltersResult>'));
+      expect(source, contains('showAppModalBottomSheet<_StoryFiltersResult>'));
       expect(source, contains('class _StoryFiltersSheet'));
       expect(searchBarSource, contains('onFilterTap'));
       expect(searchBarSource, contains('AppListSearchField('));

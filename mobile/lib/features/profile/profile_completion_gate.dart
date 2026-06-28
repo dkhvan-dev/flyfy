@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
-import '../../core/ui/filter_sheet_chrome.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../screens/profile/edit_profile_screen.dart';
 import 'profile_guard_result.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ProfileCompletionGate {
   const ProfileCompletionGate._();
@@ -72,19 +72,19 @@ class ProfileCompletionGate {
   static Future<bool?> _showIncompleteProfileDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return showDialog<bool>(
+    return showAppModalDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AppFilterPaletteDialog(
-          icon: Icons.manage_accounts_rounded,
-          title: l10n.profileRequiredTitle,
-          message: l10n.profileRequiredDescription,
-          secondaryLabel: l10n.laterButton,
-          primaryLabel: l10n.fillNowButton,
-          onSecondary: () => Navigator.of(dialogContext).pop(false),
-          onPrimary: () => Navigator.of(dialogContext).pop(true),
-        );
-      },
+      title: l10n.profileRequiredTitle,
+      subtitle: l10n.profileRequiredDescription,
+      icon: Icons.manage_accounts_rounded,
+      actions: [
+        AppModalAction<bool>(label: l10n.laterButton, result: false),
+        AppModalAction<bool>(
+          label: l10n.fillNowButton,
+          result: true,
+          variant: AppModalActionVariant.primary,
+        ),
+      ],
     );
   }
 }

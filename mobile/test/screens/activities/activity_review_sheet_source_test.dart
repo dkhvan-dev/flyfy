@@ -16,7 +16,7 @@ void main() {
       expect(buildStart, greaterThan(submitStart));
 
       final submitSource = source.substring(submitStart, buildStart);
-      final dialogStart = submitSource.indexOf('showDialog<bool>');
+      final dialogStart = submitSource.indexOf('showAppModalDialog<bool>');
       final popStart = submitSource.indexOf(
         'Navigator.of(context).pop(\n      SaveActivityReviewsRequest',
       );

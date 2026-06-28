@@ -37,6 +37,7 @@ import '../../shared/map/app_map_links.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_map_card.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _inlineValidationColor = AppPalette.redSoft11;
 final _activityPasswordInputFormatter = FilteringTextInputFormatter.allow(
@@ -1234,10 +1235,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<bool>(
+    final result = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: AppPalette.surfaceCool,
           title: Text(
             l10n.createActivityDiscardTitle,
@@ -1781,7 +1782,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     AppLocalizations l10n,
     Map<String, String> items,
   ) async {
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.transparent,
@@ -1812,7 +1813,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     AppLocalizations l10n,
     Map<String, String> items,
   ) async {
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.transparent,
@@ -1835,7 +1836,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   Future<void> _openVisibilityPicker(AppLocalizations l10n) async {
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       backgroundColor: AppPalette.transparent,

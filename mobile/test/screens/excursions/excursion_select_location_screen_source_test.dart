@@ -69,7 +69,7 @@ void main() {
     expect(source, contains("import '../places/places_filter_sheet.dart';"));
     expect(source, contains('PlaceFilterResult _filters'));
     expect(source, contains('Future<void> _openFilters() async'));
-    expect(source, contains('showModalBottomSheet<PlaceFilterResult>'));
+    expect(source, contains('showAppModalBottomSheet<PlaceFilterResult>'));
     expect(source, contains('PlacesFilterSheet('));
     expect(source, contains('fallbackCountryCode: _selectedCountryCode'));
     expect(source, isNot(contains('accessCityId: widget.accessCityId')));

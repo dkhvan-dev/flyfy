@@ -16,7 +16,7 @@ void main() {
       expect(source, contains('OpenStreetMap'));
       expect(source, contains('ODbL'));
       expect(source, contains('AppMapLinks.host'));
-      expect(source, contains('showModalBottomSheet'));
+      expect(source, contains('showAppModalBottomSheet'));
       expect(source, contains('_MapAttributionSheet'));
       expect(source, contains('_MapAttributionSourceRow'));
       expect(source, contains('AppLocalizations.of(context)!'));

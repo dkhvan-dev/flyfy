@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_api.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_dto.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_recovery_store.dart';
@@ -2180,7 +2181,7 @@ void main() {
 
       expect(find.text('Discard post changes?'), findsOneWidget);
       final dialogSaveDraft = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(AppModalDialogCard),
         matching: find.text('Save draft'),
       );
       expect(dialogSaveDraft, findsOneWidget);

@@ -44,7 +44,7 @@ void main() {
       expect(source.contains('onFilterTap: _openFilters'), isTrue);
       expect(source.contains('activeFilterCount: _activeFilterCount'), isTrue);
       expect(
-        source.contains('showModalBottomSheet<_GuideDashboardFilters>'),
+        source.contains('showAppModalBottomSheet<_GuideDashboardFilters>'),
         isTrue,
       );
       expect(
@@ -383,7 +383,7 @@ void main() {
       ).readAsString();
       final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-      expect(source, contains('showModalBottomSheet<void>'));
+      expect(source, contains('showAppModalBottomSheet<void>'));
       expect(source, contains('class _ExcursionAttendanceQrSheet'));
       expect(source, contains('_ExcursionAttendanceQrSheet('));
       expect(source, isNot(contains('class _ExcursionAttendanceQrInline')));

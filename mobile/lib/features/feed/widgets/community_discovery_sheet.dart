@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_city_filter_section.dart';
 import '../data/feed_api.dart';
 import '../models/feed_block_vm.dart';
 import 'community_display_helpers.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class CommunityDiscoverySheet extends StatefulWidget {
   const CommunityDiscoverySheet({
@@ -253,7 +254,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
 
   Future<void> _openFilters() async {
     final l10n = AppLocalizations.of(context)!;
-    final result = await showModalBottomSheet<_CommunityDiscoveryFilters>(
+    final result = await showAppModalBottomSheet<_CommunityDiscoveryFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

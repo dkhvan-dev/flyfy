@@ -10,6 +10,7 @@ import '../../providers/excursion_schedule_provider.dart';
 import 'widgets/guide_calendar_day_strip.dart';
 import 'widgets/guide_calendar_timeline.dart';
 import 'widgets/guide_schedule_slot_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class GuideCalendarScreen extends StatefulWidget {
   const GuideCalendarScreen({
@@ -142,7 +143,7 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
     DateTime selectedDate, [
     ExcursionScheduleSlotVm? slot,
   ]) async {
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,

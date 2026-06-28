@@ -9,9 +9,9 @@ void main() {
     ).readAsString();
 
     expect(source, contains('profileSecurityPasswordTitle'));
-    expect(source, contains('showModalBottomSheet<void>'));
+    expect(source, contains('showAppModalBottomSheet<void>'));
     expect(source, contains('isDismissible: true'));
-    expect(source, isNot(contains('showDialog<void>')));
+    expect(source, isNot(contains('showAppModalDialog<void>')));
     expect(source, isNot(contains('FractionallySizedBox(')));
     expect(source, contains('Alignment.bottomCenter'));
     expect(source, contains('heightFactor: 1'));

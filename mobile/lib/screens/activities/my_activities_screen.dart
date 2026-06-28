@@ -33,6 +33,7 @@ import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import 'widgets/activity_review_sheet.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -862,7 +863,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     List<ActivityListItemVm> items,
   ) async {
     final availableStatuses = _statusOrderForTab(_activeTab).toSet();
-    final result = await showModalBottomSheet<_MyActivitiesFilters>(
+    final result = await showAppModalBottomSheet<_MyActivitiesFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

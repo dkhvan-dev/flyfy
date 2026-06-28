@@ -31,6 +31,7 @@ import '../widgets/community_display_helpers.dart';
 import '../widgets/feed_block_list.dart';
 import '../widgets/feed_post_card.dart';
 import '../widgets/my_subscriptions_block.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 typedef FeedPostShareLauncher =
     Future<void> Function(PostVm post, String shareUrl);
@@ -444,7 +445,7 @@ class _FeedScreenState extends State<FeedScreen>
 
   Future<void> _openCommunityDiscoverySheet() async {
     final location = _feedLocationContext();
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -488,7 +489,7 @@ class _FeedScreenState extends State<FeedScreen>
     }
     final location = _feedLocationContext();
 
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -529,7 +530,7 @@ class _FeedScreenState extends State<FeedScreen>
 
     final l10n = AppLocalizations.of(context)!;
     final canUsePostActions = _canUsePostActionsForRead(context);
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

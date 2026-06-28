@@ -71,7 +71,7 @@ void main() {
       expect(source, contains('excursionsSortRating'));
       expect(source, contains('excursionsSortPrice'));
       expect(source, contains('excursionsSortDuration'));
-      expect(source, contains('showModalBottomSheet<_ExcursionsFilters>'));
+      expect(source, contains('showAppModalBottomSheet<_ExcursionsFilters>'));
       expect(source, contains('class _ExcursionsFiltersSheet'));
       expect(source, contains('class _ExcursionsFilters'));
       expect(source, contains('AppFilterSheetHeader'));

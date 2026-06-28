@@ -36,6 +36,7 @@ import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
 import '../map/map_screen.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
@@ -232,11 +233,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final authProvider = context.read<AuthProvider>();
     final sessionProvider = context.read<SessionProvider>();
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
+        return AppModalDialogCard(
           backgroundColor: AppPalette.surfaceCool,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),
@@ -388,7 +389,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   ) async {
     FocusScope.of(context).unfocus();
 
-    final result = await showModalBottomSheet<_DiscoverFilters>(
+    final result = await showAppModalBottomSheet<_DiscoverFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,

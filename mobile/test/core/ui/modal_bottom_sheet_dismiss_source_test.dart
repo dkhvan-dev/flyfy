@@ -3,50 +3,40 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('bottom sheets explicitly allow outside-tap dismissal', () {
+  test('bottom sheets use app modal helper dismissal default', () {
+    final modalSource = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
     final lib = Directory('lib');
     final offenders = <String>[];
 
+    expect(modalSource, contains('bool isDismissible = true'));
+
     for (final entity in lib.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (entity.path == 'lib/core/ui/app_modal_templates.dart') continue;
       final source = entity.readAsStringSync();
-      var searchStart = 0;
-
-      while (true) {
-        final callStart = source.indexOf('showModalBottomSheet<', searchStart);
-        if (callStart == -1) break;
-        final builderStart = source.indexOf('builder:', callStart);
-        final callHeader = source.substring(
-          callStart,
-          builderStart == -1 ? source.length : builderStart,
-        );
-        if (!callHeader.contains('isDismissible: true')) {
-          offenders.add(entity.path);
-          break;
-        }
-        searchStart = callStart + 'showModalBottomSheet<'.length;
+      if (source.contains('showModalBottomSheet')) {
+        offenders.add(entity.path);
       }
     }
 
     expect(offenders, isEmpty);
   });
 
-  test('full-screen transparent sheet frames dismiss outside taps', () {
-    final chrome = File(
-      'lib/core/ui/filter_sheet_chrome.dart',
+  test('app modal template owns sheet framing and dismissal defaults', () {
+    final modalSource = File(
+      'lib/core/ui/app_modal_templates.dart',
     ).readAsStringSync();
-    expect(chrome, contains('class AppDismissibleModalSheet'));
-    expect(chrome, contains('Navigator.maybePop(context)'));
+    expect(modalSource, contains('class AppModalSheetFrame'));
+    expect(modalSource, contains('bool isDismissible = true'));
 
     for (final path in [
       'lib/screens/guides/guides_screen.dart',
       'lib/screens/excursions/excursions_screen.dart',
       'lib/screens/places/places_filter_sheet.dart',
     ]) {
-      expect(
-        File(path).readAsStringSync(),
-        contains('AppDismissibleModalSheet'),
-      );
+      expect(File(path).readAsStringSync(), contains('AppModalSheetFrame'));
     }
   });
 }

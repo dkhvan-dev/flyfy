@@ -18,6 +18,7 @@ import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 RelativeRect? _connectionMenuPositionFor(BuildContext buttonContext) {
   final overlay = Overlay.of(buttonContext).context.findRenderObject();
@@ -270,7 +271,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
   }
 
   Future<void> _showFilters() async {
-    final selectedFilters = await showModalBottomSheet<_ConnectionFilters>(
+    final selectedFilters = await showAppModalBottomSheet<_ConnectionFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -442,7 +443,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
   }
 
   Future<void> _showFriendRequestsSheet() async {
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -1173,7 +1174,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.82,
@@ -1588,7 +1589,7 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return AppDismissibleModalSheet(
+    return AppModalSheetFrame(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.72,

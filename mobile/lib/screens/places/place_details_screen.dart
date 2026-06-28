@@ -33,6 +33,7 @@ import '../../shared/map/app_map_links.dart';
 import '../excursions/excursions_screen.dart';
 import '../excursions/widgets/excursion_review_management_sheet.dart';
 import '../map/map_screen.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class PlaceDetailsScreen extends StatefulWidget {
   const PlaceDetailsScreen({
@@ -291,7 +292,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     if (_place == null) return;
     final l10n = AppLocalizations.of(context)!;
 
-    await showModalBottomSheet<bool>(
+    await showAppModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -374,7 +375,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     int initialIndex,
   ) async {
     if (media.isEmpty) return;
-    final selectedIndex = await showGeneralDialog<int>(
+    final selectedIndex = await showAppModalDialog<int>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
