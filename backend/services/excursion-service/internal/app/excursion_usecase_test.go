@@ -459,17 +459,21 @@ func (s guideVerifierStub) VerifyExcursionGuide(ctx context.Context, userID uuid
 }
 
 type fileManagerStub struct {
-	validated *uuid.UUID
-	bound     *uuid.UUID
+	validated    *uuid.UUID
+	validatedIDs []uuid.UUID
+	bound        *uuid.UUID
+	boundIDs     []uuid.UUID
 }
 
 func (s *fileManagerStub) ValidateExcursionCoverFile(ctx context.Context, fileID uuid.UUID) error {
 	s.validated = &fileID
+	s.validatedIDs = append(s.validatedIDs, fileID)
 	return nil
 }
 
 func (s *fileManagerStub) BindExcursionCoverFile(ctx context.Context, fileID uuid.UUID, excursionID uuid.UUID, createdByUserID uuid.UUID) error {
 	s.bound = &fileID
+	s.boundIDs = append(s.boundIDs, fileID)
 	return nil
 }
 
@@ -878,6 +882,132 @@ func TestCreateExcursionPersistsDraftAggregate(t *testing.T) {
 		repo.createdRelations.IncludedItems[0].Text != "food" ||
 		repo.createdRelations.IncludedItems[1].Text != "transport" {
 		t.Fatalf("included items = %#v, want stable dictionary keys", repo.createdRelations.IncludedItems)
+	}
+}
+
+func TestCreateExcursionPersistsOrderedGalleryPhotos(t *testing.T) {
+	coverFileID := uuid.New()
+	secondPhotoFileID := uuid.New()
+	productPhotoFileID := uuid.New()
+	productPhotoImageURL := "https://upload.wikimedia.org/place-2.jpg"
+	repo := &excursionRepoStub{}
+	files := &fileManagerStub{}
+	guideProfileID := uuid.New()
+	actorUserID := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: guideProfileID,
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, files)
+
+	aggregate, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:           actorUserID,
+		LandmarkID:            uuidPtr(uuid.New()),
+		LandmarkName:          stringPtr("Medeu"),
+		CategorySlug:          "nature",
+		Visibility:            "PUBLIC",
+		DurationMinutes:       240,
+		MaxGroupSize:          8,
+		LanguageCodes:         []string{"en"},
+		CountryCode:           &testExcursionCountryCode,
+		CityName:              &testExcursionCityName,
+		MeetingPoint:          "Hotel pickup",
+		Latitude:              &testExcursionLatitude,
+		Longitude:             &testExcursionLongitude,
+		PriceAmount:           120,
+		Currency:              "usd",
+		CoverFileID:           &coverFileID,
+		PhotoFileIDs:          []uuid.UUID{coverFileID, secondPhotoFileID},
+		ProductCoverFileID:    &productPhotoFileID,
+		ProductPhotoFileIDs:   []uuid.UUID{productPhotoFileID},
+		ProductPhotoImageURLs: []string{productPhotoImageURL},
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	if len(aggregate.PhotoFileIDs) != 2 ||
+		aggregate.PhotoFileIDs[0] != coverFileID ||
+		aggregate.PhotoFileIDs[1] != secondPhotoFileID {
+		t.Fatalf("aggregate photo file ids = %#v, want ordered offer photos", aggregate.PhotoFileIDs)
+	}
+	if len(repo.createdRelations.PhotoFileIDs) != 2 ||
+		repo.createdRelations.PhotoFileIDs[0] != coverFileID ||
+		repo.createdRelations.PhotoFileIDs[1] != secondPhotoFileID {
+		t.Fatalf("created photo file ids = %#v, want ordered offer photos", repo.createdRelations.PhotoFileIDs)
+	}
+	if len(repo.createdRelations.ProductPhotoFileIDs) != 1 ||
+		repo.createdRelations.ProductPhotoFileIDs[0] != productPhotoFileID {
+		t.Fatalf("product photo file ids = %#v, want product gallery", repo.createdRelations.ProductPhotoFileIDs)
+	}
+	if len(repo.createdRelations.ProductPhotoImageURLs) != 1 ||
+		repo.createdRelations.ProductPhotoImageURLs[0] != productPhotoImageURL {
+		t.Fatalf("product photo image urls = %#v, want product external gallery", repo.createdRelations.ProductPhotoImageURLs)
+	}
+	if len(files.validatedIDs) != 3 {
+		t.Fatalf("validated ids = %#v, want cover, offer photo and product photo", files.validatedIDs)
+	}
+	if len(files.boundIDs) != 2 ||
+		files.boundIDs[0] != coverFileID ||
+		files.boundIDs[1] != secondPhotoFileID {
+		t.Fatalf("bound ids = %#v, want offer photos bound", files.boundIDs)
+	}
+}
+
+func TestCreateExcursionRejectsMoreThanTenGalleryPhotos(t *testing.T) {
+	coverFileID := uuid.New()
+	photoFileIDs := make([]uuid.UUID, 0, 11)
+	for i := 0; i < 11; i++ {
+		photoFileIDs = append(photoFileIDs, uuid.New())
+	}
+	repo := &excursionRepoStub{}
+	files := &fileManagerStub{}
+	guideProfileID := uuid.New()
+	actorUserID := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: guideProfileID,
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, files)
+
+	_, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "usd",
+		CoverFileID:     &coverFileID,
+		PhotoFileIDs:    photoFileIDs,
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
+		},
+	})
+
+	if !errors.Is(err, ErrExcursionGalleryTooManyPhotos) {
+		t.Fatalf("error = %v, want %v", err, ErrExcursionGalleryTooManyPhotos)
+	}
+	if repo.createdExcursion != nil {
+		t.Fatal("excursion was persisted despite gallery photo limit")
+	}
+	if len(files.validatedIDs) != 0 {
+		t.Fatalf("validated ids = %#v, want no file validation after limit rejection", files.validatedIDs)
 	}
 }
 

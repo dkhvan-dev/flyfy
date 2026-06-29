@@ -49,6 +49,8 @@ type ExcursionProductCard struct {
 	MapURL          *string
 	CoverFileID     *uuid.UUID
 	CoverImageURL   *string
+	PhotoFileIDs    []uuid.UUID
+	PhotoImageURLs  []string
 
 	MinPriceAmount       *float64
 	Currency             *string
@@ -88,9 +90,10 @@ type ExcursionOffer struct {
 	Longitude       *float64
 	MapURL          *string
 
-	PriceAmount float64
-	Currency    string
-	CoverFileID *uuid.UUID
+	PriceAmount  float64
+	Currency     string
+	CoverFileID  *uuid.UUID
+	PhotoFileIDs []uuid.UUID
 
 	PublishedAt *time.Time
 	DeletedAt   *time.Time

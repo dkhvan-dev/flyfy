@@ -2193,6 +2193,31 @@ void main() {
       expect(controller.state.isDirty, isFalse);
     });
 
+    testWidgets('dirty unsaved guard labels stay action in Russian', (
+      tester,
+    ) async {
+      final controller = _controller();
+      controller.initializeEdit(userId: 'user-1', story: _storyVm());
+      controller.changeTitle('Несохраненный заголовок');
+
+      await tester.pumpWidget(
+        _app(_screen(controller: controller), locale: const Locale('ru')),
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AppModalDialogCard);
+      expect(dialog, findsOneWidget);
+      expect(
+        find.descendant(of: dialog, matching: find.text('Остаться')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Отклонить')),
+        findsNothing,
+      );
+    });
+
     testWidgets('recovery prompt can restore a local snapshot', (tester) async {
       final recovery = _FakeStoryEditorRecovery(
         snapshot: StoryEditorRecoverySnapshot(

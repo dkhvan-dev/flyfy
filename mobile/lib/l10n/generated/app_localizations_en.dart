@@ -519,7 +519,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get travelChecklistChecklist => 'Checklist';
 
   @override
-  String get travelChecklistItemsSearchHint => 'Search checklist items';
+  String get travelChecklistItemsSearchHint => 'Checklist items';
 
   @override
   String get travelChecklistItemsSearchEmpty =>
@@ -7728,7 +7728,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyEditorDiscardChangesMessage => 'Unsaved edits may be lost.';
 
   @override
-  String get storyEditorKeepEditing => 'Keep editing';
+  String get storyEditorKeepEditing => 'Stay';
+
+  @override
+  String get storyEditorDiscardChangesDiscard => 'Leave without saving';
 
   @override
   String get storyEditorMetadataTitle => 'Publication setup';

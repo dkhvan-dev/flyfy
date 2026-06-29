@@ -1057,7 +1057,7 @@ abstract class AppLocalizations {
   /// No description provided for @travelChecklistItemsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search checklist items'**
+  /// **'Checklist items'**
   String get travelChecklistItemsSearchHint;
 
   /// No description provided for @travelChecklistItemsSearchEmpty.
@@ -14093,8 +14093,14 @@ abstract class AppLocalizations {
   /// No description provided for @storyEditorKeepEditing.
   ///
   /// In en, this message translates to:
-  /// **'Keep editing'**
+  /// **'Stay'**
   String get storyEditorKeepEditing;
+
+  /// No description provided for @storyEditorDiscardChangesDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without saving'**
+  String get storyEditorDiscardChangesDiscard;
 
   /// No description provided for @storyEditorMetadataTitle.
   ///

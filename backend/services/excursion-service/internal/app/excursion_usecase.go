@@ -19,26 +19,34 @@ import (
 )
 
 type ExcursionAggregate struct {
-	Excursion            *model.Excursion
-	Tags                 []string
-	LanguageCodes        []string
-	IncludedItems        []model.ExcursionIncludedItem
-	Itinerary            []*model.ExcursionItineraryItem
-	CoverFileID          *uuid.UUID
-	ProductCoverFileID   *uuid.UUID
-	ProductCoverImageURL *string
+	Excursion             *model.Excursion
+	Tags                  []string
+	LanguageCodes         []string
+	IncludedItems         []model.ExcursionIncludedItem
+	Itinerary             []*model.ExcursionItineraryItem
+	CoverFileID           *uuid.UUID
+	PhotoFileIDs          []uuid.UUID
+	PhotoImageURLs        []string
+	ProductCoverFileID    *uuid.UUID
+	ProductCoverImageURL  *string
+	ProductPhotoFileIDs   []uuid.UUID
+	ProductPhotoImageURLs []string
 }
 
 func newExcursionAggregate(item *model.Excursion, relations port.ExcursionRelations) *ExcursionAggregate {
 	return &ExcursionAggregate{
-		Excursion:            item,
-		Tags:                 relations.Tags,
-		LanguageCodes:        relations.LanguageCodes,
-		IncludedItems:        relations.IncludedItems,
-		Itinerary:            relations.Itinerary,
-		CoverFileID:          relations.CoverFileID,
-		ProductCoverFileID:   relations.ProductCoverFileID,
-		ProductCoverImageURL: relations.ProductCoverImageURL,
+		Excursion:             item,
+		Tags:                  relations.Tags,
+		LanguageCodes:         relations.LanguageCodes,
+		IncludedItems:         relations.IncludedItems,
+		Itinerary:             relations.Itinerary,
+		CoverFileID:           relations.CoverFileID,
+		PhotoFileIDs:          relations.PhotoFileIDs,
+		PhotoImageURLs:        nil,
+		ProductCoverFileID:    relations.ProductCoverFileID,
+		ProductCoverImageURL:  relations.ProductCoverImageURL,
+		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
+		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
 	}
 }
 
@@ -101,6 +109,7 @@ const (
 	excursionAutoPublishTrustThreshold = 70
 	excursionAutoPublishRiskThreshold  = 30
 	maxExternalCoverImageURLLength     = 2048
+	maxExcursionGalleryPhotos          = 10
 
 	AttendanceSyncStatusSynced        = "SYNCED"
 	AttendanceSyncStatusAlreadySynced = "ALREADY_SYNCED"
@@ -191,56 +200,62 @@ type itineraryTranslationJob struct {
 }
 
 type CreateExcursionInput struct {
-	ActorUserID          uuid.UUID
-	LandmarkID           *uuid.UUID
-	LandmarkName         *string
-	CategorySlug         string
-	ProductTranslations  model.ExcursionTranslations
-	Visibility           string
-	DurationMinutes      int
-	MaxGroupSize         int
-	LanguageCodes        []string
-	CountryCode          *string
-	CityName             *string
-	DepartureCityID      *string
-	MeetingPoint         string
-	Latitude             *float64
-	Longitude            *float64
-	MapURL               *string
-	PriceAmount          float64
-	Currency             string
-	CoverFileID          *uuid.UUID
-	ProductCoverFileID   *uuid.UUID
-	ProductCoverImageURL *string
-	IncludedItems        []ExcursionIncludedItemInput
-	Itinerary            []ExcursionItineraryItemInput
+	ActorUserID           uuid.UUID
+	LandmarkID            *uuid.UUID
+	LandmarkName          *string
+	CategorySlug          string
+	ProductTranslations   model.ExcursionTranslations
+	Visibility            string
+	DurationMinutes       int
+	MaxGroupSize          int
+	LanguageCodes         []string
+	CountryCode           *string
+	CityName              *string
+	DepartureCityID       *string
+	MeetingPoint          string
+	Latitude              *float64
+	Longitude             *float64
+	MapURL                *string
+	PriceAmount           float64
+	Currency              string
+	CoverFileID           *uuid.UUID
+	PhotoFileIDs          []uuid.UUID
+	ProductCoverFileID    *uuid.UUID
+	ProductCoverImageURL  *string
+	ProductPhotoFileIDs   []uuid.UUID
+	ProductPhotoImageURLs []string
+	IncludedItems         []ExcursionIncludedItemInput
+	Itinerary             []ExcursionItineraryItemInput
 }
 
 type UpdateExcursionInput struct {
-	ActorUserID          uuid.UUID
-	ExcursionID          uuid.UUID
-	LandmarkID           *uuid.UUID
-	LandmarkName         *string
-	CategorySlug         string
-	ProductTranslations  model.ExcursionTranslations
-	Visibility           string
-	DurationMinutes      int
-	MaxGroupSize         int
-	LanguageCodes        []string
-	CountryCode          *string
-	CityName             *string
-	DepartureCityID      *string
-	MeetingPoint         string
-	Latitude             *float64
-	Longitude            *float64
-	MapURL               *string
-	PriceAmount          float64
-	Currency             string
-	CoverFileID          *uuid.UUID
-	ProductCoverFileID   *uuid.UUID
-	ProductCoverImageURL *string
-	IncludedItems        []ExcursionIncludedItemInput
-	Itinerary            []ExcursionItineraryItemInput
+	ActorUserID           uuid.UUID
+	ExcursionID           uuid.UUID
+	LandmarkID            *uuid.UUID
+	LandmarkName          *string
+	CategorySlug          string
+	ProductTranslations   model.ExcursionTranslations
+	Visibility            string
+	DurationMinutes       int
+	MaxGroupSize          int
+	LanguageCodes         []string
+	CountryCode           *string
+	CityName              *string
+	DepartureCityID       *string
+	MeetingPoint          string
+	Latitude              *float64
+	Longitude             *float64
+	MapURL                *string
+	PriceAmount           float64
+	Currency              string
+	CoverFileID           *uuid.UUID
+	PhotoFileIDs          []uuid.UUID
+	ProductCoverFileID    *uuid.UUID
+	ProductCoverImageURL  *string
+	ProductPhotoFileIDs   []uuid.UUID
+	ProductPhotoImageURLs []string
+	IncludedItems         []ExcursionIncludedItemInput
+	Itinerary             []ExcursionItineraryItemInput
 }
 
 type CreateExcursionBookingInput struct {
@@ -425,7 +440,24 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		}
 	}
 
-	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
+	if err = validateGalleryPhotoInputLimit(
+		input.CoverFileID,
+		input.PhotoFileIDs,
+		input.ProductCoverFileID,
+		input.ProductCoverImageURL,
+		input.ProductPhotoFileIDs,
+		input.ProductPhotoImageURLs,
+	); err != nil {
+		return nil, err
+	}
+	if err = u.validateCoverFiles(
+		ctx,
+		appendUUIDPtrs(
+			[]*uuid.UUID{input.CoverFileID, input.ProductCoverFileID},
+			input.PhotoFileIDs,
+			input.ProductPhotoFileIDs,
+		)...,
+	); err != nil {
 		return nil, err
 	}
 	marketingCopy := placeBasedExcursionCopy(landmarkName)
@@ -489,7 +521,19 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if err != nil {
 		return nil, err
 	}
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.ProductCoverImageURL, itinerary)
+	relations, err := buildRelations(
+		item.ID,
+		nil,
+		input.LanguageCodes,
+		input.IncludedItems,
+		input.CoverFileID,
+		input.PhotoFileIDs,
+		input.ProductCoverFileID,
+		input.ProductCoverImageURL,
+		input.ProductPhotoFileIDs,
+		input.ProductPhotoImageURLs,
+		itinerary,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -497,18 +541,22 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if err = u.repo.CreateExcursionAggregate(ctx, item, relations); err != nil {
 		return nil, fmt.Errorf("create excursion aggregate: %w", err)
 	}
-	u.bindCoverFile(ctx, item.ID, input.ActorUserID, input.CoverFileID)
+	u.bindCoverFiles(ctx, item.ID, input.ActorUserID, relations.PhotoFileIDs)
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeCreated, input.ActorUserID, map[string]any{"status": string(item.Status)})
 
 	return &ExcursionAggregate{
-		Excursion:            item,
-		Tags:                 relations.Tags,
-		LanguageCodes:        relations.LanguageCodes,
-		IncludedItems:        relations.IncludedItems,
-		Itinerary:            relations.Itinerary,
-		CoverFileID:          relations.CoverFileID,
-		ProductCoverFileID:   relations.ProductCoverFileID,
-		ProductCoverImageURL: relations.ProductCoverImageURL,
+		Excursion:             item,
+		Tags:                  relations.Tags,
+		LanguageCodes:         relations.LanguageCodes,
+		IncludedItems:         relations.IncludedItems,
+		Itinerary:             relations.Itinerary,
+		CoverFileID:           relations.CoverFileID,
+		PhotoFileIDs:          relations.PhotoFileIDs,
+		PhotoImageURLs:        nil,
+		ProductCoverFileID:    relations.ProductCoverFileID,
+		ProductCoverImageURL:  relations.ProductCoverImageURL,
+		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
+		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
 	}, nil
 }
 
@@ -546,7 +594,24 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		permission.LastName,
 		permission.GuideSearchText,
 	)
-	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
+	if err = validateGalleryPhotoInputLimit(
+		input.CoverFileID,
+		input.PhotoFileIDs,
+		input.ProductCoverFileID,
+		input.ProductCoverImageURL,
+		input.ProductPhotoFileIDs,
+		input.ProductPhotoImageURLs,
+	); err != nil {
+		return nil, err
+	}
+	if err = u.validateCoverFiles(
+		ctx,
+		appendUUIDPtrs(
+			[]*uuid.UUID{input.CoverFileID, input.ProductCoverFileID},
+			input.PhotoFileIDs,
+			input.ProductPhotoFileIDs,
+		)...,
+	); err != nil {
 		return nil, err
 	}
 	inputLandmarkID := normalizeUUIDPtr(input.LandmarkID)
@@ -598,7 +663,19 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if err != nil {
 		return nil, err
 	}
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.ProductCoverImageURL, itinerary)
+	relations, err := buildRelations(
+		item.ID,
+		nil,
+		input.LanguageCodes,
+		input.IncludedItems,
+		input.CoverFileID,
+		input.PhotoFileIDs,
+		input.ProductCoverFileID,
+		input.ProductCoverImageURL,
+		input.ProductPhotoFileIDs,
+		input.ProductPhotoImageURLs,
+		itinerary,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -641,18 +718,22 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
 		return nil, fmt.Errorf("update excursion aggregate: %w", err)
 	}
-	u.bindCoverFile(ctx, item.ID, input.ActorUserID, input.CoverFileID)
+	u.bindCoverFiles(ctx, item.ID, input.ActorUserID, relations.PhotoFileIDs)
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeUpdated, input.ActorUserID, map[string]any{"revision": item.Revision})
 
 	return &ExcursionAggregate{
-		Excursion:            item,
-		Tags:                 relations.Tags,
-		LanguageCodes:        relations.LanguageCodes,
-		IncludedItems:        relations.IncludedItems,
-		Itinerary:            relations.Itinerary,
-		CoverFileID:          relations.CoverFileID,
-		ProductCoverFileID:   relations.ProductCoverFileID,
-		ProductCoverImageURL: relations.ProductCoverImageURL,
+		Excursion:             item,
+		Tags:                  relations.Tags,
+		LanguageCodes:         relations.LanguageCodes,
+		IncludedItems:         relations.IncludedItems,
+		Itinerary:             relations.Itinerary,
+		CoverFileID:           relations.CoverFileID,
+		PhotoFileIDs:          relations.PhotoFileIDs,
+		PhotoImageURLs:        nil,
+		ProductCoverFileID:    relations.ProductCoverFileID,
+		ProductCoverImageURL:  relations.ProductCoverImageURL,
+		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
+		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
 	}, nil
 }
 
@@ -3165,6 +3246,20 @@ func (u *ExcursionUseCase) bindCoverFile(ctx context.Context, excursionID uuid.U
 	_ = u.fileManager.BindExcursionCoverFile(ctx, *fileID, excursionID, actorUserID)
 }
 
+func (u *ExcursionUseCase) bindCoverFiles(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID, fileIDs []uuid.UUID) {
+	seen := make(map[uuid.UUID]struct{}, len(fileIDs))
+	for _, fileID := range fileIDs {
+		if fileID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[fileID]; ok {
+			continue
+		}
+		seen[fileID] = struct{}{}
+		u.bindCoverFile(ctx, excursionID, actorUserID, &fileID)
+	}
+}
+
 func (u *ExcursionUseCase) recordEvent(ctx context.Context, excursionID uuid.UUID, eventType enum.ExcursionEventType, actorUserID uuid.UUID, payload any) {
 	actor := actorUserID
 	event, err := model.NewExcursionEvent(model.NewExcursionEventParams{
@@ -3386,8 +3481,11 @@ func buildRelations(
 	languageCodes []string,
 	includedItems []ExcursionIncludedItemInput,
 	coverFileID *uuid.UUID,
+	photoFileIDs []uuid.UUID,
 	productCoverFileID *uuid.UUID,
 	productCoverImageURL *string,
+	productPhotoFileIDs []uuid.UUID,
+	productPhotoImageURLs []string,
 	itinerary []ExcursionItineraryItemInput,
 ) (port.ExcursionRelations, error) {
 	items := make([]*model.ExcursionItineraryItem, 0, len(itinerary))
@@ -3413,13 +3511,22 @@ func buildRelations(
 		items = append(items, item)
 	}
 
+	normalizedCoverFileID := normalizeUUIDPtr(coverFileID)
+	normalizedProductCoverFileID := normalizeUUIDPtr(productCoverFileID)
+	normalizedProductCoverImageURL := normalizeCoverImageURL(productCoverImageURL)
 	relations := port.ExcursionRelations{
-		Tags:                 normalizeUniqueLower(tags),
-		LanguageCodes:        normalizeUniqueLower(languageCodes),
-		Itinerary:            items,
-		CoverFileID:          normalizeUUIDPtr(coverFileID),
-		ProductCoverFileID:   normalizeUUIDPtr(productCoverFileID),
-		ProductCoverImageURL: normalizeCoverImageURL(productCoverImageURL),
+		Tags:                  normalizeUniqueLower(tags),
+		LanguageCodes:         normalizeUniqueLower(languageCodes),
+		Itinerary:             items,
+		CoverFileID:           normalizedCoverFileID,
+		PhotoFileIDs:          normalizeGalleryFileIDs(normalizedCoverFileID, photoFileIDs),
+		ProductCoverFileID:    normalizedProductCoverFileID,
+		ProductCoverImageURL:  normalizedProductCoverImageURL,
+		ProductPhotoFileIDs:   normalizeGalleryFileIDs(normalizedProductCoverFileID, productPhotoFileIDs),
+		ProductPhotoImageURLs: normalizeGalleryImageURLs(normalizedProductCoverImageURL, productPhotoImageURLs),
+	}
+	if err := validateGalleryPhotoLimit(relations); err != nil {
+		return port.ExcursionRelations{}, err
 	}
 	normalizedIncludedItems, err := normalizeIncludedItems(includedItems)
 	if err != nil {
@@ -3427,6 +3534,90 @@ func buildRelations(
 	}
 	relations.IncludedItems = normalizedIncludedItems
 	return relations, nil
+}
+
+func validateGalleryPhotoLimit(relations port.ExcursionRelations) error {
+	if len(relations.PhotoFileIDs) > maxExcursionGalleryPhotos ||
+		len(relations.ProductPhotoFileIDs) > maxExcursionGalleryPhotos ||
+		len(relations.ProductPhotoImageURLs) > maxExcursionGalleryPhotos {
+		return ErrExcursionGalleryTooManyPhotos
+	}
+	return nil
+}
+
+func validateGalleryPhotoInputLimit(
+	coverFileID *uuid.UUID,
+	photoFileIDs []uuid.UUID,
+	productCoverFileID *uuid.UUID,
+	productCoverImageURL *string,
+	productPhotoFileIDs []uuid.UUID,
+	productPhotoImageURLs []string,
+) error {
+	return validateGalleryPhotoLimit(port.ExcursionRelations{
+		PhotoFileIDs:          normalizeGalleryFileIDs(normalizeUUIDPtr(coverFileID), photoFileIDs),
+		ProductPhotoFileIDs:   normalizeGalleryFileIDs(normalizeUUIDPtr(productCoverFileID), productPhotoFileIDs),
+		ProductPhotoImageURLs: normalizeGalleryImageURLs(normalizeCoverImageURL(productCoverImageURL), productPhotoImageURLs),
+	})
+}
+
+func appendUUIDPtrs(initial []*uuid.UUID, groups ...[]uuid.UUID) []*uuid.UUID {
+	result := make([]*uuid.UUID, 0, len(initial))
+	result = append(result, initial...)
+	for _, group := range groups {
+		for _, value := range group {
+			if value == uuid.Nil {
+				continue
+			}
+			id := value
+			result = append(result, &id)
+		}
+	}
+	return result
+}
+
+func normalizeGalleryFileIDs(coverFileID *uuid.UUID, values []uuid.UUID) []uuid.UUID {
+	result := make([]uuid.UUID, 0, len(values)+1)
+	seen := make(map[uuid.UUID]struct{}, len(values)+1)
+	if coverFileID != nil && *coverFileID != uuid.Nil {
+		result = append(result, *coverFileID)
+		seen[*coverFileID] = struct{}{}
+	}
+	for _, value := range values {
+		if value == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func normalizeGalleryImageURLs(coverImageURL *string, values []string) []string {
+	result := make([]string, 0, len(values)+1)
+	seen := make(map[string]struct{}, len(values)+1)
+	if coverImageURL != nil {
+		normalized := strings.TrimSpace(*coverImageURL)
+		if normalized != "" {
+			result = append(result, normalized)
+			seen[normalized] = struct{}{}
+		}
+	}
+	for _, value := range values {
+		normalizedPtr := normalizeCoverImageURL(&value)
+		if normalizedPtr == nil {
+			continue
+		}
+		normalized := *normalizedPtr
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result
 }
 
 func normalizeCoverImageURL(value *string) *string {

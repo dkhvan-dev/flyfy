@@ -34,6 +34,8 @@ class ExcursionVm {
     this.mapUrl,
     this.coverFileId,
     this.coverImageUrl,
+    this.photoFileIds = const [],
+    this.photoImageUrls = const [],
     this.includedItems = const [],
     this.includedItemTranslations = const {},
     this.itinerary = const [],
@@ -82,6 +84,8 @@ class ExcursionVm {
   final String? mapUrl;
   final String? coverFileId;
   final String? coverImageUrl;
+  final List<String> photoFileIds;
+  final List<String> photoImageUrls;
   final List<String> includedItems;
   final Map<String, List<String>> includedItemTranslations;
   final List<ExcursionItineraryItemVm> itinerary;
@@ -147,6 +151,10 @@ class ExcursionVm {
       coverImageUrl: (offer.coverFileId ?? '').trim().isNotEmpty
           ? null
           : coverImageUrl,
+      photoFileIds: offer.photoFileIds.isNotEmpty
+          ? offer.photoFileIds
+          : photoFileIds,
+      photoImageUrls: offer.photoFileIds.isNotEmpty ? const [] : photoImageUrls,
       includedItems: offer.includedItems,
       includedItemTranslations: offer.includedItemTranslations,
       itinerary: offer.itinerary,
@@ -223,6 +231,8 @@ class ExcursionVm {
       mapUrl: json['mapUrl'] as String? ?? primaryOffer?.mapUrl,
       coverFileId: json['coverFileId'] as String? ?? primaryOffer?.coverFileId,
       coverImageUrl: json['coverImageUrl'] as String?,
+      photoFileIds: _stringList(json['photoFileIds']),
+      photoImageUrls: _stringList(json['photoImageUrls']),
       includedItems: includedItems,
       includedItemTranslations: _includedItemTranslations(
         json['includedItemTranslations'],
@@ -379,6 +389,7 @@ class ExcursionOfferVm {
     this.longitude,
     this.mapUrl,
     this.coverFileId,
+    this.photoFileIds = const [],
     this.title = '',
     this.summary = '',
     this.description = '',
@@ -412,6 +423,7 @@ class ExcursionOfferVm {
   final double priceAmount;
   final String currency;
   final String? coverFileId;
+  final List<String> photoFileIds;
   final List<String> languageCodes;
   final List<String> includedItems;
   final Map<String, List<String>> includedItemTranslations;
@@ -444,6 +456,7 @@ class ExcursionOfferVm {
       priceAmount: (json['priceAmount'] as num?)?.toDouble() ?? 0,
       currency: (json['currency'] as String?) ?? 'KZT',
       coverFileId: json['coverFileId'] as String?,
+      photoFileIds: ExcursionVm._stringList(json['photoFileIds']),
       languageCodes: ExcursionVm._stringList(json['languageCodes']),
       includedItems: ExcursionVm._stringList(json['includedItems']),
       includedItemTranslations: ExcursionVm._includedItemTranslations(

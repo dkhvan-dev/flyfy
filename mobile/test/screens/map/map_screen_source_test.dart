@@ -31,6 +31,92 @@ void main() {
     expect(mapSource, isNot(contains('TileLayer(')));
   });
 
+  test('map screen handles style load through map events only', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('void _handleMapStyleLoaded()'));
+    expect(mapSource, contains('case MapEventStyleLoaded():'));
+    expect(mapSource, contains('_handleMapStyleLoaded();'));
+    expect(mapSource, contains('onEvent: _handleMapEvent'));
+    expect(mapSource, isNot(contains('onStyleLoaded:')));
+  });
+
+  test('map screen renders map full bleed with controls overlaid', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(
+      mapSource,
+      contains("const ValueKey('map-screen-full-bleed-layer')"),
+    );
+    expect(
+      mapSource,
+      contains("const ValueKey('map-screen-overlay-controls')"),
+    );
+    expect(mapSource, contains("const ValueKey('map-screen-bottom-overlay')"));
+    expect(
+      mapSource,
+      contains("const ValueKey('map-screen-bottom-attribution')"),
+    );
+    expect(mapSource, contains('return Stack('));
+    expect(mapSource, contains('fit: StackFit.expand'));
+    expect(mapSource, contains('child: LayoutBuilder('));
+    expect(
+      mapSource,
+      isNot(contains('child: SafeArea(\n            child: LayoutBuilder(')),
+    );
+    expect(mapSource, contains('bottom: bottomOverlayHeight'));
+    expect(mapSource, contains('height: bottomOverlayHeight'));
+    expect(mapSource, contains('final bottomAttributionHeight ='));
+    expect(
+      mapSource,
+      contains('bottom: bottomAttributionHeight + outerPadding'),
+    );
+    expect(mapSource, contains('alignment: Alignment.bottomCenter'));
+    expect(mapSource, contains('safeAreaTop: false'));
+    expect(
+      mapSource,
+      isNot(contains('bottomOverlayHeight + mapOverlayPadding')),
+    );
+    expect(
+      mapSource,
+      isNot(
+        contains(
+          'Expanded(\n                              child: ClipRRect(\n                                borderRadius',
+        ),
+      ),
+    );
+  });
+
+  test('map place overlay cards keep readable opaque surfaces', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+    final previewCardSource = _classSource(mapSource, '_PlacePreviewCard');
+    final hintCardSource = _classSource(mapSource, '_MapHintCard');
+    final selectedCardSource = _classSource(mapSource, '_SelectedPlaceCard');
+
+    expect(previewCardSource, contains('AppPalette.warmInk104'));
+    expect(previewCardSource, contains('alpha: 0.94'));
+    expect(previewCardSource, contains('BoxShadow('));
+    expect(hintCardSource, contains('AppPalette.warmInk104'));
+    expect(hintCardSource, contains('alpha: 0.96'));
+    expect(selectedCardSource, contains('AppPalette.warmInk104'));
+    expect(selectedCardSource, contains('alpha: 0.97'));
+    expect(selectedCardSource, contains('backgroundColor: AppPalette.primary'));
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      isNot(contains('AppPalette.white.withValues(alpha: 0.05)')),
+    );
+    expect(
+      selectedCardSource,
+      isNot(contains('AppPalette.white.withValues(alpha: 0.03)')),
+    );
+  });
+
   test('activity map mode is fast responsive and gesture stable', () async {
     final mapSource = await File(
       'lib/screens/map/map_screen.dart',
@@ -59,7 +145,11 @@ void main() {
       mapSource,
       contains('if (!_hideInteractiveMarkersDuringCameraMove)'),
     );
-    expect(mapSource, contains('FlexFit.tight'));
+    expect(
+      mapSource,
+      contains("const ValueKey('map-screen-full-bleed-layer')"),
+    );
+    expect(mapSource, contains("const ValueKey('map-screen-bottom-overlay')"));
     expect(mapSource, contains('maxHeight: bottomPanelMaxHeight'));
     expect(ruArb, contains('"mapDistancePending": "Определяем расстояние"'));
   });
@@ -121,6 +211,50 @@ void main() {
     expect(mapSource, contains('_selectedPlace = targetPlace;'));
   });
 
+  test('map screen can return a picked meeting point target', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+    final routerSource = await File(
+      'lib/core/router/app_router.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('this.meetingPointPickerEnabled = false,'));
+    expect(mapSource, contains("import 'package:geocoding/geocoding.dart';"));
+    expect(mapSource, contains('final bool meetingPointPickerEnabled;'));
+    expect(mapSource, contains('bool get _isMeetingPointPickerMode'));
+    expect(mapSource, contains('LatLng? _selectedPickerPoint;'));
+    expect(mapSource, contains('String? _selectedPickerAddress;'));
+    expect(mapSource, contains('bool _pickerAddressResolving = false;'));
+    expect(mapSource, contains('int _pickerAddressResolveSerial = 0;'));
+    expect(mapSource, contains('_selectMeetingPointPickerPoint('));
+    expect(mapSource, contains('_resolveMeetingPointPickerAddress('));
+    expect(mapSource, contains('placemarkFromCoordinates('));
+    expect(mapSource, contains('_composeMeetingPointPickerLabel('));
+    expect(mapSource, contains('addressLabel: _selectedPickerAddress'));
+    expect(mapSource, contains('resolvingAddress: _pickerAddressResolving'));
+    expect(mapSource, contains('_confirmMeetingPointSelection('));
+    expect(
+      mapSource,
+      contains('final subtitle = _selectedPickerAddress?.trim().isNotEmpty'),
+    );
+    expect(mapSource, contains('context.pop<MapTarget>('));
+    expect(mapSource, contains('class _MeetingPointPickerPanel'));
+    expect(mapSource, contains('class _MeetingPointPickerMarker'));
+    expect(mapSource, contains('l10n.createMeetingPointLocationLabel'));
+    expect(mapSource, contains('l10n.createMapTapHint'));
+    expect(mapSource, contains('MapEventClick(point: final point'));
+    expect(
+      mapSource,
+      contains('_selectMeetingPointPickerPoint(_fromGeographic(point))'),
+    );
+    expect(routerSource, contains("mode == 'meeting-point-picker'"));
+    expect(
+      routerSource,
+      contains('meetingPointPickerEnabled: meetingPointPickerEnabled'),
+    );
+  });
+
   test(
     'route preview uses dedicated map args without overloading target',
     () async {
@@ -178,8 +312,9 @@ void main() {
       mapSource,
       contains('_focusRoutePreviewCamera(preview, animate: true);'),
     );
-    expect(mapSource, contains('final styleRoutePreview ='));
-    expect(mapSource, contains('styleRoutePreview'));
+    expect(mapSource, contains('void _handleMapStyleLoaded()'));
+    expect(mapSource, contains('final loadedRoutePreview = _routePreview;'));
+    expect(mapSource, contains('loadedRoutePreview'));
     expect(mapSource, isNot(contains('zoom: _routePreviewZoom(preview)')));
   });
 
@@ -198,15 +333,11 @@ void main() {
     expect(mapSource, contains('const Duration(milliseconds: 180)'));
     expect(mapSource, contains('const Duration(milliseconds: 650)'));
     expect(mapSource, contains('_cancelRoutePreviewCameraFitRetry();'));
-    expect(mapSource, contains('final styleRoutePreview ='));
+    expect(mapSource, contains('final loadedRoutePreview = _routePreview;'));
+    expect(mapSource, contains('if (loadedRoutePreview != null) {'));
     expect(
       mapSource,
-      matches(
-        RegExp(
-          r'if \(styleRoutePreview != null\) \{\s+'
-          r'_scheduleRoutePreviewCameraFit\(\s+styleRoutePreview,',
-        ),
-      ),
+      contains('_scheduleRoutePreviewCameraFit(loadedRoutePreview);'),
     );
   });
 
@@ -419,4 +550,11 @@ void main() {
     expect(mapSource, isNot(contains('resultLimit: 40')));
     expect(mapSource, isNot(contains('resultLimit: 28')));
   });
+}
+
+String _classSource(String source, String className) {
+  final start = source.indexOf('class $className');
+  expect(start, isNonNegative, reason: '$className must exist');
+  final nextClass = source.indexOf('\nclass ', start + 1);
+  return source.substring(start, nextClass == -1 ? source.length : nextClass);
 }

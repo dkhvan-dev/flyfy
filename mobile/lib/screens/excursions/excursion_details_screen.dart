@@ -954,6 +954,7 @@ class ExcursionDetailsContent extends StatelessWidget {
                 children: [
                   _ExcursionHero(
                     excursion: excursion,
+                    selectedOffer: activeSelectedOffer,
                     localizedLandmark: localizedLandmark,
                   ),
                   Padding(
@@ -1159,23 +1160,41 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-class _ExcursionHero extends StatelessWidget {
+class _ExcursionHero extends StatefulWidget {
   const _ExcursionHero({
     required this.excursion,
+    required this.selectedOffer,
     required this.localizedLandmark,
   });
 
   final ExcursionVm excursion;
+  final ExcursionOfferVm? selectedOffer;
   final PlaceVm? localizedLandmark;
 
   @override
+  State<_ExcursionHero> createState() => _ExcursionHeroState();
+}
+
+class _ExcursionHeroState extends State<_ExcursionHero> {
+  int _currentImageIndex = 0;
+
+  @override
+  void didUpdateWidget(covariant _ExcursionHero oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.excursion.id != widget.excursion.id ||
+        oldWidget.selectedOffer?.id != widget.selectedOffer?.id) {
+      _currentImageIndex = 0;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final imageUrl = resolveExcursionCoverUrl(excursion)?.trim() ?? '';
-    final label = _categoryLabel(context, excursion.categorySlug);
+    final imageUrls = _heroImageUrls(widget.excursion, widget.selectedOffer);
+    final label = _categoryLabel(context, widget.excursion.categorySlug);
     final title = localizedExcursionTitle(
       languageCode: Localizations.localeOf(context).languageCode,
-      excursion: excursion,
-      place: localizedLandmark,
+      excursion: widget.excursion,
+      place: widget.localizedLandmark,
       fallback: label,
     );
 
@@ -1184,11 +1203,20 @@ class _ExcursionHero extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (imageUrl.isNotEmpty)
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const _ExcursionHeroFallback(),
+          if (imageUrls.isNotEmpty)
+            PageView.builder(
+              key: ValueKey(imageUrls.join('|')),
+              itemCount: imageUrls.length,
+              onPageChanged: (index) {
+                setState(() => _currentImageIndex = index);
+              },
+              itemBuilder: (context, index) {
+                return Image.network(
+                  imageUrls[index],
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const _ExcursionHeroFallback(),
+                );
+              },
             )
           else
             const _ExcursionHeroFallback(),
@@ -1248,11 +1276,20 @@ class _ExcursionHero extends StatelessWidget {
                   spacing: 16,
                   runSpacing: 8,
                   children: [
+                    if (imageUrls.length > 1) ...[
+                      Center(
+                        child: _ExcursionHeroImageIndicator(
+                          count: imageUrls.length,
+                          activeIndex: _currentImageIndex,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     _HeroMetaPill(
                       icon: Icons.schedule_rounded,
                       label: _formatDuration(
                         context,
-                        excursion.durationMinutes,
+                        widget.excursion.durationMinutes,
                       ).toUpperCase(),
                     ),
                     const _HeroMetaPill(
@@ -1267,6 +1304,57 @@ class _ExcursionHero extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  List<String> _heroImageUrls(
+    ExcursionVm excursion,
+    ExcursionOfferVm? selectedOffer,
+  ) {
+    final offerPhotoUrls = <String>[];
+    final seen = <String>{};
+    for (final fileId in selectedOffer?.photoFileIds ?? const <String>[]) {
+      final url = resolvePublicFileContentUrl(fileId)?.trim() ?? '';
+      if (url.isEmpty || !seen.add(url)) {
+        continue;
+      }
+      offerPhotoUrls.add(url);
+    }
+    if (offerPhotoUrls.isNotEmpty) {
+      return offerPhotoUrls;
+    }
+    return resolveExcursionPhotoUrls(excursion);
+  }
+}
+
+class _ExcursionHeroImageIndicator extends StatelessWidget {
+  const _ExcursionHeroImageIndicator({
+    required this.count,
+    required this.activeIndex,
+  });
+
+  final int count;
+  final int activeIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(count, (index) {
+        final active = index == activeIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const AppEdgeInsets.symmetric(horizontal: 3),
+          width: active ? 18 : 7,
+          height: 7,
+          decoration: AppBoxDecoration(
+            color: active
+                ? AppPalette.primary
+                : AppPalette.white.withValues(alpha: 0.58),
+            borderRadius: AppBorderRadius.circular(999),
+          ),
+        );
+      }),
     );
   }
 }

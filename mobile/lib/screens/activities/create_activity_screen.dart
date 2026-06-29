@@ -37,6 +37,7 @@ import '../../shared/map/app_map_links.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_map_card.dart';
+import '../map/map_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _inlineValidationColor = AppPalette.redSoft11;
@@ -1235,32 +1236,31 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    return _showActivityAmberConfirmDialog(
+      title: l10n.createActivityDiscardTitle,
+      description: l10n.createActivityDiscardDescription,
+      cancelLabel: l10n.cancelButton,
+      confirmLabel: l10n.createActivityDiscardConfirm,
+    );
+  }
+
+  Future<bool> _showActivityAmberConfirmDialog({
+    required String title,
+    required String description,
+    required String cancelLabel,
+    required String confirmLabel,
+  }) async {
     final result = await showAppModalDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return AppModalDialogCard(
-          backgroundColor: AppPalette.surfaceCool,
-          title: Text(
-            l10n.createActivityDiscardTitle,
-            style: const AppTextStyle(color: AppPalette.textPrimary),
-          ),
-          content: Text(
-            l10n.createActivityDiscardDescription,
-            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(
-                l10n.createActivityDiscardConfirm,
-                style: const AppTextStyle(color: _inlineValidationColor),
-              ),
-            ),
-          ],
+        return _ActivityAmberConfirmDialog(
+          title: title,
+          description: description,
+          cancelLabel: cancelLabel,
+          confirmLabel: confirmLabel,
+          onCancel: () => Navigator.of(dialogContext).pop(false),
+          onConfirm: () => Navigator.of(dialogContext).pop(true),
         );
       },
     );
@@ -2085,20 +2085,34 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     setState(() => _isResolvingMapSelection = false);
   }
 
-  Future<void> _handleMapTapped(LatLng position) async {
+  Future<void> _handleMapTapped(LatLng position, {String? addressLabel}) async {
     if (!_canEditMeetingAddress) {
       return;
     }
     final requestSerial = ++_mapSelectionRequestSerial;
+    final selectedAddressLabel = addressLabel?.trim();
+    final displayAddressLabel = selectedAddressLabel?.isNotEmpty == true
+        ? selectedAddressLabel!
+        : null;
+    final mapUrl = AppMapLinks.buildUrl(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      title: _titleCtrl.text,
+      subtitle: displayAddressLabel ?? _addressTextCtrl.text,
+    );
 
     setState(() {
       _selectedLatitude = position.latitude;
       _selectedLongitude = position.longitude;
-      _selectedMapUrl = _buildMapUrl(position.latitude, position.longitude);
-      _setMapUrlText(_selectedMapUrl!);
+      _selectedMapUrl = mapUrl;
+      _setMapUrlText(mapUrl);
+      if (displayAddressLabel != null) {
+        _addressTextCtrl.text = displayAddressLabel;
+      }
       _mapUrlResolvingRawValue = null;
       _mapUrlResolveFailedRawValue = null;
       _mapUrlErrorText = null;
+      _addressErrorText = null;
       _isResolvingMapSelection = true;
     });
 
@@ -2107,6 +2121,42 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       isCurrentRequest: () => requestSerial == _mapSelectionRequestSerial,
       syncMapUrlAfterAddress: true,
     );
+  }
+
+  Future<void> _openExpandedMeetingPointMap() async {
+    if (!_canEditMeetingAddress) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final l10n = AppLocalizations.of(context)!;
+    final title = _titleCtrl.text.trim().isNotEmpty
+        ? _titleCtrl.text.trim()
+        : l10n.createMeetingPointLocationLabel;
+    final subtitle = _addressTextCtrl.text.trim().isNotEmpty
+        ? _addressTextCtrl.text.trim()
+        : _cityNameCtrl.text.trim();
+    final mapUrl = _mapUrlCtrl.text.trim();
+    final initialTarget = _hasSelectedMapPoint
+        ? MapTarget(
+            title: title,
+            subtitle: subtitle.isEmpty ? null : subtitle,
+            latitude: _selectedLatitude!,
+            longitude: _selectedLongitude!,
+            sourceUrl: mapUrl.isEmpty ? null : mapUrl,
+          )
+        : null;
+
+    final result = await context.push<MapTarget>(
+      '/map?mode=meeting-point-picker',
+      extra: initialTarget,
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+
+    await _handleMapTapped(result.point, addressLabel: result.subtitle);
   }
 
   @override
@@ -2554,6 +2604,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 hasMarker: _hasSelectedMapPoint,
                 nativeMapEnabled: _isStepNativeMapEnabled(1),
                 onTap: _handleMapTapped,
+                overlay: _MapExpandButton(onTap: _openExpandedMeetingPointMap),
               ),
             ),
           ),
@@ -2853,6 +2904,211 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 // ════════════════════════════════════════════════════════════════
 //  Reusable widgets (private to this screen)
 // ════════════════════════════════════════════════════════════════
+
+class _ActivityAmberConfirmDialog extends StatelessWidget {
+  const _ActivityAmberConfirmDialog({
+    required this.title,
+    required this.description,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String title;
+  final String description;
+  final String cancelLabel;
+  final String confirmLabel;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      elevation: 0,
+      insetPadding: const AppEdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      backgroundColor: AppPalette.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: DecoratedBox(
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(30),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppPalette.warmSurface81, AppPalette.textOnInverse],
+            ),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.58),
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppPalette.black.withValues(alpha: 0.42),
+                blurRadius: 30,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppPalette.primary.withValues(alpha: 0.72),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppPalette.primary,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeWash23,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w900,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Text(
+                            description,
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeLight13,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.38,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onConfirm,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.white,
+                      padding: const AppEdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppBorderRadius.circular(18),
+                      ),
+                      textStyle: const AppTextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    child: Text(
+                      confirmLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: onCancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppPalette.orangeLight29,
+                      padding: const AppEdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppBorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      cancelLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const AppTextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapExpandButton extends StatelessWidget {
+  const _MapExpandButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Positioned(
+      top: 12,
+      right: 12,
+      child: Semantics(
+        button: true,
+        label: l10n.createMapTapHint,
+        child: Tooltip(
+          message: l10n.createMapTapHint,
+          child: Material(
+            color: AppPalette.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: AppBorderRadius.circular(999),
+              child: Ink(
+                width: 46,
+                height: 46,
+                decoration: AppBoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppPalette.warmInk104.withValues(alpha: 0.88),
+                  border: Border.all(
+                    color: AppPalette.primary.withValues(alpha: 0.34),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppPalette.black.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.open_in_full_rounded,
+                  color: AppPalette.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _CreateTopBar extends StatelessWidget {
   const _CreateTopBar({required this.title, this.onBack});

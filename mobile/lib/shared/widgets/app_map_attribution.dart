@@ -13,6 +13,7 @@ class AppMapAttribution extends StatelessWidget {
     super.key,
     this.alignment = Alignment.bottomRight,
     this.padding = const AppEdgeInsets.all(10),
+    this.safeAreaTop = true,
   });
 
   static final Uri _inflapMapUri = Uri.https(
@@ -29,6 +30,7 @@ class AppMapAttribution extends StatelessWidget {
 
   final Alignment alignment;
   final EdgeInsetsGeometry padding;
+  final bool safeAreaTop;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class AppMapAttribution extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return SafeArea(
+      top: safeAreaTop,
       child: Align(
         alignment: alignment,
         child: Padding(

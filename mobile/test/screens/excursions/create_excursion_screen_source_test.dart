@@ -50,6 +50,50 @@ void main() {
   );
 
   test(
+    'create excursion defers native map until meeting point step settles',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('int? _pendingProgrammaticStep;'));
+      expect(source, contains('final Set<int> _nativeMapActivatedSteps'));
+      expect(source, contains('bool _isStepNativeMapEnabled(int step)'));
+      expect(source, contains('_pendingProgrammaticStep == null'));
+      expect(source, contains('void _handlePageChanged(int step)'));
+      expect(source, contains('onPageChanged: _handlePageChanged'));
+      expect(
+        source,
+        contains(
+          'nativeMapEnabled: _isStepNativeMapEnabled(_meetingPointStep)',
+        ),
+      );
+      expect(source, contains('if (_pendingProgrammaticStep != null) return;'));
+      expect(
+        source,
+        contains('_nativeMapActivatedSteps.add(_meetingPointStep);'),
+      );
+      expect(source, contains('_pendingProgrammaticStep = restoredStep;'));
+    },
+  );
+
+  test('create excursion carousel allows up to ten photos', () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('static const int _maxExcursionPhotos = 10;'));
+    expect(
+      source,
+      contains(
+        'final availableSlots = _maxExcursionPhotos - _photoDrafts.length;',
+      ),
+    );
+    expect(source, contains('pickedImages.take(availableSlots)'));
+    expect(source, contains('maxPhotos: _maxExcursionPhotos'));
+  });
+
+  test(
     'create excursion loads effective device location before prefill',
     () async {
       final source = await File(
@@ -145,13 +189,28 @@ void main() {
       expect(source, contains("../../shared/widgets/app_map_card.dart"));
       expect(source, contains("package:latlong2/latlong.dart"));
       expect(source, contains("package:geocoding/geocoding.dart"));
+      expect(source, contains("../map/map_screen.dart"));
       expect(source, contains('AppMapCard('));
       expect(source, contains('onTap: _handleMapTapped'));
+      expect(source, contains('overlay: _MapExpandButton('));
+      expect(source, contains('Icons.open_in_full_rounded'));
+      expect(source, contains('Future<void> _openExpandedMeetingPointMap()'));
+      expect(source, contains("context.push<MapTarget>"));
+      expect(source, contains("'/map?mode=meeting-point-picker'"));
+      expect(
+        source,
+        contains(
+          '_handleMapTapped(result.point, meetingPointLabel: result.subtitle)',
+        ),
+      );
+      expect(source, contains('Future<void> _handleMapTapped('));
+      expect(source, contains('String? meetingPointLabel'));
       expect(source, contains('_handleMapTapped'));
       expect(source, contains('AppMapLinks.buildUrl('));
       expect(source, contains('_composeMeetingPointLabel'));
       expect(source, contains('placemarkFromCoordinates('));
       expect(source, contains('_meetingPointCtrl.text = address'));
+      expect(source, contains('class _MapExpandButton'));
       expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
       expect(source, isNot(contains('final MapController _mapController')));
       expect(source, isNot(contains('FlutterMap(')));

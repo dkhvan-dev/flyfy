@@ -169,7 +169,7 @@ void main() {
   );
 
   test(
-    'excursion details resolves cover file id and hides booking for author',
+    'excursion details resolves photo carousel and hides booking for author',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -181,7 +181,10 @@ void main() {
           "import '../../features/excursions/excursion_cover_url.dart';",
         ),
       );
-      expect(source, contains('resolveExcursionCoverUrl(excursion)'));
+      expect(source, contains('resolveExcursionPhotoUrls(excursion)'));
+      expect(source, contains('selectedOffer?.photoFileIds'));
+      expect(source, contains('PageView.builder'));
+      expect(source, contains('_ExcursionHeroImageIndicator'));
       expect(
         source,
         contains('!isAuthor && hasBookableOffer && hasAvailableSchedule'),

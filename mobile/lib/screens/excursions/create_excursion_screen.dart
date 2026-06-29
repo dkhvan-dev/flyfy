@@ -28,6 +28,7 @@ import '../../shared/map/app_map_link_resolver.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_map_card.dart';
+import '../map/map_screen.dart';
 import 'excursion_select_location_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
@@ -57,10 +58,12 @@ double _createExcursionIncludedItemIconBoxSize(BuildContext context) {
 
 class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   static const _totalSteps = 3;
+  static const _meetingPointStep = _totalSteps - 1;
   static const LatLng _fallbackMapTarget = LatLng(43.238949, 76.889709);
   static const double _stepBackSwipeMinDistance = 56;
   static const double _stepBackSwipeMinVelocity = 700;
   static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
+  static const int _maxExcursionPhotos = 10;
   static const int _maxExcursionLanguages = 5;
   static const int _minItinerarySlots = 2;
   static const int _maxItineraryPlaceStops = 5;
@@ -73,6 +76,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   final _fileApi = FileApi();
   final _mapLinkResolver = const AppMapLinkResolver();
   var _currentStep = 0;
+  int? _pendingProgrammaticStep;
+  final Set<int> _nativeMapActivatedSteps = <int>{};
   var _isSubmitting = false;
   var _isLoadingInitialExcursion = false;
   var _didApplyInitialExcursion = false;
@@ -103,8 +108,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   String? _mapUrlResolveFailedRawValue;
   String? _selectedPlaceCoverFileId;
   String? _selectedPlaceCoverImageUrl;
+  List<String> _selectedPlacePhotoFileIds = const [];
+  List<String> _selectedPlacePhotoImageUrls = const [];
   Map<String, CreateExcursionLocalizedCopyRequest> _productTranslations =
       const {};
+  final List<_ExcursionPhotoDraft> _photoDrafts = [];
   Uint8List? _coverPreviewBytes;
   String? _coverFileId;
   String? _existingCoverImageUrl;
@@ -112,6 +120,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   bool _isCoverUploading = false;
   String? _coverUploadErrorMessage;
   int _coverUploadGeneration = 0;
+  int _nextPhotoDraftLocalId = 1;
   bool _isApplyingMapUrlProgrammatically = false;
   bool _isApplyingAutosaveDraft = false;
   bool _didRestoreAutosaveDraft = false;
@@ -303,6 +312,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         (_selectedLandmarkId ?? '').trim().isNotEmpty ||
         (_selectedPlaceCoverFileId ?? '').trim().isNotEmpty ||
         (_selectedPlaceCoverImageUrl ?? '').trim().isNotEmpty ||
+        _selectedPlacePhotoFileIds.isNotEmpty ||
+        _selectedPlacePhotoImageUrls.isNotEmpty ||
         _durationValueCtrl.text.trim() != '4' ||
         _maxGroupSizeCtrl.text.trim() != '8' ||
         !_hasDefaultLanguageSelection ||
@@ -310,6 +321,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         _mapUrlCtrl.text.trim().isNotEmpty ||
         _priceAmountCtrl.text.trim().isNotEmpty ||
         (_coverFileId ?? '').trim().isNotEmpty ||
+        _photoDrafts.isNotEmpty ||
         _coverPreviewBytes != null ||
         _coverChanged ||
         _selectedLatitude != null ||
@@ -342,7 +354,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       'selectedLongitude': _selectedLongitude,
       'selectedPlaceCoverFileId': _selectedPlaceCoverFileId,
       'selectedPlaceCoverImageUrl': _selectedPlaceCoverImageUrl,
+      'selectedPlacePhotoFileIds': _selectedPlacePhotoFileIds,
+      'selectedPlacePhotoImageUrls': _selectedPlacePhotoImageUrls,
       'coverFileId': _coverFileId,
+      'photoFileIds': _offerPhotoFileIds,
       'coverChanged': _coverChanged,
       'productTranslations': _productTranslations.map(
         (locale, copy) => MapEntry(locale, copy.toJson()),
@@ -368,12 +383,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _applyAutosaveDraftPayload(Map<String, dynamic> draft) {
     final text = draft['text'];
+    final restoredStep = (_intFromDraft(draft['currentStep']) ?? 0).clamp(
+      0,
+      _totalSteps - 1,
+    );
+    if (restoredStep == _meetingPointStep) {
+      _pendingProgrammaticStep = restoredStep;
+    }
     _isApplyingAutosaveDraft = true;
     setState(() {
-      _currentStep = (_intFromDraft(draft['currentStep']) ?? 0).clamp(
-        0,
-        _totalSteps - 1,
-      );
+      _currentStep = restoredStep;
       _creationMode = _enumFromDraft(
         _ExcursionCreationMode.values,
         _stringFromDraft(draft['creationMode']),
@@ -402,8 +421,26 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedPlaceCoverImageUrl = _stringFromDraft(
         draft['selectedPlaceCoverImageUrl'],
       );
+      _selectedPlacePhotoFileIds = _stringListFromDraft(
+        draft['selectedPlacePhotoFileIds'],
+      );
+      _selectedPlacePhotoImageUrls = _stringListFromDraft(
+        draft['selectedPlacePhotoImageUrls'],
+      );
       _coverFileId = _stringFromDraft(draft['coverFileId']);
+      _photoDrafts
+        ..clear()
+        ..addAll(
+          _stringListFromDraft(draft['photoFileIds']).map(
+            (fileId) => _ExcursionPhotoDraft(
+              localId: _nextPhotoDraftLocalId++,
+              fileId: fileId,
+              imageUrl: resolvePublicFileContentUrl(fileId),
+            ),
+          ),
+        );
       _coverChanged = draft['coverChanged'] == true && _coverFileId != null;
+      _syncCoverFromPhotoDrafts();
       _productTranslations = _localizedCopyDraftMapFromJson(
         draft['productTranslations'],
       );
@@ -437,6 +474,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _stepErrorText = null;
     });
     _pageController.jumpToPage(_currentStep);
+    _schedulePendingPageSettleFallback();
     _isApplyingAutosaveDraft = false;
   }
 
@@ -656,12 +694,33 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _coverFileId = (excursion.coverFileId ?? '').trim().isEmpty
         ? null
         : excursion.coverFileId!.trim();
+    _photoDrafts
+      ..clear()
+      ..addAll(
+        excursion.photoFileIds.map(
+          (fileId) => _ExcursionPhotoDraft(
+            localId: _nextPhotoDraftLocalId++,
+            fileId: fileId,
+            imageUrl: resolvePublicFileContentUrl(fileId),
+          ),
+        ),
+      );
+    if (_photoDrafts.isEmpty && _coverFileId != null) {
+      _photoDrafts.add(
+        _ExcursionPhotoDraft(
+          localId: _nextPhotoDraftLocalId++,
+          fileId: _coverFileId,
+          imageUrl: resolvePublicFileContentUrl(_coverFileId!),
+        ),
+      );
+    }
     final existingCoverImageUrl = (resolveExcursionCoverUrl(excursion) ?? '')
         .trim();
     _existingCoverImageUrl = existingCoverImageUrl.isEmpty
         ? null
         : existingCoverImageUrl;
     _coverChanged = _coverFileId != null;
+    _syncCoverFromPhotoDrafts();
     _selectedLanguageCodes
       ..clear()
       ..addAll(
@@ -706,10 +765,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   void _goToStep(int step) {
+    if (_pendingProgrammaticStep != null) return;
     if (step < 0 || step >= _totalSteps || step == _currentStep) {
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
+    _pendingProgrammaticStep = step;
     setState(() {
       _currentStep = step;
       _stepErrorText = null;
@@ -723,6 +784,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   void _nextStep() {
+    if (_pendingProgrammaticStep != null) return;
     if (!_validateCurrentStep()) {
       return;
     }
@@ -731,6 +793,39 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return;
     }
     _goToStep(_currentStep + 1);
+  }
+
+  bool _isStepNativeMapEnabled(int step) {
+    return _nativeMapActivatedSteps.contains(step) ||
+        (_currentStep == step && _pendingProgrammaticStep == null);
+  }
+
+  void _handlePageChanged(int step) {
+    final pendingStep = _pendingProgrammaticStep;
+    if (pendingStep != null && step != pendingStep) {
+      return;
+    }
+    if (_currentStep == step && pendingStep == null) {
+      return;
+    }
+    setState(() {
+      _currentStep = step;
+      if (_pendingProgrammaticStep == step) {
+        _pendingProgrammaticStep = null;
+      }
+      if (step == _meetingPointStep) {
+        _nativeMapActivatedSteps.add(_meetingPointStep);
+      }
+    });
+  }
+
+  void _schedulePendingPageSettleFallback() {
+    final pendingStep = _pendingProgrammaticStep;
+    if (pendingStep == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pendingProgrammaticStep != pendingStep) return;
+      _handlePageChanged(pendingStep);
+    });
   }
 
   bool _validateCurrentStep() {
@@ -764,10 +859,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? _validateOfferMediaAndItineraryStep(AppLocalizations l10n) {
-    if (_isCoverUploading) {
+    if (_isCoverUploading || _hasUploadingPhotos) {
       return l10n.createCoverUploadInProgress;
     }
-    if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
+    if (_hasFailedPhotoUploads ||
+        (_coverChanged && (_coverFileId ?? '').trim().isEmpty)) {
       return l10n.createCoverUploadRetryRequired;
     }
     return _validateItinerary(l10n);
@@ -843,10 +939,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? _validateStoryAndPriceStep(AppLocalizations l10n) {
-    if (_isCoverUploading) {
+    if (_isCoverUploading || _hasUploadingPhotos) {
       return l10n.createCoverUploadInProgress;
     }
-    if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
+    if (_hasFailedPhotoUploads ||
+        (_coverChanged && (_coverFileId ?? '').trim().isEmpty)) {
       return l10n.createCoverUploadRetryRequired;
     }
     final mapUrlError = _validateMapUrlField(l10n, required: true);
@@ -977,6 +1074,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       coverFileId: _offerCoverFileId,
       productCoverFileId: _productCoverFileId,
       productCoverImageUrl: _productCoverImageUrl,
+      photoFileIds: _offerPhotoFileIds,
+      productPhotoFileIds: _productPhotoFileIds,
+      productPhotoImageUrls: _productPhotoImageUrls,
       includedItems: _includedItems
           .map((item) => item.toPayload())
           .toList(growable: false),
@@ -1247,6 +1347,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _cityNameCtrl.clear();
     _selectedPlaceCoverFileId = null;
     _selectedPlaceCoverImageUrl = null;
+    _selectedPlacePhotoFileIds = const [];
+    _selectedPlacePhotoImageUrls = const [];
     _productTranslations = const {};
     _selectedCategorySlug = 'adventure';
     _landmarkErrorText = null;
@@ -1259,6 +1361,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _replaceCustomCoverWithPlaceCover() {
     _coverUploadGeneration += 1;
+    _photoDrafts.clear();
     _coverPreviewBytes = null;
     _coverFileId = null;
     _coverChanged = false;
@@ -1267,7 +1370,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? get _effectiveCoverFileId {
-    final customCover = (_coverFileId ?? '').trim();
+    final customCover = (_primaryPhotoFileId ?? _coverFileId ?? '').trim();
     if (customCover.isNotEmpty) {
       return customCover;
     }
@@ -1276,7 +1379,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? get _offerCoverFileId {
-    final customCover = (_coverFileId ?? '').trim();
+    final customCover = (_primaryPhotoFileId ?? _coverFileId ?? '').trim();
     if (customCover.isNotEmpty) {
       return customCover;
     }
@@ -1292,7 +1395,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return placeCover;
     }
     if (!_hasSelectedPlace) {
-      final customCover = (_coverFileId ?? '').trim();
+      final customCover = (_primaryPhotoFileId ?? _coverFileId ?? '').trim();
       return customCover.isEmpty ? null : customCover;
     }
     return null;
@@ -1305,8 +1408,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? get _effectiveCoverImageUrl {
-    if (_coverPreviewBytes?.isNotEmpty ?? false) {
+    if (_primaryPhotoPreviewBytes?.isNotEmpty ?? false) {
       return null;
+    }
+    final primaryPhotoImage = (_primaryPhotoImageUrl ?? '').trim();
+    if (primaryPhotoImage.isNotEmpty) {
+      return primaryPhotoImage;
     }
     final placeImage = (_selectedPlaceCoverImageUrl ?? '').trim();
     if (placeImage.isNotEmpty) {
@@ -1317,8 +1424,58 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   bool get _hasAnyCoverPreview {
-    return (_coverPreviewBytes?.isNotEmpty ?? false) ||
+    return (_primaryPhotoPreviewBytes?.isNotEmpty ?? false) ||
         (_effectiveCoverImageUrl?.isNotEmpty ?? false);
+  }
+
+  _ExcursionPhotoDraft? get _primaryPhotoDraft =>
+      _photoDrafts.isEmpty ? null : _photoDrafts.first;
+
+  Uint8List? get _primaryPhotoPreviewBytes => _primaryPhotoDraft?.previewBytes;
+
+  String? get _primaryPhotoFileId {
+    final fileId = (_primaryPhotoDraft?.fileId ?? '').trim();
+    return fileId.isEmpty ? null : fileId;
+  }
+
+  String? get _primaryPhotoImageUrl {
+    final imageUrl = (_primaryPhotoDraft?.imageUrl ?? '').trim();
+    return imageUrl.isEmpty ? null : imageUrl;
+  }
+
+  List<String> get _offerPhotoFileIds {
+    return _uniqueTrimmedStrings(_photoDrafts.map((draft) => draft.fileId));
+  }
+
+  List<String> get _productPhotoFileIds {
+    if (_hasSelectedPlace) {
+      return _selectedPlacePhotoFileIds;
+    }
+    return _offerPhotoFileIds;
+  }
+
+  List<String> get _productPhotoImageUrls {
+    if (!_hasSelectedPlace) return const [];
+    return _selectedPlacePhotoImageUrls;
+  }
+
+  bool get _hasUploadingPhotos =>
+      _photoDrafts.any((draft) => draft.isUploading);
+
+  bool get _hasFailedPhotoUploads =>
+      _photoDrafts.any((draft) => draft.errorMessage != null);
+
+  List<String> _uniqueTrimmedStrings(Iterable<String?> values) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final value in values) {
+      final normalized = value?.trim() ?? '';
+      if (normalized.isEmpty || !seen.add(normalized)) {
+        continue;
+      }
+      result.add(normalized);
+    }
+    return result;
   }
 
   LatLng get _selectedMapTarget => _hasSelectedMapPoint
@@ -1544,19 +1701,32 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     }
   }
 
-  Future<void> _handleMapTapped(LatLng position) async {
+  Future<void> _handleMapTapped(
+    LatLng position, {
+    String? meetingPointLabel,
+  }) async {
     final requestSerial = ++_mapSelectionRequestSerial;
-    final mapUrl = _buildMapUrl(position.latitude, position.longitude);
     final coordinateLabel = _buildCoordinateMeetingPointLabel(
       position.latitude,
       position.longitude,
+    );
+    final selectedMeetingPointLabel = meetingPointLabel?.trim();
+    final displayMeetingPointLabel =
+        selectedMeetingPointLabel?.isNotEmpty == true
+        ? selectedMeetingPointLabel!
+        : coordinateLabel;
+    final mapUrl = AppMapLinks.buildUrl(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      title: _landmarkNameCtrl.text,
+      subtitle: displayMeetingPointLabel,
     );
 
     setState(() {
       _selectedLatitude = position.latitude;
       _selectedLongitude = position.longitude;
       _setMapUrlText(mapUrl);
-      _meetingPointCtrl.text = coordinateLabel;
+      _meetingPointCtrl.text = displayMeetingPointLabel;
       _meetingPointErrorText = null;
       _mapUrlResolvingRawValue = null;
       _mapUrlResolveFailedRawValue = null;
@@ -1572,21 +1742,65 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     );
   }
 
-  Future<void> _pickCoverImage() async {
-    final l10n = AppLocalizations.of(context)!;
-    if (_isCoverUploading) return;
-
+  Future<void> _openExpandedMeetingPointMap() async {
     FocusScope.of(context).unfocus();
 
-    final picked = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 2400,
-      imageQuality: 92,
+    final l10n = AppLocalizations.of(context)!;
+    final title = _landmarkNameCtrl.text.trim().isNotEmpty
+        ? _landmarkNameCtrl.text.trim()
+        : l10n.createMeetingPointLocationLabel;
+    final subtitle = _meetingPointCtrl.text.trim().isNotEmpty
+        ? _meetingPointCtrl.text.trim()
+        : _cityNameCtrl.text.trim();
+    final mapUrl = _mapUrlCtrl.text.trim();
+    final initialTarget = _hasSelectedMapPoint
+        ? MapTarget(
+            title: title,
+            subtitle: subtitle.isEmpty ? null : subtitle,
+            latitude: _selectedLatitude!,
+            longitude: _selectedLongitude!,
+            sourceUrl: mapUrl.isEmpty ? null : mapUrl,
+          )
+        : null;
+
+    final result = await context.push<MapTarget>(
+      '/map?mode=meeting-point-picker',
+      extra: initialTarget,
     );
-    if (picked == null) {
+    if (!mounted || result == null) {
       return;
     }
 
+    await _handleMapTapped(result.point, meetingPointLabel: result.subtitle);
+  }
+
+  Future<void> _pickCoverImage() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_isCoverUploading || _hasUploadingPhotos) return;
+
+    FocusScope.of(context).unfocus();
+    final availableSlots = _maxExcursionPhotos - _photoDrafts.length;
+    if (availableSlots <= 0) {
+      return;
+    }
+
+    final pickedImages = await _imagePicker.pickMultiImage(
+      maxWidth: 2400,
+      imageQuality: 92,
+    );
+    if (pickedImages.isEmpty) {
+      return;
+    }
+
+    for (final picked in pickedImages.take(availableSlots)) {
+      await _uploadPickedExcursionPhoto(picked, l10n);
+    }
+  }
+
+  Future<void> _uploadPickedExcursionPhoto(
+    XFile picked,
+    AppLocalizations l10n,
+  ) async {
     final bytes = await picked.readAsBytes();
     if (!mounted) return;
 
@@ -1610,15 +1824,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
     final normalizedName = _normalizeCoverFileName(picked.name, contentType);
     final uploadGeneration = _coverUploadGeneration + 1;
+    final draft = _ExcursionPhotoDraft(
+      localId: _nextPhotoDraftLocalId++,
+      previewBytes: bytes,
+      isUploading: true,
+    );
 
     setState(() {
       _coverUploadGeneration = uploadGeneration;
       _coverChanged = true;
-      _coverPreviewBytes = bytes;
-      _coverFileId = null;
+      _photoDrafts.add(draft);
       _coverUploadErrorMessage = null;
       _isCoverUploading = true;
       _stepErrorText = null;
+      _syncCoverFromPhotoDrafts();
     });
 
     try {
@@ -1637,24 +1856,54 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
       if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
-        _coverFileId = upload.fileId;
+        draft.fileId = upload.fileId;
+        draft.isUploading = false;
+        draft.errorMessage = null;
         _coverUploadErrorMessage = null;
-        _isCoverUploading = false;
+        _syncCoverFromPhotoDrafts();
       });
       _scheduleAutosave();
     } on DioException catch (e) {
       if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
-        _coverUploadErrorMessage = DioErrorMapper.toMessage(e);
-        _isCoverUploading = false;
+        draft.errorMessage = DioErrorMapper.toMessage(e);
+        draft.isUploading = false;
+        _coverUploadErrorMessage = draft.errorMessage;
+        _syncCoverFromPhotoDrafts();
       });
     } catch (_) {
       if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
-        _coverUploadErrorMessage = l10n.createCoverUploadFailed;
-        _isCoverUploading = false;
+        draft.errorMessage = l10n.createCoverUploadFailed;
+        draft.isUploading = false;
+        _coverUploadErrorMessage = draft.errorMessage;
+        _syncCoverFromPhotoDrafts();
       });
     }
+  }
+
+  void _syncCoverFromPhotoDrafts() {
+    final primary = _primaryPhotoDraft;
+    _coverPreviewBytes = primary?.previewBytes;
+    _coverFileId = primary?.fileId;
+    _coverChanged = _photoDrafts.isNotEmpty;
+    _isCoverUploading = _photoDrafts.any((draft) => draft.isUploading);
+    _coverUploadErrorMessage = null;
+    for (final draft in _photoDrafts) {
+      final error = draft.errorMessage;
+      if (error == null) continue;
+      _coverUploadErrorMessage = error;
+      break;
+    }
+  }
+
+  void _removeExcursionPhoto(_ExcursionPhotoDraft draft) {
+    setState(() {
+      _photoDrafts.remove(draft);
+      _syncCoverFromPhotoDrafts();
+      _stepErrorText = null;
+    });
+    _scheduleAutosave();
   }
 
   String? _detectCoverMimeType(Uint8List bytes) {
@@ -1723,6 +1972,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           cityName: _cityNameCtrl.text.trim(),
           coverFileId: _selectedPlaceCoverFileId,
           coverImageUrl: _selectedPlaceCoverImageUrl,
+          photoFileIds: _selectedPlacePhotoFileIds,
+          photoImageUrls: _selectedPlacePhotoImageUrls,
           translations: _locationTranslationsForPicker(),
           categorySlug: _selectedCategorySlug,
         ),
@@ -1748,6 +1999,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedPlaceCoverImageUrl = (result.coverImageUrl ?? '').trim().isEmpty
           ? null
           : result.coverImageUrl!.trim();
+      _selectedPlacePhotoFileIds = _uniqueTrimmedStrings(
+        result.photoFileIds,
+      ).take(_maxExcursionPhotos).toList(growable: false);
+      _selectedPlacePhotoImageUrls = _uniqueTrimmedStrings(
+        result.photoImageUrls,
+      ).take(_maxExcursionPhotos).toList(growable: false);
       _replaceCustomCoverWithPlaceCover();
       _productTranslations = _copyLocationTranslations(result.translations);
       if (result.categorySlug.trim().isNotEmpty) {
@@ -1961,6 +2218,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                       Expanded(
                         child: PageView(
                           controller: _pageController,
+                          onPageChanged: _handlePageChanged,
                           physics: const NeverScrollableScrollPhysics(),
                           children: _visibleStepPages(l10n, bottomInset),
                         ),
@@ -2061,11 +2319,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             : l10n.createExcursionCoverUploadTitle,
         hint: _coverUploadErrorMessage ?? l10n.createExcursionCoverUploadHint,
         imageUrl: _effectiveCoverImageUrl,
-        previewBytes: _coverPreviewBytes,
-        isUploading: _isCoverUploading,
+        previewBytes: _primaryPhotoPreviewBytes,
+        isUploading: _isCoverUploading || _hasUploadingPhotos,
         hasError: _coverUploadErrorMessage != null,
         onTap: _pickCoverImage,
       ),
+      if (_photoDrafts.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _ExcursionPhotoCarouselDraftStrip(
+          photos: List<_ExcursionPhotoDraft>.unmodifiable(_photoDrafts),
+          maxPhotos: _maxExcursionPhotos,
+          onAddTap: _pickCoverImage,
+          onRemoveTap: _removeExcursionPhoto,
+        ),
+      ],
     ];
   }
 
@@ -2259,8 +2526,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         AppMapCard(
           target: _selectedMapTarget,
           hasMarker: _hasSelectedMapPoint,
-          nativeMapEnabled: _currentStep == _totalSteps - 1,
+          nativeMapEnabled: _isStepNativeMapEnabled(_meetingPointStep),
           onTap: _handleMapTapped,
+          overlay: _MapExpandButton(onTap: _openExpandedMeetingPointMap),
         ),
         const SizedBox(height: 8),
         Text(
@@ -2311,6 +2579,59 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           onTap: _openIncludedItemsEditor,
         ),
       ],
+    );
+  }
+}
+
+class _MapExpandButton extends StatelessWidget {
+  const _MapExpandButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Positioned(
+      top: 12,
+      right: 12,
+      child: Semantics(
+        button: true,
+        label: l10n.createMapTapHint,
+        child: Tooltip(
+          message: l10n.createMapTapHint,
+          child: Material(
+            color: AppPalette.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: AppBorderRadius.circular(999),
+              child: Ink(
+                width: 46,
+                height: 46,
+                decoration: AppBoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppPalette.warmInk104.withValues(alpha: 0.88),
+                  border: Border.all(
+                    color: AppPalette.primary.withValues(alpha: 0.34),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppPalette.black.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.open_in_full_rounded,
+                  color: AppPalette.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -4020,6 +4341,213 @@ class _LandmarkSelectionCard extends StatelessWidget {
         ),
         if (errorText != null) AppInlineFieldError(message: errorText!),
       ],
+    );
+  }
+}
+
+class _ExcursionPhotoDraft {
+  _ExcursionPhotoDraft({
+    required this.localId,
+    this.previewBytes,
+    this.fileId,
+    this.imageUrl,
+    this.isUploading = false,
+  });
+
+  final int localId;
+  Uint8List? previewBytes;
+  String? fileId;
+  String? imageUrl;
+  bool isUploading;
+  String? errorMessage;
+
+  bool get hasPreview =>
+      (previewBytes?.isNotEmpty ?? false) ||
+      (imageUrl?.trim().isNotEmpty ?? false);
+
+  bool get hasUploadedFile => (fileId ?? '').trim().isNotEmpty;
+}
+
+class _ExcursionPhotoCarouselDraftStrip extends StatelessWidget {
+  const _ExcursionPhotoCarouselDraftStrip({
+    required this.photos,
+    required this.maxPhotos,
+    required this.onAddTap,
+    required this.onRemoveTap,
+  });
+
+  final List<_ExcursionPhotoDraft> photos;
+  final int maxPhotos;
+  final VoidCallback onAddTap;
+  final ValueChanged<_ExcursionPhotoDraft> onRemoveTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final canAdd = photos.length < maxPhotos;
+    return SizedBox(
+      height: 86,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: photos.length + (canAdd ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          if (index >= photos.length) {
+            return _AddPhotoTile(onTap: onAddTap);
+          }
+          final draft = photos[index];
+          return _ExcursionPhotoDraftTile(
+            draft: draft,
+            isCover: index == 0,
+            onRemoveTap: () => onRemoveTap(draft),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExcursionPhotoDraftTile extends StatelessWidget {
+  const _ExcursionPhotoDraftTile({
+    required this.draft,
+    required this.isCover,
+    required this.onRemoveTap,
+  });
+
+  final _ExcursionPhotoDraft draft;
+  final bool isCover;
+  final VoidCallback onRemoveTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: AppBorderRadius.circular(18),
+      child: SizedBox(
+        width: 86,
+        height: 86,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildImage(),
+            DecoratedBox(
+              decoration: AppBoxDecoration(
+                border: Border.all(
+                  color: isCover
+                      ? AppPalette.primary
+                      : AppPalette.white.withValues(alpha: 0.16),
+                  width: isCover ? 2 : 1,
+                ),
+                borderRadius: AppBorderRadius.circular(18),
+              ),
+            ),
+            if (isCover)
+              Positioned(
+                left: 6,
+                top: 6,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.bookmark_rounded,
+                    size: 15,
+                    color: AppPalette.white,
+                  ),
+                ),
+              ),
+            Positioned(
+              right: 5,
+              top: 5,
+              child: Material(
+                color: AppPalette.black.withValues(alpha: 0.54),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: draft.isUploading ? null : onRemoveTap,
+                  child: const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppPalette.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (draft.isUploading)
+              DecoratedBox(
+                decoration: AppBoxDecoration(
+                  color: AppPalette.black.withValues(alpha: 0.42),
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  ),
+                ),
+              ),
+            if (draft.errorMessage != null)
+              DecoratedBox(
+                decoration: AppBoxDecoration(
+                  color: AppPalette.redSoft10.withValues(alpha: 0.38),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    color: AppPalette.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    final bytes = draft.previewBytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return Image.memory(bytes, fit: BoxFit.cover);
+    }
+    final imageUrl = (draft.imageUrl ?? '').trim();
+    if (imageUrl.isNotEmpty) {
+      return Image.network(imageUrl, fit: BoxFit.cover);
+    }
+    return const ColoredBox(color: AppPalette.warmSurface55);
+  }
+}
+
+class _AddPhotoTile extends StatelessWidget {
+  const _AddPhotoTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppPalette.white.withValues(alpha: 0.06),
+      borderRadius: AppBorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppBorderRadius.circular(18),
+        child: SizedBox(
+          width: 86,
+          height: 86,
+          child: Center(
+            child: Icon(
+              Icons.add_photo_alternate_rounded,
+              color: AppPalette.white.withValues(alpha: 0.82),
+              size: 28,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

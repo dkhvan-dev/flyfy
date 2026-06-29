@@ -523,7 +523,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get travelChecklistChecklist => 'Чек-лист';
 
   @override
-  String get travelChecklistItemsSearchHint => 'Поиск по пунктам чек-листа';
+  String get travelChecklistItemsSearchHint => 'Пункты чек-листа';
 
   @override
   String get travelChecklistItemsSearchEmpty =>
@@ -7780,7 +7780,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Несохраненные правки могут быть потеряны.';
 
   @override
-  String get storyEditorKeepEditing => 'Продолжить редактирование';
+  String get storyEditorKeepEditing => 'Остаться';
+
+  @override
+  String get storyEditorDiscardChangesDiscard => 'Выйти без сохранения';
 
   @override
   String get storyEditorMetadataTitle => 'Настройки публикации';

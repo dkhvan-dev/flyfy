@@ -81,9 +81,24 @@ class _AppMapCardState extends State<AppMapCard> {
     if (!mounted || !widget.nativeMapEnabled) {
       return;
     }
-    if (event case MapEventClick(point: final point)) {
-      widget.onTap?.call(LatLng(point.lat.toDouble(), point.lon.toDouble()));
+
+    switch (event) {
+      case MapEventStyleLoaded():
+        _handleMapStyleLoaded();
+      case MapEventClick(point: final point):
+        widget.onTap?.call(LatLng(point.lat.toDouble(), point.lon.toDouble()));
+      default:
+        break;
     }
+  }
+
+  void _handleMapStyleLoaded() {
+    if (!mounted || !widget.nativeMapEnabled) {
+      return;
+    }
+
+    _mapReady = true;
+    _moveMap();
   }
 
   @override
@@ -138,13 +153,6 @@ class _AppMapCardState extends State<AppMapCard> {
                     return;
                   }
                   _mapController = controller;
-                },
-                onStyleLoaded: (_) {
-                  if (!mounted || !widget.nativeMapEnabled) {
-                    return;
-                  }
-                  _mapReady = true;
-                  _moveMap();
                 },
                 onEvent: _handleMapEvent,
                 children: [

@@ -175,6 +175,7 @@ const excursionProductCardSelectColumns = `
 	status, visibility,
 	duration_minutes,
 	country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id, cover_image_url,
+	photo_file_ids, photo_image_urls,
 	min_price_amount, currency, offers_count, published_offers_count, next_available_at,
 	created_at, updated_at
 `
@@ -187,7 +188,7 @@ const excursionOfferSelectColumns = `
 	title, summary, description, translations,
 	status, visibility,
 	duration_minutes, max_group_size, meeting_point, latitude, longitude, map_url,
-	price_amount, currency, cover_file_id,
+	price_amount, currency, cover_file_id, photo_file_ids,
 	published_at, deleted_at, revision, created_at, updated_at
 `
 
@@ -1101,6 +1102,10 @@ func (r *PGExcursionRepository) LoadExcursionRelations(ctx context.Context, excu
 	if err != nil {
 		return port.ExcursionRelations{}, err
 	}
+	photoFileIDs, err := r.listPhotoFileIDs(ctx, excursionID)
+	if err != nil {
+		return port.ExcursionRelations{}, err
+	}
 	productCoverFileID, err := r.getProductCoverFileID(ctx, excursionID)
 	if err != nil {
 		return port.ExcursionRelations{}, err
@@ -1109,14 +1114,25 @@ func (r *PGExcursionRepository) LoadExcursionRelations(ctx context.Context, excu
 	if err != nil {
 		return port.ExcursionRelations{}, err
 	}
+	productPhotoFileIDs, err := r.getProductPhotoFileIDs(ctx, excursionID)
+	if err != nil {
+		return port.ExcursionRelations{}, err
+	}
+	productPhotoImageURLs, err := r.getProductPhotoImageURLs(ctx, excursionID)
+	if err != nil {
+		return port.ExcursionRelations{}, err
+	}
 	return port.ExcursionRelations{
-		Tags:                 tags,
-		LanguageCodes:        languages,
-		IncludedItems:        includedItems,
-		Itinerary:            itinerary,
-		CoverFileID:          coverFileID,
-		ProductCoverFileID:   productCoverFileID,
-		ProductCoverImageURL: productCoverImageURL,
+		Tags:                  tags,
+		LanguageCodes:         languages,
+		IncludedItems:         includedItems,
+		Itinerary:             itinerary,
+		CoverFileID:           coverFileID,
+		PhotoFileIDs:          photoFileIDs,
+		ProductCoverFileID:    productCoverFileID,
+		ProductCoverImageURL:  productCoverImageURL,
+		ProductPhotoFileIDs:   productPhotoFileIDs,
+		ProductPhotoImageURLs: productPhotoImageURLs,
 	}, nil
 }
 
@@ -3246,7 +3262,10 @@ func replaceExcursionRelations(ctx context.Context, tx pgx.Tx, excursionID uuid.
 	if err := replaceItinerary(ctx, tx, excursionID, relations.Itinerary); err != nil {
 		return err
 	}
-	return replaceCover(ctx, tx, excursionID, relations.CoverFileID)
+	if err := replaceCover(ctx, tx, excursionID, relations.CoverFileID); err != nil {
+		return err
+	}
+	return replacePhotoFileIDs(ctx, tx, excursionID, relations.PhotoFileIDs)
 }
 
 func replaceStrings(ctx context.Context, tx pgx.Tx, table string, column string, excursionID uuid.UUID, values []string) error {
@@ -3345,18 +3364,46 @@ func replaceCover(ctx context.Context, tx pgx.Tx, excursionID uuid.UUID, coverFi
 	return nil
 }
 
+func replacePhotoFileIDs(ctx context.Context, tx pgx.Tx, excursionID uuid.UUID, values []uuid.UUID) error {
+	if _, err := tx.Exec(ctx, "DELETE FROM excursion_photos WHERE excursion_id = $1", excursionID); err != nil {
+		return fmt.Errorf("delete excursion photos: %w", err)
+	}
+	seen := make(map[uuid.UUID]struct{}, len(values))
+	for index, value := range values {
+		if value == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		const query = `
+			INSERT INTO excursion_photos (id, excursion_id, file_id, sort_order, created_at)
+			VALUES ($1, $2, $3, $4, $5)
+		`
+		if _, err := tx.Exec(ctx, query, uuid.New(), excursionID, value, index, time.Now().UTC()); err != nil {
+			return fmt.Errorf("insert excursion photo: %w", err)
+		}
+	}
+	return nil
+}
+
 func syncExcursionMarketplace(ctx context.Context, exec dbExecutor, item *model.Excursion, relations port.ExcursionRelations) error {
 	productCoverFileID := relations.ProductCoverFileID
 	productCoverImageURL := relations.ProductCoverImageURL
+	productPhotoFileIDs := relations.ProductPhotoFileIDs
+	productPhotoImageURLs := relations.ProductPhotoImageURLs
 	if productCoverFileID == nil && item.LandmarkID == nil {
 		productCoverFileID = relations.CoverFileID
 		productCoverImageURL = nil
+		productPhotoFileIDs = relations.PhotoFileIDs
+		productPhotoImageURLs = nil
 	}
-	productID, err := upsertExcursionProduct(ctx, exec, item, relations, productCoverFileID, productCoverImageURL)
+	productID, err := upsertExcursionProduct(ctx, exec, item, relations, productCoverFileID, productCoverImageURL, productPhotoFileIDs, productPhotoImageURLs)
 	if err != nil {
 		return err
 	}
-	offerID, err := upsertExcursionOffer(ctx, exec, productID, item, relations.CoverFileID)
+	offerID, err := upsertExcursionOffer(ctx, exec, productID, item, relations.CoverFileID, relations.PhotoFileIDs)
 	if err != nil {
 		return err
 	}
@@ -3369,7 +3416,16 @@ func syncExcursionMarketplace(ctx context.Context, exec dbExecutor, item *model.
 	return refreshExcursionProductStats(ctx, exec, productID)
 }
 
-func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Excursion, relations port.ExcursionRelations, coverFileID *uuid.UUID, coverImageURL *string) (uuid.UUID, error) {
+func upsertExcursionProduct(
+	ctx context.Context,
+	exec dbExecutor,
+	item *model.Excursion,
+	relations port.ExcursionRelations,
+	coverFileID *uuid.UUID,
+	coverImageURL *string,
+	photoFileIDs []uuid.UUID,
+	photoImageURLs []string,
+) (uuid.UUID, error) {
 	metadata := excursionRouteMetadata(item, relations)
 	canonicalKey := excursionMarketplaceCanonicalKey(item, relations)
 	routeFingerprint := metadata.routeFingerprint
@@ -3386,7 +3442,8 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id, cover_image_url,
 			created_at, updated_at, translations,
 			route_kind, route_fingerprint, place_ids, place_names,
-			stop_count, transport_mode, route_theme, duration_bucket
+			stop_count, transport_mode, route_theme, duration_bucket,
+			photo_file_ids, photo_image_urls
 		) VALUES (
 			$1, $2,
 			$3, $4,
@@ -3396,7 +3453,8 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			$12, $13, $14, $15, $16, $17, $18, $19,
 			$20, $21, $22::jsonb,
 			$23, $24, $25, $26,
-			$27, $28, $29, $30
+			$27, $28, $29, $30,
+			$31, $32
 		)
 		ON CONFLICT (canonical_key) DO UPDATE
 		SET
@@ -3424,6 +3482,8 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			map_url = COALESCE(excursion_products.map_url, EXCLUDED.map_url),
 			cover_file_id = COALESCE(excursion_products.cover_file_id, EXCLUDED.cover_file_id),
 			cover_image_url = COALESCE(excursion_products.cover_image_url, EXCLUDED.cover_image_url),
+			photo_file_ids = CASE WHEN cardinality(excursion_products.photo_file_ids) = 0 THEN EXCLUDED.photo_file_ids ELSE excursion_products.photo_file_ids END,
+			photo_image_urls = CASE WHEN cardinality(excursion_products.photo_image_urls) = 0 THEN EXCLUDED.photo_image_urls ELSE excursion_products.photo_image_urls END,
 			route_kind = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.route_kind ELSE excursion_products.route_kind END,
 			route_fingerprint = COALESCE(excursion_products.route_fingerprint, EXCLUDED.route_fingerprint),
 			place_ids = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.place_ids ELSE excursion_products.place_ids END,
@@ -3470,13 +3530,15 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 		metadata.transportMode,
 		metadata.routeTheme,
 		metadata.durationBucket,
+		photoFileIDs,
+		photoImageURLs,
 	).Scan(&persistedID); err != nil {
 		return uuid.Nil, fmt.Errorf("upsert excursion product: %w", err)
 	}
 	return persistedID, nil
 }
 
-func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.UUID, item *model.Excursion, coverFileID *uuid.UUID) (uuid.UUID, error) {
+func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.UUID, item *model.Excursion, coverFileID *uuid.UUID, photoFileIDs []uuid.UUID) (uuid.UUID, error) {
 	const query = `
 		INSERT INTO excursion_offers (
 			id, product_id, legacy_excursion_id,
@@ -3487,7 +3549,8 @@ func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.U
 			status, visibility,
 			duration_minutes, max_group_size, meeting_point, latitude, longitude, map_url,
 			price_amount, currency, cover_file_id,
-			published_at, deleted_at, revision, created_at, updated_at, translations
+			published_at, deleted_at, revision, created_at, updated_at, translations,
+			photo_file_ids
 		) VALUES (
 			$1, $2, $3,
 			$4, $5,
@@ -3497,7 +3560,8 @@ func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.U
 			$14, $15,
 			$16, $17, $18, $19, $20, $21,
 			$22, $23, $24,
-			$25, $26, $27, $28, $29, $30::jsonb
+			$25, $26, $27, $28, $29, $30::jsonb,
+			$31
 		)
 		ON CONFLICT (legacy_excursion_id) DO UPDATE
 		SET
@@ -3524,6 +3588,7 @@ func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.U
 			price_amount = EXCLUDED.price_amount,
 			currency = EXCLUDED.currency,
 			cover_file_id = EXCLUDED.cover_file_id,
+			photo_file_ids = EXCLUDED.photo_file_ids,
 			published_at = EXCLUDED.published_at,
 			deleted_at = EXCLUDED.deleted_at,
 			revision = EXCLUDED.revision,
@@ -3565,6 +3630,7 @@ func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.U
 		item.CreatedAt,
 		item.UpdatedAt,
 		excursionTranslationsJSON(nil),
+		photoFileIDs,
 	).Scan(&persistedID); err != nil {
 		return uuid.Nil, fmt.Errorf("upsert excursion offer: %w", err)
 	}
@@ -3952,6 +4018,33 @@ func (r *PGExcursionRepository) listStrings(ctx context.Context, table string, c
 	return result, rows.Err()
 }
 
+func (r *PGExcursionRepository) listPhotoFileIDs(ctx context.Context, excursionID uuid.UUID) ([]uuid.UUID, error) {
+	const query = `
+		SELECT file_id
+		FROM excursion_photos
+		WHERE excursion_id = $1
+		ORDER BY sort_order ASC, created_at ASC
+	`
+	rows, err := r.pool.Query(ctx, query, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("list excursion photos: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]uuid.UUID, 0)
+	for rows.Next() {
+		var fileID uuid.UUID
+		if err = rows.Scan(&fileID); err != nil {
+			return nil, fmt.Errorf("scan excursion photos: %w", err)
+		}
+		if fileID == uuid.Nil {
+			continue
+		}
+		result = append(result, fileID)
+	}
+	return result, rows.Err()
+}
+
 func (r *PGExcursionRepository) listOfferStrings(ctx context.Context, table string, column string, offerID uuid.UUID) ([]string, error) {
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE offer_id = $1 ORDER BY sort_order ASC, created_at ASC", column, table)
 	rows, err := r.pool.Query(ctx, query, offerID)
@@ -4056,6 +4149,14 @@ func (r *PGExcursionRepository) getProductCoverImageURL(ctx context.Context, exc
 	return getProductCoverImageURL(ctx, r.pool, excursionID)
 }
 
+func (r *PGExcursionRepository) getProductPhotoFileIDs(ctx context.Context, excursionID uuid.UUID) ([]uuid.UUID, error) {
+	return getProductPhotoFileIDs(ctx, r.pool, excursionID)
+}
+
+func (r *PGExcursionRepository) getProductPhotoImageURLs(ctx context.Context, excursionID uuid.UUID) ([]string, error) {
+	return getProductPhotoImageURLs(ctx, r.pool, excursionID)
+}
+
 type queryRower interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
@@ -4100,6 +4201,44 @@ func getProductCoverFileID(ctx context.Context, queryer queryRower, excursionID 
 		return nil, fmt.Errorf("get excursion product cover: %w", err)
 	}
 	return &fileID, nil
+}
+
+func getProductPhotoFileIDs(ctx context.Context, queryer queryRower, excursionID uuid.UUID) ([]uuid.UUID, error) {
+	const query = `
+		SELECT p.photo_file_ids
+		FROM excursion_offers o
+		JOIN excursion_products p ON p.id = o.product_id
+		WHERE o.legacy_excursion_id = $1
+		  AND cardinality(p.photo_file_ids) > 0
+		LIMIT 1
+	`
+	var fileIDs []uuid.UUID
+	if err := queryer.QueryRow(ctx, query, excursionID).Scan(&fileIDs); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion product photos: %w", err)
+	}
+	return fileIDs, nil
+}
+
+func getProductPhotoImageURLs(ctx context.Context, queryer queryRower, excursionID uuid.UUID) ([]string, error) {
+	const query = `
+		SELECT p.photo_image_urls
+		FROM excursion_offers o
+		JOIN excursion_products p ON p.id = o.product_id
+		WHERE o.legacy_excursion_id = $1
+		  AND cardinality(p.photo_image_urls) > 0
+		LIMIT 1
+	`
+	var imageURLs []string
+	if err := queryer.QueryRow(ctx, query, excursionID).Scan(&imageURLs); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion product photo urls: %w", err)
+	}
+	return imageURLs, nil
 }
 
 type excursionScanner interface {
@@ -4207,6 +4346,8 @@ func scanExcursionProductCard(row excursionScanner) (*model.ExcursionProductCard
 		&item.MapURL,
 		&item.CoverFileID,
 		&item.CoverImageURL,
+		&item.PhotoFileIDs,
+		&item.PhotoImageURLs,
 		&item.MinPriceAmount,
 		&item.Currency,
 		&item.OffersCount,
@@ -4257,6 +4398,7 @@ func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 		&item.PriceAmount,
 		&item.Currency,
 		&item.CoverFileID,
+		&item.PhotoFileIDs,
 		&item.PublishedAt,
 		&item.DeletedAt,
 		&item.Revision,

@@ -525,7 +525,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get travelChecklistChecklist => 'Чек-лист';
 
   @override
-  String get travelChecklistItemsSearchHint => 'Чек-лист тармақтарын іздеу';
+  String get travelChecklistItemsSearchHint => 'Чек-лист тармақтары';
 
   @override
   String get travelChecklistItemsSearchEmpty =>
@@ -7782,7 +7782,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сақталмаған түзетулер жоғалуы мүмкін.';
 
   @override
-  String get storyEditorKeepEditing => 'Өңдеуді жалғастыру';
+  String get storyEditorKeepEditing => 'Қалу';
+
+  @override
+  String get storyEditorDiscardChangesDiscard => 'Сақтамай шығу';
 
   @override
   String get storyEditorMetadataTitle => 'Жариялау баптаулары';

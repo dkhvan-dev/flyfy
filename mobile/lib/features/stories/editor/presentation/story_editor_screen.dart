@@ -1668,7 +1668,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
               FilledButton(
                 onPressed: () =>
                     Navigator.of(context).pop(_UnsavedDecision.discard),
-                child: Text(l10n.storyEditorRecoveryDiscard),
+                child: Text(l10n.storyEditorDiscardChangesDiscard),
               ),
             ],
           ),

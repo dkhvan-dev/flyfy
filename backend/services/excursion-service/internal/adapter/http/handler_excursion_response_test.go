@@ -104,6 +104,47 @@ func TestExcursionResponseUsesProductCoverImageURLWhenFileCoverIsMissing(t *test
 	}
 }
 
+func TestExcursionResponseIncludesOrderedGalleryPhotos(t *testing.T) {
+	coverFileID := uuid.New()
+	secondFileID := uuid.New()
+	externalImageURL := "https://upload.wikimedia.org/dragon-bridge.jpg"
+	excursion := &model.Excursion{
+		ID:               uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      uuid.New(),
+		GuideDisplayName: "Aruzhan T.",
+		Title:            "Dragon Bridge",
+		Summary:          "Private city route",
+		Description:      "A detailed city excursion through Da Nang.",
+		CategorySlug:     "architecture",
+		Status:           enum.ExcursionStatusDraft,
+		Visibility:       enum.ExcursionVisibilityPublic,
+		DurationMinutes:  120,
+		MaxGroupSize:     6,
+		MeetingPoint:     "Dragon Bridge",
+		PriceAmount:      120,
+		Currency:         "USD",
+		Revision:         1,
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
+	}
+
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion:      excursion,
+		PhotoFileIDs:   []uuid.UUID{coverFileID, secondFileID},
+		PhotoImageURLs: []string{externalImageURL},
+	})
+
+	if len(response.PhotoFileIDs) != 2 ||
+		response.PhotoFileIDs[0] != coverFileID.String() ||
+		response.PhotoFileIDs[1] != secondFileID.String() {
+		t.Fatalf("photo file ids = %#v, want ordered file ids", response.PhotoFileIDs)
+	}
+	if len(response.PhotoImageURLs) != 1 || response.PhotoImageURLs[0] != externalImageURL {
+		t.Fatalf("photo image urls = %#v, want ordered external urls", response.PhotoImageURLs)
+	}
+}
+
 func TestExcursionReviewResponseIncludesAuthorProjection(t *testing.T) {
 	authorUserID := uuid.New()
 	avatarFileID := uuid.New()

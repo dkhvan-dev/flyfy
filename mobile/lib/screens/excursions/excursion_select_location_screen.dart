@@ -28,6 +28,8 @@ class ExcursionLocationSelection {
     this.mapUrl,
     this.coverFileId,
     this.coverImageUrl,
+    this.photoFileIds = const [],
+    this.photoImageUrls = const [],
     this.translations = const {},
     this.categorySlug = '',
   });
@@ -42,6 +44,8 @@ class ExcursionLocationSelection {
   final String? mapUrl;
   final String? coverFileId;
   final String? coverImageUrl;
+  final List<String> photoFileIds;
+  final List<String> photoImageUrls;
   final Map<String, ExcursionLocationLocalizedCopy> translations;
   final String categorySlug;
 
@@ -57,6 +61,8 @@ class ExcursionLocationSelection {
       mapUrl: mapUrl,
       coverFileId: coverFileId,
       coverImageUrl: coverImageUrl,
+      photoFileIds: photoFileIds,
+      photoImageUrls: photoImageUrls,
       translations: translations,
       categorySlug: categorySlug,
     );
@@ -70,6 +76,17 @@ class ExcursionLocationSelection {
     final coverImageUrl = coverMedia == null
         ? null
         : resolvePlaceMediaUrl(coverMedia);
+    final sortedPhotoMedia = List<PlaceMediaVm>.from(
+      place.media.where(
+        (media) => media.mediaType.trim().toUpperCase() != 'VIDEO',
+      ),
+    )..sort((a, b) => a.position.compareTo(b.position));
+    final photoFileIds = _uniqueNonBlankStrings(
+      sortedPhotoMedia.map((media) => media.fileId),
+    );
+    final photoImageUrls = _uniqueNonBlankStrings(
+      sortedPhotoMedia.map(resolvePlaceMediaUrl),
+    );
     final cityId = place.cityId.trim();
     final cityName = _selectionCityName(
       cityId: cityId,
@@ -117,10 +134,25 @@ class ExcursionLocationSelection {
           : null,
       coverFileId: place.coverFileId,
       coverImageUrl: coverImageUrl,
+      photoFileIds: photoFileIds,
+      photoImageUrls: photoImageUrls,
       translations: translations,
       categorySlug: place.category.trim(),
     );
   }
+}
+
+List<String> _uniqueNonBlankStrings(Iterable<String?> values) {
+  final seen = <String>{};
+  final result = <String>[];
+  for (final value in values) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty || !seen.add(normalized)) {
+      continue;
+    }
+    result.add(normalized);
+  }
+  return List.unmodifiable(result);
 }
 
 String? _selectionCityName({required String cityId, String? fallbackCityName}) {

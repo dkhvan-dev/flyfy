@@ -29,4 +29,16 @@ void main() {
       expect(source, isNot(contains('tile.openstreetmap.org')));
     },
   );
+
+  test('app map card handles style load through map events only', () async {
+    final source = await File(
+      'lib/shared/widgets/app_map_card.dart',
+    ).readAsString();
+
+    expect(source, contains('void _handleMapStyleLoaded()'));
+    expect(source, contains('case MapEventStyleLoaded():'));
+    expect(source, contains('_handleMapStyleLoaded();'));
+    expect(source, contains('onEvent: _handleMapEvent'));
+    expect(source, isNot(contains('onStyleLoaded:')));
+  });
 }

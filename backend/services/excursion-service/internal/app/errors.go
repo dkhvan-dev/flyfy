@@ -13,6 +13,7 @@ var (
 	ErrCombinedExcursionRouteTooManyStops     = errors.New("combined excursion route supports at most five place stops")
 	ErrCombinedExcursionRouteDuplicateStop    = errors.New("combined excursion route contains duplicate place stops")
 	ErrInvalidExcursionIncludedItem           = errors.New("invalid excursion included item")
+	ErrExcursionGalleryTooManyPhotos          = errors.New("excursion gallery too many photos")
 	ErrExcursionOfferNotFound                 = errors.New("excursion offer not found")
 	ErrExcursionOfferNotBookable              = errors.New("excursion offer is not available for booking")
 	ErrExcursionNotPublished                  = errors.New("excursion offer is not published")

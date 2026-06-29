@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +24,31 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test(
+    'feed header keeps notification action clear of device chrome',
+    () async {
+      final source = await File(
+        'lib/features/feed/presentation/feed_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('MediaQuery.paddingOf(context).top'));
+      expect(source, contains('_feedHeaderTopInsetNudge'));
+      expect(
+        source,
+        contains('toolbarHeight: kToolbarHeight + feedHeaderTopNudge'),
+      );
+      expect(
+        source,
+        contains('padding: EdgeInsets.only(top: feedHeaderTopNudge)'),
+      );
+      expect(source, contains('_feedTabsTopGap'));
+      expect(
+        source,
+        contains('AppEdgeInsets.fromLTRB(16, _feedTabsTopGap, 16, 12)'),
+      );
+    },
+  );
+
   testWidgets('loads for-you feed and renders story and community blocks', (
     tester,
   ) async {

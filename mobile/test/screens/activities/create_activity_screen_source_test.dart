@@ -116,6 +116,12 @@ void main() {
     expect(source, contains('Future<bool> _confirmDiscardIfNeeded()'));
     expect(source, contains('Future<void> _handleRouteBack()'));
     expect(source, contains('canPop: false'));
+    expect(source, contains('_showActivityAmberConfirmDialog'));
+    expect(source, contains('_ActivityAmberConfirmDialog'));
+    expect(source, contains('Icons.warning_amber_rounded'));
+    expect(source, contains('barrierDismissible: true'));
+    expect(source, contains('cancelLabel: l10n.cancelButton'));
+    expect(source, contains('confirmLabel: l10n.createActivityDiscardConfirm'));
     expect(source, contains('l10n.createActivityDiscardTitle'));
     expect(source, contains('l10n.createActivityDiscardConfirm'));
     expect(enArb, contains('"createActivityDiscardTitle"'));
@@ -211,11 +217,25 @@ void main() {
 
       expect(source, contains("../../shared/map/app_map_links.dart"));
       expect(source, contains("../../shared/widgets/app_map_card.dart"));
+      expect(source, contains("../map/map_screen.dart"));
       expect(source, contains("package:latlong2/latlong.dart"));
       expect(source, contains('AppMapCard('));
       expect(source, contains('onTap: _handleMapTapped'));
+      expect(source, contains('overlay: _MapExpandButton('));
+      expect(source, contains('Icons.open_in_full_rounded'));
+      expect(source, contains('Future<void> _openExpandedMeetingPointMap()'));
+      expect(source, contains("context.push<MapTarget>"));
+      expect(source, contains("'/map?mode=meeting-point-picker'"));
+      expect(
+        source,
+        contains(
+          '_handleMapTapped(result.point, addressLabel: result.subtitle)',
+        ),
+      );
+      expect(source, contains('String? addressLabel'));
       expect(source, contains('AppMapLinks.buildUrl('));
       expect(source, contains('placemarkFromCoordinates('));
+      expect(source, contains('class _MapExpandButton'));
       expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
       expect(source, isNot(contains('final MapController _mapController')));
       expect(source, isNot(contains('FlutterMap(')));

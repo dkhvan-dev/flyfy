@@ -46,6 +46,12 @@ void main() {
       coverFileId: 'cover-file-id',
       productCoverFileId: 'place-cover-file-id',
       productCoverImageUrl: 'https://upload.wikimedia.org/place.jpg',
+      photoFileIds: const ['cover-file-id', 'gallery-file-2'],
+      productPhotoFileIds: const ['place-cover-file-id'],
+      productPhotoImageUrls: const [
+        'https://upload.wikimedia.org/place.jpg',
+        'https://upload.wikimedia.org/place-2.jpg',
+      ],
     );
 
     expect(request.toJson(), {
@@ -91,7 +97,47 @@ void main() {
       'coverFileId': 'cover-file-id',
       'productCoverFileId': 'place-cover-file-id',
       'productCoverImageUrl': 'https://upload.wikimedia.org/place.jpg',
+      'photoFileIds': ['cover-file-id', 'gallery-file-2'],
+      'productPhotoFileIds': ['place-cover-file-id'],
+      'productPhotoImageUrls': [
+        'https://upload.wikimedia.org/place.jpg',
+        'https://upload.wikimedia.org/place-2.jpg',
+      ],
     });
+  });
+
+  test('deduplicates and trims excursion gallery photo ids and urls', () {
+    final request = CreateExcursionRequest(
+      categorySlug: 'nature',
+      durationMinutes: 90,
+      maxGroupSize: 6,
+      languageCodes: const ['en'],
+      meetingPoint: 'Main square',
+      priceAmount: 0,
+      currency: 'KZT',
+      photoFileIds: const [' cover-file-id ', '', 'cover-file-id', 'two'],
+      productPhotoFileIds: const [' place-cover ', 'PLACE-COVER', ''],
+      productPhotoImageUrls: const [
+        ' https://cdn.example.test/place.jpg ',
+        '',
+        'https://cdn.example.test/place.jpg',
+      ],
+      itinerary: const [
+        CreateExcursionItineraryItemRequest(
+          startOffsetMinutes: 0,
+          title: 'Meet and greet',
+          description: 'Meet the guide and start exploring.',
+        ),
+      ],
+    );
+
+    final json = request.toJson();
+
+    expect(json['photoFileIds'], ['cover-file-id', 'two']);
+    expect(json['productPhotoFileIds'], ['place-cover']);
+    expect(json['productPhotoImageUrls'], [
+      'https://cdn.example.test/place.jpg',
+    ]);
   });
 
   test('omits optional blank fields from excursion payload', () {

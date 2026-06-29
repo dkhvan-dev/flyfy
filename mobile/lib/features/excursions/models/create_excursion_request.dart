@@ -22,6 +22,9 @@ class CreateExcursionRequest {
     this.coverFileId,
     this.productCoverFileId,
     this.productCoverImageUrl,
+    this.photoFileIds = const [],
+    this.productPhotoFileIds = const [],
+    this.productPhotoImageUrls = const [],
     this.productTranslations = const {},
   });
 
@@ -48,6 +51,9 @@ class CreateExcursionRequest {
   final String? coverFileId;
   final String? productCoverFileId;
   final String? productCoverImageUrl;
+  final List<String> photoFileIds;
+  final List<String> productPhotoFileIds;
+  final List<String> productPhotoImageUrls;
 
   Map<String, dynamic> toJson() {
     final normalizedLanguages = _cleanList(
@@ -61,6 +67,9 @@ class CreateExcursionRequest {
     final normalizedProductTranslations = _cleanTranslations(
       productTranslations,
     );
+    final normalizedPhotoFileIds = _cleanList(photoFileIds);
+    final normalizedProductPhotoFileIds = _cleanList(productPhotoFileIds);
+    final normalizedProductPhotoImageUrls = _cleanList(productPhotoImageUrls);
 
     return {
       if (_isPresent(landmarkId)) 'landmarkId': landmarkId!.trim(),
@@ -96,6 +105,12 @@ class CreateExcursionRequest {
         'productCoverFileId': productCoverFileId!.trim(),
       if (_isPresent(productCoverImageUrl))
         'productCoverImageUrl': productCoverImageUrl!.trim(),
+      if (normalizedPhotoFileIds.isNotEmpty)
+        'photoFileIds': normalizedPhotoFileIds,
+      if (normalizedProductPhotoFileIds.isNotEmpty)
+        'productPhotoFileIds': normalizedProductPhotoFileIds,
+      if (normalizedProductPhotoImageUrls.isNotEmpty)
+        'productPhotoImageUrls': normalizedProductPhotoImageUrls,
     };
   }
 

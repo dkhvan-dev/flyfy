@@ -616,6 +616,7 @@ class AppRouter {
           path: '/map',
           builder: (context, state) {
             final mode = state.uri.queryParameters['mode'];
+            final meetingPointPickerEnabled = mode == 'meeting-point-picker';
             final routeBuilderEnabled =
                 UserRouteFeatureFlags.customRoutesEnabled &&
                 mode == 'route-builder';
@@ -634,6 +635,7 @@ class AppRouter {
                 activityCollection: activityCollection,
                 routePreview: routePreview,
                 routeBuilderEnabled: routeBuilderEnabled,
+                meetingPointPickerEnabled: meetingPointPickerEnabled,
               ),
             );
           },

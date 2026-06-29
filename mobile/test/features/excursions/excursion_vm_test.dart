@@ -4,6 +4,67 @@ import 'package:inflap/features/excursions/models/excursion_vm.dart';
 import 'package:inflap/features/excursions/excursion_localization.dart';
 
 void main() {
+  test('parses excursion gallery photos from product payload', () {
+    final excursion = ExcursionVm.fromJson(const {
+      'id': 'product-1',
+      'title': 'Almaty Mountain Escape',
+      'summary': 'Private mountain route',
+      'status': 'PUBLISHED',
+      'visibility': 'PUBLIC',
+      'priceAmount': 120,
+      'currency': 'KZT',
+      'coverFileId': 'cover-file-id',
+      'coverImageUrl': '/api/v1/excursion-products/product-1/cover',
+      'photoFileIds': ['cover-file-id', 'gallery-file-2'],
+      'photoImageUrls': [
+        '/api/v1/excursion-products/product-1/photos/0',
+        'https://cdn.example.test/gallery-2.jpg',
+      ],
+    });
+
+    expect(excursion.photoFileIds, ['cover-file-id', 'gallery-file-2']);
+    expect(excursion.photoImageUrls, [
+      '/api/v1/excursion-products/product-1/photos/0',
+      'https://cdn.example.test/gallery-2.jpg',
+    ]);
+  });
+
+  test(
+    'selected offer gallery overrides product gallery for guide details',
+    () {
+      final excursion = ExcursionVm.fromJson(const {
+        'id': 'product-1',
+        'title': 'Almaty Mountain Escape',
+        'summary': 'Private mountain route',
+        'status': 'PUBLISHED',
+        'visibility': 'PUBLIC',
+        'priceAmount': 120,
+        'currency': 'KZT',
+        'photoFileIds': ['product-photo'],
+        'offers': [
+          {
+            'id': 'offer-1',
+            'productId': 'product-1',
+            'guideProfileId': 'guide-profile-1',
+            'guideUserId': 'guide-user-1',
+            'status': 'PUBLISHED',
+            'visibility': 'PUBLIC',
+            'durationMinutes': 120,
+            'maxGroupSize': 4,
+            'meetingPoint': 'Hotel pickup',
+            'priceAmount': 140,
+            'currency': 'KZT',
+            'photoFileIds': ['offer-cover', 'offer-photo-2'],
+          },
+        ],
+      });
+
+      final selected = excursion.withPrimaryOffer(excursion.offers.first);
+
+      expect(selected.photoFileIds, ['offer-cover', 'offer-photo-2']);
+    },
+  );
+
   test(
     'parses public excursion list fields from excursion-service response',
     () {

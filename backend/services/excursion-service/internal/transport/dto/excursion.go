@@ -45,6 +45,9 @@ type CreateExcursionRequest struct {
 	CoverFileID              *string                           `json:"coverFileId,omitempty"`
 	ProductCoverFileID       *string                           `json:"productCoverFileId,omitempty"`
 	ProductCoverImageURL     *string                           `json:"productCoverImageUrl,omitempty"`
+	PhotoFileIDs             []string                          `json:"photoFileIds,omitempty"`
+	ProductPhotoFileIDs      []string                          `json:"productPhotoFileIds,omitempty"`
+	ProductPhotoImageURLs    []string                          `json:"productPhotoImageUrls,omitempty"`
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`
 	Itinerary                []ExcursionItineraryItemRequest   `json:"itinerary,omitempty"`
@@ -102,6 +105,8 @@ type ExcursionResponse struct {
 	Currency                 string                            `json:"currency"`
 	CoverFileID              *string                           `json:"coverFileId,omitempty"`
 	CoverImageURL            *string                           `json:"coverImageUrl,omitempty"`
+	PhotoFileIDs             []string                          `json:"photoFileIds,omitempty"`
+	PhotoImageURLs           []string                          `json:"photoImageUrls,omitempty"`
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`
 	Itinerary                []ExcursionItineraryItemResponse  `json:"itinerary,omitempty"`
@@ -150,6 +155,8 @@ type ExcursionProductCardResponse struct {
 	MapURL               *string                           `json:"mapUrl,omitempty"`
 	CoverFileID          *string                           `json:"coverFileId,omitempty"`
 	CoverImageURL        *string                           `json:"coverImageUrl,omitempty"`
+	PhotoFileIDs         []string                          `json:"photoFileIds,omitempty"`
+	PhotoImageURLs       []string                          `json:"photoImageUrls,omitempty"`
 	MinPriceAmount       *float64                          `json:"minPriceAmount,omitempty"`
 	Currency             *string                           `json:"currency,omitempty"`
 	OffersCount          int                               `json:"offersCount"`
@@ -189,6 +196,7 @@ type ExcursionOfferResponse struct {
 	PriceAmount              float64                           `json:"priceAmount"`
 	Currency                 string                            `json:"currency"`
 	CoverFileID              *string                           `json:"coverFileId,omitempty"`
+	PhotoFileIDs             []string                          `json:"photoFileIds,omitempty"`
 	LanguageCodes            []string                          `json:"languageCodes"`
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`

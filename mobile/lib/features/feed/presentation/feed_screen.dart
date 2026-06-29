@@ -36,6 +36,10 @@ import 'package:inflap/core/ui/app_modal_templates.dart';
 typedef FeedPostShareLauncher =
     Future<void> Function(PostVm post, String shareUrl);
 
+const double _feedHeaderTopInsetNudge = 10;
+const double _feedTabsTopGap = 12;
+const double _feedTabsPreferredHeight = 78;
+
 class FeedScreen extends StatefulWidget {
   const FeedScreen({
     super.key,
@@ -1251,6 +1255,8 @@ class _FeedScreenState extends State<FeedScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final topInset = MediaQuery.paddingOf(context).top;
+    final feedHeaderTopNudge = topInset > 0 ? _feedHeaderTopInsetNudge : 0.0;
 
     return Scaffold(
       backgroundColor: AppPalette.warmInk42,
@@ -1259,6 +1265,7 @@ class _FeedScreenState extends State<FeedScreen>
         foregroundColor: AppPalette.surfaceInverse,
         elevation: 0,
         centerTitle: false,
+        toolbarHeight: kToolbarHeight + feedHeaderTopNudge,
         flexibleSpace: const DecoratedBox(
           decoration: AppBoxDecoration(
             gradient: LinearGradient(
@@ -1268,15 +1275,18 @@ class _FeedScreenState extends State<FeedScreen>
             ),
           ),
         ),
-        title: Text(
-          l10n.feedTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(fontWeight: FontWeight.w900),
+        title: Padding(
+          padding: EdgeInsets.only(top: feedHeaderTopNudge),
+          child: Text(
+            l10n.feedTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const AppTextStyle(fontWeight: FontWeight.w900),
+          ),
         ),
         actions: [
           Padding(
-            padding: const AppEdgeInsets.only(right: 8),
+            padding: EdgeInsets.only(top: feedHeaderTopNudge, right: 8),
             child: NotificationUnreadBadge(
               child: IconButton.filledTonal(
                 key: const ValueKey('open-feed-notifications'),
@@ -1292,9 +1302,9 @@ class _FeedScreenState extends State<FeedScreen>
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(58),
+          preferredSize: const Size.fromHeight(_feedTabsPreferredHeight),
           child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(16, 4, 16, 12),
+            padding: const AppEdgeInsets.fromLTRB(16, _feedTabsTopGap, 16, 12),
             child: DecoratedBox(
               decoration: AppBoxDecoration(
                 color: AppPalette.white.withValues(alpha: 0.08),
