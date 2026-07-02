@@ -25,6 +25,7 @@ class RouteModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final visibleProfiles = _visibleProfiles;
     if (visibleProfiles.isEmpty) {
@@ -41,12 +42,12 @@ class RouteModeSelector extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppPalette.primary.withValues(alpha: 0.18),
-            AppPalette.warmInk114.withValues(alpha: 0.96),
+            colors.primaryContainer.withValues(alpha: 0.84),
+            colors.surfaceRaised,
           ],
         ),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.34)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -82,28 +83,28 @@ class RouteModeSelector extends StatelessWidget {
               ),
               foregroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppPalette.textPrimary;
+                  return colors.textPrimary;
                 }
-                return AppPalette.amberLight17;
+                return colors.textSecondary;
               }),
               iconColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppPalette.textPrimary;
+                  return colors.textPrimary;
                 }
-                return AppPalette.primary;
+                return colors.primary;
               }),
               backgroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppPalette.primary;
+                  return colors.primary;
                 }
-                return AppPalette.white.withValues(alpha: 0.06);
+                return colors.surface.withValues(alpha: 0.72);
               }),
               side: WidgetStateProperty.resolveWith((states) {
                 final alpha = states.contains(WidgetState.selected)
                     ? 0.76
                     : 0.24;
                 return BorderSide(
-                  color: AppPalette.primary.withValues(alpha: alpha),
+                  color: colors.primary.withValues(alpha: alpha),
                 );
               }),
               padding: WidgetStateProperty.all(

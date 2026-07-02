@@ -12,5 +12,14 @@ void main() {
     expect(source, contains('button: true'));
     expect(source, contains('label: post.title'));
     expect(source, contains('onTap: onTap'));
+    expect(
+      source,
+      contains("import 'package:inflap/core/ui/app_design_system.dart';"),
+    );
+    expect(
+      source,
+      contains('final colors = AppDesignSystem.colorsFor(context)'),
+    );
+    expect(source, isNot(contains('AppPalette.')));
   });
 }

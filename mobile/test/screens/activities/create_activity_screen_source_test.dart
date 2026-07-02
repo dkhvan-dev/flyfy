@@ -3,6 +3,55 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('create activity screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('createActivityColors.primary'));
+    expect(source, contains('createActivityColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test(
+    'create and edit activity shell uses shared V2 screen gradient',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final stateStart = source.indexOf('class _CreateActivityScreenState');
+      final buildStart = source.indexOf(
+        '@override\n  Widget build',
+        stateStart,
+      );
+      final buildEnd = source.indexOf('  // ── Step 1', buildStart);
+      expect(stateStart, isNonNegative);
+      expect(buildStart, isNonNegative);
+      expect(buildEnd, greaterThan(buildStart));
+
+      final shellSource = source.substring(buildStart, buildEnd);
+
+      expect(source, contains('List<Color> get screenGradientColors'));
+      expect(source, contains('colors.screenGradientColors'));
+      expect(
+        shellSource,
+        contains('colors: context.createActivityColors.screenGradientColors'),
+      );
+      expect(
+        shellSource,
+        contains('backgroundColor: context.createActivityColors.background'),
+      );
+      expect(
+        shellSource,
+        isNot(contains('context.createActivityColors.backgroundWarm,')),
+      );
+      expect(shellSource, isNot(contains('warmSurface19')));
+    },
+  );
+
   test(
     'create activity clears keyboard focus before switching steps',
     () async {
@@ -119,7 +168,7 @@ void main() {
     expect(source, contains('_showActivityAmberConfirmDialog'));
     expect(source, contains('_ActivityAmberConfirmDialog'));
     expect(source, contains('Icons.warning_amber_rounded'));
-    expect(source, contains('barrierDismissible: true'));
+    expect(source, isNot(contains('barrierDismissible: false')));
     expect(source, contains('cancelLabel: l10n.cancelButton'));
     expect(source, contains('confirmLabel: l10n.createActivityDiscardConfirm'));
     expect(source, contains('l10n.createActivityDiscardTitle'));
@@ -398,7 +447,10 @@ void main() {
     expect(pricingSectionEnd, greaterThan(currencyStart));
 
     final currencySource = source.substring(currencyStart, pricingSectionEnd);
-    expect(currencySource, contains('surfaceColor: AppPalette.warmSurface48'));
+    expect(
+      currencySource,
+      contains('surfaceColor: context.createActivityColors.warmSurface48'),
+    );
   });
 
   test(
@@ -433,6 +485,620 @@ void main() {
   );
 
   test(
+    'activity price amount field does not draw an inner fill layer',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final priceStart = source.indexOf('class _Step3PriceField');
+      final step3TextStart = source.indexOf('class _Step3TextField');
+
+      expect(priceStart, isNonNegative);
+      expect(step3TextStart, greaterThan(priceStart));
+
+      final priceSource = source.substring(priceStart, step3TextStart);
+
+      expect(priceSource, contains('_createActivityInputDecoration('));
+      expect(priceSource, contains('hasFocus: false'));
+      expect(priceSource, contains('hasError: errorText != null'));
+      expect(priceSource, contains('filled: false'));
+      expect(priceSource, contains('enabledBorder: InputBorder.none'));
+      expect(priceSource, contains('focusedBorder: InputBorder.none'));
+      expect(priceSource, contains('disabledBorder: InputBorder.none'));
+      expect(priceSource, contains('errorBorder: InputBorder.none'));
+      expect(priceSource, contains('focusedErrorBorder: InputBorder.none'));
+      expect(priceSource, isNot(contains('fillColor:')));
+      expect(priceSource, isNot(contains('warmSurface48')));
+    },
+  );
+
+  test(
+    'create activity input blocks use clean V2 borders without edge glow',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final step1Start = source.indexOf('class _Step1TextField');
+      final categorySelectorStart = source.indexOf(
+        'class _CategorySelectorField',
+      );
+      final priceStart = source.indexOf('class _Step3PriceField');
+      final step3TextStart = source.indexOf('class _Step3TextField');
+      final toggleStart = source.indexOf('class _Step3ToggleRow');
+      final limitStart = source.indexOf('class _Step3LimitField');
+      final actionBarStart = source.indexOf('class _Step3ActionBar');
+      final step1Source = source.substring(step1Start, categorySelectorStart);
+      final priceSource = source.substring(priceStart, step3TextStart);
+      final step3TextSource = source.substring(step3TextStart, toggleStart);
+      final limitSource = source.substring(limitStart, actionBarStart);
+
+      expect(step1Start, isNonNegative);
+      expect(categorySelectorStart, greaterThan(step1Start));
+      expect(priceStart, isNonNegative);
+      expect(step3TextStart, greaterThan(priceStart));
+      expect(toggleStart, greaterThan(step3TextStart));
+      expect(limitStart, greaterThan(toggleStart));
+      expect(actionBarStart, greaterThan(limitStart));
+
+      expect(source, contains('BoxDecoration _createActivityInputDecoration'));
+      expect(step1Source, contains('_createActivityInputDecoration('));
+      expect(priceSource, contains('_createActivityInputDecoration('));
+      expect(source, contains('return colors.border;'));
+
+      expect(step3TextSource, contains('context.createActivityColors.border'));
+      for (final fieldSource in [priceSource, step3TextSource]) {
+        expect(fieldSource, isNot(contains('white.withValues(alpha: 0.02)')));
+        expect(fieldSource, isNot(contains('white.withValues(alpha: 0.03)')));
+      }
+
+      expect(step1Source, isNot(contains('white.withValues(alpha: 0.02)')));
+      expect(step1Source, isNot(contains('white.withValues(alpha: 0.03)')));
+      expect(limitSource, contains('colors.border'));
+      expect(limitSource, isNot(contains('white.withValues(alpha: 0.02)')));
+      expect(limitSource, isNot(contains('white.withValues(alpha: 0.03)')));
+
+      expect(step1Source, contains('context.createActivityColors.textMuted'));
+      expect(step1Source, isNot(contains('white.withValues(alpha: 0.58)')));
+    },
+  );
+
+  test(
+    'create activity focused and invalid text inputs use visible V2 borders',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf(
+        'Color _createActivityInputBorderColor',
+      );
+      final step1Start = source.indexOf('class _Step1TextField');
+      final categorySelectorStart = source.indexOf(
+        'class _CategorySelectorField',
+      );
+
+      expect(helperStart, isNonNegative);
+      final helperEnd = source.indexOf(
+        'double _createActivityInputBorderWidth',
+        helperStart,
+      );
+      final widthHelperEnd = source.indexOf(
+        'extension _CreateActivityColorContext',
+        helperEnd,
+      );
+      expect(helperEnd, greaterThan(helperStart));
+      expect(widthHelperEnd, greaterThan(helperEnd));
+      expect(step1Start, isNonNegative);
+      expect(categorySelectorStart, greaterThan(step1Start));
+
+      final colorHelperSource = source.substring(helperStart, helperEnd);
+      final widthHelperSource = source.substring(helperEnd, widthHelperEnd);
+      final step1Source = source.substring(step1Start, categorySelectorStart);
+
+      expect(colorHelperSource, contains('if (hasError)'));
+      expect(colorHelperSource, contains('return colors.danger;'));
+      expect(colorHelperSource, contains('if (hasFocus)'));
+      expect(colorHelperSource, contains('return colors.primary;'));
+      expect(
+        colorHelperSource,
+        isNot(contains('return colors.borderPrimary;')),
+      );
+      expect(widthHelperSource, contains('if (hasError)'));
+      expect(widthHelperSource, contains('return 1.6;'));
+      expect(widthHelperSource, contains('if (hasFocus)'));
+      expect(widthHelperSource, contains('return 1.3;'));
+      expect(
+        widthHelperSource,
+        contains('BoxDecoration _createActivityInputDecoration'),
+      );
+      expect(widthHelperSource, contains('_createActivityInputBorderColor('));
+      expect(widthHelperSource, contains('_createActivityInputBorderWidth('));
+
+      expect(step1Source, contains('_createActivityInputDecoration('));
+      expect(
+        step1Source,
+        isNot(
+          contains(
+            '_focusNode.hasFocus\n                        ? context.createActivityColors.primary',
+          ),
+        ),
+      );
+      expect(step1Source, isNot(contains('_focusNode.hasFocus ? 1.5 : 1')));
+    },
+  );
+
+  test(
+    'create activity step one text fields do not draw an inner fill layer',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf(
+        'BoxDecoration _createActivityInputDecoration',
+      );
+      final helperEnd = helperStart < 0
+          ? -1
+          : source.indexOf(
+              'extension _CreateActivityColorContext',
+              helperStart,
+            );
+      final step1Start = source.indexOf('class _Step1TextField');
+      final categorySelectorStart = source.indexOf(
+        'class _CategorySelectorField',
+      );
+
+      expect(helperStart, isNonNegative);
+      expect(helperEnd, greaterThan(helperStart));
+      expect(step1Start, isNonNegative);
+      expect(categorySelectorStart, greaterThan(step1Start));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+      final step1Source = source.substring(step1Start, categorySelectorStart);
+
+      expect(
+        helperSource,
+        contains('color: context.createActivityColors.inputSurface'),
+      );
+      expect(step1Source, contains('_createActivityInputDecoration('));
+      expect(step1Source, contains('filled: false'));
+      expect(step1Source, contains('enabledBorder: InputBorder.none'));
+      expect(step1Source, contains('focusedBorder: InputBorder.none'));
+      expect(step1Source, contains('disabledBorder: InputBorder.none'));
+      expect(step1Source, contains('errorBorder: InputBorder.none'));
+      expect(step1Source, contains('focusedErrorBorder: InputBorder.none'));
+      expect(step1Source, isNot(contains('fillColor:')));
+      expect(
+        step1Source,
+        isNot(contains('color: context.createActivityColors.inputSurface')),
+      );
+    },
+  );
+
+  test(
+    'category selector fields match step one V2 input surface and border',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf(
+        'BoxDecoration _createActivityInputDecoration',
+      );
+      final helperEnd = helperStart < 0
+          ? -1
+          : source.indexOf(
+              'extension _CreateActivityColorContext',
+              helperStart,
+            );
+      final selectorStart = source.indexOf('class _CategorySelectorField');
+      final selectorEnd = source.indexOf(
+        'class _CoverUploadCard',
+        selectorStart,
+      );
+
+      expect(helperStart, isNonNegative);
+      expect(helperEnd, greaterThan(helperStart));
+      expect(selectorStart, isNonNegative);
+      expect(selectorEnd, greaterThan(selectorStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+      final selectorSource = source.substring(selectorStart, selectorEnd);
+
+      expect(
+        helperSource,
+        contains('color: context.createActivityColors.inputSurface'),
+      );
+      expect(helperSource, contains('_createActivityInputBorderColor('));
+      expect(helperSource, contains('_createActivityInputBorderWidth('));
+      expect(selectorSource, contains('_createActivityInputDecoration('));
+      expect(selectorSource, contains('final hasError = errorText != null'));
+      expect(selectorSource, contains('hasFocus: false'));
+      expect(selectorSource, contains('hasError: hasError'));
+      expect(
+        selectorSource,
+        isNot(contains('color: context.createActivityColors.inputSurface')),
+      );
+      expect(
+        selectorSource,
+        isNot(
+          contains(
+            'context.createActivityColors.primary.withValues(\n'
+            '            alpha: isPlaceholder ? 0.28 : 0.42,\n'
+            '          )',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'create activity participant limit fields use a single V2 input surface',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final participantSectionStart = source.indexOf(
+        'title: l10n.createParticipantLimitsTitle',
+      );
+      final reusableWidgetsStart = source.indexOf(
+        '// ════════════════════════════════════════════════════════════════',
+        participantSectionStart,
+      );
+      final limitStart = source.indexOf('class _Step3LimitField');
+      final actionBarStart = source.indexOf('class _Step3ActionBar');
+
+      expect(participantSectionStart, isNonNegative);
+      expect(reusableWidgetsStart, greaterThan(participantSectionStart));
+      expect(limitStart, isNonNegative);
+      expect(actionBarStart, greaterThan(limitStart));
+
+      final participantSectionSource = source.substring(
+        participantSectionStart,
+        reusableWidgetsStart,
+      );
+      final limitSource = source.substring(limitStart, actionBarStart);
+
+      expect(
+        participantSectionSource,
+        contains('icon: Icons.person_add_alt_1_outlined'),
+      );
+      expect(
+        participantSectionSource,
+        contains('icon: Icons.groups_2_outlined'),
+      );
+
+      expect(limitSource, contains('required this.icon'));
+      expect(limitSource, contains('final IconData icon;'));
+      expect(
+        limitSource,
+        contains('context.createActivityColors.surfaceRaised'),
+      );
+      expect(limitSource, contains('context.createActivityColors.surfaceWarm'));
+      expect(limitSource, contains('filled: false'));
+      expect(limitSource, contains('contentPadding: EdgeInsets.zero'));
+      expect(limitSource, isNot(contains('warmSurface48')));
+      expect(
+        limitSource,
+        isNot(
+          contains('padding: const AppEdgeInsets.symmetric(horizontal: 20)'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'create activity participant limit fields stay top aligned on validation',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final participantSectionStart = source.indexOf(
+        'title: l10n.createParticipantLimitsTitle',
+      );
+      final reusableWidgetsStart = source.indexOf(
+        '// ════════════════════════════════════════════════════════════════',
+        participantSectionStart,
+      );
+
+      expect(participantSectionStart, isNonNegative);
+      expect(reusableWidgetsStart, greaterThan(participantSectionStart));
+
+      final participantSectionSource = source.substring(
+        participantSectionStart,
+        reusableWidgetsStart,
+      );
+
+      expect(
+        participantSectionSource,
+        contains(
+          ': Row(\n'
+          '                      crossAxisAlignment: CrossAxisAlignment.start,\n'
+          '                      children: [\n'
+          '                        Expanded(\n'
+          '                          child: _Step3LimitField(',
+        ),
+      );
+    },
+  );
+
+  test('create activity maximum participants requires at least two people', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('_maxParticipants < _minActivityParticipants'));
+    expect(source, isNot(contains('_maxParticipants <= 0')));
+    expect(
+      enArb,
+      contains(
+        '"createMaxParticipantsValidation": "Please enter a maximum between 2 and 100 participants"',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"createMaxParticipantsValidation": "Укажите максимум от 2 до 100 участников"',
+      ),
+    );
+    expect(
+      kkArb,
+      contains(
+        '"createMaxParticipantsValidation": "2 мен 100 қатысушы аралығындағы максимумды енгізіңіз"',
+      ),
+    );
+  });
+
+  test(
+    'create activity category selectors use the same V2 input surface',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf(
+        'BoxDecoration _createActivityInputDecoration',
+      );
+      final helperEnd = helperStart < 0
+          ? -1
+          : source.indexOf(
+              'extension _CreateActivityColorContext',
+              helperStart,
+            );
+      final selectorStart = source.indexOf('class _CategorySelectorField');
+      final coverCardStart = source.indexOf('class _CoverUploadCard');
+
+      expect(helperStart, isNonNegative);
+      expect(helperEnd, greaterThan(helperStart));
+      expect(selectorStart, isNonNegative);
+      expect(coverCardStart, greaterThan(selectorStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+      final selectorSource = source.substring(selectorStart, coverCardStart);
+
+      expect(
+        helperSource,
+        contains('context.createActivityColors.inputSurface'),
+      );
+      expect(selectorSource, contains('_createActivityInputDecoration('));
+      expect(selectorSource, contains('context.createActivityColors.primary'));
+      expect(
+        selectorSource,
+        contains('context.createActivityColors.textMuted'),
+      );
+      expect(selectorSource, isNot(contains('surfaceWarm')));
+      expect(selectorSource, isNot(contains('warmSurface47')));
+      expect(selectorSource, isNot(contains('white.withValues(alpha: 0.02)')));
+      expect(selectorSource, isNot(contains('white.withValues(alpha: 0.58)')));
+      expect(selectorSource, isNot(contains('white.withValues(alpha: 0.78)')));
+    },
+  );
+
+  test(
+    'create activity category field states use graphite input surface',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final colorsStart = source.indexOf('final class _CreateActivityColors');
+      final colorsEnd = colorsStart < 0
+          ? -1
+          : source.indexOf(
+              'Color _createActivityInputBorderColor',
+              colorsStart,
+            );
+      final catalogStart = source.indexOf('class _CategoryCatalogState');
+      final pickerStart = source.indexOf('class _CategoryPickerSheet');
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(catalogStart, isNonNegative);
+      expect(pickerStart, greaterThan(catalogStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final catalogSource = source.substring(catalogStart, pickerStart);
+
+      expect(
+        colorsSource,
+        contains('Color get inputSurface => colors.surfaceRaised'),
+      );
+      expect(
+        catalogSource,
+        contains('decoration: _createActivityInputDecoration('),
+      );
+      expect(catalogSource, contains('hasFocus: false'));
+      expect(catalogSource, contains('hasError: false'));
+      expect(catalogSource, isNot(contains('warmSurface47')));
+      expect(catalogSource, isNot(contains('white.withValues(alpha: 0.02)')));
+      expect(catalogSource, isNot(contains('white.withValues(alpha: 0.72)')));
+    },
+  );
+
+  test(
+    'create activity category selectors avoid warm-looking input fill',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final colorsStart = source.indexOf('final class _CreateActivityColors');
+      final colorsEnd = colorsStart < 0
+          ? -1
+          : source.indexOf(
+              'Color _createActivityInputBorderColor',
+              colorsStart,
+            );
+      final selectorStart = source.indexOf('class _CategorySelectorField');
+      final selectorEnd = source.indexOf(
+        'class _CoverUploadCard',
+        selectorStart,
+      );
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(selectorStart, isNonNegative);
+      expect(selectorEnd, greaterThan(selectorStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final selectorSource = source.substring(selectorStart, selectorEnd);
+
+      expect(
+        colorsSource,
+        contains('Color get inputSurface => colors.surfaceRaised'),
+      );
+      expect(
+        colorsSource,
+        isNot(contains('Color get inputSurface => colors.surfaceWarm')),
+      );
+      expect(selectorSource, contains('_createActivityInputDecoration('));
+      expect(selectorSource, isNot(contains('surfaceRaised')));
+      expect(selectorSource, isNot(contains('surfaceWarm')));
+    },
+  );
+
+  test(
+    'create activity inactive choices and toggles stay visible in light V2',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final segmentedStart = source.indexOf('class _Step2FormatSegmented');
+      final segmentedEnd = source.indexOf('class _Step2PillTextField');
+      final chipStart = source.indexOf('class _Step3ChoiceChip');
+      final priceStart = source.indexOf('class _Step3PriceField');
+      final toggleStart = source.indexOf('class _Step3ToggleRow');
+      final limitStart = source.indexOf('class _Step3LimitField');
+
+      expect(segmentedStart, isNonNegative);
+      expect(segmentedEnd, greaterThan(segmentedStart));
+      expect(chipStart, isNonNegative);
+      expect(priceStart, greaterThan(chipStart));
+      expect(toggleStart, isNonNegative);
+      expect(limitStart, greaterThan(toggleStart));
+
+      final segmentedSource = source.substring(segmentedStart, segmentedEnd);
+      final chipSource = source.substring(chipStart, priceStart);
+      final toggleSource = source.substring(toggleStart, limitStart);
+
+      expect(segmentedSource, contains('Border.all('));
+      expect(segmentedSource, contains('context.createActivityColors.border'));
+      expect(segmentedSource, contains('final labelColor = isActive'));
+      expect(
+        segmentedSource,
+        contains('context.createActivityColors.textPrimary'),
+      );
+      expect(segmentedSource, contains('context.createActivityColors.primary'));
+      expect(chipSource, contains('final labelColor ='));
+      expect(chipSource, contains('Border.all('));
+      expect(chipSource, contains('context.createActivityColors.border'));
+      expect(chipSource, contains('color: labelColor'));
+      expect(
+        chipSource,
+        isNot(contains('color: context.createActivityColors.white')),
+      );
+      expect(toggleSource, contains('Border.all('));
+      expect(toggleSource, contains('context.createActivityColors.border'));
+      expect(
+        toggleSource,
+        contains('context.createActivityColors.textPrimary'),
+      );
+    },
+  );
+
+  test('create activity step circles use visible light V2 borders', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+
+    final indicatorStart = source.indexOf('class _StepIndicator');
+    final step2NavStart = source.indexOf('class _Step2NavBar');
+    expect(indicatorStart, isNonNegative);
+    expect(step2NavStart, greaterThan(indicatorStart));
+
+    final indicatorSource = source.substring(indicatorStart, step2NavStart);
+    final compactIndicatorEnd = indicatorSource.indexOf(
+      '    return Container(',
+    );
+    expect(compactIndicatorEnd, isNonNegative);
+    final compactIndicatorSource = indicatorSource.substring(
+      0,
+      compactIndicatorEnd,
+    );
+
+    expect(compactIndicatorSource, contains('final stepBorderColor ='));
+    expect(
+      compactIndicatorSource,
+      contains('context.createActivityColors.border'),
+    );
+    expect(compactIndicatorSource, contains('width: isActive ? 1.3 : 1'));
+    expect(
+      compactIndicatorSource,
+      isNot(contains('context.createActivityColors.white.withValues')),
+    );
+  });
+
+  test(
+    'create activity category selectors use neutral graphite input fill',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final colorsStart = source.indexOf('final class _CreateActivityColors');
+      final colorsEnd = colorsStart < 0
+          ? -1
+          : source.indexOf(
+              'Color _createActivityInputBorderColor',
+              colorsStart,
+            );
+      final selectorStart = source.indexOf('class _CategorySelectorField');
+      final selectorEnd = source.indexOf(
+        'class _CoverUploadCard',
+        selectorStart,
+      );
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(selectorStart, isNonNegative);
+      expect(selectorEnd, greaterThan(selectorStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final selectorSource = source.substring(selectorStart, selectorEnd);
+
+      expect(
+        colorsSource,
+        contains('Color get inputSurface => colors.surfaceRaised'),
+      );
+      expect(
+        colorsSource,
+        isNot(contains('Color get inputSurface => colors.surfaceWarm')),
+      );
+      expect(selectorSource, contains('_createActivityInputDecoration('));
+      expect(selectorSource, contains('hasFocus: false'));
+      expect(selectorSource, isNot(contains('surfaceWarm')));
+      expect(selectorSource, isNot(contains('borderPrimary')));
+    },
+  );
+
+  test(
     'create activity cover placeholder decorations scale with available space',
     () async {
       final source = await File(
@@ -456,6 +1122,50 @@ void main() {
       expect(placeholderSource, isNot(contains('height: 138')));
       expect(placeholderSource, isNot(contains('width: 150')));
       expect(placeholderSource, isNot(contains('height: 150')));
+    },
+  );
+
+  test(
+    'create activity cover upload card removes light image shadow overlay and keeps copy readable',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final helperStart = source.indexOf(
+        'LinearGradient? _coverUploadOverlayGradient',
+      );
+      final cardStart = source.indexOf('class _CoverUploadCard');
+      final copyStart = source.indexOf('class _CoverCardCopy');
+      final borderStart = source.indexOf('class _DashedCoverBorderPainter');
+      expect(helperStart, isNonNegative);
+      expect(cardStart, isNonNegative);
+      expect(copyStart, greaterThan(cardStart));
+      expect(borderStart, greaterThan(copyStart));
+
+      final helperSource = source.substring(helperStart, cardStart);
+      final cardSource = source.substring(cardStart, copyStart);
+      final copySource = source.substring(copyStart, borderStart);
+
+      expect(helperSource, contains('Brightness.light'));
+      expect(helperSource, contains('return null;'));
+      expect(cardSource, contains('final overlayGradient ='));
+      expect(cardSource, contains('if (overlayGradient != null)'));
+      expect(copySource, contains('final isLight ='));
+      expect(copySource, contains('context.createActivityColors.surface'));
+      expect(copySource, contains('context.createActivityColors.border'));
+      expect(
+        copySource,
+        contains('context.createActivityColors.textSecondary'),
+      );
+      expect(
+        copySource,
+        isNot(
+          contains(
+            'context.createActivityColors.white.withValues(alpha: 0.88)',
+          ),
+        ),
+      );
     },
   );
 

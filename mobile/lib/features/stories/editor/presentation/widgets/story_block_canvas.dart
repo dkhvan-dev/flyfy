@@ -47,6 +47,7 @@ class StoryBlockCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final blocks = state.document.blocks;
     final contentError = _contentErrorText(l10n);
     if (blocks.isEmpty) {
@@ -60,7 +61,7 @@ class StoryBlockCanvas extends StatelessWidget {
               Icon(
                 Icons.auto_stories_outlined,
                 size: 40,
-                color: AppPalette.primary,
+                color: colors.primary,
               ),
               const SizedBox(height: StoryEditorSpacing.md),
               Text(
@@ -78,7 +79,7 @@ class StoryBlockCanvas extends StatelessWidget {
                   contentError,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppPalette.danger),
+                  ).textTheme.bodySmall?.copyWith(color: colors.danger),
                 ),
               ],
               const SizedBox(height: StoryEditorSpacing.lg),
@@ -152,9 +153,10 @@ class StoryBlockCanvas extends StatelessWidget {
     if (!hasError) {
       return storyEditorPanelDecoration(context);
     }
+    final colors = AppDesignSystem.colorsFor(context);
     return AppBoxDecoration(
-      color: AppPalette.surfaceCoolLight,
-      border: Border.all(color: AppPalette.danger, width: 1.4),
+      color: colors.surface,
+      border: Border.all(color: colors.danger, width: 1.4),
       borderRadius: AppBorderRadius.circular(8),
     );
   }
@@ -211,6 +213,7 @@ class _ReorderableBlockListState extends State<_ReorderableBlockList> {
   Widget build(BuildContext context) {
     final blocks = widget.state.document.blocks;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return Listener(
       onPointerMove: _handlePointerMove,
       onPointerUp: (_) => _stopDrag(),
@@ -227,7 +230,7 @@ class _ReorderableBlockListState extends State<_ReorderableBlockList> {
             animation: animation,
             builder: (context, child) {
               return Material(
-                color: AppPalette.transparent,
+                color: colors.transparent,
                 elevation: 8 * animation.value,
                 borderRadius: AppBorderRadius.circular(8),
                 child: child,
@@ -393,6 +396,7 @@ class _BlockDragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final handleWidth = adaptive.scale(36, minFactor: 0.86, maxFactor: 1.08);
     final handleHeight = adaptive.scale(48, minFactor: 0.86, maxFactor: 1.08);
     final barWidth = adaptive.scale(18, minFactor: 0.86, maxFactor: 1.08);
@@ -413,7 +417,7 @@ class _BlockDragHandle extends StatelessWidget {
               for (var i = 0; i < 3; i++) ...[
                 DecoratedBox(
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.86),
+                    color: colors.primary.withValues(alpha: 0.86),
                     borderRadius: AppBorderRadius.circular(999),
                   ),
                   child: SizedBox(width: barWidth, height: barHeight),
@@ -574,13 +578,12 @@ class _DividerBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return InkWell(
       onTap: onTap,
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
-          border: Border.all(
-            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
-          ),
+          border: Border.all(color: selected ? colors.primary : colors.border),
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
@@ -653,14 +656,13 @@ class _PlaceReferenceBlockState extends State<_PlaceReferenceBlock> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return InkWell(
       onTap: widget.onTap,
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
           border: Border.all(
-            color: widget.selected
-                ? AppPalette.primary
-                : AppPalette.outlineOverlay,
+            color: widget.selected ? colors.primary : colors.border,
           ),
         ),
         child: Padding(
@@ -723,6 +725,7 @@ class _RouteReferenceBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final route = block.route;
     final title = (route?.title ?? '').trim();
     final description = (route?.description ?? '').trim();
@@ -730,9 +733,7 @@ class _RouteReferenceBlock extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
-          border: Border.all(
-            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
-          ),
+          border: Border.all(color: selected ? colors.primary : colors.border),
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(StoryEditorSpacing.md),

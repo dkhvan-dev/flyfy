@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:inflap/core/network/excursion_api.dart';
 import 'package:inflap/core/network/reference_api.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/places/data/place_api.dart';
 import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
@@ -124,7 +125,8 @@ void main() {
     expect(find.text('Выбрать'), findsNWidgets(2));
 
     final cardFinder = find.byWidgetPredicate(
-      (widget) => widget is Material && widget.color == const Color(0xFF2C2014),
+      (widget) =>
+          widget is Material && widget.color == AppColorSchemes.light.surface,
     );
     expect(cardFinder, findsNWidgets(2));
 

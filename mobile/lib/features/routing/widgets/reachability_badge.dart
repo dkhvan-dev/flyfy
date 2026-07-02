@@ -10,17 +10,14 @@ class ReachabilityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final background = isReachable
-        ? AppPalette.greenSurfaceHigh09
-        : theme.colorScheme.errorContainer;
-    final foreground = isReachable
-        ? AppPalette.white
-        : theme.colorScheme.onErrorContainer;
+    final colors = AppDesignSystem.colorsFor(context);
+    final accent = isReachable ? colors.success : colors.danger;
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: background.withValues(alpha: 0.88),
+        color: accent.withValues(alpha: 0.14),
         borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: accent.withValues(alpha: 0.26)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -29,7 +26,7 @@ class ReachabilityBadge extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelMedium?.copyWith(
-            color: foreground,
+            color: accent,
             fontWeight: FontWeight.w700,
           ),
         ),

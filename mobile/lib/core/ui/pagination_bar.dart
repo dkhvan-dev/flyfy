@@ -317,6 +317,8 @@ class _PaginationSlotWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     if (slot.isDots) {
       return SizedBox(
         width: metrics.dotWidth,
@@ -325,7 +327,7 @@ class _PaginationSlotWidget extends StatelessWidget {
           child: Text(
             '...',
             style: AppTextStyle(
-              color: AppPalette.warmSurfaceHigh16,
+              color: colors.textMuted,
               fontSize: metrics.dotsFontSize,
               fontWeight: FontWeight.w900,
               height: 1,
@@ -352,13 +354,13 @@ class _PaginationSlotWidget extends StatelessWidget {
 
     return _RoundPaginationButton(
       size: metrics.pageSize,
-      background: AppPalette.warmSurface25,
-      border: AppPalette.warmSurfaceHigh07,
+      background: colors.surfaceRaised,
+      border: colors.borderSoft,
       semanticLabel: label,
       onTap: onPageChanged == null ? null : () => onPageChanged!(page),
       child: _PaginationNumber(
         page: page,
-        color: AppPalette.orangeLight23,
+        color: colors.textSecondary,
         fontSize: metrics.numberFontSize,
       ),
     );
@@ -378,6 +380,8 @@ class _ActivePageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Semantics(
       selected: true,
       label: semanticLabel,
@@ -390,7 +394,7 @@ class _ActivePageButton extends StatelessWidget {
           children: [
             CustomPaint(
               size: Size.square(metrics.activeOuterSize),
-              painter: const _ActivePageGlowPainter(),
+              painter: _ActivePageGlowPainter(colors: colors),
             ),
             Container(
               width: metrics.activeSize,
@@ -398,34 +402,30 @@ class _ActivePageButton extends StatelessWidget {
               alignment: Alignment.center,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
+                gradient: RadialGradient(
                   center: Alignment(0, -0.24),
                   radius: 0.82,
                   colors: [
-                    AppPalette.warmMuted47,
-                    AppPalette.warmMuted43,
-                    AppPalette.warmMuted41,
+                    colors.primarySoft,
+                    colors.primary,
+                    colors.primaryPressed,
                   ],
                   stops: [0.0, 0.64, 1.0],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppPalette.warmMuted43.withValues(alpha: 0.92),
+                    color: colors.primary.withValues(alpha: 0.26),
                     blurRadius: metrics.activeSize * 0.3,
                   ),
                   BoxShadow(
-                    color: AppPalette.warmMuted39.withValues(alpha: 0.72),
+                    color: colors.primarySoft.withValues(alpha: 0.18),
                     blurRadius: metrics.activeSize * 0.52,
-                  ),
-                  BoxShadow(
-                    color: AppPalette.white.withValues(alpha: 0.30),
-                    blurRadius: metrics.activeSize * 0.74,
                   ),
                 ],
               ),
               child: _PaginationNumber(
                 page: page,
-                color: AppPalette.white,
+                color: colors.textPrimary,
                 fontSize: metrics.activeNumberFontSize,
               ),
             ),
@@ -453,6 +453,7 @@ class _PaginationArrowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final icon = direction == _PaginationArrowDirection.previous
         ? Icons.chevron_left_rounded
         : Icons.chevron_right_rounded;
@@ -461,14 +462,11 @@ class _PaginationArrowButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.42,
       child: _RoundPaginationButton(
         size: metrics.arrowSize,
-        background: AppPalette.warmSurface25,
+        background: colors.surfaceRaised,
+        border: colors.borderSoft,
         semanticLabel: tooltip,
         onTap: enabled ? onTap : null,
-        child: Icon(
-          icon,
-          color: AppPalette.orangeLight23,
-          size: metrics.arrowIconSize,
-        ),
+        child: Icon(icon, color: colors.primary, size: metrics.arrowIconSize),
       ),
     );
   }
@@ -497,9 +495,10 @@ class _RoundPaginationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final hitTargetSize = math.max(size, _minTouchTargetSize);
     final button = Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
@@ -519,7 +518,7 @@ class _RoundPaginationButton extends StatelessWidget {
                     ? null
                     : [
                         BoxShadow(
-                          color: AppPalette.black.withValues(alpha: 0.35),
+                          color: colors.black.withValues(alpha: 0.12),
                           blurRadius: 0,
                           spreadRadius: size * 0.018,
                         ),
@@ -592,14 +591,15 @@ class _PaginationLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final locale = AppLocalizations.of(context)?.localeName.split('_').first;
     final baseStyle = AppTextStyle(
-      color: AppPalette.warmSurfaceHigh16,
+      color: colors.textMuted,
       fontSize: metrics.labelFontSize,
       fontWeight: FontWeight.w900,
       height: 1.2,
     );
-    final accentStyle = baseStyle.copyWith(color: AppPalette.primary);
+    final accentStyle = baseStyle.copyWith(color: colors.primary);
 
     final spans = switch (locale) {
       'ru' => <InlineSpan>[
@@ -631,7 +631,9 @@ class _PaginationLabel extends StatelessWidget {
 }
 
 class _ActivePageGlowPainter extends CustomPainter {
-  const _ActivePageGlowPainter();
+  const _ActivePageGlowPainter({required this.colors});
+
+  final AppColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -640,9 +642,9 @@ class _ActivePageGlowPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AppPalette.white.withValues(alpha: 0.55),
-          AppPalette.warmMuted40.withValues(alpha: 0.35),
-          AppPalette.transparent,
+          colors.primarySoft.withValues(alpha: 0.36),
+          colors.primary.withValues(alpha: 0.20),
+          colors.transparent,
         ],
         stops: const [0.0, 0.48, 1.0],
       ).createShader(Offset.zero & size);
@@ -659,8 +661,8 @@ class _ActivePageGlowPainter extends CustomPainter {
       );
       final isWarm = i.isEven;
       dotPaint.color = isWarm
-          ? AppPalette.warmMuted40.withValues(alpha: 0.72)
-          : AppPalette.white.withValues(alpha: 0.62);
+          ? colors.primary.withValues(alpha: 0.56)
+          : colors.primarySoft.withValues(alpha: 0.42);
       canvas.drawCircle(
         point,
         size.shortestSide * (i % 3 == 0 ? 0.018 : 0.013),
@@ -670,5 +672,7 @@ class _ActivePageGlowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ActivePageGlowPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ActivePageGlowPainter oldDelegate) {
+    return oldDelegate.colors != colors;
+  }
 }

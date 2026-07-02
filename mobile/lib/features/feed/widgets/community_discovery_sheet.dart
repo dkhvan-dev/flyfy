@@ -254,29 +254,33 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
 
   Future<void> _openFilters() async {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final result = await showAppModalBottomSheet<_CommunityDiscoveryFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
-      barrierColor: AppPalette.black.withValues(alpha: 0.58),
+      backgroundColor: colors.transparent,
+      barrierColor: colors.black.withValues(alpha: 0.58),
       builder: (context) {
-        return _CommunityDiscoveryFiltersSheet(
-          l10n: l10n,
-          topics: _topics,
-          previewCount: _communities.length,
-          previewCountLoader: _loadPreviewCount,
-          initialFilters: _CommunityDiscoveryFilters(
-            country: AppCountryFilterValue.fromParts(
-              countryCode: _selectedCountryCode,
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: _CommunityDiscoveryFiltersSheet(
+            l10n: l10n,
+            topics: _topics,
+            previewCount: _communities.length,
+            previewCountLoader: _loadPreviewCount,
+            initialFilters: _CommunityDiscoveryFilters(
+              country: AppCountryFilterValue.fromParts(
+                countryCode: _selectedCountryCode,
+              ),
+              city: AppCityFilterValue.fromParts(
+                countryCode: _selectedCountryCode,
+                cityId: _selectedCityId,
+                cityName: _selectedCityName,
+              ),
+              topic: _selectedTopic,
             ),
-            city: AppCityFilterValue.fromParts(
-              countryCode: _selectedCountryCode,
-              cityId: _selectedCityId,
-              cityName: _selectedCityName,
-            ),
-            topic: _selectedTopic,
           ),
         );
       },
@@ -297,61 +301,67 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: AppEdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 10,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              decoration: AppBoxDecoration(
-                color: AppPalette.outlineOverlay,
-                borderRadius: AppBorderRadius.circular(999),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Center(
-              child: Text(
-                l10n.communityDiscoveryTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppPalette.textPrimary,
-                  fontWeight: FontWeight.w800,
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: AppEdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 10,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: AppBoxDecoration(
+                  color: colors.border,
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            AppListSearchField(
-              textFieldKey: const ValueKey('community-discovery-sheet-search'),
-              controller: _searchController,
-              hintText: l10n.communityDiscoverySearchHint,
-              filterTooltip: l10n.communityDiscoveryFiltersTitle,
-              activeFilterCount: _activeFilterCount,
-              showClearButton: true,
-              onClear: () {
-                _searchController.clear();
-                if (_search.isEmpty) {
-                  return;
-                }
-                setState(() => _search = '');
-                _loadCommunities();
-              },
-              onTapOutside: (_) => FocusScope.of(context).unfocus(),
-              onFilterTap: _openFilters,
-            ),
-            const SizedBox(height: 12),
-            Expanded(child: _buildList(context)),
-          ],
+              const SizedBox(height: 14),
+              Center(
+                child: Text(
+                  l10n.communityDiscoveryTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              AppListSearchField(
+                textFieldKey: const ValueKey(
+                  'community-discovery-sheet-search',
+                ),
+                controller: _searchController,
+                hintText: l10n.communityDiscoverySearchHint,
+                filterTooltip: l10n.communityDiscoveryFiltersTitle,
+                activeFilterCount: _activeFilterCount,
+                showClearButton: true,
+                onClear: () {
+                  _searchController.clear();
+                  if (_search.isEmpty) {
+                    return;
+                  }
+                  setState(() => _search = '');
+                  _loadCommunities();
+                },
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                onFilterTap: _openFilters,
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: _buildList(context)),
+            ],
+          ),
         ),
       ),
     );
@@ -359,11 +369,10 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
 
   Widget _buildList(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppPalette.primary),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.primary));
     }
 
     if (_error != null) {
@@ -373,10 +382,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
         message: l10n.communityDiscoveryLoadFailedMessage,
         action: FilledButton(
           onPressed: _loadCommunities,
-          style: FilledButton.styleFrom(
-            backgroundColor: AppPalette.primary,
-            foregroundColor: AppPalette.backgroundWarm,
-          ),
+          style: AppButtonStyles.primary(colors),
           child: Text(l10n.feedRetryAction),
         ),
       );
@@ -592,6 +598,7 @@ class _CommunityDiscoveryFiltersSheetState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final canApply =
         _selectedCountry?.countryCode != null &&
@@ -612,7 +619,7 @@ class _CommunityDiscoveryFiltersSheetState
             top: AppRadiusValue.circular(28),
           ),
           child: DecoratedBox(
-            decoration: const AppBoxDecoration(color: AppPalette.warmInk66),
+            decoration: AppBoxDecoration(color: colors.surface),
             child: Column(
               children: [
                 AppFilterSheetHeader(
@@ -660,21 +667,19 @@ class _CommunityDiscoveryFiltersSheetState
                           const SizedBox(height: 18),
                           DecoratedBox(
                             decoration: AppBoxDecoration(
-                              color: AppPalette.primary.withValues(alpha: 0.12),
+                              color: colors.primary.withValues(alpha: 0.12),
                               borderRadius: AppBorderRadius.circular(16),
                               border: Border.all(
-                                color: AppPalette.primary.withValues(
-                                  alpha: 0.22,
-                                ),
+                                color: colors.primary.withValues(alpha: 0.22),
                               ),
                             ),
                             child: Padding(
                               padding: const AppEdgeInsets.all(14),
                               child: Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.near_me_rounded,
-                                    color: AppPalette.primary,
+                                    color: colors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 10),
@@ -683,8 +688,8 @@ class _CommunityDiscoveryFiltersSheetState
                                       widget
                                           .l10n
                                           .communityDiscoveryRequiredLocationMessage,
-                                      style: const AppTextStyle(
-                                        color: AppPalette.amberLight11,
+                                      style: AppTextStyle(
+                                        color: colors.textSecondary,
                                         fontSize: 13,
                                         height: 1.25,
                                         fontWeight: FontWeight.w700,
@@ -713,22 +718,22 @@ class _CommunityDiscoveryFiltersSheetState
                       onPressed: canApply && !_isPreviewLoading
                           ? _applyFilters
                           : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppPalette.primary,
-                        disabledBackgroundColor: AppPalette.warmSurface61,
-                        foregroundColor: AppPalette.textPrimary,
-                        disabledForegroundColor: AppPalette.warmMuted05,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppBorderRadius.circular(18),
+                      style: AppButtonStyles.primary(colors).copyWith(
+                        minimumSize: const WidgetStatePropertyAll(
+                          Size.fromHeight(52),
+                        ),
+                        shape: WidgetStatePropertyAll(
+                          RoundedRectangleBorder(
+                            borderRadius: AppBorderRadius.circular(18),
+                          ),
                         ),
                       ),
                       child: _isPreviewLoading
-                          ? const SizedBox.square(
+                          ? SizedBox.square(
                               dimension: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppPalette.textPrimary,
+                                color: colors.textPrimary,
                               ),
                             )
                           : Text(
@@ -770,6 +775,8 @@ class _CommunityTopicFilterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return _CommunityFilterSection(
       icon: Icons.category_rounded,
       title: l10n.communityDiscoveryTopicSection,
@@ -782,18 +789,16 @@ class _CommunityTopicFilterSection extends StatelessWidget {
               label: Text(feedCommunityTopicLabel(topic, l10n)),
               selected: selectedTopic == topic,
               onSelected: (_) => onChanged(topic),
-              selectedColor: AppPalette.primary.withValues(alpha: 0.2),
-              backgroundColor: AppPalette.warmInk27,
+              selectedColor: colors.primary.withValues(alpha: 0.2),
+              backgroundColor: colors.surfaceHigh,
               labelStyle: AppTextStyle(
                 color: selectedTopic == topic
-                    ? AppPalette.primary
-                    : AppPalette.textSecondary,
+                    ? colors.primary
+                    : colors.textSecondary,
                 fontWeight: FontWeight.w800,
               ),
               side: BorderSide(
-                color: selectedTopic == topic
-                    ? AppPalette.primary
-                    : AppPalette.white.withValues(alpha: 0.08),
+                color: selectedTopic == topic ? colors.primary : colors.border,
               ),
             ),
         ],
@@ -815,20 +820,22 @@ class _CommunityFilterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, color: AppPalette.primary, size: 20),
+            Icon(icon, color: colors.primary, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
@@ -849,9 +856,11 @@ class _CommunityFilterDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: AppEdgeInsets.symmetric(vertical: 22),
-      child: Divider(height: 1, color: AppPalette.warmSurface66),
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return Padding(
+      padding: const AppEdgeInsets.symmetric(vertical: 22),
+      child: Divider(height: 1, color: colors.border),
     );
   }
 }
@@ -874,112 +883,115 @@ class _CommunityDiscoveryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final title = feedCommunityDisplayTitle(community, l10n);
     final location = locationText.trim();
     final membersText = feedCommunityMembersLabel(community, l10n);
-    return Material(
-      color: AppPalette.white.withValues(alpha: 0.08),
-      borderRadius: AppBorderRadius.circular(8),
-      child: InkWell(
-        key: ValueKey('community-discovery-sheet-open-${community.id}'),
+
+    return DecoratedBox(
+      decoration: _communityDiscoveryCardDecoration(colors),
+      child: Material(
+        color: colors.transparent,
         borderRadius: AppBorderRadius.circular(8),
-        onTap: () => onOpen(community),
-        child: Padding(
-          padding: const AppEdgeInsets.all(12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
-                child: Text(
-                  _communityInitial(title),
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
-                    fontWeight: FontWeight.w900,
+        child: InkWell(
+          key: ValueKey('community-discovery-sheet-open-${community.id}'),
+          borderRadius: AppBorderRadius.circular(8),
+          onTap: () => onOpen(community),
+          child: Padding(
+            padding: const AppEdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: colors.primary.withValues(alpha: 0.18),
+                  child: Text(
+                    _communityInitial(title),
+                    style: AppTextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppPalette.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                    if (location.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: AppPalette.textCoolSecondary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: AppPalette.textCoolSecondary,
-                                  ),
+                      if (location.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              color: colors.textSecondary,
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: colors.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 3),
+                      Text(
+                        membersText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary.withValues(alpha: 0.88),
+                          height: 1.15,
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 3),
-                    Text(
-                      membersText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppPalette.textCoolSecondary.withValues(
-                          alpha: 0.88,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton.filledTonal(
+                  key: ValueKey(
+                    'community-discovery-sheet-toggle-${community.id}',
+                  ),
+                  onPressed: isUpdating ? null : () => onToggle(community),
+                  style: IconButton.styleFrom(
+                    backgroundColor: colors.primary.withValues(alpha: 0.14),
+                    foregroundColor: colors.primary,
+                    disabledBackgroundColor: colors.surfaceHigh,
+                    disabledForegroundColor: colors.textDisabled,
+                    minimumSize: const Size.square(42),
+                  ),
+                  icon: isUpdating
+                      ? SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.textPrimary,
+                          ),
+                        )
+                      : Icon(
+                          community.followedByViewer
+                              ? Icons.check_rounded
+                              : Icons.add_rounded,
                         ),
-                        height: 1.15,
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filledTonal(
-                key: ValueKey(
-                  'community-discovery-sheet-toggle-${community.id}',
-                ),
-                onPressed: isUpdating ? null : () => onToggle(community),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppPalette.primary.withValues(alpha: 0.14),
-                  foregroundColor: AppPalette.primary,
-                  minimumSize: const Size.square(42),
-                ),
-                icon: isUpdating
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppPalette.primary,
-                        ),
-                      )
-                    : Icon(
-                        community.followedByViewer
-                            ? Icons.check_rounded
-                            : Icons.add_rounded,
-                      ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1002,19 +1014,21 @@ class _CommunityDiscoverySheetMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.textCoolSecondary, size: 42),
+            Icon(icon, color: colors.textSecondary, size: 42),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1022,9 +1036,9 @@ class _CommunityDiscoverySheetMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppPalette.textCoolSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -1032,6 +1046,14 @@ class _CommunityDiscoverySheetMessage extends StatelessWidget {
       ),
     );
   }
+}
+
+BoxDecoration _communityDiscoveryCardDecoration(AppColors colors) {
+  return AppBoxDecoration(
+    color: colors.surface,
+    borderRadius: AppBorderRadius.circular(8),
+    border: Border.all(color: colors.border),
+  );
 }
 
 String? _trimmedOrNull(String? value) {

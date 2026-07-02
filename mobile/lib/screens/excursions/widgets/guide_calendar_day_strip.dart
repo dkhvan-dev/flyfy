@@ -28,6 +28,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
       (index) => weekStart.add(Duration(days: index)),
     );
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final colors = AppDesignSystem.colorsFor(context);
 
     return SizedBox(
       height: _guideCalendarDayStripHeight(context),
@@ -39,10 +40,10 @@ class GuideCalendarDayStrip extends StatelessWidget {
           final selected = _isSameDay(day, selectedDate);
           final daySlots = _slotsForDay(day);
           final indicatorColor = daySlots.any((slot) => slot.isBooked)
-              ? AppPalette.primary
+              ? colors.primary
               : daySlots.isEmpty
-              ? AppPalette.transparent
-              : guideScheduleStatusColor(daySlots.first);
+              ? colors.transparent
+              : guideScheduleStatusColor(context, daySlots.first);
           return Semantics(
             button: true,
             selected: selected,
@@ -52,7 +53,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
                 minWidth: _guideCalendarDayCellMinWidth(context),
               ),
               child: Material(
-                color: selected ? AppPalette.primary : AppPalette.warmSurface20,
+                color: selected ? colors.primary : colors.surface,
                 borderRadius: AppBorderRadius.circular(
                   _guideCalendarDayCellRadius,
                 ),
@@ -77,8 +78,8 @@ class GuideCalendarDayStrip extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
                               color: selected
-                                  ? AppPalette.textPrimary
-                                  : AppPalette.textCoolSecondary,
+                                  ? colors.textPrimary
+                                  : colors.textMuted,
                               fontSize: _guideCalendarWeekdayFontSize(context),
                               fontWeight: FontWeight.w800,
                             ),
@@ -87,9 +88,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
                           Text(
                             DateFormat.d(locale).format(day),
                             style: AppTextStyle(
-                              color: selected
-                                  ? AppPalette.textPrimary
-                                  : AppPalette.textPrimary,
+                              color: colors.textPrimary,
                               fontSize: _guideCalendarDayFontSize(context),
                               fontWeight: FontWeight.w900,
                             ),
@@ -100,7 +99,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
                             height: _guideCalendarIndicatorSize(context),
                             decoration: AppBoxDecoration(
                               color: selected
-                                  ? AppPalette.textPrimary
+                                  ? colors.textPrimary
                                   : indicatorColor,
                               shape: BoxShape.circle,
                             ),

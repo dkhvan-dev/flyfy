@@ -110,6 +110,8 @@ class _AppMapCardState extends State<AppMapCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
     final height = widget.height ?? (width <= 393 ? 168.0 : 178.0);
     final point = _toGeographic(widget.target);
@@ -128,7 +130,7 @@ class _AppMapCardState extends State<AppMapCard> {
         height: height,
         width: double.infinity,
         child: ColoredBox(
-          color: AppPalette.orangeSoft05,
+          color: colors.surfaceTeal,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -146,7 +148,7 @@ class _AppMapCardState extends State<AppMapCard> {
                   gestures: widget.gesturesEnabled
                       ? const MapGestures.all()
                       : const MapGestures.none(),
-                  androidForegroundLoadColor: AppPalette.orangeSoft05,
+                  androidForegroundLoadColor: colors.surfaceTeal,
                 ),
                 onMapCreated: (controller) {
                   if (!mounted || !widget.nativeMapEnabled) {
@@ -170,23 +172,24 @@ class _AppMapCardState extends State<AppMapCard> {
                   const AppMapAttribution(alignment: Alignment.bottomRight),
                 ],
               ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppPalette.warmInk37.withValues(alpha: 0.10),
-                          AppPalette.transparent,
-                          AppPalette.warmInk37.withValues(alpha: 0.18),
-                        ],
+              if (isDarkV2)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            colors.black.withValues(alpha: 0.10),
+                            colors.transparent,
+                            colors.black.withValues(alpha: 0.18),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               if (widget.overlay != null) widget.overlay!,
             ],
           ),
@@ -222,6 +225,8 @@ class _AppMapFallbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ClipRRect(
       borderRadius: AppBorderRadius.circular(borderRadius),
       child: SizedBox(
@@ -230,20 +235,20 @@ class _AppMapFallbackCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const DecoratedBox(
+            DecoratedBox(
               decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppPalette.orangeSoft09,
-                    AppPalette.amberLight01,
-                    AppPalette.greenSoft07,
+                    colors.surfaceWarm,
+                    colors.primaryContainer,
+                    colors.surfaceTeal,
                   ],
                 ),
               ),
             ),
-            CustomPaint(painter: const _FallbackMapPainter()),
+            CustomPaint(painter: _FallbackMapPainter(colors: colors)),
             if (hasMarker) const Center(child: _AppMapPinMarker()),
             ?overlay,
           ],
@@ -254,20 +259,22 @@ class _AppMapFallbackCard extends StatelessWidget {
 }
 
 class _FallbackMapPainter extends CustomPainter {
-  const _FallbackMapPainter();
+  const _FallbackMapPainter({required this.colors});
+
+  final AppColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = AppPalette.white.withValues(alpha: 0.34)
+      ..color = colors.surface.withValues(alpha: 0.42)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
     final parkPaint = Paint()
-      ..color = AppPalette.greenMuted12.withValues(alpha: 0.20)
+      ..color = colors.secondary.withValues(alpha: 0.16)
       ..style = PaintingStyle.fill;
     final waterPaint = Paint()
-      ..color = AppPalette.blueSoft13.withValues(alpha: 0.22)
+      ..color = colors.secondarySoft.withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
 
     canvas.drawRRect(
@@ -319,7 +326,9 @@ class _FallbackMapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _FallbackMapPainter oldDelegate) {
+    return oldDelegate.colors != colors;
+  }
 }
 
 class _AppMapPinMarker extends StatelessWidget {
@@ -327,6 +336,8 @@ class _AppMapPinMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return SizedBox(
       width: 54,
       height: 64,
@@ -338,20 +349,20 @@ class _AppMapPinMarker extends StatelessWidget {
             height: 48,
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppPalette.primary,
-              border: Border.all(color: AppPalette.white, width: 3),
+              color: colors.primary,
+              border: Border.all(color: colors.surface, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.24),
+                  color: colors.primary.withValues(alpha: 0.24),
                   blurRadius: 22,
                   offset: const Offset(0, 11),
                 ),
               ],
             ),
-            child: const Center(
+            child: Center(
               child: Icon(
                 Icons.location_on_rounded,
-                color: AppPalette.white,
+                color: colors.textPrimary,
                 size: 26,
               ),
             ),
@@ -360,8 +371,8 @@ class _AppMapPinMarker extends StatelessWidget {
             width: 10,
             height: 10,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary,
-              border: Border.all(color: AppPalette.white, width: 2),
+              color: colors.primary,
+              border: Border.all(color: colors.surface, width: 2),
               shape: BoxShape.circle,
             ),
           ),

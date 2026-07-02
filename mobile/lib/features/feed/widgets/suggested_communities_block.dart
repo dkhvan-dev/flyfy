@@ -38,20 +38,24 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DecoratedBox(
       key: const ValueKey('suggested-communities-block'),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface13,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: colors.borderPrimary),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : const [],
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(16),
@@ -66,7 +70,7 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppPalette.textPrimary,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -76,8 +80,8 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
                   onPressed: onOpenAll,
                   tooltip: l10n.communityDiscoveryTitle,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
-                    foregroundColor: AppPalette.primary,
+                    backgroundColor: colors.primary.withValues(alpha: 0.16),
+                    foregroundColor: colors.primary,
                     minimumSize: const Size.square(40),
                   ),
                   icon: const Icon(Icons.chevron_right_rounded),
@@ -214,11 +218,15 @@ class _SuggestedCommunityPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.08),
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
+        border: Border.all(
+          color: colors.primary.withValues(alpha: 0.42),
+          width: 1.2,
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -235,7 +243,7 @@ class _SuggestedCommunityPill extends StatelessWidget {
             community: community,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppPalette.amberLight08,
+              color: colors.textSecondary,
               height: 1.12,
             ),
           ),
@@ -244,7 +252,7 @@ class _SuggestedCommunityPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppPalette.amberLight08.withValues(alpha: 0.86),
+              color: colors.textMuted,
               height: 1.12,
             ),
           ),

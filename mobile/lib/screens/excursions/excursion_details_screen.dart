@@ -15,6 +15,8 @@ import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
 import '../../core/time/app_time.dart';
+import '../../core/ui/app_list_search_field.dart';
+import '../../core/ui/app_notification_header_button.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
@@ -42,6 +44,92 @@ import '../map/map_screen.dart';
 import 'excursion_booking_screen.dart';
 import 'widgets/excursion_review_management_sheet.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
+
+final class _ExcursionDetailsColors {
+  const _ExcursionDetailsColors._(this.colors);
+
+  final AppColors colors;
+
+  static _ExcursionDetailsColors of(BuildContext context) {
+    return _ExcursionDetailsColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get onPrimary => colors.onPrimary;
+  Color get secondary => colors.secondary;
+  Color get secondaryPressed => colors.secondaryPressed;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get onSecondary => colors.onSecondary;
+  Color get background => colors.background;
+  Color get backgroundDeep => colors.backgroundDeep;
+  Color get backgroundWarm => colors.backgroundWarm;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get detailCardSurface => colors.surfaceRaised;
+  Color get detailCardBorder => colors.border;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+  Color get scrim => colors.scrim;
+
+  Color get amberLight13 => colors.primarySoft;
+  Color get blueSurface08 => colors.surfaceHigh;
+  Color get blueSurfaceHigh20 => colors.secondaryContainer;
+  Color get orangeLight07 => colors.textSecondary;
+  Color get orangeLight11 => colors.primary;
+  Color get orangeLight25 => colors.primary;
+  Color get orangeMuted02 => colors.textMuted;
+  Color get orangeSoft10 => colors.textMuted;
+  Color get orangeSoft14 => colors.primary;
+  Color get orangeSoft15 => colors.primarySoft;
+  Color get orangeSoft17 => colors.primary;
+  Color get orangeSoft20 => colors.primary;
+  Color get orangeSoft28 => colors.primarySoft;
+  Color get tealInk01 => colors.backgroundDeep;
+  Color get tealInk03 => colors.background;
+  Color get tealSurface06 => colors.surfaceTeal;
+  Color get textCaption => colors.textMuted;
+  Color get warmInk06 => colors.backgroundDeep;
+  Color get warmInk23 => colors.backgroundDeep;
+  Color get warmInk27 => colors.background;
+  Color get warmInk29 => colors.background;
+  Color get warmInk37 => colors.background;
+  Color get warmInk59 => colors.backgroundDeep;
+  Color get warmInk60 => colors.backgroundDeep;
+  Color get warmInk65 => colors.backgroundDeep;
+  Color get warmInk80 => colors.backgroundDeep;
+  Color get warmMuted18 => colors.textMuted;
+  Color get warmSurface28 => colors.surfaceWarm;
+  Color get warmSurface40 => colors.surfaceRaised;
+  Color get warmSurface60 => colors.surfaceRaised;
+  Color get warmSurface63 => colors.surfaceRaised;
+  Color get warmSurface75 => colors.surfaceHigh;
+  Color get warmSurface91 => colors.surfaceHigh;
+  Color get warmSurfaceHigh21 => colors.surfaceHigh;
+}
+
+extension _ExcursionDetailsColorContext on BuildContext {
+  _ExcursionDetailsColors get excursionDetailsColors =>
+      _ExcursionDetailsColors.of(this);
+}
 
 class ExcursionDetailsScreen extends StatefulWidget {
   const ExcursionDetailsScreen({
@@ -146,7 +234,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
         SnackBar(
           content: Text(message),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: AppPalette.warmSurface63,
+          backgroundColor: context.excursionDetailsColors.warmSurface63,
         ),
       );
   }
@@ -673,7 +761,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     final session = context.watch<SessionProvider>();
 
     return Scaffold(
-      backgroundColor: AppPalette.warmInk37,
+      backgroundColor: context.excursionDetailsColors.warmInk37,
       body: Consumer<ExcursionProvider>(
         builder: (context, provider, _) {
           final excursion = provider.excursionDetailsFor(widget.excursionId);
@@ -926,14 +1014,14 @@ class ExcursionDetailsContent extends StatelessWidget {
         : null;
 
     return DecoratedBox(
-      decoration: const AppBoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppPalette.warmInk65,
-            AppPalette.warmInk37,
-            AppPalette.warmInk29,
+            context.excursionDetailsColors.warmInk65,
+            context.excursionDetailsColors.warmInk37,
+            context.excursionDetailsColors.warmInk29,
           ],
         ),
       ),
@@ -1079,7 +1167,7 @@ class _ExcursionDetailsTopBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk60.withValues(alpha: 0.96),
+        color: context.excursionDetailsColors.warmInk60.withValues(alpha: 0.96),
       ),
       child: SizedBox(
         height: 62,
@@ -1098,20 +1186,19 @@ class _ExcursionDetailsTopBar extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
                   ),
                 ),
               ),
-              _CircleIconButton(
-                icon: Icons.notifications_outlined,
+              AppNotificationHeaderButton(
                 tooltip: l10n.placeNotificationsTooltip,
-                color: AppPalette.primary,
-                background: AppPalette.primary.withValues(alpha: 0.12),
                 onTap: onNotificationsTap,
+                size: 48,
+                iconSize: 21,
               ),
             ],
           ),
@@ -1126,22 +1213,18 @@ class _CircleIconButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     this.onTap,
-    this.color = AppPalette.textPrimary,
-    this.background = AppPalette.transparent,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onTap;
-  final Color color;
-  final Color background;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: AppPalette.transparent,
+        color: context.excursionDetailsColors.transparent,
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
@@ -1149,15 +1232,35 @@ class _CircleIconButton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: AppBoxDecoration(
-              color: background,
+              color: context.excursionDetailsColors.transparent,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 21),
+            child: Icon(
+              icon,
+              color: context.excursionDetailsColors.textPrimary,
+              size: 21,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+LinearGradient? _excursionHeroOverlayGradient(BuildContext context) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return null;
+  }
+
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      context.excursionDetailsColors.black.withValues(alpha: 0.2),
+      context.excursionDetailsColors.black.withValues(alpha: 0.12),
+      context.excursionDetailsColors.warmInk37,
+    ],
+  );
 }
 
 class _ExcursionHero extends StatefulWidget {
@@ -1197,6 +1300,7 @@ class _ExcursionHeroState extends State<_ExcursionHero> {
       place: widget.localizedLandmark,
       fallback: label,
     );
+    final overlayGradient = _excursionHeroOverlayGradient(context);
 
     return SizedBox(
       height: 236,
@@ -1220,19 +1324,10 @@ class _ExcursionHeroState extends State<_ExcursionHero> {
             )
           else
             const _ExcursionHeroFallback(),
-          DecoratedBox(
-            decoration: AppBoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppPalette.black.withValues(alpha: 0.2),
-                  AppPalette.black.withValues(alpha: 0.12),
-                  AppPalette.warmInk37,
-                ],
-              ),
+          if (overlayGradient != null)
+            DecoratedBox(
+              decoration: AppBoxDecoration(gradient: overlayGradient),
             ),
-          ),
           Padding(
             padding: const AppEdgeInsets.fromLTRB(24, 46, 24, 24),
             child: Column(
@@ -1242,8 +1337,8 @@ class _ExcursionHeroState extends State<_ExcursionHero> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.primary,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.9,
@@ -1260,8 +1355,8 @@ class _ExcursionHeroState extends State<_ExcursionHero> {
                         title,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: context.excursionDetailsColors.textPrimary,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           height: 1,
@@ -1349,8 +1444,8 @@ class _ExcursionHeroImageIndicator extends StatelessWidget {
           height: 7,
           decoration: AppBoxDecoration(
             color: active
-                ? AppPalette.primary
-                : AppPalette.white.withValues(alpha: 0.58),
+                ? context.excursionDetailsColors.primary
+                : context.excursionDetailsColors.white.withValues(alpha: 0.58),
             borderRadius: AppBorderRadius.circular(999),
           ),
         );
@@ -1377,14 +1472,16 @@ class _HeroMetaPill extends StatelessWidget {
       children: [
         Icon(
           icon,
-          color: accentIcon ? AppPalette.primary : AppPalette.orangeSoft14,
+          color: accentIcon
+              ? context.excursionDetailsColors.primary
+              : context.excursionDetailsColors.orangeSoft14,
           size: 18,
         ),
         const SizedBox(width: 5),
         Text(
           label.isEmpty ? '-' : label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeSoft14,
+          style: AppTextStyle(
+            color: context.excursionDetailsColors.orangeSoft14,
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
@@ -1400,31 +1497,32 @@ class _ExcursionHeroFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: const _ExcursionHeroPainter(),
+      painter: _ExcursionHeroPainter(context.excursionDetailsColors),
       child: const SizedBox.expand(),
     );
   }
 }
 
 class _ExcursionHeroPainter extends CustomPainter {
-  const _ExcursionHeroPainter();
+  const _ExcursionHeroPainter(this.colors);
+
+  final _ExcursionDetailsColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {
     final sky = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [AppPalette.blueSurface08, AppPalette.warmSurface75],
+        colors: [colors.blueSurface08, colors.warmSurface75],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, sky);
 
-    final dark = Paint()..color = AppPalette.tealInk01.withValues(alpha: 0.98);
-    final green = Paint()
-      ..color = AppPalette.tealSurface06.withValues(alpha: 0.98);
+    final dark = Paint()..color = colors.tealInk01.withValues(alpha: 0.98);
+    final green = Paint()..color = colors.tealSurface06.withValues(alpha: 0.98);
     final amber = Paint()
-      ..color = AppPalette.warmSurfaceHigh21.withValues(alpha: 0.88);
-    final snow = Paint()..color = AppPalette.white.withValues(alpha: 0.76);
+      ..color = colors.warmSurfaceHigh21.withValues(alpha: 0.88);
+    final snow = Paint()..color = colors.white.withValues(alpha: 0.76);
 
     Path ridge(double start, double peak, double end) {
       return Path()
@@ -1450,8 +1548,8 @@ class _ExcursionHeroPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              AppPalette.primary.withValues(alpha: 0.22),
-              AppPalette.primary.withValues(alpha: 0),
+              colors.primary.withValues(alpha: 0.22),
+              colors.primary.withValues(alpha: 0),
             ],
           ).createShader(
             Rect.fromCircle(
@@ -1463,7 +1561,9 @@ class _ExcursionHeroPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ExcursionHeroPainter oldDelegate) {
+    return oldDelegate.colors.colors != colors.colors;
+  }
 }
 
 class _ExcursionStatsGrid extends StatelessWidget {
@@ -1557,9 +1657,11 @@ class _ExcursionStatCard extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 132),
       padding: const AppEdgeInsets.all(20),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface40,
+        color: context.excursionDetailsColors.detailCardSurface,
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.055)),
+        border: Border.all(
+          color: context.excursionDetailsColors.detailCardBorder,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1569,8 +1671,8 @@ class _ExcursionStatCard extends StatelessWidget {
             data.label.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.orangeSoft28,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.orangeSoft28,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.3,
@@ -1586,8 +1688,8 @@ class _ExcursionStatCard extends StatelessWidget {
               text: data.value,
               style: AppTextStyle(
                 color: data.accent
-                    ? AppPalette.primary
-                    : AppPalette.textPrimary,
+                    ? context.excursionDetailsColors.primary
+                    : context.excursionDetailsColors.textPrimary,
                 fontSize: data.accent
                     ? 24
                     : data.allowMultiline
@@ -1600,8 +1702,8 @@ class _ExcursionStatCard extends StatelessWidget {
                 if (data.suffix != null)
                   TextSpan(
                     text: ' ${data.suffix}',
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: context.excursionDetailsColors.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1651,8 +1753,8 @@ class _ExcursionExperienceSection extends StatelessWidget {
       onActionTap: hasLandmarkId ? () => _openLandmarkDetails(context) : null,
       child: Text(
         description,
-        style: const AppTextStyle(
-          color: AppPalette.orangeSoft20,
+        style: AppTextStyle(
+          color: context.excursionDetailsColors.orangeSoft20,
           fontSize: 16,
           height: 1.58,
           letterSpacing: 0,
@@ -1705,8 +1807,11 @@ class _ExcursionFeatureCard extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 82),
       padding: const AppEdgeInsets.all(18),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface63,
+        color: context.excursionDetailsColors.detailCardSurface,
         borderRadius: AppBorderRadius.circular(17),
+        border: Border.all(
+          color: context.excursionDetailsColors.detailCardBorder,
+        ),
       ),
       child: Row(
         children: [
@@ -1714,12 +1819,14 @@ class _ExcursionFeatureCard extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: context.excursionDetailsColors.primary.withValues(
+                alpha: 0.12,
+              ),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _includedFeatureIcon(feature),
-              color: AppPalette.primary,
+              color: context.excursionDetailsColors.primary,
               size: 19,
             ),
           ),
@@ -1729,8 +1836,8 @@ class _ExcursionFeatureCard extends StatelessWidget {
               feature.label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.excursionDetailsColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
                 height: 1.15,
@@ -2121,6 +2228,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   @override
   void initState() {
     super.initState();
+    _offerSearchController.addListener(_onSearchChanged);
     _offers = _prioritizeCurrentGuideOffer(widget.offers);
     _hasMore = widget.excursion.publishedOffersCount > _offers.length;
     if (widget.enableRemoteOffers) {
@@ -2151,6 +2259,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   @override
   void dispose() {
     _offerSearchDebounce?.cancel();
+    _offerSearchController.removeListener(_onSearchChanged);
     _offerSearchController.dispose();
     super.dispose();
   }
@@ -2274,7 +2383,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
       useSafeArea: true,
       isScrollControlled: true,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.excursionDetailsColors.transparent,
       builder: (_) => _ExcursionOffersFilterSheet(filters: _filters),
     );
     if (!mounted || next == null) return;
@@ -2524,11 +2633,13 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ExcursionOffersSearchField(
+          AppListSearchField(
             controller: _offerSearchController,
             hintText: l10n.excursionDetailsOffersSearchHint,
+            filterTooltip: l10n.excursionDetailsOffersFiltersTitle,
             activeFilterCount: _filters.activeCount,
-            onChanged: _onSearchChanged,
+            showClearButton: true,
+            onTapOutside: (_) => FocusScope.of(context).unfocus(),
             onFilterTap: _showFilters,
           ),
           const SizedBox(height: 14),
@@ -2539,10 +2650,12 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
           ),
           const SizedBox(height: 18),
           if ((_isLoading || isDateFilterLoading) && offers.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: AppEdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(color: AppPalette.primary),
+                padding: const AppEdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(
+                  color: context.excursionDetailsColors.primary,
+                ),
               ),
             )
           else if (offers.isEmpty)
@@ -2593,9 +2706,11 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
             OutlinedButton(
               onPressed: _isLoadingMore ? null : _loadMoreOffers,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppPalette.textPrimary,
+                foregroundColor: context.excursionDetailsColors.textPrimary,
                 side: BorderSide(
-                  color: AppPalette.white.withValues(alpha: 0.12),
+                  color: context.excursionDetailsColors.white.withValues(
+                    alpha: 0.12,
+                  ),
                 ),
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
@@ -2603,118 +2718,23 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
                 ),
               ),
               child: _isLoadingMore
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppPalette.primary,
+                        color: context.excursionDetailsColors.textPrimary,
                       ),
                     )
                   : Text(
                       l10n.excursionDetailsOffersLoadMore,
-                      style: const AppTextStyle(
+                      style: AppTextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ExcursionOffersSearchField extends StatelessWidget {
-  const _ExcursionOffersSearchField({
-    required this.controller,
-    required this.hintText,
-    required this.activeFilterCount,
-    required this.onChanged,
-    required this.onFilterTap,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final int activeFilterCount;
-  final VoidCallback onChanged;
-  final VoidCallback onFilterTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const AppEdgeInsetsDirectional.fromSTEB(15, 0, 8, 0),
-      decoration: AppBoxDecoration(
-        color: AppPalette.surfaceRaised,
-        borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded, color: AppPalette.primary, size: 25),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: (_) => onChanged(),
-              textInputAction: TextInputAction.search,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: AppInputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
-              ),
-            ),
-          ),
-          Tooltip(
-            message: AppLocalizations.of(context)!.myActivitiesFilterButton,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: onFilterTap,
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppPalette.primary.withValues(alpha: 0.12),
-                    foregroundColor: AppPalette.primary,
-                    minimumSize: const Size(42, 42),
-                  ),
-                  icon: const Icon(Icons.tune_rounded, size: 23),
-                ),
-                if (activeFilterCount > 0)
-                  PositionedDirectional(
-                    top: 2,
-                    end: 2,
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      padding: const AppEdgeInsets.symmetric(horizontal: 4),
-                      decoration: AppBoxDecoration(
-                        color: AppPalette.primary,
-                        borderRadius: AppBorderRadius.circular(999),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        activeFilterCount.toString(),
-                        style: const AppTextStyle(
-                          color: AppPalette.white,
-                          fontSize: 10,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -2914,7 +2934,7 @@ class _ExcursionOffersFilterSheetState
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: size.height * 0.86),
         child: Material(
-          color: AppPalette.warmInk80,
+          color: context.excursionDetailsColors.warmInk80,
           borderRadius: const AppBorderRadius.vertical(
             top: AppRadiusValue.circular(24),
           ),
@@ -2943,10 +2963,12 @@ class _ExcursionOffersFilterSheetState
                         children: [
                           DecoratedBox(
                             decoration: AppBoxDecoration(
-                              color: AppPalette.warmSurface28,
+                              color:
+                                  context.excursionDetailsColors.warmSurface28,
                               borderRadius: AppBorderRadius.circular(16),
                               border: Border.all(
-                                color: AppPalette.white.withValues(alpha: 0.08),
+                                color: context.excursionDetailsColors.white
+                                    .withValues(alpha: 0.08),
                               ),
                             ),
                             child: Padding(
@@ -2956,9 +2978,10 @@ class _ExcursionOffersFilterSheetState
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.translate_rounded,
-                                    color: AppPalette.primary,
+                                    color:
+                                        context.excursionDetailsColors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 10),
@@ -2968,8 +2991,10 @@ class _ExcursionOffersFilterSheetState
                                           l10n.excursionDetailsOffersLanguageAny,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const AppTextStyle(
-                                        color: AppPalette.textPrimary,
+                                      style: AppTextStyle(
+                                        color: context
+                                            .excursionDetailsColors
+                                            .textPrimary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -2981,9 +3006,11 @@ class _ExcursionOffersFilterSheetState
                                       visualDensity: VisualDensity.compact,
                                       onPressed: () =>
                                           setState(() => _languageCode = null),
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.close_rounded,
-                                        color: AppPalette.orangeSoft17,
+                                        color: context
+                                            .excursionDetailsColors
+                                            .orangeSoft17,
                                         size: 20,
                                       ),
                                     ),
@@ -2994,25 +3021,27 @@ class _ExcursionOffersFilterSheetState
                           const SizedBox(height: 12),
                           TextField(
                             controller: _languageSearchController,
-                            cursorColor: AppPalette.primary,
-                            style: const AppTextStyle(
-                              color: AppPalette.textPrimary,
+                            cursorColor: context.excursionDetailsColors.primary,
+                            style: AppTextStyle(
+                              color: context.excursionDetailsColors.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                             decoration: AppInputDecoration(
                               hintText:
                                   l10n.excursionDetailsOffersLanguageSearchHint,
-                              hintStyle: const AppTextStyle(
-                                color: AppPalette.warmMuted18,
+                              hintStyle: AppTextStyle(
+                                color:
+                                    context.excursionDetailsColors.warmMuted18,
                                 fontWeight: FontWeight.w600,
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.search_rounded,
-                                color: AppPalette.primary,
+                                color: context.excursionDetailsColors.primary,
                               ),
                               filled: true,
-                              fillColor: AppPalette.warmInk27,
+                              fillColor:
+                                  context.excursionDetailsColors.warmInk27,
                               contentPadding: const AppEdgeInsets.symmetric(
                                 horizontal: 14,
                                 vertical: 12,
@@ -3024,15 +3053,14 @@ class _ExcursionOffersFilterSheetState
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: AppBorderRadius.circular(16),
                                 borderSide: BorderSide(
-                                  color: AppPalette.white.withValues(
-                                    alpha: 0.06,
-                                  ),
+                                  color: context.excursionDetailsColors.white
+                                      .withValues(alpha: 0.06),
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: AppBorderRadius.circular(16),
-                                borderSide: const BorderSide(
-                                  color: AppPalette.primary,
+                                borderSide: BorderSide(
+                                  color: context.excursionDetailsColors.primary,
                                   width: 1.2,
                                 ),
                               ),
@@ -3043,8 +3071,10 @@ class _ExcursionOffersFilterSheetState
                             if (visibleLanguages.isEmpty)
                               Text(
                                 l10n.excursionDetailsOffersLanguageNoResults,
-                                style: const AppTextStyle(
-                                  color: AppPalette.orangeSoft17,
+                                style: AppTextStyle(
+                                  color: context
+                                      .excursionDetailsColors
+                                      .orangeSoft17,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -3139,15 +3169,15 @@ class _ExcursionOffersFilterTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppPalette.primary, size: 18),
+        Icon(icon, color: context.excursionDetailsColors.primary, size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
@@ -3179,13 +3209,13 @@ class _ExcursionOffersLanguageRow extends StatelessWidget {
       child: DecoratedBox(
         decoration: AppBoxDecoration(
           color: selected
-              ? AppPalette.primary.withValues(alpha: 0.18)
-              : AppPalette.warmSurface28,
+              ? context.excursionDetailsColors.primary.withValues(alpha: 0.18)
+              : context.excursionDetailsColors.warmSurface28,
           borderRadius: AppBorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? AppPalette.primary
-                : AppPalette.white.withValues(alpha: 0.07),
+                ? context.excursionDetailsColors.primary
+                : context.excursionDetailsColors.white.withValues(alpha: 0.07),
           ),
         ),
         child: Padding(
@@ -3197,8 +3227,8 @@ class _ExcursionOffersLanguageRow extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -3207,8 +3237,8 @@ class _ExcursionOffersLanguageRow extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 code,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeSoft17,
+                style: AppTextStyle(
+                  color: context.excursionDetailsColors.orangeSoft17,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -3240,19 +3270,19 @@ class _ExcursionOffersDateField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.datetime,
       onChanged: onChanged,
-      style: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      style: AppTextStyle(
+        color: context.excursionDetailsColors.textPrimary,
         fontSize: 15,
         fontWeight: FontWeight.w700,
       ),
       decoration: AppInputDecoration(
         filled: true,
-        fillColor: AppPalette.surfaceRaised,
+        fillColor: context.excursionDetailsColors.surfaceRaised,
         hintText: hintText,
         errorText: errorText,
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.calendar_month_rounded,
-          color: AppPalette.primary,
+          color: context.excursionDetailsColors.primary,
         ),
         suffixIcon: controller.text.trim().isEmpty
             ? null
@@ -3262,14 +3292,16 @@ class _ExcursionOffersDateField extends StatelessWidget {
                   controller.clear();
                   onChanged('');
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
-                  color: AppPalette.orangeSoft17,
+                  color: context.excursionDetailsColors.orangeSoft17,
                 ),
               ),
-        hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
-        errorStyle: const AppTextStyle(
-          color: AppPalette.danger,
+        hintStyle: AppTextStyle(
+          color: context.excursionDetailsColors.orangeMuted02,
+        ),
+        errorStyle: AppTextStyle(
+          color: context.excursionDetailsColors.danger,
           fontWeight: FontWeight.w700,
         ),
         contentPadding: const AppEdgeInsets.symmetric(
@@ -3279,20 +3311,20 @@ class _ExcursionOffersDateField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
           borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.06),
+            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppPalette.primary),
+          borderSide: BorderSide(color: context.excursionDetailsColors.primary),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppPalette.danger),
+          borderSide: BorderSide(color: context.excursionDetailsColors.danger),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppPalette.danger),
+          borderSide: BorderSide(color: context.excursionDetailsColors.danger),
         ),
       ),
     );
@@ -3315,16 +3347,18 @@ class _ExcursionOffersNumberField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-      style: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      style: AppTextStyle(
+        color: context.excursionDetailsColors.textPrimary,
         fontSize: 15,
         fontWeight: FontWeight.w700,
       ),
       decoration: AppInputDecoration(
         filled: true,
-        fillColor: AppPalette.surfaceRaised,
+        fillColor: context.excursionDetailsColors.surfaceRaised,
         hintText: hintText,
-        hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
+        hintStyle: AppTextStyle(
+          color: context.excursionDetailsColors.orangeMuted02,
+        ),
         contentPadding: const AppEdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -3332,12 +3366,12 @@ class _ExcursionOffersNumberField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
           borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.06),
+            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppPalette.primary),
+          borderSide: BorderSide(color: context.excursionDetailsColors.primary),
         ),
       ),
     );
@@ -3408,9 +3442,11 @@ class _ExcursionOffersEmpty extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(20),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface40,
+        color: context.excursionDetailsColors.warmSurface40,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.055)),
+        border: Border.all(
+          color: context.excursionDetailsColors.white.withValues(alpha: 0.055),
+        ),
       ),
       child: Row(
         children: [
@@ -3418,12 +3454,14 @@ class _ExcursionOffersEmpty extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: context.excursionDetailsColors.primary.withValues(
+                alpha: 0.12,
+              ),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_search_rounded,
-              color: AppPalette.primary,
+              color: context.excursionDetailsColors.primary,
               size: 21,
             ),
           ),
@@ -3431,8 +3469,8 @@ class _ExcursionOffersEmpty extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const AppTextStyle(
-                color: AppPalette.orangeSoft28,
+              style: AppTextStyle(
+                color: context.excursionDetailsColors.orangeSoft28,
                 fontSize: 14,
                 height: 1.28,
                 fontWeight: FontWeight.w700,
@@ -3488,7 +3526,7 @@ class _ExcursionOfferCard extends StatelessWidget {
       label: semanticLabel,
       onTap: onTap,
       child: Material(
-        color: AppPalette.transparent,
+        color: context.excursionDetailsColors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(18),
@@ -3496,17 +3534,27 @@ class _ExcursionOfferCard extends StatelessWidget {
             padding: const AppEdgeInsets.all(18),
             decoration: AppBoxDecoration(
               color: isCurrentUserOffer
-                  ? AppPalette.success.withValues(alpha: 0.11)
+                  ? context.excursionDetailsColors.success.withValues(
+                      alpha: 0.11,
+                    )
                   : isSelected
-                  ? AppPalette.primary.withValues(alpha: 0.13)
-                  : AppPalette.warmSurface40,
+                  ? context.excursionDetailsColors.primary.withValues(
+                      alpha: 0.13,
+                    )
+                  : context.excursionDetailsColors.warmSurface40,
               borderRadius: AppBorderRadius.circular(18),
               border: Border.all(
                 color: isCurrentUserOffer
-                    ? AppPalette.success.withValues(alpha: 0.68)
+                    ? context.excursionDetailsColors.success.withValues(
+                        alpha: 0.68,
+                      )
                     : isSelected
-                    ? AppPalette.primary.withValues(alpha: 0.76)
-                    : AppPalette.white.withValues(alpha: 0.055),
+                    ? context.excursionDetailsColors.primary.withValues(
+                        alpha: 0.76,
+                      )
+                    : context.excursionDetailsColors.white.withValues(
+                        alpha: 0.055,
+                      ),
               ),
             ),
             child: Row(
@@ -3528,8 +3576,9 @@ class _ExcursionOfferCard extends StatelessWidget {
                               guideName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
+                              style: AppTextStyle(
+                                color:
+                                    context.excursionDetailsColors.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                                 height: 1.08,
@@ -3543,8 +3592,8 @@ class _ExcursionOfferCard extends StatelessWidget {
                                   ? l10n.excursionDetailsOfferCurrentUser
                                   : l10n.excursionDetailsOfferSelected,
                               color: isCurrentUserOffer
-                                  ? AppPalette.success
-                                  : AppPalette.primary,
+                                  ? context.excursionDetailsColors.success
+                                  : context.excursionDetailsColors.primary,
                             ),
                           ],
                         ],
@@ -3583,24 +3632,22 @@ class _ExcursionOfferCard extends StatelessWidget {
                               OutlinedButton.icon(
                                 onPressed: onProfileTap,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppPalette.textPrimary,
+                                  foregroundColor: context
+                                      .excursionDetailsColors
+                                      .textPrimary,
                                   side: BorderSide(
-                                    color: AppPalette.white.withValues(
-                                      alpha: 0.12,
-                                    ),
+                                    color: context.excursionDetailsColors.white
+                                        .withValues(alpha: 0.12),
                                   ),
                                   minimumSize: const Size(0, 48),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: AppBorderRadius.circular(999),
                                   ),
                                 ),
-                                icon: const Icon(
-                                  Icons.person_rounded,
-                                  size: 16,
-                                ),
+                                icon: Icon(Icons.person_rounded, size: 16),
                                 label: Text(
                                   l10n.profileTitle,
-                                  style: const AppTextStyle(
+                                  style: AppTextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -3612,11 +3659,14 @@ class _ExcursionOfferCard extends StatelessWidget {
                                     ? null
                                     : onMessageTap,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppPalette.textPrimary,
+                                  foregroundColor: context
+                                      .excursionDetailsColors
+                                      .textPrimary,
                                   side: BorderSide(
-                                    color: AppPalette.primary.withValues(
-                                      alpha: 0.55,
-                                    ),
+                                    color: context
+                                        .excursionDetailsColors
+                                        .primary
+                                        .withValues(alpha: 0.55),
                                   ),
                                   minimumSize: const Size(0, 48),
                                   shape: RoundedRectangleBorder(
@@ -3626,7 +3676,7 @@ class _ExcursionOfferCard extends StatelessWidget {
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 180),
                                   child: isMessageActionLoading
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           key: ValueKey(
                                             'offer-message-guide-progress',
                                           ),
@@ -3634,7 +3684,9 @@ class _ExcursionOfferCard extends StatelessWidget {
                                           height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.2,
-                                            color: AppPalette.primary,
+                                            color: context
+                                                .excursionDetailsColors
+                                                .textPrimary,
                                           ),
                                         )
                                       : Text(
@@ -3642,7 +3694,7 @@ class _ExcursionOfferCard extends StatelessWidget {
                                           key: const ValueKey(
                                             'offer-message-guide-label',
                                           ),
-                                          style: const AppTextStyle(
+                                          style: AppTextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 0,
@@ -3692,7 +3744,7 @@ class _SelectedOfferBadge extends StatelessWidget {
         padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Text(
           label,
-          style: const AppTextStyle(
+          style: AppTextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w900,
             height: 1,
@@ -3720,7 +3772,7 @@ class _OfferMetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.055),
+        color: context.excursionDetailsColors.white.withValues(alpha: 0.055),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -3733,7 +3785,9 @@ class _OfferMetaChip extends StatelessWidget {
               padding: AppEdgeInsets.only(top: allowMultiline ? 1 : 0),
               child: Icon(
                 icon,
-                color: accent ? AppPalette.primary : AppPalette.orangeSoft14,
+                color: accent
+                    ? context.excursionDetailsColors.primary
+                    : context.excursionDetailsColors.orangeSoft14,
                 size: 14,
               ),
             ),
@@ -3746,7 +3800,9 @@ class _OfferMetaChip extends StatelessWidget {
                     ? TextOverflow.visible
                     : TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: accent ? AppPalette.primary : AppPalette.orangeLight25,
+                  color: accent
+                      ? context.excursionDetailsColors.primary
+                      : context.excursionDetailsColors.orangeLight25,
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                   height: allowMultiline ? 1.18 : 1,
@@ -3774,16 +3830,16 @@ class _GuideAvatar extends StatelessWidget {
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppPalette.primary.withValues(alpha: 0.15),
+          color: context.excursionDetailsColors.primary.withValues(alpha: 0.15),
           width: 2,
         ),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppPalette.tealInk03,
-            AppPalette.warmSurface91,
-            AppPalette.warmInk06,
+            context.excursionDetailsColors.tealInk03,
+            context.excursionDetailsColors.warmSurface91,
+            context.excursionDetailsColors.warmInk06,
           ],
         ),
       ),
@@ -3792,8 +3848,8 @@ class _GuideAvatar extends StatelessWidget {
             ? Center(
                 child: Text(
                   fallbackText,
-                  style: const AppTextStyle(
-                    color: AppPalette.amberLight13,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.amberLight13,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -3805,8 +3861,8 @@ class _GuideAvatar extends StatelessWidget {
                 errorBuilder: (_, _, _) => Center(
                   child: Text(
                     fallbackText,
-                    style: const AppTextStyle(
-                      color: AppPalette.amberLight13,
+                    style: AppTextStyle(
+                      color: context.excursionDetailsColors.amberLight13,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -3868,9 +3924,13 @@ class _ExcursionMapPreview extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.warmInk37.withValues(alpha: 0.10),
-                        AppPalette.transparent,
-                        AppPalette.warmInk37.withValues(alpha: 0.18),
+                        context.excursionDetailsColors.warmInk37.withValues(
+                          alpha: 0.10,
+                        ),
+                        context.excursionDetailsColors.transparent,
+                        context.excursionDetailsColors.warmInk37.withValues(
+                          alpha: 0.18,
+                        ),
                       ],
                     ),
                   ),
@@ -3879,21 +3939,21 @@ class _ExcursionMapPreview extends StatelessWidget {
             ),
             Positioned.fill(
               child: Material(
-                color: AppPalette.transparent,
+                color: context.excursionDetailsColors.transparent,
                 child: InkWell(
                   onTap: isBuildingRoute ? null : onRoutePreviewTap,
                 ),
               ),
             ),
             if (isBuildingRoute)
-              const Positioned(
+              Positioned(
                 left: 0,
                 right: 0,
                 top: 0,
                 child: LinearProgressIndicator(
                   minHeight: 3,
-                  color: AppPalette.primary,
-                  backgroundColor: AppPalette.transparent,
+                  color: context.excursionDetailsColors.primary,
+                  backgroundColor: context.excursionDetailsColors.transparent,
                 ),
               ),
             Positioned(
@@ -3904,7 +3964,9 @@ class _ExcursionMapPreview extends StatelessWidget {
                 alignment: Alignment.bottomLeft,
                 child: DecoratedBox(
                   decoration: AppBoxDecoration(
-                    color: AppPalette.warmInk23.withValues(alpha: 0.82),
+                    color: context.excursionDetailsColors.warmInk23.withValues(
+                      alpha: 0.82,
+                    ),
                     borderRadius: AppBorderRadius.circular(8),
                   ),
                   child: Padding(
@@ -3916,8 +3978,8 @@ class _ExcursionMapPreview extends StatelessWidget {
                       label.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.orangeLight25,
+                      style: AppTextStyle(
+                        color: context.excursionDetailsColors.orangeLight25,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3980,7 +4042,9 @@ class _ExcursionItinerarySection extends StatelessWidget {
             bottom: 10,
             child: Container(
               width: 1,
-              color: AppPalette.primary.withValues(alpha: 0.42),
+              color: context.excursionDetailsColors.primary.withValues(
+                alpha: 0.42,
+              ),
             ),
           ),
           Column(
@@ -4051,18 +4115,22 @@ class _ExcursionItineraryStep extends StatelessWidget {
           height: 27,
           decoration: AppBoxDecoration(
             color: isFirst
-                ? AppPalette.primary
-                : AppPalette.primary.withValues(alpha: 0.22),
+                ? context.excursionDetailsColors.primary
+                : context.excursionDetailsColors.primary.withValues(
+                    alpha: 0.22,
+                  ),
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.65),
+              color: context.excursionDetailsColors.primary.withValues(
+                alpha: 0.65,
+              ),
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             (index + 1).toString().padLeft(2, '0'),
-            style: const AppTextStyle(
-              color: AppPalette.white,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.white,
               fontSize: 10,
               fontWeight: FontWeight.w900,
             ),
@@ -4077,8 +4145,8 @@ class _ExcursionItineraryStep extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.excursionDetailsColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
                   height: 1.12,
@@ -4088,8 +4156,8 @@ class _ExcursionItineraryStep extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: const AppTextStyle(
-                    color: AppPalette.orangeSoft15,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.orangeSoft15,
                     fontSize: 14,
                     height: 1.35,
                   ),
@@ -4119,22 +4187,24 @@ class _RouteStopMetaChip extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 30),
       padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.13),
+        color: context.excursionDetailsColors.primary.withValues(alpha: 0.13),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
+        border: Border.all(
+          color: context.excursionDetailsColors.primary.withValues(alpha: 0.28),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppPalette.primary),
+          Icon(icon, size: 14, color: context.excursionDetailsColors.primary),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.excursionDetailsColors.textPrimary,
                 fontSize: 12,
                 height: 1.12,
                 fontWeight: FontWeight.w800,
@@ -4209,15 +4279,21 @@ class _ExcursionReviewsSection extends StatelessWidget {
           width: double.infinity,
           padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 22),
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.045),
+            color: context.excursionDetailsColors.white.withValues(
+              alpha: 0.045,
+            ),
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+            border: Border.all(
+              color: context.excursionDetailsColors.white.withValues(
+                alpha: 0.06,
+              ),
+            ),
           ),
           child: Text(
             l10n.excursionReviewsEmpty,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.textCaption,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.textCaption,
               fontSize: 13,
               height: 1.45,
               fontWeight: FontWeight.w700,
@@ -4281,9 +4357,11 @@ class _ExcursionReviewCard extends StatelessWidget {
         width: double.infinity,
         padding: const AppEdgeInsets.all(18),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface60,
+          color: context.excursionDetailsColors.warmSurface60,
           borderRadius: AppBorderRadius.circular(18),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+          border: Border.all(
+            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4293,14 +4371,15 @@ class _ExcursionReviewCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppPalette.blueSurfaceHigh20,
+                  backgroundColor:
+                      context.excursionDetailsColors.blueSurfaceHigh20,
                   backgroundImage: authorAvatarUrl != null
                       ? NetworkImage(authorAvatarUrl)
                       : null,
                   child: authorAvatarUrl == null
-                      ? const Icon(
+                      ? Icon(
                           Icons.person_rounded,
-                          color: AppPalette.white,
+                          color: context.excursionDetailsColors.white,
                           size: 19,
                         )
                       : null,
@@ -4314,8 +4393,8 @@ class _ExcursionReviewCard extends StatelessWidget {
                         authorName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: context.excursionDetailsColors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0,
@@ -4326,8 +4405,8 @@ class _ExcursionReviewCard extends StatelessWidget {
                         l10n.excursionReviewViaGuide(guideName),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.orangeLight11,
+                        style: AppTextStyle(
+                          color: context.excursionDetailsColors.orangeLight11,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0,
@@ -4345,7 +4424,7 @@ class _ExcursionReviewCard extends StatelessWidget {
                         index < review.rating.round()
                             ? Icons.star_rounded
                             : Icons.star_border_rounded,
-                        color: AppPalette.primary,
+                        color: context.excursionDetailsColors.primary,
                         size: 18,
                       );
                     }),
@@ -4359,8 +4438,8 @@ class _ExcursionReviewCard extends StatelessWidget {
                 review.comment,
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeLight07,
+                style: AppTextStyle(
+                  color: context.excursionDetailsColors.orangeLight07,
                   fontSize: 14,
                   height: 1.55,
                   fontWeight: FontWeight.w600,
@@ -4399,7 +4478,7 @@ class _ExcursionSection extends StatelessWidget {
               width: 4,
               height: 30,
               decoration: AppBoxDecoration(
-                color: AppPalette.primary,
+                color: context.excursionDetailsColors.primary,
                 borderRadius: AppBorderRadius.circular(99),
               ),
             ),
@@ -4409,8 +4488,8 @@ class _ExcursionSection extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.excursionDetailsColors.textPrimary,
                   fontSize: 21,
                   height: 1.1,
                   fontWeight: FontWeight.w900,
@@ -4423,13 +4502,13 @@ class _ExcursionSection extends StatelessWidget {
               TextButton(
                 onPressed: onActionTap,
                 style: TextButton.styleFrom(
-                  foregroundColor: AppPalette.primary,
+                  foregroundColor: context.excursionDetailsColors.primary,
                   minimumSize: const Size(0, 48),
                   padding: const AppEdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  textStyle: const AppTextStyle(
+                  textStyle: AppTextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
@@ -4462,9 +4541,11 @@ class _ExcursionBookingUnavailableNotice extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk59.withValues(alpha: 0.97),
+        color: context.excursionDetailsColors.warmInk59.withValues(alpha: 0.97),
         border: Border(
-          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
+          top: BorderSide(
+            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
+          ),
         ),
       ),
       child: SafeArea(
@@ -4473,10 +4554,14 @@ class _ExcursionBookingUnavailableNotice extends StatelessWidget {
           padding: AppEdgeInsets.fromLTRB(14, 13, 14, math.max(13, safeBottom)),
           child: DecoratedBox(
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.14),
+              color: context.excursionDetailsColors.primary.withValues(
+                alpha: 0.14,
+              ),
               borderRadius: AppBorderRadius.circular(15),
               border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.34),
+                color: context.excursionDetailsColors.primary.withValues(
+                  alpha: 0.34,
+                ),
               ),
             ),
             child: Padding(
@@ -4487,17 +4572,17 @@ class _ExcursionBookingUnavailableNotice extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.event_busy_rounded,
-                    color: AppPalette.primary,
+                    color: context.excursionDetailsColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       message,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.excursionDetailsColors.textPrimary,
                         fontSize: 14,
                         height: 1.35,
                         fontWeight: FontWeight.w700,
@@ -4538,9 +4623,11 @@ class _ExcursionCheckoutBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk59.withValues(alpha: 0.97),
+        color: context.excursionDetailsColors.warmInk59.withValues(alpha: 0.97),
         border: Border(
-          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
+          top: BorderSide(
+            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
+          ),
         ),
       ),
       child: SafeArea(
@@ -4561,8 +4648,9 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                         children: [
                           Text(
                             l10n.excursionDetailsTotal.toUpperCase(),
-                            style: const AppTextStyle(
-                              color: AppPalette.orangeSoft10,
+                            style: AppTextStyle(
+                              color:
+                                  context.excursionDetailsColors.orangeSoft10,
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
@@ -4573,8 +4661,8 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                             _formatPrice(context, excursion),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: AppPalette.primary,
+                            style: AppTextStyle(
+                              color: context.excursionDetailsColors.primary,
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
                               height: 1,
@@ -4591,8 +4679,9 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                       iconAlignment: IconAlignment.end,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(58),
-                        backgroundColor: AppPalette.primary,
-                        foregroundColor: AppPalette.textPrimary,
+                        backgroundColor: context.excursionDetailsColors.primary,
+                        foregroundColor:
+                            context.excursionDetailsColors.textPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(15),
                         ),
@@ -4602,7 +4691,7 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
+                        style: AppTextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
@@ -4619,8 +4708,8 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                     helperText!,
                     textAlign: TextAlign.right,
                     maxLines: 3,
-                    style: const AppTextStyle(
-                      color: AppPalette.orangeSoft10,
+                    style: AppTextStyle(
+                      color: context.excursionDetailsColors.orangeSoft10,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       height: 1.25,
@@ -4641,10 +4730,12 @@ class _ExcursionDetailsLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppPalette.warmInk37,
+    return ColoredBox(
+      color: context.excursionDetailsColors.warmInk37,
       child: Center(
-        child: CircularProgressIndicator(color: AppPalette.primary),
+        child: CircularProgressIndicator(
+          color: context.excursionDetailsColors.primary,
+        ),
       ),
     );
   }

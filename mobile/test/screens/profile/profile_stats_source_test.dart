@@ -174,6 +174,33 @@ void main() {
     },
   );
 
+  test('profile avatar clips the image and inner border as a circle', () async {
+    final source = await File(
+      'lib/screens/profile/profile_screen.dart',
+    ).readAsString();
+    final avatarStart = source.indexOf('class _ProfileAvatar');
+    final extrasStart = source.indexOf('class _ProfileExtras');
+
+    expect(avatarStart, isNonNegative);
+    expect(extrasStart, greaterThan(avatarStart));
+
+    final avatarSource = source.substring(avatarStart, extrasStart);
+    final clipStart = avatarSource.indexOf('child: ClipOval(');
+    final imageSwitchStart = avatarSource.indexOf('child: avatarUrl == null');
+
+    expect(clipStart, isNonNegative);
+    expect(imageSwitchStart, greaterThan(clipStart));
+
+    final clippedDecorationSource = avatarSource.substring(
+      clipStart,
+      imageSwitchStart,
+    );
+
+    expect(clippedDecorationSource, contains('shape: BoxShape.circle'));
+    expect(avatarSource, contains('Image.network('));
+    expect(avatarSource, contains('fit: BoxFit.cover'));
+  });
+
   test(
     'foreign guide profile loads and renders top excursion reviews',
     () async {

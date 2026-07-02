@@ -12,13 +12,41 @@ enum AppBottomNavItem { home, feed, qr, map, services, chats }
 
 enum AppBottomNavCreateBackgroundStyle { elevated, flat }
 
-const _commonBottomNavBackground = AppPalette.warmSurface68;
-const _createBottomNavFlatBackground = AppPalette.warmSurface59;
-const _createBottomNavGradient = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [AppPalette.warmSurface73, _createBottomNavFlatBackground],
-);
+class AppBottomNavigationBarStyle {
+  const AppBottomNavigationBarStyle({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.splashColor,
+    required this.highlightColor,
+    required this.badgeBackgroundColor,
+    required this.badgeForegroundColor,
+  });
+
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color activeColor;
+  final Color inactiveColor;
+  final Color splashColor;
+  final Color highlightColor;
+  final Color badgeBackgroundColor;
+  final Color badgeForegroundColor;
+
+  static AppBottomNavigationBarStyle v2(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return AppBottomNavigationBarStyle(
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      activeColor: colors.primary,
+      inactiveColor: colors.textMuted,
+      splashColor: colors.borderPrimary,
+      highlightColor: colors.transparent,
+      badgeBackgroundColor: colors.primary,
+      badgeForegroundColor: colors.textPrimary,
+    );
+  }
+}
 
 class CommonBottomNavigationBar extends StatelessWidget {
   const CommonBottomNavigationBar({
@@ -33,6 +61,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
     this.onCenterCreateTap,
     this.centerCreateSemanticsLabel,
     this.showFeedItem = false,
+    this.style,
   });
 
   final AppBottomNavItem? activeItem;
@@ -45,6 +74,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
   final VoidCallback onChatsTap;
   final String? centerCreateSemanticsLabel;
   final bool showFeedItem;
+  final AppBottomNavigationBarStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +85,14 @@ class CommonBottomNavigationBar extends StatelessWidget {
         : _BottomNavLayout.common(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final renderFeedItem = showFeedItem || activeItem == AppBottomNavItem.feed;
+    final resolvedStyle = style ?? AppBottomNavigationBarStyle.v2(context);
 
     return _BottomNavPaintedSafeArea(
       barHeight: layout.barHeight,
       safeBottom: safeBottom,
       decoration: AppBoxDecoration(
-        color: _commonBottomNavBackground,
-        border: Border(
-          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
-        ),
+        color: resolvedStyle.backgroundColor,
+        border: Border(top: BorderSide(color: resolvedStyle.borderColor)),
       ),
       child: Padding(
         padding: AppEdgeInsets.fromLTRB(
@@ -80,6 +109,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
                 label: l10n.homeNavHome,
                 icon: Icons.home_filled,
                 active: activeItem == AppBottomNavItem.home,
+                style: resolvedStyle,
                 onTap: onHomeTap,
               ),
             ),
@@ -95,6 +125,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
                     (renderFeedItem
                         ? AppBottomNavItem.feed
                         : AppBottomNavItem.qr),
+                style: resolvedStyle,
                 onTap: renderFeedItem ? (onFeedTap ?? onQrTap) : onQrTap,
               ),
             ),
@@ -112,6 +143,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
                       label: l10n.homeNavMap,
                       icon: Icons.map_outlined,
                       active: activeItem == AppBottomNavItem.map,
+                      style: resolvedStyle,
                       onTap: onMapTap,
                     ),
             ),
@@ -121,6 +153,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
                 label: l10n.servicesSectionTitle,
                 icon: Icons.grid_view_rounded,
                 active: activeItem == AppBottomNavItem.services,
+                style: resolvedStyle,
                 onTap: onServicesTap,
               ),
             ),
@@ -131,6 +164,7 @@ class CommonBottomNavigationBar extends StatelessWidget {
                   label: l10n.homeNavChats,
                   icon: Icons.chat_bubble_outline_rounded,
                   active: activeItem == AppBottomNavItem.chats,
+                  style: resolvedStyle,
                   onTap: onChatsTap,
                   badgeCount: unreadConversationCount,
                   badgeKey: const ValueKey('bottom-nav-chats-badge'),
@@ -169,25 +203,32 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final layout = _BottomNavLayout.withCreate(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final useFlatBackground =
         backgroundStyle == AppBottomNavCreateBackgroundStyle.flat;
+    final style = AppBottomNavigationBarStyle.v2(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _BottomNavPaintedSafeArea(
       barHeight: layout.barHeight,
       safeBottom: safeBottom,
       decoration: AppBoxDecoration(
-        color: useFlatBackground ? _createBottomNavFlatBackground : null,
-        gradient: useFlatBackground ? null : _createBottomNavGradient,
-        border: Border(
-          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
-        ),
-        boxShadow: useFlatBackground
+        color: useFlatBackground ? colors.surface : null,
+        gradient: useFlatBackground
+            ? null
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [colors.surfaceRaised, colors.surface],
+              ),
+        border: Border(top: BorderSide(color: colors.borderSoft)),
+        boxShadow: useFlatBackground || !isDark
             ? null
             : [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.28),
+                  color: colors.black.withValues(alpha: 0.28),
                   blurRadius: 20,
                   offset: const Offset(0, -4),
                 ),
@@ -208,6 +249,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                 label: l10n.homeNavHome,
                 icon: Icons.home_filled,
                 active: activeItem == AppBottomNavItem.home,
+                style: style,
                 onTap: onHomeTap,
               ),
             ),
@@ -217,6 +259,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                 label: l10n.homeNavQr,
                 icon: Icons.qr_code_2_rounded,
                 active: activeItem == AppBottomNavItem.qr,
+                style: style,
                 onTap: onQrTap,
               ),
             ),
@@ -233,6 +276,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                 label: l10n.servicesSectionTitle,
                 icon: Icons.grid_view_rounded,
                 active: activeItem == AppBottomNavItem.services,
+                style: style,
                 onTap: onServicesTap,
               ),
             ),
@@ -243,6 +287,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                   label: l10n.homeNavChats,
                   icon: Icons.chat_bubble_outline_rounded,
                   active: activeItem == AppBottomNavItem.chats,
+                  style: style,
                   onTap: onChatsTap,
                   badgeCount: unreadConversationCount,
                   badgeKey: const ValueKey('bottom-nav-chats-badge'),
@@ -290,6 +335,7 @@ class _BottomNavButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.active,
+    required this.style,
     required this.onTap,
     this.badgeCount = 0,
     this.badgeKey,
@@ -299,21 +345,23 @@ class _BottomNavButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool active;
+  final AppBottomNavigationBarStyle style;
   final VoidCallback onTap;
   final int badgeCount;
   final Key? badgeKey;
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppPalette.primary : AppPalette.orangeLight10;
+    final color = active ? style.activeColor : style.inactiveColor;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(layout.itemRadius),
-        splashColor: AppPalette.primary.withValues(alpha: 0.1),
-        highlightColor: AppPalette.transparent,
+        splashColor: style.splashColor,
+        highlightColor: style.highlightColor,
         child: SizedBox(
           height: layout.itemHeight,
           child: Center(
@@ -338,6 +386,7 @@ class _BottomNavButton extends StatelessWidget {
                             top: -5,
                             right: 0,
                             child: _BottomNavBadge(
+                              style: style,
                               label: _bottomNavBadgeLabel(badgeCount),
                             ),
                           ),
@@ -431,8 +480,9 @@ class _ChatUnreadCountBuilderState extends State<_ChatUnreadCountBuilder>
 }
 
 class _BottomNavBadge extends StatelessWidget {
-  const _BottomNavBadge({required this.label});
+  const _BottomNavBadge({required this.style, required this.label});
 
+  final AppBottomNavigationBarStyle style;
   final String label;
 
   @override
@@ -441,17 +491,17 @@ class _BottomNavBadge extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.primary,
+          color: style.badgeBackgroundColor,
           borderRadius: AppBorderRadius.circular(999),
-          border: Border.all(color: _commonBottomNavBackground, width: 1.5),
+          border: Border.all(color: style.backgroundColor, width: 1.5),
         ),
         child: Padding(
           padding: const AppEdgeInsets.symmetric(horizontal: 5, vertical: 2),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: style.badgeForegroundColor,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
@@ -506,17 +556,20 @@ class _CreateBottomNavFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       key: const ValueKey('bottom-nav-create-action'),
       button: true,
       label: semanticsLabel,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(layout.itemRadius),
-          splashColor: AppPalette.white.withValues(alpha: 0.08),
-          highlightColor: AppPalette.transparent,
+          splashColor: colors.borderPrimary,
+          highlightColor: colors.transparent,
           child: SizedBox(
             height: layout.itemHeight,
             child: Center(
@@ -528,22 +581,24 @@ class _CreateBottomNavFab extends StatelessWidget {
                     height: layout.fabSize,
                     decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppPalette.warmMuted49,
+                      color: colors.primary,
                       border: Border.all(
-                        color: AppPalette.warmInk103,
+                        color: colors.surface,
                         width: layout.fabBorderWidth,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppPalette.black.withValues(alpha: 0.24),
-                          blurRadius: layout.fabShadowBlur,
-                          offset: Offset(0, layout.fabShadowOffsetY),
-                        ),
-                      ],
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: colors.black.withValues(alpha: 0.24),
+                                blurRadius: layout.fabShadowBlur,
+                                offset: Offset(0, layout.fabShadowOffsetY),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Icon(
                       Icons.add_rounded,
-                      color: AppPalette.orangeWash24,
+                      color: colors.textPrimary,
                       size: layout.fabIconSize,
                     ),
                   ),

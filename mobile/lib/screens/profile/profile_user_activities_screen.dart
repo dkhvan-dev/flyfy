@@ -1,21 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 import '../../core/network/activity_api.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
+import '../../core/ui/pagination_bar.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
-import '../../core/ui/pagination_bar.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _ProfileUserActivitiesTab { hosted, visited }
 
@@ -130,12 +130,13 @@ class _ProfileUserActivitiesScreenState
 
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
+    final colors = AppDesignSystem.colorsFor(context);
 
     final result = await showAppModalBottomSheet<_ProfileActivityFilters>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: colors.transparent,
       builder: (sheetContext) {
         return AppModalSheetFrame(
           safeAreaBottom: false,
@@ -331,151 +332,167 @@ class _ProfileUserActivitiesScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final horizontalPadding = profileScaled(context, 20, min: 14, max: 20);
     final hasActiveQuery = _searchQuery.isNotEmpty || _filters.hasAnyValue;
 
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        backgroundColor: AppPalette.transparent,
-        body: ProfileResponsiveScope(
-          child: ProfileGlassBackground(
-            child: SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: AppEdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      profileScaled(context, 14, min: 10, max: 18),
-                      horizontalPadding,
-                      profileScaled(context, 12, min: 10, max: 14),
+      child: Theme(
+        data: AppDesignSystem.themeFor(context),
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: ProfileResponsiveScope(
+            child: DecoratedBox(
+              decoration: AppBoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: colors.screenGradientColors,
+                ),
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: AppEdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        profileScaled(context, 14, min: 10, max: 18),
+                        horizontalPadding,
+                        profileScaled(context, 12, min: 10, max: 14),
+                      ),
+                      child: _ProfileActivitiesHeader(
+                        title: l10n.profileUserActivitiesTitle,
+                        onBack: () => context.pop(),
+                      ),
                     ),
-                    child: _ProfileActivitiesHeader(
-                      title: l10n.profileUserActivitiesTitle,
-                      onBack: () => context.pop(),
+                    Padding(
+                      padding: AppEdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: AppListSearchField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        hintText: l10n.activitiesSearchHint,
+                        filterTooltip: l10n.activitiesFiltersTitle,
+                        activeFilterCount: _activeFilterCount,
+                        showClearButton: true,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        onFilterTap: _openFilters,
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: AppEdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
+                    SizedBox(
+                      height: profileScaled(context, 10, min: 8, max: 12),
                     ),
-                    child: AppListSearchField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      hintText: l10n.activitiesSearchHint,
-                      filterTooltip: l10n.activitiesFiltersTitle,
-                      activeFilterCount: _activeFilterCount,
-                      showClearButton: true,
-                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                      onFilterTap: _openFilters,
-                    ),
-                  ),
-                  SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
-                  Padding(
-                    padding: AppEdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: AppInlineSortRow<_ProfileActivitySortField>(
-                          label: l10n.activitiesSortLabel,
-                          options: [
-                            AppInlineSortOption(
-                              value: _ProfileActivitySortField.date,
-                              label: l10n.activitiesSortDate,
+                    Padding(
+                      padding: AppEdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: AppInlineSortRow<_ProfileActivitySortField>(
+                            label: l10n.activitiesSortLabel,
+                            options: [
+                              AppInlineSortOption(
+                                value: _ProfileActivitySortField.date,
+                                label: l10n.activitiesSortDate,
+                              ),
+                              AppInlineSortOption(
+                                value: _ProfileActivitySortField.price,
+                                label: l10n.activitiesSortPrice,
+                              ),
+                            ],
+                            selectedValue: _sortField,
+                            isAscending: _sortAscending,
+                            onSelected: _handleSortTap,
+                            fontSize: profileScaled(
+                              context,
+                              12,
+                              min: 11,
+                              max: 12,
                             ),
-                            AppInlineSortOption(
-                              value: _ProfileActivitySortField.price,
-                              label: l10n.activitiesSortPrice,
+                            iconSize: profileScaled(
+                              context,
+                              14,
+                              min: 12,
+                              max: 14,
                             ),
-                          ],
-                          selectedValue: _sortField,
-                          isAscending: _sortAscending,
-                          onSelected: _handleSortTap,
-                          fontSize: profileScaled(
-                            context,
-                            12,
-                            min: 11,
-                            max: 12,
-                          ),
-                          iconSize: profileScaled(
-                            context,
-                            14,
-                            min: 12,
-                            max: 14,
-                          ),
-                          labelToOptionsGap: profileScaled(
-                            context,
-                            18,
-                            min: 12,
-                            max: 18,
-                          ),
-                          optionGap: profileScaled(
-                            context,
-                            22,
-                            min: 16,
-                            max: 22,
-                          ),
-                          iconGap: profileScaled(context, 5, min: 4, max: 5),
-                          verticalPadding: profileScaled(
-                            context,
-                            8,
-                            min: 6,
-                            max: 10,
+                            labelToOptionsGap: profileScaled(
+                              context,
+                              18,
+                              min: 12,
+                              max: 18,
+                            ),
+                            optionGap: profileScaled(
+                              context,
+                              22,
+                              min: 16,
+                              max: 22,
+                            ),
+                            iconGap: profileScaled(context, 5, min: 4, max: 5),
+                            verticalPadding: profileScaled(
+                              context,
+                              8,
+                              min: 6,
+                              max: 10,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
-                  Padding(
-                    padding: AppEdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
+                    SizedBox(
+                      height: profileScaled(context, 8, min: 6, max: 10),
                     ),
-                    child: _ProfileActivitiesTabs(
-                      hostedLabel: l10n.profileUserActivitiesHostedTab,
-                      visitedLabel: l10n.profileUserActivitiesVisitedTab,
+                    Padding(
+                      padding: AppEdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: _ProfileActivitiesTabs(
+                        hostedLabel: l10n.profileUserActivitiesHostedTab,
+                        visitedLabel: l10n.profileUserActivitiesVisitedTab,
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _ProfileActivitiesTabView(
-                          state: _hostedState,
-                          emptyTitle: hasActiveQuery
-                              ? l10n.activitiesFilteredEmptyTitle
-                              : l10n.profileUserActivitiesHostedEmptyTitle,
-                          emptySubtitle: hasActiveQuery
-                              ? l10n.activitiesFilteredEmptySubtitle
-                              : l10n.profileUserActivitiesHostedEmptySubtitle,
-                          onRetry: () => _loadHosted(page: _hostedState.page),
-                          onPageChanged: (page) => _changePage(
-                            _ProfileUserActivitiesTab.hosted,
-                            page,
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _ProfileActivitiesTabView(
+                            state: _hostedState,
+                            emptyTitle: hasActiveQuery
+                                ? l10n.activitiesFilteredEmptyTitle
+                                : l10n.profileUserActivitiesHostedEmptyTitle,
+                            emptySubtitle: hasActiveQuery
+                                ? l10n.activitiesFilteredEmptySubtitle
+                                : l10n.profileUserActivitiesHostedEmptySubtitle,
+                            onRetry: () => _loadHosted(page: _hostedState.page),
+                            onPageChanged: (page) => _changePage(
+                              _ProfileUserActivitiesTab.hosted,
+                              page,
+                            ),
+                            onOpenDetails: _openDetails,
                           ),
-                          onOpenDetails: _openDetails,
-                        ),
-                        _ProfileActivitiesTabView(
-                          state: _visitedState,
-                          emptyTitle: hasActiveQuery
-                              ? l10n.activitiesFilteredEmptyTitle
-                              : l10n.profileUserActivitiesVisitedEmptyTitle,
-                          emptySubtitle: hasActiveQuery
-                              ? l10n.activitiesFilteredEmptySubtitle
-                              : l10n.profileUserActivitiesVisitedEmptySubtitle,
-                          onRetry: () => _loadVisited(page: _visitedState.page),
-                          onPageChanged: (page) => _changePage(
-                            _ProfileUserActivitiesTab.visited,
-                            page,
+                          _ProfileActivitiesTabView(
+                            state: _visitedState,
+                            emptyTitle: hasActiveQuery
+                                ? l10n.activitiesFilteredEmptyTitle
+                                : l10n.profileUserActivitiesVisitedEmptyTitle,
+                            emptySubtitle: hasActiveQuery
+                                ? l10n.activitiesFilteredEmptySubtitle
+                                : l10n.profileUserActivitiesVisitedEmptySubtitle,
+                            onRetry: () =>
+                                _loadVisited(page: _visitedState.page),
+                            onPageChanged: (page) => _changePage(
+                              _ProfileUserActivitiesTab.visited,
+                              page,
+                            ),
+                            onOpenDetails: _openDetails,
                           ),
-                          onOpenDetails: _openDetails,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -666,17 +683,18 @@ class _ProfileActivityFiltersSheetState
     final maxHeight = MediaQuery.sizeOf(context).height * 0.86;
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final l10n = widget.l10n;
+    final colors = AppDesignSystem.colorsFor(context);
     final previewCount = widget.previewCountBuilder(_draftFilters);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Container(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmInk44,
+          color: colors.surface,
           borderRadius: const AppBorderRadius.vertical(
             top: AppRadiusValue.circular(28),
           ),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -704,7 +722,7 @@ class _ProfileActivityFiltersSheetState
                           ? Text(
                               l10n.activitiesAllCategories,
                               style: AppTextStyle(
-                                color: profileTextSoft,
+                                color: colors.textSecondary,
                                 fontSize: profileScaled(
                                   context,
                                   14,
@@ -805,6 +823,8 @@ class _ProfileFilterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -812,7 +832,7 @@ class _ProfileFilterSection extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: profileScaled(context, 18, min: 16, max: 20),
             ),
             SizedBox(width: profileScaled(context, 8, min: 6, max: 10)),
@@ -822,7 +842,7 @@ class _ProfileFilterSection extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: profileScaled(context, 15, min: 14, max: 16),
                   fontWeight: FontWeight.w900,
                 ),
@@ -865,6 +885,7 @@ class _ProfileFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final maxWidth =
         (MediaQuery.sizeOf(context).width -
                 profileScaled(context, 64, min: 48, max: 72))
@@ -877,15 +898,13 @@ class _ProfileFilterChip extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onTap(),
         showCheckmark: false,
-        selectedColor: AppPalette.primary.withValues(alpha: 0.24),
-        backgroundColor: profileSurfaceMuted.withValues(alpha: 0.78),
+        selectedColor: colors.primarySoft,
+        backgroundColor: colors.surfaceRaised,
         side: BorderSide(
-          color: selected
-              ? AppPalette.primary.withValues(alpha: 0.56)
-              : AppPalette.white.withValues(alpha: 0.08),
+          color: selected ? colors.borderPrimary : colors.borderSoft,
         ),
         labelStyle: AppTextStyle(
-          color: selected ? AppPalette.textPrimary : profileTextSoft,
+          color: selected ? colors.textPrimary : colors.textSecondary,
           fontSize: profileScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w800,
         ),
@@ -899,14 +918,13 @@ class _ProfileFilterDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Padding(
       padding: AppEdgeInsets.symmetric(
         vertical: profileScaled(context, 18, min: 14, max: 20),
       ),
-      child: Divider(
-        color: AppPalette.white.withValues(alpha: 0.08),
-        height: 1,
-      ),
+      child: Divider(color: colors.borderSoft, height: 1),
     );
   }
 }
@@ -919,13 +937,15 @@ class _ProfileActivitiesHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
         IconButton(
           onPressed: onBack,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppPalette.textPrimary,
+          color: colors.textPrimary,
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 10)),
         Expanded(
@@ -934,7 +954,7 @@ class _ProfileActivitiesHeader extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: colors.textPrimary,
               fontSize: profileScaled(context, 24, min: 21, max: 26),
               fontWeight: FontWeight.w900,
             ),
@@ -956,27 +976,29 @@ class _ProfileActivitiesTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: const AppEdgeInsets.all(4),
       decoration: AppBoxDecoration(
-        color: profileSurfaceMuted.withValues(alpha: 0.68),
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 18, min: 16, max: 18),
         ),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: TabBar(
-        dividerColor: AppPalette.transparent,
+        dividerColor: colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: AppBoxDecoration(
-          color: AppPalette.primary,
+          color: colors.primary,
           borderRadius: AppBorderRadius.circular(
             profileScaled(context, 14, min: 12, max: 14),
           ),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.3)),
+          border: Border.all(color: colors.borderPrimary),
         ),
-        labelColor: AppPalette.textPrimary,
-        unselectedLabelColor: profileTextMuted,
+        labelColor: colors.textPrimary,
+        unselectedLabelColor: colors.textSecondary,
         labelStyle: AppTextStyle(
           fontSize: profileScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w900,
@@ -1010,6 +1032,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final padding = profileScaled(context, 20, min: 14, max: 20);
 
     if (state.isLoading && state.items.isEmpty) {
@@ -1026,7 +1049,11 @@ class _ProfileActivitiesTabView extends StatelessWidget {
             SizedBox(height: profileScaled(context, 12, min: 10)),
         itemBuilder: (context, index) => Container(
           height: profileScaled(context, 220, min: 190, max: 240),
-          decoration: profileCardDecoration(context, highlighted: true),
+          decoration: _profileActivitiesCardDecoration(
+            context,
+            colors,
+            highlighted: true,
+          ),
         ),
       );
     }
@@ -1119,23 +1146,28 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = actionLabel;
     final callback = onAction;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       padding: AppEdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
-      decoration: profileCardDecoration(context, highlighted: true),
+      decoration: _profileActivitiesCardDecoration(
+        context,
+        colors,
+        highlighted: true,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.event_note_outlined,
             size: profileScaled(context, 28, min: 24, max: 30),
-            color: AppPalette.primary,
+            color: colors.primary,
           ),
           SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
           Text(
             title,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: colors.textPrimary,
               fontSize: profileScaled(context, 17, min: 15, max: 18),
               fontWeight: FontWeight.w900,
             ),
@@ -1144,7 +1176,7 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
           Text(
             subtitle,
             style: AppTextStyle(
-              color: profileTextSoft,
+              color: colors.textSecondary,
               fontSize: profileScaled(context, 13, min: 12, max: 14),
               height: 1.45,
             ),
@@ -1156,10 +1188,8 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(label),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppPalette.primary,
-                side: BorderSide(
-                  color: AppPalette.primary.withValues(alpha: 0.34),
-                ),
+                foregroundColor: colors.primary,
+                side: BorderSide(color: colors.borderPrimary),
               ),
             ),
           ],
@@ -1167,4 +1197,36 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
       ),
     );
   }
+}
+
+BoxDecoration _profileActivitiesCardDecoration(
+  BuildContext context,
+  AppColors colors, {
+  bool highlighted = false,
+  bool danger = false,
+  double? radius,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final borderColor = danger
+      ? colors.danger
+      : highlighted
+      ? colors.borderPrimary
+      : colors.border;
+
+  return AppBoxDecoration(
+    color: highlighted ? colors.surfaceRaised : colors.surface,
+    borderRadius: AppBorderRadius.circular(
+      radius ?? profileScaled(context, 22, min: 18, max: 24),
+    ),
+    border: Border.all(color: borderColor),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: highlighted ? 0.24 : 0.16),
+              blurRadius: profileScaled(context, 18, min: 14, max: 22),
+              offset: Offset(0, profileScaled(context, 8, min: 5, max: 10)),
+            ),
+          ]
+        : const [],
+  );
 }

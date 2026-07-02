@@ -10,8 +10,10 @@ class ChatImageViewerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Scaffold(
-      backgroundColor: AppPalette.black,
+      backgroundColor: colors.backgroundDeep,
       body: SafeArea(
         child: Stack(
           children: [
@@ -51,6 +53,8 @@ class _ViewerIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -59,10 +63,10 @@ class _ViewerIconButton extends StatelessWidget {
         height: 44,
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.black.withValues(alpha: 0.46),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+          color: colors.scrim.withValues(alpha: 0.46),
+          border: Border.all(color: colors.white.withValues(alpha: 0.16)),
         ),
-        child: Icon(icon, color: AppPalette.white, size: 24),
+        child: Icon(icon, color: colors.white, size: 24),
       ),
     );
   }

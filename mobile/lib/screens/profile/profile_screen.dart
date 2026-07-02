@@ -33,6 +33,43 @@ import 'widgets/profile_activity_card.dart';
 import 'widgets/profile_post_card.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+final class _ProfileScreenColors {
+  const _ProfileScreenColors._(this.colors);
+
+  final AppColors colors;
+
+  static _ProfileScreenColors of(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return _ProfileScreenColors._(colors);
+  }
+
+  Color get primary => colors.primary;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get background => colors.background;
+  Color get border => colors.border;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+}
+
+extension _ProfileScreenColorContext on BuildContext {
+  _ProfileScreenColors get profileColors => _ProfileScreenColors.of(this);
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
 
@@ -712,75 +749,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final session = context.watch<SessionProvider>();
+    final colors = _ProfileScreenColors.of(context);
     final requestedUserId = widget.userId?.trim() ?? '';
     final currentUserId = session.profile?.userId.trim() ?? '';
     final isOwnProfile =
         requestedUserId.isEmpty || requestedUserId == currentUserId;
 
-    return Scaffold(
-      key: ValueKey(
-        'profile-screen-${requestedUserId.isEmpty ? 'me' : requestedUserId}',
-      ),
-      backgroundColor: AppPalette.transparent,
-      body: ProfileResponsiveScope(
-        child: ProfileGlassBackground(
-          child: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _refreshProfile,
-              color: AppPalette.primary,
-              backgroundColor: AppPalette.surfaceCool,
-              child: isOwnProfile
-                  ? _buildResolvedProfile(
-                      context,
-                      session.profile,
-                      isOwnProfile: true,
-                      isAuthenticated: session.isAuthenticated,
-                    )
-                  : FutureBuilder<UserProfileVm>(
-                      future: _foreignProfileFuture,
-                      initialData: _initialForeignProfileForBuilder(
-                        requestedUserId,
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        key: ValueKey(
+          'profile-screen-${requestedUserId.isEmpty ? 'me' : requestedUserId}',
+        ),
+        backgroundColor: colors.transparent,
+        body: ProfileResponsiveScope(
+          child: ProfileGlassBackground(
+            child: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: _refreshProfile,
+                color: colors.primary,
+                backgroundColor: colors.surfaceRaised,
+                child: isOwnProfile
+                    ? _buildResolvedProfile(
+                        context,
+                        session.profile,
+                        isOwnProfile: true,
+                        isAuthenticated: session.isAuthenticated,
+                      )
+                    : FutureBuilder<UserProfileVm>(
+                        future: _foreignProfileFuture,
+                        initialData: _initialForeignProfileForBuilder(
+                          requestedUserId,
+                        ),
+                        builder: (context, snapshot) {
+                          final profile = snapshot.data;
+                          if (snapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              profile == null) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: colors.primary,
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError && profile == null) {
+                            return Center(
+                              child: Text(
+                                l10n.profileNotAvailable,
+                                style: AppTextStyle(color: colors.textPrimary),
+                              ),
+                            );
+                          }
+
+                          if (profile == null) {
+                            return Center(
+                              child: Text(
+                                l10n.profileNotAvailable,
+                                style: AppTextStyle(color: colors.textPrimary),
+                              ),
+                            );
+                          }
+
+                          return _buildResolvedProfile(
+                            context,
+                            profile,
+                            isOwnProfile: false,
+                            isAuthenticated: session.isAuthenticated,
+                          );
+                        },
                       ),
-                      builder: (context, snapshot) {
-                        final profile = snapshot.data;
-                        if (snapshot.connectionState ==
-                                ConnectionState.waiting &&
-                            profile == null) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        if (snapshot.hasError && profile == null) {
-                          return Center(
-                            child: Text(
-                              l10n.profileNotAvailable,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
-                              ),
-                            ),
-                          );
-                        }
-
-                        if (profile == null) {
-                          return Center(
-                            child: Text(
-                              l10n.profileNotAvailable,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
-                              ),
-                            ),
-                          );
-                        }
-
-                        return _buildResolvedProfile(
-                          context,
-                          profile,
-                          isOwnProfile: false,
-                          isAuthenticated: session.isAuthenticated,
-                        );
-                      },
-                    ),
+              ),
             ),
           ),
         ),
@@ -796,10 +835,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     if (profile == null) {
+      final colors = _ProfileScreenColors.of(context);
       return Center(
         child: Text(
           l10n.profileNotAvailable,
-          style: const AppTextStyle(color: AppPalette.textPrimary),
+          style: AppTextStyle(color: colors.textPrimary),
         ),
       );
     }
@@ -1122,7 +1162,7 @@ class _ProfileTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: context.profileColors.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
@@ -1156,8 +1196,8 @@ class _ProfileTopBar extends StatelessWidget {
                                 ? Icons.lock_open_rounded
                                 : Icons.block_rounded,
                             color: isBlockedByMe
-                                ? AppPalette.primary
-                                : AppPalette.danger,
+                                ? context.profileColors.primary
+                                : context.profileColors.danger,
                           ),
                           const SizedBox(width: 12),
                           Text(
@@ -1166,8 +1206,8 @@ class _ProfileTopBar extends StatelessWidget {
                                 : l10n.chatBlockUserAction,
                             style: AppTextStyle(
                               color: isBlockedByMe
-                                  ? AppPalette.textPrimary
-                                  : AppPalette.danger,
+                                  ? context.profileColors.textPrimary
+                                  : context.profileColors.danger,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -1228,7 +1268,7 @@ class _ProfileHero extends StatelessWidget {
           profile.preferredName,
           textAlign: TextAlign.center,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.profileColors.textPrimary,
             fontSize: profileScaled(context, 30, min: 24, max: 34),
             fontWeight: FontWeight.w900,
             letterSpacing: -1,
@@ -1259,7 +1299,7 @@ class _ProfileHero extends StatelessWidget {
                 : l10n.profileGuideTitle,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: AppPalette.primary,
+              color: context.profileColors.primary,
               fontSize: profileScaled(context, 13, min: 12, max: 13),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.5,
@@ -1300,7 +1340,7 @@ class _ProfileHero extends StatelessWidget {
           child: Text(
             bio,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.profileColors.textPrimary,
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               height: 1.55,
             ),
@@ -1377,9 +1417,11 @@ class _GuideRatingBadge extends StatelessWidget {
         profileScaled(context, 56, min: 36, max: 56);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.14),
+        color: context.profileColors.primary.withValues(alpha: 0.14),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(
+          color: context.profileColors.primary.withValues(alpha: 0.22),
+        ),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
@@ -1408,7 +1450,7 @@ class _GuideRatingBadge extends StatelessWidget {
               Icon(
                 Icons.star_rounded,
                 size: profileScaled(context, 17, min: 15, max: 17),
-                color: AppPalette.primary,
+                color: context.profileColors.primary,
               ),
               SizedBox(width: profileScaled(context, 6, min: 5, max: 6)),
               Flexible(
@@ -1417,7 +1459,7 @@ class _GuideRatingBadge extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.profileColors.textPrimary,
                     fontSize: profileScaled(context, 13, min: 12, max: 13),
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
@@ -1462,14 +1504,17 @@ class _ProfileAvatar extends StatelessWidget {
             ),
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppPalette.amberSoft06, AppPalette.warmSurfaceHigh30],
+                colors: [
+                  context.profileColors.surfaceWarm,
+                  context.profileColors.primaryContainer,
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.22),
+                  color: context.profileColors.black.withValues(alpha: 0.22),
                   blurRadius: profileScaled(context, 22, min: 16, max: 24),
                   offset: Offset(
                     0,
@@ -1481,13 +1526,17 @@ class _ProfileAvatar extends StatelessWidget {
             child: ClipOval(
               child: DecoratedBox(
                 decoration: AppBoxDecoration(
-                  gradient: const LinearGradient(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [AppPalette.blueWash04, AppPalette.blueLight07],
+                    colors: [
+                      context.profileColors.surfaceTeal,
+                      context.profileColors.secondaryContainer,
+                    ],
                   ),
                   border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.92),
+                    color: context.profileColors.white.withValues(alpha: 0.92),
                     width: profileScaled(context, 4, min: 3, max: 4),
                   ),
                 ),
@@ -1496,7 +1545,7 @@ class _ProfileAvatar extends StatelessWidget {
                         child: Text(
                           initials,
                           style: AppTextStyle(
-                            color: AppPalette.blueMuted20,
+                            color: context.profileColors.secondary,
                             fontSize: profileScaled(
                               context,
                               44,
@@ -1515,7 +1564,7 @@ class _ProfileAvatar extends StatelessWidget {
                           child: Text(
                             initials,
                             style: AppTextStyle(
-                              color: AppPalette.blueMuted20,
+                              color: context.profileColors.secondary,
                               fontSize: profileScaled(
                                 context,
                                 44,
@@ -1539,7 +1588,7 @@ class _ProfileAvatar extends StatelessWidget {
                 width: badgeSize,
                 height: badgeSize,
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary,
+                  color: context.profileColors.primary,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: profileBgTop,
@@ -1547,14 +1596,16 @@ class _ProfileAvatar extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppPalette.primary.withValues(alpha: 0.3),
+                      color: context.profileColors.primary.withValues(
+                        alpha: 0.3,
+                      ),
                       blurRadius: profileScaled(context, 14, min: 10, max: 16),
                     ),
                   ],
                 ),
                 child: Icon(
                   Icons.verified_rounded,
-                  color: AppPalette.white,
+                  color: context.profileColors.white,
                   size: profileScaled(context, 16, min: 14, max: 18),
                 ),
               ),
@@ -1578,9 +1629,11 @@ class _ProfilePill extends StatelessWidget {
         vertical: profileScaled(context, 8, min: 7, max: 10),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.08),
+        color: context.profileColors.primary.withValues(alpha: 0.08),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
+        border: Border.all(
+          color: context.profileColors.primary.withValues(alpha: 0.24),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1588,7 +1641,7 @@ class _ProfilePill extends StatelessWidget {
           Text(
             text,
             style: AppTextStyle(
-              color: AppPalette.primary,
+              color: context.profileColors.primary,
               fontSize: profileScaled(context, 12, min: 11, max: 12),
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
@@ -1625,7 +1678,7 @@ class _ProfileBanner extends StatelessWidget {
         children: [
           Icon(
             Icons.warning_amber_rounded,
-            color: AppPalette.primary,
+            color: context.profileColors.primary,
             size: profileScaled(context, 24, min: 20, max: 24),
           ),
           SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
@@ -1636,7 +1689,7 @@ class _ProfileBanner extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.profileColors.textPrimary,
                     fontSize: profileScaled(context, 16, min: 14, max: 16),
                     fontWeight: FontWeight.w800,
                   ),
@@ -1658,7 +1711,7 @@ class _ProfileBanner extends StatelessWidget {
               onPressed: onTap,
               child: Text(
                 AppLocalizations.of(context)!.editProfileButton,
-                style: const AppTextStyle(color: AppPalette.primary),
+                style: AppTextStyle(color: context.profileColors.primary),
               ),
             ),
         ],
@@ -1721,7 +1774,7 @@ class _BecomeGuideCard extends StatelessWidget {
                 width: profileScaled(context, 44, min: 40, max: 48),
                 height: profileScaled(context, 44, min: 40, max: 48),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.12),
+                  color: context.profileColors.primary.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -1730,7 +1783,7 @@ class _BecomeGuideCard extends StatelessWidget {
                       : isRevoked
                       ? Icons.block_rounded
                       : Icons.explore_outlined,
-                  color: AppPalette.primary,
+                  color: context.profileColors.primary,
                 ),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -1741,7 +1794,7 @@ class _BecomeGuideCard extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.profileColors.textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -1766,8 +1819,8 @@ class _BecomeGuideCard extends StatelessWidget {
             child: FilledButton(
               onPressed: isRevoked ? null : onTap,
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
+                backgroundColor: context.profileColors.primary,
+                foregroundColor: context.profileColors.textPrimary,
               ),
               child: Text(buttonLabel),
             ),
@@ -1912,9 +1965,9 @@ class _ProfileStatCard extends StatelessWidget {
             SizedBox(
               width: profileScaled(context, 24, min: 20, max: 24),
               height: profileScaled(context, 24, min: 20, max: 24),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2.4,
-                color: AppPalette.primary,
+                color: context.profileColors.primary,
               ),
             )
           else
@@ -1924,7 +1977,7 @@ class _ProfileStatCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.primary,
+                color: context.profileColors.primary,
                 fontSize: profileScaled(context, 24, min: 20, max: 28),
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.8,
@@ -1952,7 +2005,7 @@ class _ProfileStatCard extends StatelessWidget {
     }
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.profileColors.transparent,
       child: InkWell(
         onTap: config.onTap,
         borderRadius: AppBorderRadius.circular(
@@ -1993,7 +2046,7 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
             .toDouble();
 
     return Dialog(
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.profileColors.transparent,
       elevation: 0,
       insetPadding: AppEdgeInsets.symmetric(
         horizontal: isCompact ? 16 : 24,
@@ -2011,16 +2064,16 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.warmSurface21.withValues(alpha: 0.99),
-                  AppPalette.warmInk63,
+                  context.profileColors.surfaceRaised.withValues(alpha: 0.99),
+                  context.profileColors.background,
                 ],
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.04),
+                color: context.profileColors.white.withValues(alpha: 0.04),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.34),
+                  color: context.profileColors.black.withValues(alpha: 0.34),
                   blurRadius: 34,
                   offset: const Offset(0, 18),
                 ),
@@ -2048,13 +2101,17 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppPalette.primary.withValues(alpha: 0.95),
-                            AppPalette.amberSoft21,
+                            context.profileColors.primary.withValues(
+                              alpha: 0.95,
+                            ),
+                            context.profileColors.primarySoft,
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppPalette.primary.withValues(alpha: 0.22),
+                            color: context.profileColors.primary.withValues(
+                              alpha: 0.22,
+                            ),
                             blurRadius: 22,
                             offset: const Offset(0, 10),
                           ),
@@ -2062,7 +2119,7 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                       ),
                       child: Icon(
                         icon,
-                        color: AppPalette.warmInk56,
+                        color: context.profileColors.textPrimary,
                         size: profileScaled(context, 27, min: 25, max: 28),
                       ),
                     ),
@@ -2074,7 +2131,7 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.profileColors.textPrimary,
                         fontSize: profileScaled(context, 23, min: 21, max: 23),
                         height: 1.12,
                         fontWeight: FontWeight.w900,
@@ -2156,11 +2213,11 @@ class _ActivitiesStyleConfirmAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = isPrimary
-        ? AppPalette.warmInk56
-        : AppPalette.textPrimary.withValues(alpha: 0.92);
+        ? context.profileColors.textPrimary
+        : context.profileColors.textPrimary.withValues(alpha: 0.92);
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.profileColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(16),
@@ -2169,20 +2226,23 @@ class _ActivitiesStyleConfirmAction extends StatelessWidget {
           child: Ink(
             decoration: AppBoxDecoration(
               gradient: isPrimary
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [AppPalette.amberSoft14, AppPalette.amberLight05],
+                      colors: [
+                        context.profileColors.primarySoft,
+                        context.profileColors.primary,
+                      ],
                     )
                   : null,
               color: isPrimary
                   ? null
-                  : AppPalette.white.withValues(alpha: 0.055),
+                  : context.profileColors.white.withValues(alpha: 0.055),
               borderRadius: AppBorderRadius.circular(16),
               border: Border.all(
                 color: isPrimary
-                    ? AppPalette.transparent
-                    : AppPalette.primary.withValues(alpha: 0.20),
+                    ? context.profileColors.transparent
+                    : context.profileColors.primary.withValues(alpha: 0.20),
               ),
             ),
             child: Center(
@@ -2371,22 +2431,32 @@ class _ProfileHeroActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null && !isBusy;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final circleSize = profileScaled(context, 50, min: 46, max: 54);
     final width = profileScaled(context, 78, min: 70, max: 86);
     final color = destructive
-        ? AppPalette.danger
+        ? context.profileColors.danger
         : selected
-        ? AppPalette.primary
+        ? context.profileColors.primary
         : profileTextSoft;
     final disabledColor = destructive
-        ? AppPalette.danger.withValues(alpha: 0.52)
+        ? context.profileColors.danger.withValues(alpha: 0.52)
         : profileDisabled;
     final effectiveColor = enabled ? color : disabledColor;
     final backgroundColor = destructive
-        ? AppPalette.danger.withValues(alpha: selected ? 0.16 : 0.10)
+        ? context.profileColors.danger.withValues(alpha: selected ? 0.16 : 0.10)
         : selected
-        ? AppPalette.primary.withValues(alpha: 0.18)
-        : AppPalette.white.withValues(alpha: 0.055);
+        ? context.profileColors.primary.withValues(alpha: 0.18)
+        : isLight
+        ? context.profileColors.surface
+        : context.profileColors.white.withValues(alpha: 0.055);
+    final borderColor = destructive
+        ? effectiveColor.withValues(alpha: enabled ? 0.52 : 0.26)
+        : selected
+        ? context.profileColors.borderPrimary
+        : isLight
+        ? context.profileColors.border
+        : effectiveColor.withValues(alpha: enabled ? 0.46 : 0.22);
 
     return Semantics(
       button: true,
@@ -2398,7 +2468,7 @@ class _ProfileHeroActionButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Material(
-              color: AppPalette.transparent,
+              color: context.profileColors.transparent,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: enabled ? onTap : null,
@@ -2409,11 +2479,7 @@ class _ProfileHeroActionButton extends StatelessWidget {
                   decoration: AppBoxDecoration(
                     color: backgroundColor,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: effectiveColor.withValues(
-                        alpha: enabled ? 0.46 : 0.22,
-                      ),
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Center(
                     child: isBusy
@@ -2598,7 +2664,7 @@ class _ProfileQuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.profileColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(
@@ -2609,12 +2675,16 @@ class _ProfileQuickActionTile extends StatelessWidget {
             minHeight: profileScaled(context, 74, min: 66, max: 80),
           ),
           child: Ink(
-            padding: AppEdgeInsets.all(
-              profileScaled(context, 14, min: 12, max: 16),
+            padding: AppEdgeInsets.symmetric(
+              horizontal: profileScaled(context, 14, min: 12, max: 16),
+              vertical: profileScaled(context, 10, min: 8, max: 12),
             ),
-            decoration: profileCardDecoration(
-              context,
-              radius: profileScaled(context, 22, min: 18, max: 22),
+            decoration: AppBoxDecoration(
+              color: context.profileColors.surface,
+              borderRadius: AppBorderRadius.circular(
+                profileScaled(context, 22, min: 18, max: 22),
+              ),
+              border: Border.all(color: context.profileColors.border),
             ),
             child: Row(
               children: [
@@ -2622,12 +2692,14 @@ class _ProfileQuickActionTile extends StatelessWidget {
                   width: profileScaled(context, 42, min: 38, max: 44),
                   height: profileScaled(context, 42, min: 38, max: 44),
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.12),
+                    color: context.profileColors.primary.withValues(
+                      alpha: 0.12,
+                    ),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: AppPalette.primary,
+                    color: context.profileColors.primary,
                     size: profileScaled(context, 21, min: 19, max: 22),
                   ),
                 ),
@@ -2638,7 +2710,7 @@ class _ProfileQuickActionTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: context.profileColors.textPrimary,
                       fontSize: profileScaled(context, 15, min: 14, max: 16),
                       fontWeight: FontWeight.w800,
                       height: 1.12,
@@ -2686,7 +2758,7 @@ class _IncomingFriendRequestsBadge extends StatelessWidget {
             vertical: profileScaled(context, 3, min: 2, max: 4),
           ),
           decoration: AppBoxDecoration(
-            color: AppPalette.primary,
+            color: context.profileColors.primary,
             borderRadius: AppBorderRadius.circular(
               profileScaled(context, 999, min: 999, max: 999),
             ),
@@ -2697,7 +2769,7 @@ class _IncomingFriendRequestsBadge extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.white,
+              color: context.profileColors.white,
               fontSize: profileScaled(context, 11, min: 10, max: 12),
               fontWeight: FontWeight.w900,
             ),
@@ -2807,7 +2879,7 @@ class _ForeignRecentActivitiesSection extends StatelessWidget {
               icon: const Icon(Icons.arrow_forward_rounded),
               label: Text(l10n.profileViewAllActivities),
               style: TextButton.styleFrom(
-                foregroundColor: AppPalette.primary,
+                foregroundColor: context.profileColors.primary,
                 padding: AppEdgeInsets.symmetric(
                   horizontal: profileScaled(context, 10, min: 8, max: 12),
                   vertical: profileScaled(context, 8, min: 6, max: 8),
@@ -2920,7 +2992,7 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
               icon: const Icon(Icons.arrow_forward_rounded),
               label: Text(l10n.profileViewAllStories),
               style: TextButton.styleFrom(
-                foregroundColor: AppPalette.primary,
+                foregroundColor: context.profileColors.primary,
                 padding: AppEdgeInsets.symmetric(
                   horizontal: profileScaled(context, 10, min: 8, max: 12),
                   vertical: profileScaled(context, 8, min: 6, max: 8),
@@ -3275,15 +3347,17 @@ class _ProfileActivityReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
-                backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+                backgroundColor: context.profileColors.primary.withValues(
+                  alpha: 0.16,
+                ),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
-                        style: const AppTextStyle(
-                          color: AppPalette.primary,
+                        style: AppTextStyle(
+                          color: context.profileColors.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -3299,7 +3373,7 @@ class _ProfileActivityReviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.profileColors.textPrimary,
                         fontSize: profileScaled(context, 14, min: 13, max: 15),
                         fontWeight: FontWeight.w800,
                       ),
@@ -3328,7 +3402,7 @@ class _ProfileActivityReviewCard extends StatelessWidget {
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: context.profileColors.textPrimary,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 height: 1.42,
               ),
@@ -3385,15 +3459,17 @@ class _ProfileGuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
-                backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+                backgroundColor: context.profileColors.primary.withValues(
+                  alpha: 0.16,
+                ),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
-                        style: const AppTextStyle(
-                          color: AppPalette.primary,
+                        style: AppTextStyle(
+                          color: context.profileColors.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -3409,7 +3485,7 @@ class _ProfileGuideReviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.profileColors.textPrimary,
                         fontSize: profileScaled(context, 14, min: 13, max: 15),
                         fontWeight: FontWeight.w800,
                       ),
@@ -3437,7 +3513,7 @@ class _ProfileGuideReviewCard extends StatelessWidget {
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.profileColors.textPrimary,
               fontSize: profileScaled(context, 14, min: 13, max: 15),
               height: 1.42,
             ),
@@ -3492,15 +3568,17 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
-                backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+                backgroundColor: context.profileColors.primary.withValues(
+                  alpha: 0.16,
+                ),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
-                        style: const AppTextStyle(
-                          color: AppPalette.primary,
+                        style: AppTextStyle(
+                          color: context.profileColors.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -3513,7 +3591,7 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.profileColors.textPrimary,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     fontWeight: FontWeight.w800,
                   ),
@@ -3530,7 +3608,7 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: context.profileColors.textPrimary,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 height: 1.42,
               ),
@@ -3560,7 +3638,7 @@ class _ProfileReviewRating extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: context.profileColors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -3573,14 +3651,14 @@ class _ProfileReviewRating extends StatelessWidget {
           children: [
             Icon(
               Icons.star_rounded,
-              color: AppPalette.primary,
+              color: context.profileColors.primary,
               size: profileScaled(context, 15, min: 14, max: 16),
             ),
             SizedBox(width: profileScaled(context, 3, min: 2, max: 4)),
             Text(
               value.toStringAsFixed(1),
               style: AppTextStyle(
-                color: AppPalette.primary,
+                color: context.profileColors.primary,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w900,
               ),
@@ -3665,7 +3743,7 @@ class _ProfileMenuTile extends StatelessWidget {
                   width: profileScaled(context, 44, min: 40, max: 48),
                   height: profileScaled(context, 44, min: 40, max: 48),
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(
+                    color: context.profileColors.primary.withValues(
                       alpha: effectiveDisabled ? 0.06 : 0.12,
                     ),
                     shape: BoxShape.circle,
@@ -3674,7 +3752,7 @@ class _ProfileMenuTile extends StatelessWidget {
                     icon,
                     color: effectiveDisabled
                         ? profileDisabled
-                        : AppPalette.primary,
+                        : context.profileColors.primary,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),
@@ -3687,7 +3765,7 @@ class _ProfileMenuTile extends StatelessWidget {
                         style: AppTextStyle(
                           color: effectiveDisabled
                               ? profileDisabled
-                              : AppPalette.textPrimary,
+                              : context.profileColors.textPrimary,
                           fontSize: profileScaled(
                             context,
                             17,
@@ -3759,7 +3837,7 @@ class _PlaceholderShowcaseCard extends StatelessWidget {
             width: profileScaled(context, 46, min: 40, max: 48),
             height: profileScaled(context, 46, min: 40, max: 48),
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.04),
+              color: context.profileColors.white.withValues(alpha: 0.04),
               borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 14, min: 12, max: 14),
               ),

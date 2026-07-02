@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/feed/data/community_moderation_api.dart';
@@ -7,6 +9,24 @@ import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 
 void main() {
+  test('community moderation screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/features/feed/presentation/community_moderation_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.background'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.surfaceHigh'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, contains('colors.textSecondary'));
+    expect(source, contains('colors.border'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   testWidgets('loads moderation queue and approves a pending story', (
     tester,
   ) async {

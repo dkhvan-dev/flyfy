@@ -31,6 +31,66 @@ import 'widgets/story_metadata_panel.dart';
 import 'widgets/story_publish_panel.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+final class _StoryEditorColors {
+  const _StoryEditorColors._(this.colors);
+
+  final AppColors colors;
+
+  static _StoryEditorColors of(BuildContext context) {
+    return _StoryEditorColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get border => colors.border;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+
+  Color get quickPostPanelSurface => colors.surfaceRaised;
+  Color get quickPostPanelBorder => colors.border;
+  Color get quickPostInputSurface => colors.surface;
+  Color get quickPostChipSurface => colors.surface;
+  Color get quickPostSelectedChipSurface => colors.primaryContainer;
+  Color get quickPostSelectedChipText => colors.textPrimary;
+  Color get quickPostThumbnailSurface => colors.surfaceHigh;
+
+  Color get amberLight16 => colors.primarySoft;
+  Color get warmInk63 => colors.backgroundDeep;
+  Color get warmSurface21 => colors.surface;
+  Color get warmSurface28 => colors.surfaceRaised;
+}
+
+extension _StoryEditorColorContext on BuildContext {
+  _StoryEditorColors get storyEditorColors => _StoryEditorColors.of(this);
+}
+
+List<BoxShadow>? _storyEditorDarkThemeShadow(
+  BuildContext context, {
+  required double alpha,
+  required double blurRadius,
+  required Offset offset,
+}) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return null;
+  }
+
+  return [
+    BoxShadow(
+      color: context.storyEditorColors.black.withValues(alpha: alpha),
+      blurRadius: blurRadius,
+      offset: offset,
+    ),
+  ];
+}
+
 enum StoryEditorImagePickPurpose { cover, inlineImage, gallery }
 
 enum StoryEditorImagePickFailureReason { tooLarge, unsupported, failed }
@@ -406,7 +466,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
               if (_isLoadingStory || state.userId.trim().isEmpty) {
                 return Scaffold(
                   body: DecoratedBox(
-                    decoration: storyScreenBackground(),
+                    decoration: storyScreenBackground(context),
                     child: SafeArea(
                       child: Center(child: Text(l10n.storyEditorLoading)),
                     ),
@@ -416,7 +476,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
               if (_loadFailed) {
                 return Scaffold(
                   body: DecoratedBox(
-                    decoration: storyScreenBackground(),
+                    decoration: storyScreenBackground(context),
                     child: SafeArea(
                       child: Center(
                         child: Padding(
@@ -462,7 +522,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
                     },
                   ),
                   body: DecoratedBox(
-                    decoration: storyScreenBackground(),
+                    decoration: storyScreenBackground(context),
                     child: SafeArea(
                       top: false,
                       bottom: false,
@@ -1079,7 +1139,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.storyEditorColors.transparent,
       useSafeArea: true,
       builder: (context) {
         return Theme(
@@ -1154,7 +1214,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.storyEditorColors.transparent,
       builder: (context) => const _RouteReferencePickerSheet(),
     );
     if (route == null || !mounted) return;
@@ -1588,7 +1648,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.storyEditorColors.transparent,
       useSafeArea: true,
       builder: (context) {
         return Theme(
@@ -1759,18 +1819,23 @@ class _RouteReferencePickerSheetState
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
+              colors: [
+                context.storyEditorColors.warmSurface21,
+                context.storyEditorColors.warmInk63,
+              ],
             ),
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
+            border: Border.all(
+              color: context.storyEditorColors.white.withValues(alpha: 0.04),
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.36),
+                color: context.storyEditorColors.black.withValues(alpha: 0.36),
                 blurRadius: adaptive.scale(30),
                 offset: Offset(0, adaptive.scale(-8)),
               ),
@@ -1806,9 +1871,9 @@ class _RouteReferencePickerSheetState
                           .toList(growable: false);
                       if (snapshot.connectionState != ConnectionState.done &&
                           routes.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: CircularProgressIndicator(
-                            color: AppPalette.primary,
+                            color: context.storyEditorColors.primary,
                           ),
                         );
                       }
@@ -1885,7 +1950,11 @@ class _RouteReferencePickerStateView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.primary, size: adaptive.scale(34)),
+            Icon(
+              icon,
+              color: context.storyEditorColors.primary,
+              size: adaptive.scale(34),
+            ),
             SizedBox(height: adaptive.scale(12)),
             Text(
               title,
@@ -1900,8 +1969,8 @@ class _RouteReferencePickerStateView extends StatelessWidget {
               FilledButton(
                 onPressed: onAction,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.black,
+                  backgroundColor: context.storyEditorColors.primary,
+                  foregroundColor: context.storyEditorColors.textPrimary,
                 ),
                 child: Text(actionLabel!),
               ),
@@ -1926,16 +1995,16 @@ class _RouteReferencePickerTile extends StatelessWidget {
     final radius = AppBorderRadius.circular(adaptive.radius(18));
     final description = (route.description ?? '').trim();
     return Material(
-      color: AppPalette.transparent,
+      color: context.storyEditorColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
         child: Ink(
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface28,
+            color: context.storyEditorColors.warmSurface28,
             borderRadius: radius,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.13),
+              color: context.storyEditorColors.primary.withValues(alpha: 0.13),
             ),
           ),
           child: Padding(
@@ -1950,14 +2019,18 @@ class _RouteReferencePickerTile extends StatelessWidget {
                   height: adaptive.scale(42),
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.primary.withValues(alpha: 0.13),
+                    color: context.storyEditorColors.primary.withValues(
+                      alpha: 0.13,
+                    ),
                     border: Border.all(
-                      color: AppPalette.primary.withValues(alpha: 0.22),
+                      color: context.storyEditorColors.primary.withValues(
+                        alpha: 0.22,
+                      ),
                     ),
                   ),
                   child: Icon(
                     Icons.route_rounded,
-                    color: AppPalette.primary,
+                    color: context.storyEditorColors.primary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -2027,7 +2100,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
                 SizedBox(width: adaptive.scale(8)),
                 Icon(
                   Icons.add_rounded,
-                  color: AppPalette.primary,
+                  color: context.storyEditorColors.primary,
                   size: adaptive.scale(22),
                 ),
               ],
@@ -2050,7 +2123,7 @@ class _RoutePickerMetricChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: context.storyEditorColors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
       ),
       child: Padding(
@@ -2061,12 +2134,16 @@ class _RoutePickerMetricChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.primary, size: adaptive.scale(13)),
+            Icon(
+              icon,
+              color: context.storyEditorColors.primary,
+              size: adaptive.scale(13),
+            ),
             SizedBox(width: adaptive.scale(5)),
             Text(
               label,
               style: AppTextStyle(
-                color: AppPalette.amberLight16,
+                color: context.storyEditorColors.amberLight16,
                 fontSize: adaptive.scale(11),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -2105,7 +2182,7 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
     return Positioned.fill(
       key: const ValueKey('story-editor-submission-lock'),
       child: ColoredBox(
-        color: AppPalette.black.withValues(alpha: 0.42),
+        color: context.storyEditorColors.black.withValues(alpha: 0.42),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -2116,11 +2193,15 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
                 color: StoryPalette.surfaceRaised,
                 borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.20),
+                  color: context.storyEditorColors.primary.withValues(
+                    alpha: 0.20,
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppPalette.black.withValues(alpha: 0.28),
+                    color: context.storyEditorColors.black.withValues(
+                      alpha: 0.28,
+                    ),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
@@ -2136,8 +2217,8 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
                   children: [
                     SizedBox.square(
                       dimension: adaptive.scale(22, minFactor: 0.9),
-                      child: const CircularProgressIndicator(
-                        color: AppPalette.primary,
+                      child: CircularProgressIndicator(
+                        color: context.storyEditorColors.primary,
                         strokeWidth: 2.4,
                       ),
                     ),
@@ -2285,9 +2366,11 @@ class _StoryEditorPostModeSelector extends StatelessWidget {
     return DecoratedBox(
       key: const ValueKey('story-editor-post-mode-selector'),
       decoration: AppBoxDecoration(
-        color: StoryPalette.surface,
+        color: context.storyEditorColors.quickPostPanelSurface,
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(
+          color: context.storyEditorColors.quickPostPanelBorder,
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
@@ -2297,7 +2380,7 @@ class _StoryEditorPostModeSelector extends StatelessWidget {
             Text(
               l10n.communityPostModeSelectorLabel,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppPalette.primary,
+                color: context.storyEditorColors.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -2313,20 +2396,22 @@ class _StoryEditorPostModeSelector extends StatelessWidget {
                     selected: key == selectedPostProfileKey,
                     showCheckmark: false,
                     onSelected: (_) => onSelected(key),
-                    backgroundColor: StoryPalette.surfaceRaised.withValues(
-                      alpha: 0.72,
-                    ),
-                    selectedColor: AppPalette.primary.withValues(alpha: 0.22),
+                    backgroundColor:
+                        context.storyEditorColors.quickPostChipSurface,
+                    selectedColor:
+                        context.storyEditorColors.quickPostSelectedChipSurface,
                     side: BorderSide(
                       color: key == selectedPostProfileKey
-                          ? AppPalette.primary
-                          : AppPalette.primary.withValues(alpha: 0.16),
+                          ? context.storyEditorColors.primary
+                          : context.storyEditorColors.quickPostPanelBorder,
                     ),
                     labelStyle: Theme.of(context).textTheme.labelLarge
                         ?.copyWith(
                           color: key == selectedPostProfileKey
-                              ? AppPalette.primary
-                              : StoryPalette.textSoft,
+                              ? context
+                                    .storyEditorColors
+                                    .quickPostSelectedChipText
+                              : context.storyEditorColors.textSecondary,
                           fontWeight: FontWeight.w800,
                         ),
                     shape: RoundedRectangleBorder(
@@ -2359,16 +2444,17 @@ class _QuickPostComposer extends StatelessWidget {
     return DecoratedBox(
       key: const ValueKey('quick-post-composer'),
       decoration: AppBoxDecoration(
-        color: StoryPalette.surface,
+        color: context.storyEditorColors.quickPostPanelSurface,
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        border: Border.all(
+          color: context.storyEditorColors.quickPostPanelBorder,
+        ),
+        boxShadow: _storyEditorDarkThemeShadow(
+          context,
+          alpha: 0.18,
+          blurRadius: 24,
+          offset: const Offset(0, 14),
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
@@ -2378,7 +2464,7 @@ class _QuickPostComposer extends StatelessWidget {
             Text(
               l10n.storyEditorQuickPostTitle,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: StoryPalette.text,
+                color: context.storyEditorColors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -2386,7 +2472,7 @@ class _QuickPostComposer extends StatelessWidget {
             Text(
               l10n.storyEditorQuickPostSubtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: StoryPalette.textSoft,
+                color: context.storyEditorColors.textSecondary,
                 height: 1.35,
               ),
             ),
@@ -2403,32 +2489,36 @@ class _QuickPostComposer extends StatelessWidget {
               textInputAction: TextInputAction.newline,
               onChanged: onChanged,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: StoryPalette.text,
+                color: context.storyEditorColors.textPrimary,
                 height: 1.35,
               ),
               decoration: AppInputDecoration(
                 hintText: l10n.storyEditorQuickPostHint,
                 hintStyle: AppTextStyle(
-                  color: StoryPalette.textMuted.withValues(alpha: 0.82),
+                  color: context.storyEditorColors.textMuted,
                 ),
                 filled: true,
-                fillColor: StoryPalette.surfaceRaised.withValues(alpha: 0.72),
-                counterStyle: AppTextStyle(color: StoryPalette.textMuted),
+                fillColor: context.storyEditorColors.quickPostInputSurface,
+                counterStyle: AppTextStyle(
+                  color: context.storyEditorColors.textMuted,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.08),
+                    color: context.storyEditorColors.quickPostPanelBorder,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.08),
+                    color: context.storyEditorColors.quickPostPanelBorder,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppPalette.primary),
+                  borderSide: BorderSide(
+                    color: context.storyEditorColors.primary,
+                  ),
                 ),
               ),
             ),
@@ -2476,9 +2566,11 @@ class _QuickPostMediaPanel extends StatelessWidget {
     return DecoratedBox(
       key: const ValueKey('quick-post-media-panel'),
       decoration: AppBoxDecoration(
-        color: StoryPalette.surface,
+        color: context.storyEditorColors.quickPostPanelSurface,
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(
+          color: context.storyEditorColors.quickPostPanelBorder,
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
@@ -2491,7 +2583,7 @@ class _QuickPostMediaPanel extends StatelessWidget {
                   child: Text(
                     l10n.storyEditorChecklistMedia,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: StoryPalette.text,
+                      color: context.storyEditorColors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -2499,7 +2591,7 @@ class _QuickPostMediaPanel extends StatelessWidget {
                 FilledButton.icon(
                   key: const ValueKey('quick-post-add-photo'),
                   onPressed: onAddPhoto,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  icon: Icon(Icons.add_photo_alternate_outlined),
                   label: Text(l10n.storyInlineImageAddAction),
                 ),
               ],
@@ -2509,7 +2601,7 @@ class _QuickPostMediaPanel extends StatelessWidget {
               Text(
                 l10n.storyContinueSectionLabel,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: StoryPalette.textSoft,
+                  color: context.storyEditorColors.textSecondary,
                   height: 1.35,
                 ),
               ),
@@ -2568,12 +2660,12 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
       width: 108,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: StoryPalette.surfaceRaised,
+          color: context.storyEditorColors.quickPostThumbnailSurface,
           borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
             color: isCover
-                ? AppPalette.primary.withValues(alpha: 0.62)
-                : AppPalette.white.withValues(alpha: 0.08),
+                ? context.storyEditorColors.primary.withValues(alpha: 0.62)
+                : context.storyEditorColors.quickPostPanelBorder,
           ),
         ),
         child: ClipRRect(
@@ -2584,10 +2676,10 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
               if (preview != null)
                 Image(image: preview, fit: BoxFit.cover)
               else
-                const Center(
+                Center(
                   child: Icon(
                     Icons.image_outlined,
-                    color: AppPalette.primary,
+                    color: context.storyEditorColors.primary,
                     size: 30,
                   ),
                 ),
@@ -2597,8 +2689,8 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppPalette.black.withValues(alpha: 0.10),
-                      AppPalette.black.withValues(alpha: 0.58),
+                      context.storyEditorColors.black.withValues(alpha: 0.10),
+                      context.storyEditorColors.black.withValues(alpha: 0.58),
                     ],
                   ),
                 ),
@@ -2615,10 +2707,12 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                   ),
                   padding: AppEdgeInsets.zero,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppPalette.black.withValues(alpha: 0.48),
-                    foregroundColor: AppPalette.white,
+                    backgroundColor: context.storyEditorColors.black.withValues(
+                      alpha: 0.48,
+                    ),
+                    foregroundColor: context.storyEditorColors.white,
                   ),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded),
                 ),
               ),
               Positioned(
@@ -2628,21 +2722,21 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                 child: Row(
                   children: [
                     if (isUploading)
-                      const SizedBox(
+                      SizedBox(
                         width: 14,
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppPalette.primary,
+                          color: context.storyEditorColors.primary,
                         ),
                       )
                     else if (isFailed)
                       GestureDetector(
                         onTap: onRetry,
-                        child: const Icon(
+                        child: Icon(
                           Icons.refresh_rounded,
                           size: 18,
-                          color: AppPalette.primary,
+                          color: context.storyEditorColors.primary,
                         ),
                       )
                     else
@@ -2651,7 +2745,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                             ? Icons.image_rounded
                             : Icons.check_circle_rounded,
                         size: 16,
-                        color: AppPalette.primary,
+                        color: context.storyEditorColors.primary,
                       ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -2662,7 +2756,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppPalette.white,
+                          color: context.storyEditorColors.white,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -2695,7 +2789,7 @@ class _StoryEditorAppBar extends StatelessWidget
   final VoidCallback onTogglePreview;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(48);
 
   @override
   Widget build(BuildContext context) {
@@ -2707,24 +2801,33 @@ class _StoryEditorAppBar extends StatelessWidget
         : l10n.storyEditorPreviewMode;
 
     return AppBar(
-      backgroundColor: StoryPalette.backgroundTop,
-      surfaceTintColor: AppPalette.transparent,
-      foregroundColor: StoryPalette.text,
+      toolbarHeight: 48,
+      backgroundColor: context.storyEditorColors.surface,
+      surfaceTintColor: context.storyEditorColors.transparent,
+      foregroundColor: context.storyEditorColors.textPrimary,
       automaticallyImplyLeading: false,
+      centerTitle: true,
+      leadingWidth: 56,
+      shape: Border(
+        bottom: BorderSide(color: context.storyEditorColors.border),
+      ),
       leading: IconButton(
         key: const ValueKey('story-editor-back-button'),
         tooltip: MaterialLocalizations.of(context).backButtonTooltip,
         onPressed: isLocked ? null : onBack,
-        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
       ),
-      titleSpacing: StoryEditorSpacing.md,
+      titleSpacing: 0,
       title: Text(
         title,
+        textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          color: StoryPalette.text,
-          fontWeight: FontWeight.w800,
+        style: AppTextStyle(
+          color: context.storyEditorColors.textPrimary,
+          fontSize: compact ? 18 : 20,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
         ),
       ),
       actions: [
@@ -2746,12 +2849,12 @@ class _StoryEditorAppBar extends StatelessWidget
                   segments: [
                     ButtonSegment(
                       value: false,
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: Icon(Icons.edit_outlined),
                       label: Text(l10n.storyEditorEditMode),
                     ),
                     ButtonSegment(
                       value: true,
-                      icon: const Icon(Icons.visibility_outlined),
+                      icon: Icon(Icons.visibility_outlined),
                       label: Text(l10n.storyEditorPreviewMode),
                     ),
                   ],
@@ -2915,18 +3018,23 @@ class _StoryTemplateConflictSheet extends StatelessWidget {
         child: DecoratedBox(
           key: const ValueKey('story-template-conflict-sheet-chrome'),
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
+              colors: [
+                context.storyEditorColors.warmSurface21,
+                context.storyEditorColors.warmInk63,
+              ],
             ),
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
+            border: Border.all(
+              color: context.storyEditorColors.white.withValues(alpha: 0.04),
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.36),
+                color: context.storyEditorColors.black.withValues(alpha: 0.36),
                 blurRadius: adaptive.scale(30),
                 offset: Offset(0, adaptive.scale(-8)),
               ),
@@ -3028,16 +3136,16 @@ class _TemplateConflictOption extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     final radius = AppBorderRadius.circular(adaptive.radius(18));
     return Material(
-      color: AppPalette.transparent,
+      color: context.storyEditorColors.transparent,
       child: InkWell(
         borderRadius: radius,
         onTap: onTap,
         child: Ink(
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface28,
+            color: context.storyEditorColors.warmSurface28,
             borderRadius: radius,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.13),
+              color: context.storyEditorColors.primary.withValues(alpha: 0.13),
             ),
           ),
           child: Padding(
@@ -3052,14 +3160,18 @@ class _TemplateConflictOption extends StatelessWidget {
                   height: adaptive.scale(42),
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.primary.withValues(alpha: 0.13),
+                    color: context.storyEditorColors.primary.withValues(
+                      alpha: 0.13,
+                    ),
                     border: Border.all(
-                      color: AppPalette.primary.withValues(alpha: 0.22),
+                      color: context.storyEditorColors.primary.withValues(
+                        alpha: 0.22,
+                      ),
                     ),
                   ),
                   child: Icon(
                     icon,
-                    color: AppPalette.primary,
+                    color: context.storyEditorColors.primary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -3098,7 +3210,7 @@ class _TemplateConflictOption extends StatelessWidget {
                 SizedBox(width: adaptive.scale(8)),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: AppPalette.primary,
+                  color: context.storyEditorColors.primary,
                   size: adaptive.scale(22),
                 ),
               ],
@@ -3165,7 +3277,9 @@ class _StoryEditorPreviewPage extends StatelessWidget {
                   decoration: AppBoxDecoration(
                     color: StoryPalette.surfaceRaised,
                     border: Border.all(
-                      color: AppPalette.primary.withValues(alpha: 0.14),
+                      color: context.storyEditorColors.primary.withValues(
+                        alpha: 0.14,
+                      ),
                     ),
                   ),
                   child: coverImage == null
@@ -3248,9 +3362,11 @@ class _PreviewMetaChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: context.storyEditorColors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(
+          color: context.storyEditorColors.primary.withValues(alpha: 0.18),
+        ),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(
@@ -3260,7 +3376,11 @@ class _PreviewMetaChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: adaptive.scale(15), color: AppPalette.primary),
+            Icon(
+              icon,
+              size: adaptive.scale(15),
+              color: context.storyEditorColors.primary,
+            ),
             SizedBox(width: adaptive.scale(6)),
             Text(
               label,
@@ -3289,9 +3409,11 @@ class _PreviewTagChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: context.storyEditorColors.white.withValues(alpha: 0.06),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: context.storyEditorColors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(

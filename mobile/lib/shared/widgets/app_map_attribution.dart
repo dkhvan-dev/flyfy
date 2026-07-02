@@ -34,7 +34,7 @@ class AppMapAttribution extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
 
     return SafeArea(
@@ -44,17 +44,18 @@ class AppMapAttribution extends StatelessWidget {
         child: Padding(
           padding: padding,
           child: Material(
-            color: AppPalette.transparent,
+            color: colors.transparent,
             child: InkWell(
               borderRadius: AppBorderRadius.circular(999),
               onTap: () => _showAttributionSheet(context),
               child: Ink(
                 decoration: AppBoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.92),
+                  color: colors.surface.withValues(alpha: 0.92),
                   borderRadius: AppBorderRadius.circular(999),
+                  border: Border.all(color: colors.borderSoft),
                   boxShadow: [
                     BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.14),
+                      color: colors.black.withValues(alpha: 0.14),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -70,12 +71,9 @@ class AppMapAttribution extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     semanticsLabel: l10n.mapAttributionSheetTitle,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.76,
-                      ),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0,
+                    style: AppTypography.captionStyle.copyWith(
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -94,7 +92,7 @@ class AppMapAttribution extends StatelessWidget {
       showDragHandle: true,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: AppDesignSystem.colorsFor(context).surface,
       builder: (sheetContext) {
         return _MapAttributionSheet(
           inflapMapUri: _inflapMapUri,
@@ -122,7 +120,7 @@ class _MapAttributionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
@@ -138,15 +136,16 @@ class _MapAttributionSheet extends StatelessWidget {
         children: [
           Text(
             l10n.mapAttributionSheetTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: AppTypography.titleStyle.copyWith(
+              color: colors.textPrimary,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.mapAttributionSheetSubtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+            style: AppTypography.bodyStyle.copyWith(
+              color: colors.textSecondary,
               height: 1.35,
             ),
           ),
@@ -190,15 +189,13 @@ class _MapAttributionSourceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const AppEdgeInsets.only(bottom: 8),
       child: Material(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.42,
-        ),
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(8),
         child: InkWell(
           borderRadius: AppBorderRadius.circular(8),
@@ -220,10 +217,8 @@ class _MapAttributionSourceRow extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.62,
-                          ),
+                        style: AppTypography.captionStyle.copyWith(
+                          color: colors.textMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -232,8 +227,8 @@ class _MapAttributionSourceRow extends StatelessWidget {
                         value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
+                        style: AppTypography.bodyStyle.copyWith(
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -245,7 +240,7 @@ class _MapAttributionSourceRow extends StatelessWidget {
                   child: Icon(
                     Icons.open_in_new_rounded,
                     size: 18,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
+                    color: colors.textMuted,
                   ),
                 ),
               ],

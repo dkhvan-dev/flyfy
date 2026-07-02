@@ -38,6 +38,7 @@ class CommunityListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final title = (displayTitle ?? feedCommunityDisplayTitle(community, l10n))
         .trim();
     final subtitle =
@@ -66,7 +67,7 @@ class CommunityListItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppPalette.textPrimary,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -80,7 +81,7 @@ class CommunityListItem extends StatelessWidget {
                       maxLines: compact ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppPalette.textCoolSecondary,
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -94,9 +95,7 @@ class CommunityListItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppPalette.textCoolSecondary.withValues(
-                          alpha: 0.86,
-                        ),
+                        color: colors.textMuted,
                         height: 1.12,
                       ),
                     ),
@@ -115,19 +114,20 @@ class CommunityListItem extends StatelessWidget {
                             ? null
                             : () => onToggle(community),
                         style: IconButton.styleFrom(
-                          foregroundColor: AppPalette.primary,
-                          backgroundColor: AppPalette.primary.withValues(
+                          foregroundColor: colors.primary,
+                          backgroundColor: colors.primary.withValues(
                             alpha: 0.12,
                           ),
                           minimumSize: const Size.square(36),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: isUpdating
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  color: colors.textPrimary,
                                 ),
                               )
                             : const Icon(Icons.add_circle_outline_rounded),
@@ -138,16 +138,17 @@ class CommunityListItem extends StatelessWidget {
                             : () => onToggle(community),
                         style: TextButton.styleFrom(
                           foregroundColor: community.followedByViewer
-                              ? AppPalette.textCoolSecondary
-                              : AppPalette.primary,
+                              ? colors.textSecondary
+                              : colors.primary,
                           visualDensity: VisualDensity.compact,
                         ),
                         child: isUpdating
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  color: colors.textPrimary,
                                 ),
                               )
                             : Text(
@@ -163,7 +164,7 @@ class CommunityListItem extends StatelessWidget {
                     key: ValueKey('moderate-${community.id}'),
                     onPressed: () => onModerationOpen!(community),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppPalette.primaryLight,
+                      foregroundColor: colors.secondary,
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.shield_outlined, size: 16),
@@ -190,17 +191,18 @@ class _CommunityAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final initial = title.trim().isEmpty ? 'F' : title.trim()[0].toUpperCase();
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
-      foregroundColor: AppPalette.primary,
+      backgroundColor: colors.primary.withValues(alpha: 0.16),
+      foregroundColor: colors.primary,
       child: Text(
         initial,
         maxLines: 1,
         overflow: TextOverflow.clip,
-        style: const AppTextStyle(fontWeight: FontWeight.w800),
+        style: AppTextStyle(color: colors.primary, fontWeight: FontWeight.w800),
       ),
     );
   }

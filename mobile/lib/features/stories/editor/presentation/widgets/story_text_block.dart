@@ -88,6 +88,7 @@ class _StoryTextBlockState extends State<StoryTextBlock> {
     final type = widget.block.type;
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final label = storyBlockTypeLabel(l10n, type);
     final textStyle = switch (type) {
       StoryBlockType.heading => theme.textTheme.headlineSmall?.copyWith(
@@ -105,9 +106,7 @@ class _StoryTextBlockState extends State<StoryTextBlock> {
     return DecoratedBox(
       decoration: storyEditorPanelDecoration(context).copyWith(
         border: Border.all(
-          color: widget.selected
-              ? AppPalette.primary
-              : AppPalette.outlineOverlay,
+          color: widget.selected ? colors.primary : colors.borderSoft,
         ),
       ),
       child: Padding(
@@ -196,6 +195,7 @@ class _StoryTextEditingController extends TextEditingController {
   }) {
     final text = value.text;
     final baseStyle = style ?? DefaultTextStyle.of(context).style;
+    final colors = AppDesignSystem.colorsFor(context);
     final composing = value.composing;
     final hasComposing =
         withComposing &&
@@ -231,7 +231,14 @@ class _StoryTextEditingController extends TextEditingController {
       children.add(
         TextSpan(
           text: text.substring(start, end),
-          style: _styleFor(baseStyle, activeMarks, hasComposing, start, end),
+          style: _styleFor(
+            baseStyle,
+            activeMarks,
+            colors.primary,
+            hasComposing,
+            start,
+            end,
+          ),
         ),
       );
     }
@@ -255,6 +262,7 @@ class _StoryTextEditingController extends TextEditingController {
   TextStyle _styleFor(
     TextStyle base,
     Iterable<StoryInlineMark> marks,
+    Color accentColor,
     bool hasComposing,
     int start,
     int end,
@@ -276,7 +284,7 @@ class _StoryTextEditingController extends TextEditingController {
         ),
         StoryInlineMarkType.underline => next,
         StoryInlineMarkType.strikethrough => next,
-        StoryInlineMarkType.link => next.copyWith(color: AppPalette.primary),
+        StoryInlineMarkType.link => next.copyWith(color: accentColor),
       };
       switch (mark.type) {
         case StoryInlineMarkType.underline:
@@ -298,7 +306,7 @@ class _StoryTextEditingController extends TextEditingController {
       next = next.copyWith(
         decoration: TextDecoration.combine(decorations),
         decorationColor: decorations.contains(TextDecoration.underline)
-            ? AppPalette.primary
+            ? accentColor
             : next.decorationColor,
       );
     }

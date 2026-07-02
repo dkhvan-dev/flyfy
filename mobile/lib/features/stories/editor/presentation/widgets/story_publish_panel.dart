@@ -28,6 +28,7 @@ class StoryPublishPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final errors = state.publishValidation.errors;
     final checks = _publishChecklistItems(
       l10n,
@@ -89,7 +90,7 @@ class StoryPublishPanel extends StatelessWidget {
                 state.conflict.message ?? l10n.storyEditorConflictFallback,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppPalette.primary),
+                ).textTheme.bodyMedium?.copyWith(color: colors.warning),
               ),
             ],
             if (saveStatusMessage != null) ...[
@@ -269,12 +270,13 @@ class _SaveStatusMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final color = switch (phase) {
-      StoryEditorSavePhase.saved => AppPalette.success,
-      StoryEditorSavePhase.failed ||
-      StoryEditorSavePhase.conflict => AppPalette.primary,
-      StoryEditorSavePhase.saving => AppPalette.textCoolSecondary,
-      StoryEditorSavePhase.idle => AppPalette.textCoolSecondary,
+      StoryEditorSavePhase.saved => colors.success,
+      StoryEditorSavePhase.failed => colors.danger,
+      StoryEditorSavePhase.conflict => colors.warning,
+      StoryEditorSavePhase.saving => colors.textSecondary,
+      StoryEditorSavePhase.idle => colors.textSecondary,
     };
     final icon = switch (phase) {
       StoryEditorSavePhase.saved => Icons.check_circle_rounded,
@@ -301,7 +303,7 @@ class _SaveStatusMessage extends StatelessWidget {
                 message,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppPalette.textPrimary),
+                ).textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
               ),
             ),
           ],
@@ -341,12 +343,13 @@ class _PublishChecklistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final colors = AppDesignSystem.colorsFor(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final stackAction = constraints.maxWidth < 340 || textScale > 1.25;
         final icon = Icon(
           complete ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-          color: complete ? AppPalette.success : AppPalette.primary,
+          color: complete ? colors.success : colors.primary,
         );
         final copy = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,9 +365,9 @@ class _PublishChecklistTile extends StatelessWidget {
               status,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppPalette.textCoolSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
             ),
           ],
         );

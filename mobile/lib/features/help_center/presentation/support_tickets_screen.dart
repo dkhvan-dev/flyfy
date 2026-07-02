@@ -14,11 +14,6 @@ import '../../../providers/chat_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../data/help_center_api.dart';
 
-const _supportBackground = AppPalette.warmInk22;
-const _supportBackgroundTop = AppPalette.warmSurface22;
-const _supportSurface = AppPalette.warmSurface12;
-const _supportSurfaceHigh = AppPalette.warmSurface55;
-const _supportAmberSoft = AppPalette.amberLight06;
 const _maxSupportAttachmentBytes = 25 * 1024 * 1024;
 const _supportTicketDetailRefreshInterval = Duration(seconds: 8);
 
@@ -702,6 +697,7 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final isCompact = mediaQuery.size.width < 600;
     final horizontalPadding = isCompact ? 18.0 : 32.0;
     final detail = _detail;
@@ -717,122 +713,125 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
         ? 98.0 + mediaQuery.padding.bottom
         : 0.0;
 
-    return Scaffold(
-      backgroundColor: _supportBackground,
-      resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          DecoratedBox(
-            decoration: const AppBoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_supportBackgroundTop, _supportBackground],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            DecoratedBox(
+              decoration: AppBoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: colors.screenGradientColors,
+                ),
               ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: CustomScrollView(
-                controller: _scrollController,
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: AppEdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      topOverlayExtent,
-                      horizontalPadding,
-                      20,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 760),
-                          child: _buildDetailContent(l10n),
+              child: SafeArea(
+                bottom: false,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: AppEdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        topOverlayExtent,
+                        horizontalPadding,
+                        20,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 760),
+                            child: _buildDetailContent(l10n),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: AppEdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      0,
-                      horizontalPadding,
-                      bottomOverlayExtent + 24,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 760),
-                          child:
-                              detail != null &&
-                                  _ticketCanShowCSAT(detail.ticket)
-                              ? _SupportTicketCSATPanel(
-                                  controller: _csatCommentController,
-                                  isSubmitting: _isSubmittingCSAT,
-                                  submitted: _hasSubmittedCSAT,
-                                  selectedRating: _selectedCSATRating,
-                                  onRate: (rating) => setState(
-                                    () => _selectedCSATRating = rating,
-                                  ),
-                                  onSubmit: _selectedCSATRating == null
-                                      ? null
-                                      : () => unawaited(
-                                          _submitCSAT(_selectedCSATRating!),
-                                        ),
-                                )
-                              : const SizedBox.shrink(),
+                    SliverPadding(
+                      padding: AppEdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        bottomOverlayExtent + 24,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 760),
+                            child:
+                                detail != null &&
+                                    _ticketCanShowCSAT(detail.ticket)
+                                ? _SupportTicketCSATPanel(
+                                    controller: _csatCommentController,
+                                    isSubmitting: _isSubmittingCSAT,
+                                    submitted: _hasSubmittedCSAT,
+                                    selectedRating: _selectedCSATRating,
+                                    onRate: (rating) => setState(
+                                      () => _selectedCSATRating = rating,
+                                    ),
+                                    onSubmit: _selectedCSATRating == null
+                                        ? null
+                                        : () => unawaited(
+                                            _submitCSAT(_selectedCSATRating!),
+                                          ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            key: const ValueKey('support-ticket-header-overlay'),
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _SupportChatHeaderDock(
-              horizontalPadding: horizontalPadding,
-              child: _SupportTicketDetailHeader(
-                l10n: l10n,
-                ticket: detail?.ticket,
-                expectedResponseNote: expectedResponseNote,
-                isClosing: _isClosing,
-                onClose: _ticketCanClose(detail?.ticket)
-                    ? () => unawaited(_closeTicket())
-                    : null,
-              ),
-            ),
-          ),
-          if (showReplyComposer)
-            Positioned(
-              key: const ValueKey('support-ticket-input-overlay'),
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _SupportChatInputDock(
-                horizontalPadding: horizontalPadding,
-                bottomInset: mediaQuery.padding.bottom,
-                child: _ReplyComposer(
-                  key: const ValueKey('support-ticket-reply-composer'),
-                  controller: _replyController,
-                  enabled: true,
-                  isSending: _isSending,
-                  isPickingAttachment: _isPickingAttachment,
-                  attachments: _pendingAttachments,
-                  hint: l10n.supportTicketReplyHint,
-                  onAttach: () => unawaited(_pickSupportAttachment()),
-                  onRemoveAttachment: _removePendingAttachment,
-                  onSend: () => unawaited(_sendReply()),
+                  ],
                 ),
               ),
             ),
-        ],
+            Positioned(
+              key: const ValueKey('support-ticket-header-overlay'),
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _SupportChatHeaderDock(
+                horizontalPadding: horizontalPadding,
+                child: _SupportTicketDetailHeader(
+                  l10n: l10n,
+                  ticket: detail?.ticket,
+                  expectedResponseNote: expectedResponseNote,
+                  isClosing: _isClosing,
+                  onClose: _ticketCanClose(detail?.ticket)
+                      ? () => unawaited(_closeTicket())
+                      : null,
+                ),
+              ),
+            ),
+            if (showReplyComposer)
+              Positioned(
+                key: const ValueKey('support-ticket-input-overlay'),
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _SupportChatInputDock(
+                  horizontalPadding: horizontalPadding,
+                  bottomInset: mediaQuery.padding.bottom,
+                  child: _ReplyComposer(
+                    key: const ValueKey('support-ticket-reply-composer'),
+                    controller: _replyController,
+                    enabled: true,
+                    isSending: _isSending,
+                    isPickingAttachment: _isPickingAttachment,
+                    attachments: _pendingAttachments,
+                    hint: l10n.supportTicketReplyHint,
+                    onAttach: () => unawaited(_pickSupportAttachment()),
+                    onRemoveAttachment: _removePendingAttachment,
+                    onSend: () => unawaited(_sendReply()),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1304,6 +1303,7 @@ class _SupportTicketDetailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return _HeaderShell(
       title: l10n.supportTicketDetailTitle,
       subtitle: ticket == null
@@ -1319,12 +1319,15 @@ class _SupportTicketDetailHeader extends StatelessWidget {
               onPressed: isClosing ? null : onClose,
               tooltip: l10n.supportTicketClose,
               icon: isClosing
-                  ? const SizedBox.square(
+                  ? SizedBox.square(
                       dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: colors.textPrimary,
+                        strokeWidth: 2,
+                      ),
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
-              color: AppPalette.primary,
+              color: colors.primary,
             ),
     );
   }
@@ -1347,6 +1350,7 @@ class _HeaderShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1359,7 +1363,7 @@ class _HeaderShell extends StatelessWidget {
             context.go('/help');
           },
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppPalette.textPrimary,
+          color: colors.textPrimary,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         ),
@@ -1372,8 +1376,8 @@ class _HeaderShell extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
                   fontSize: 28,
                   height: 1.1,
                   fontWeight: FontWeight.w900,
@@ -1383,8 +1387,8 @@ class _HeaderShell extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle,
-                style: const AppTextStyle(
-                  color: AppPalette.textCoolSecondary,
+                style: AppTextStyle(
+                  color: colors.textSecondary,
                   fontSize: 14,
                   height: 1.38,
                   letterSpacing: 0,
@@ -1394,8 +1398,8 @@ class _HeaderShell extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   supportNote!,
-                  style: const AppTextStyle(
-                    color: _supportAmberSoft,
+                  style: AppTextStyle(
+                    color: colors.primary,
                     fontSize: 13,
                     height: 1.28,
                     fontWeight: FontWeight.w700,
@@ -1452,27 +1456,28 @@ class _SupportTimelineChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Center(
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.primary.withValues(alpha: 0.14),
+          color: colors.primary.withValues(alpha: 0.14),
           borderRadius: AppBorderRadius.circular(999),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.24)),
         ),
         child: Padding(
           padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: AppPalette.primary, size: 15),
+              Icon(icon, color: colors.primary, size: 15),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -1495,6 +1500,7 @@ class _SupportEventBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final isUser = event.actorType == 'user';
     final message = supportEventMessage(l10n, event);
     final attachmentLabels = supportEventAttachmentLabels(l10n, event);
@@ -1505,12 +1511,12 @@ class _SupportEventBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 560),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: isUser ? null : _supportSurface,
+            color: isUser ? null : colors.surface,
             gradient: isUser
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppPalette.primary, AppPalette.warmMuted29],
+                    colors: [colors.primary, colors.primaryPressed],
                   )
                 : null,
             borderRadius: AppBorderRadius.only(
@@ -1521,13 +1527,14 @@ class _SupportEventBubble extends StatelessWidget {
             ),
             border: Border.all(
               color: isUser
-                  ? AppPalette.primary.withValues(alpha: 0.48)
-                  : AppPalette.primary.withValues(alpha: 0.20),
+                  ? colors.primary.withValues(alpha: 0.48)
+                  : colors.borderPrimary,
             ),
             boxShadow: [
               BoxShadow(
-                color: (isUser ? AppPalette.primary : AppPalette.black)
-                    .withValues(alpha: isUser ? 0.16 : 0.22),
+                color: (isUser ? colors.primary : colors.black).withValues(
+                  alpha: isUser ? 0.16 : 0.22,
+                ),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -1542,7 +1549,7 @@ class _SupportEventBubble extends StatelessWidget {
                 Text(
                   supportEventActorLabel(l10n, event),
                   style: AppTextStyle(
-                    color: isUser ? AppPalette.textPrimary : _supportAmberSoft,
+                    color: isUser ? colors.textPrimary : colors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1551,8 +1558,8 @@ class _SupportEventBubble extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   message,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     height: 1.35,
                     letterSpacing: 0,
@@ -1583,6 +1590,7 @@ class _SupportOutboxBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final attachmentLabels = _supportOutboxAttachmentLabels(l10n, message);
     return Align(
       alignment: Alignment.centerRight,
@@ -1590,10 +1598,10 @@ class _SupportOutboxBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 560),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppPalette.primary, AppPalette.warmMuted29],
+              colors: [colors.primary, colors.primaryPressed],
             ),
             borderRadius: const AppBorderRadius.only(
               topLeft: AppRadiusValue.circular(18),
@@ -1601,12 +1609,10 @@ class _SupportOutboxBubble extends StatelessWidget {
               bottomLeft: AppRadiusValue.circular(18),
               bottomRight: AppRadiusValue.circular(6),
             ),
-            border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.48),
-            ),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.48)),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.primary.withValues(alpha: 0.16),
+                color: colors.primary.withValues(alpha: 0.16),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -1620,8 +1626,8 @@ class _SupportOutboxBubble extends StatelessWidget {
               children: [
                 Text(
                   l10n.supportUserFallbackName,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1630,8 +1636,8 @@ class _SupportOutboxBubble extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   message.message,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     height: 1.35,
                     letterSpacing: 0,
@@ -1650,14 +1656,14 @@ class _SupportOutboxBubble extends StatelessWidget {
                   children: [
                     Icon(
                       _supportOutboxStatusIcon(message.status),
-                      color: AppPalette.textPrimary.withValues(alpha: 0.72),
+                      color: colors.textPrimary.withValues(alpha: 0.72),
                       size: 14,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       _supportOutboxStatusLabel(l10n, message.status),
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary.withValues(alpha: 0.78),
+                        color: colors.textPrimary.withValues(alpha: 0.78),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0,
@@ -1669,7 +1675,7 @@ class _SupportOutboxBubble extends StatelessWidget {
                         key: ValueKey('support-ticket-retry-${message.id}'),
                         onPressed: onRetry,
                         style: TextButton.styleFrom(
-                          foregroundColor: AppPalette.textPrimary,
+                          foregroundColor: colors.textPrimary,
                           padding: const AppEdgeInsets.symmetric(horizontal: 8),
                           minimumSize: const Size(0, 28),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1700,11 +1706,12 @@ class _SupportBubbleAttachmentChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (labels.isEmpty) return const SizedBox.shrink();
-    final foreground = isUser ? AppPalette.textPrimary : _supportAmberSoft;
+    final colors = AppDesignSystem.colorsFor(context);
+    final foreground = isUser ? colors.textPrimary : colors.primary;
     final borderColor = foreground.withValues(alpha: isUser ? 0.28 : 0.32);
     final background = isUser
-        ? AppPalette.textPrimary.withValues(alpha: 0.12)
-        : AppPalette.primary.withValues(alpha: 0.12);
+        ? colors.textPrimary.withValues(alpha: 0.12)
+        : colors.primary.withValues(alpha: 0.12);
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -1765,15 +1772,14 @@ class _SupportChatHeaderDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _supportBackground.withValues(alpha: 0.96),
-        border: Border(
-          bottom: BorderSide(color: AppPalette.primary.withValues(alpha: 0.16)),
-        ),
+        color: colors.background.withValues(alpha: 0.96),
+        border: Border(bottom: BorderSide(color: colors.borderPrimary)),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.26),
+            color: colors.black.withValues(alpha: 0.26),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -1815,15 +1821,14 @@ class _SupportChatInputDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _supportBackground.withValues(alpha: 0.96),
-        border: Border(
-          top: BorderSide(color: AppPalette.primary.withValues(alpha: 0.16)),
-        ),
+        color: colors.background.withValues(alpha: 0.96),
+        border: Border(top: BorderSide(color: colors.borderPrimary)),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.28),
+            color: colors.black.withValues(alpha: 0.28),
             blurRadius: 24,
             offset: const Offset(0, -10),
           ),
@@ -1895,22 +1900,23 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.primary.withValues(alpha: 0.14),
+          color: colors.primary.withValues(alpha: 0.14),
           borderRadius: AppBorderRadius.circular(14),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.28)),
         ),
         child: Padding(
           padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.insert_drive_file_rounded,
-                color: AppPalette.primary,
+                color: colors.primary,
                 size: 18,
               ),
               const SizedBox(width: 7),
@@ -1919,8 +1925,8 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
                   attachment.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1931,7 +1937,7 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
               Text(
                 _formatSupportAttachmentSize(attachment.bytes.lengthInBytes),
                 style: AppTextStyle(
-                  color: _supportAmberSoft.withValues(alpha: 0.72),
+                  color: colors.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
@@ -1941,11 +1947,11 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
               InkWell(
                 borderRadius: AppBorderRadius.circular(12),
                 onTap: onRemove,
-                child: const Padding(
-                  padding: AppEdgeInsets.all(3),
+                child: Padding(
+                  padding: const AppEdgeInsets.all(3),
                   child: Icon(
                     Icons.close_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: 16,
                   ),
                 ),
@@ -1995,14 +2001,15 @@ class _ReplyComposer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _supportSurfaceHigh,
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
+        border: Border.all(color: colors.borderPrimary),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.primary.withValues(alpha: 0.10),
+            color: colors.primary.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -2029,16 +2036,19 @@ class _ReplyComposer extends StatelessWidget {
                       : null,
                   tooltip: l10n.chatComposerAttachButtonLabel,
                   style: IconButton.styleFrom(
-                    foregroundColor: AppPalette.primary,
-                    disabledForegroundColor: AppPalette.primary.withValues(
+                    foregroundColor: colors.primary,
+                    disabledForegroundColor: colors.primary.withValues(
                       alpha: 0.58,
                     ),
                     minimumSize: const Size(42, 42),
                   ),
                   icon: isPickingAttachment
-                      ? const SizedBox.square(
+                      ? SizedBox.square(
                           dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.textPrimary,
+                          ),
                         )
                       : const Icon(Icons.attach_file_rounded),
                 ),
@@ -2051,15 +2061,13 @@ class _ReplyComposer extends StatelessWidget {
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.newline,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
                       letterSpacing: 0,
                     ),
                     decoration: AppInputDecoration(
                       hintText: hint,
-                      hintStyle: AppTextStyle(
-                        color: _supportAmberSoft.withValues(alpha: 0.72),
-                      ),
+                      hintStyle: AppTextStyle(color: colors.textMuted),
                       border: InputBorder.none,
                       contentPadding: const AppEdgeInsets.symmetric(
                         horizontal: 8,
@@ -2072,20 +2080,23 @@ class _ReplyComposer extends StatelessWidget {
                   key: const ValueKey('support-ticket-send-reply'),
                   onPressed: enabled && !isSending ? onSend : null,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.textPrimary,
-                    disabledBackgroundColor: AppPalette.primary.withValues(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.textPrimary,
+                    disabledBackgroundColor: colors.primary.withValues(
                       alpha: 0.34,
                     ),
-                    disabledForegroundColor: AppPalette.textPrimary.withValues(
+                    disabledForegroundColor: colors.textPrimary.withValues(
                       alpha: 0.58,
                     ),
                     minimumSize: const Size(46, 46),
                   ),
                   icon: isSending
-                      ? const SizedBox.square(
+                      ? SizedBox.square(
                           dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.textPrimary,
+                          ),
                         )
                       : const Icon(Icons.send_rounded),
                 ),
@@ -2118,24 +2129,25 @@ class _SupportTicketCSATPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     if (submitted) {
       return DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.primary.withValues(alpha: 0.14),
+          color: colors.primary.withValues(alpha: 0.14),
           borderRadius: AppBorderRadius.circular(18),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.26)),
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: AppPalette.primary),
+              Icon(Icons.check_circle_rounded, color: colors.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   l10n.supportTicketCSATThanks,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -2150,9 +2162,9 @@ class _SupportTicketCSATPanel extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _supportSurface,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(16),
@@ -2161,8 +2173,8 @@ class _SupportTicketCSATPanel extends StatelessWidget {
           children: [
             Text(
               l10n.supportTicketCSATTitle,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -2175,32 +2187,23 @@ class _SupportTicketCSATPanel extends StatelessWidget {
               enabled: !isSubmitting,
               minLines: 1,
               maxLines: 3,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
-                letterSpacing: 0,
-              ),
+              style: AppTextStyle(color: colors.textPrimary, letterSpacing: 0),
               decoration: AppInputDecoration(
                 hintText: l10n.supportTicketCSATCommentHint,
-                hintStyle: const AppTextStyle(
-                  color: AppPalette.textCoolSecondary,
-                ),
+                hintStyle: AppTextStyle(color: colors.textSecondary),
                 filled: true,
-                fillColor: AppPalette.white.withValues(alpha: 0.06),
+                fillColor: colors.surfaceHigh,
                 border: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.08),
-                  ),
+                  borderSide: BorderSide(color: colors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.08),
-                  ),
+                  borderSide: BorderSide(color: colors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppPalette.primary),
+                  borderSide: BorderSide(color: colors.primary),
                 ),
               ),
             ),
@@ -2217,27 +2220,23 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                   onPressed: isSubmitting ? null : () => onRate(rating),
                   icon: Icon(
                     isSelected ? Icons.star_rounded : Icons.star_border_rounded,
-                    color: isSubmitting
-                        ? AppPalette.textCaption
-                        : AppPalette.primary,
+                    color: isSubmitting ? colors.textDisabled : colors.primary,
                     size: 30,
                   ),
                   style: IconButton.styleFrom(
                     fixedSize: const Size(48, 48),
                     minimumSize: const Size(48, 48),
                     padding: AppInsets.none,
-                    foregroundColor: AppPalette.primary,
+                    foregroundColor: colors.primary,
                     backgroundColor: isSelected
-                        ? AppPalette.primary.withValues(alpha: 0.16)
-                        : AppPalette.primary.withValues(alpha: 0.08),
-                    disabledBackgroundColor: AppPalette.white.withValues(
-                      alpha: 0.06,
-                    ),
-                    disabledForegroundColor: AppPalette.textCaption,
+                        ? colors.primary.withValues(alpha: 0.16)
+                        : colors.primary.withValues(alpha: 0.08),
+                    disabledBackgroundColor: colors.surfaceHigh,
+                    disabledForegroundColor: colors.textDisabled,
                     side: BorderSide(
                       color: isSelected
-                          ? AppPalette.primary.withValues(alpha: 0.48)
-                          : AppPalette.primary.withValues(alpha: 0.22),
+                          ? colors.primary.withValues(alpha: 0.48)
+                          : colors.primary.withValues(alpha: 0.22),
                     ),
                   ),
                   tooltip: rating.toString(),
@@ -2253,23 +2252,21 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                     ? null
                     : onSubmit,
                 icon: isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppPalette.textPrimary,
+                          color: colors.textPrimary,
                         ),
                       )
                     : const Icon(Icons.send_rounded),
                 label: Text(l10n.supportTicketCSATSubmit),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.textPrimary,
-                  disabledBackgroundColor: AppPalette.white.withValues(
-                    alpha: 0.08,
-                  ),
-                  disabledForegroundColor: AppPalette.textCaption,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.textPrimary,
+                  disabledBackgroundColor: colors.surfaceHigh,
+                  disabledForegroundColor: colors.textDisabled,
                   minimumSize: const Size(0, 44),
                   padding: const AppEdgeInsets.symmetric(
                     horizontal: 16,
@@ -2292,18 +2289,19 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.18),
+        color: colors.primary.withValues(alpha: 0.18),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.38)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           status,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -2561,6 +2559,7 @@ class _SupportTicketSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Column(
       children: List.generate(
         4,
@@ -2568,7 +2567,7 @@ class _SupportTicketSkeleton extends StatelessWidget {
           padding: const AppEdgeInsets.only(bottom: 12),
           child: DecoratedBox(
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.055),
+              color: colors.surfaceHigh,
               borderRadius: AppBorderRadius.circular(14),
             ),
             child: const SizedBox(height: 86, width: double.infinity),
@@ -2596,23 +2595,24 @@ class _SupportTicketStateMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _supportSurface,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppPalette.primary, size: 28),
+            Icon(icon, color: colors.primary, size: 28),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: colors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -2621,8 +2621,8 @@ class _SupportTicketStateMessage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: const AppTextStyle(
-                color: AppPalette.textCoolSecondary,
+              style: AppTextStyle(
+                color: colors.textSecondary,
                 fontSize: 14,
                 height: 1.38,
                 letterSpacing: 0,
@@ -2634,12 +2634,10 @@ class _SupportTicketStateMessage extends StatelessWidget {
               icon: const Icon(Icons.support_agent_rounded),
               label: Text(actionLabel),
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.textPrimary,
-                disabledBackgroundColor: AppPalette.primary.withValues(
-                  alpha: 0.34,
-                ),
-                disabledForegroundColor: AppPalette.textPrimary.withValues(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.textPrimary,
+                disabledBackgroundColor: colors.primary.withValues(alpha: 0.34),
+                disabledForegroundColor: colors.textPrimary.withValues(
                   alpha: 0.58,
                 ),
                 minimumSize: const Size(44, 44),

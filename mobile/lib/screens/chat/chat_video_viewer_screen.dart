@@ -169,13 +169,14 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final controller = _controller;
     final initialized = controller?.value.isInitialized ?? false;
     final duration = initialized ? controller!.value.duration : Duration.zero;
     final position = initialized ? controller!.value.position : Duration.zero;
 
     return Scaffold(
-      backgroundColor: AppPalette.black,
+      backgroundColor: colors.backgroundDeep,
       body: SafeArea(
         child: Stack(
           children: [
@@ -186,13 +187,11 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
                 onVerticalDragEnd: _dismissBySwipeDown,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(
-                          color: AppPalette.primary,
-                        )
+                      ? CircularProgressIndicator(color: colors.primary)
                       : _loadFailed || !initialized
                       ? Icon(
                           Icons.movie_outlined,
-                          color: AppPalette.white.withValues(alpha: 0.48),
+                          color: colors.white.withValues(alpha: 0.48),
                           size: 54,
                         )
                       : AspectRatio(
@@ -210,9 +209,9 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.black.withValues(alpha: 0.56),
-                        AppPalette.transparent,
-                        AppPalette.black.withValues(alpha: 0.68),
+                        colors.scrim.withValues(alpha: 0.56),
+                        colors.transparent,
+                        colors.scrim.withValues(alpha: 0.68),
                       ],
                       stops: const [0, 0.42, 1],
                     ),
@@ -274,6 +273,7 @@ class _VideoProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final max = duration.inMilliseconds <= 0
         ? 1.0
         : duration.inMilliseconds.toDouble();
@@ -281,10 +281,10 @@ class _VideoProgressBar extends StatelessWidget {
 
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        activeTrackColor: AppPalette.primary,
-        inactiveTrackColor: AppPalette.white.withValues(alpha: 0.24),
-        thumbColor: AppPalette.white,
-        overlayColor: AppPalette.primary.withValues(alpha: 0.18),
+        activeTrackColor: colors.primary,
+        inactiveTrackColor: colors.white.withValues(alpha: 0.24),
+        thumbColor: colors.white,
+        overlayColor: colors.primary.withValues(alpha: 0.18),
       ),
       child: Slider(
         min: 0,
@@ -313,6 +313,8 @@ class _ViewerIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -321,10 +323,10 @@ class _ViewerIconButton extends StatelessWidget {
         height: size,
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.black.withValues(alpha: 0.46),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+          color: colors.scrim.withValues(alpha: 0.46),
+          border: Border.all(color: colors.white.withValues(alpha: 0.16)),
         ),
-        child: Icon(icon, color: AppPalette.white, size: iconSize),
+        child: Icon(icon, color: colors.white, size: iconSize),
       ),
     );
   }

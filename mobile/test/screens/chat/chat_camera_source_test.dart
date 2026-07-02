@@ -55,6 +55,35 @@ void main() {
     },
   );
 
+  test('recorded video review uses adaptive V2 colors directly', () async {
+    final reviewSource = await File(
+      'lib/screens/chat/chat_recorded_video_review_screen.dart',
+    ).readAsString();
+
+    expect(reviewSource, contains('app_design_system.dart'));
+    expect(reviewSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(reviewSource, contains('colors.backgroundDeep'));
+    expect(reviewSource, contains('colors.scrim'));
+    expect(reviewSource, contains('colors.primary'));
+    expect(reviewSource, contains('colors.white'));
+    expect(reviewSource, isNot(contains('AppPalette.')));
+  });
+
+  test('chat camera screen uses adaptive V2 colors directly', () async {
+    final source = await File(
+      'lib/screens/chat/chat_camera_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.backgroundDeep'));
+    expect(source, contains('colors.scrim'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.danger'));
+    expect(source, contains('colors.white'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test(
     'chat camera configures smoother and clearer capture settings',
     () async {

@@ -34,7 +34,10 @@ void main() {
     expect(editProfileSource, contains('_startVerifiedPhoneChange'));
     expect(editProfileSource, contains('_cancelVerifiedPhoneChange'));
     expect(editProfileSource, contains('_phoneChangeActionStyle'));
-    expect(editProfileSource, contains('foregroundColor: AppPalette.primary'));
+    expect(
+      editProfileSource,
+      contains('foregroundColor: _EditProfileColors.of(context).primary'),
+    );
     expect(editProfileSource, contains('padding: AppEdgeInsets.zero'));
     expect(editProfileSource, contains('alignment: Alignment.centerLeft'));
     expect(

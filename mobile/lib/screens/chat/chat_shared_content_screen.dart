@@ -216,7 +216,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.chatAttachmentDownloaded),
-          backgroundColor: AppPalette.warmSurface56,
+          backgroundColor: context.appColors.surfaceHigh,
         ),
       );
     } catch (_) {
@@ -284,10 +284,11 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     if (normalizedMessageId.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final action = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.warmInk55,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: AppBorderRadius.vertical(
           top: AppRadiusValue.circular(20),
@@ -300,14 +301,14 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.subdirectory_arrow_left_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                 ),
                 title: Text(
                   l10n.chatSharedGoToMessageAction,
-                  style: const AppTextStyle(
-                    color: AppPalette.orangeWash10,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -356,17 +357,18 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
   Future<bool> _confirmExternalLinkOpen(Uri uri) async {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) => AppModalDialogCard(
-        backgroundColor: AppPalette.warmInk55,
+        backgroundColor: colors.surface,
         title: Text(
           l10n.chatExternalLinkTitle,
-          style: const AppTextStyle(color: AppPalette.white),
+          style: AppTextStyle(color: colors.textPrimary),
         ),
         content: Text(
           l10n.chatExternalLinkMessage(uri.toString()),
-          style: const AppTextStyle(color: AppPalette.orangeWash10),
+          style: AppTextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -386,6 +388,8 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final media = _sharedFiles
         .where((item) => item.metadata?.isMedia ?? false)
         .toList(growable: false);
@@ -409,93 +413,100 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
               ''
         : '';
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk14,
-      body: Container(
-        decoration: const AppBoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -1),
-            radius: 0.92,
-            colors: [AppPalette.warmOverlayMuted02, AppPalette.clearWarmInk01],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Container(
+          decoration: AppBoxDecoration(
+            color: colors.background,
+            gradient: isDarkV2
+                ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: colors.screenGradientColors,
+                    stops: const [0, 0.42, 1],
+                  )
+                : null,
           ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth.clamp(320.0, 430.0);
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxWidth = constraints.maxWidth.clamp(320.0, 430.0);
 
-            return Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _SharedHeader(
-                        title: _sharedTitle(l10n),
-                        participantCount:
-                            widget.conversation.participants.length,
-                        showParticipantCount: !widget.conversation.isDirect,
-                        horizontalPadding: horizontalPadding,
-                        onTitleTap: profileUserId.isEmpty
-                            ? null
-                            : () {
-                                context.push('/users/$profileUserId/profile');
-                              },
-                      ),
+              return Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: AppEdgeInsets.fromLTRB(
-                          horizontalPadding,
-                          22,
-                          horizontalPadding,
-                          0,
-                        ),
-                        child: _SharedTabs(
-                          selected: _selectedTab,
-                          onChanged: (tab) {
-                            setState(() => _selectedTab = tab);
-                          },
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _SharedHeader(
+                          title: _sharedTitle(l10n),
+                          participantCount:
+                              widget.conversation.participants.length,
+                          showParticipantCount: !widget.conversation.isDirect,
+                          horizontalPadding: horizontalPadding,
+                          onTitleTap: profileUserId.isEmpty
+                              ? null
+                              : () {
+                                  context.push('/users/$profileUserId/profile');
+                                },
                         ),
                       ),
-                    ),
-                    if (_error != null &&
-                        (media.isNotEmpty ||
-                            links.isNotEmpty ||
-                            files.isNotEmpty ||
-                            voiceMessages.isNotEmpty))
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: AppEdgeInsets.fromLTRB(
                             horizontalPadding,
-                            18,
+                            22,
                             horizontalPadding,
                             0,
                           ),
-                          child: const _PartialLoadWarning(),
+                          child: _SharedTabs(
+                            selected: _selectedTab,
+                            onChanged: (tab) {
+                              setState(() => _selectedTab = tab);
+                            },
+                          ),
                         ),
                       ),
-                    ..._buildSelectedSlivers(
-                      media: media,
-                      links: links,
-                      files: files,
-                      voiceMessages: voiceMessages,
-                      horizontalPadding: horizontalPadding,
-                      l10n: l10n,
-                    ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: MediaQuery.paddingOf(context).bottom + 28,
+                      if (_error != null &&
+                          (media.isNotEmpty ||
+                              links.isNotEmpty ||
+                              files.isNotEmpty ||
+                              voiceMessages.isNotEmpty))
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: AppEdgeInsets.fromLTRB(
+                              horizontalPadding,
+                              18,
+                              horizontalPadding,
+                              0,
+                            ),
+                            child: const _PartialLoadWarning(),
+                          ),
+                        ),
+                      ..._buildSelectedSlivers(
+                        media: media,
+                        links: links,
+                        files: files,
+                        voiceMessages: voiceMessages,
+                        horizontalPadding: horizontalPadding,
+                        l10n: l10n,
                       ),
-                    ),
-                  ],
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: MediaQuery.paddingOf(context).bottom + 28,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -817,6 +828,7 @@ class _SharedHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       padding: AppEdgeInsets.fromLTRB(
@@ -826,10 +838,10 @@ class _SharedHeader extends StatelessWidget {
         18,
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlayInk03,
-        border: Border(
-          bottom: BorderSide(color: AppPalette.white.withValues(alpha: 0.07)),
+        color: colors.surface.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.86 : 0.96,
         ),
+        border: Border(bottom: BorderSide(color: colors.borderSoft)),
       ),
       child: Stack(
         alignment: Alignment.topCenter,
@@ -860,7 +872,7 @@ class _SharedHeader extends StatelessWidget {
                       height: 1.12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.9,
-                      color: AppPalette.orangeWash16,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -874,10 +886,10 @@ class _SharedHeader extends StatelessWidget {
                         height: 10,
                         decoration: AppBoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppPalette.primary,
+                          color: colors.primary,
                           boxShadow: [
                             BoxShadow(
-                              color: AppPalette.primary.withValues(alpha: 0.08),
+                              color: colors.primary.withValues(alpha: 0.12),
                               blurRadius: 0,
                               spreadRadius: 4,
                             ),
@@ -887,11 +899,11 @@ class _SharedHeader extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         l10n.chatParticipantsCount(participantCount),
-                        style: const AppTextStyle(
+                        style: AppTextStyle(
                           fontSize: 16,
                           height: 1,
                           fontWeight: FontWeight.w500,
-                          color: AppPalette.orangeSoft36,
+                          color: colors.primary,
                         ),
                       ),
                     ],
@@ -913,16 +925,18 @@ class _SharedBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: const SizedBox(
+      child: SizedBox(
         width: 40,
         height: 40,
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 24,
-          color: AppPalette.orangeWash16,
+          color: colors.textPrimary,
         ),
       ),
     );
@@ -939,13 +953,14 @@ class _SharedTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       padding: AppEdgeInsets.all(compact ? 8 : 10),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlaySurface07,
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.02)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1002,6 +1017,8 @@ class _SharedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1012,12 +1029,12 @@ class _SharedTabButton extends StatelessWidget {
         padding: AppEdgeInsets.symmetric(horizontal: compact ? 16 : 20),
         alignment: Alignment.center,
         decoration: AppBoxDecoration(
-          color: active ? AppPalette.primary : AppPalette.transparent,
+          color: active ? colors.primary : colors.transparent,
           borderRadius: AppBorderRadius.circular(999),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: AppPalette.primary.withValues(alpha: 0.22),
+                    color: colors.primary.withValues(alpha: 0.18),
                     blurRadius: 24,
                     offset: const Offset(0, 10),
                   ),
@@ -1033,7 +1050,7 @@ class _SharedTabButton extends StatelessWidget {
             height: 1,
             fontWeight: FontWeight.w800,
             letterSpacing: compact ? 0.2 : 0.6,
-            color: active ? AppPalette.textWarm : AppPalette.orangeLight12,
+            color: active ? colors.onPrimary : colors.textSecondary,
           ),
         ),
       ),
@@ -1111,6 +1128,8 @@ class _MediaTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final isVideo = item.metadata?.isVideo ?? false;
     final isImage = item.metadata?.isImage ?? false;
 
@@ -1145,14 +1164,16 @@ class _MediaTile extends StatelessWidget {
       borderRadius: AppBorderRadius.circular(radius),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          gradient: _fallbackGradient(item.fileId),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.22),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
+          gradient: _fallbackGradient(context, item.fileId),
+          boxShadow: isDarkV2
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.22),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : null,
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -1169,8 +1190,8 @@ class _MediaTile extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppPalette.white.withValues(alpha: 0.03),
-                    AppPalette.black.withValues(alpha: 0.08),
+                    colors.white.withValues(alpha: isDarkV2 ? 0.03 : 0),
+                    colors.black.withValues(alpha: isDarkV2 ? 0.08 : 0),
                   ],
                 ),
               ),
@@ -1274,6 +1295,8 @@ class _CompactLinkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
@@ -1287,16 +1310,18 @@ class _CompactLinkCard extends StatelessWidget {
           compact ? 11 : 12,
         ),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmInk75,
+          color: colors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(18),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.14),
-              blurRadius: 14,
-              offset: const Offset(0, 7),
-            ),
-          ],
+          border: Border.all(color: colors.borderSoft),
+          boxShadow: isDarkV2
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.14),
+                    blurRadius: 14,
+                    offset: const Offset(0, 7),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1317,7 +1342,7 @@ class _CompactLinkCard extends StatelessWidget {
                       Icon(
                         Icons.link_rounded,
                         size: compact ? 15 : 16,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                       ),
                       const SizedBox(width: 5),
                       Expanded(
@@ -1329,7 +1354,7 @@ class _CompactLinkCard extends StatelessWidget {
                             fontSize: compact ? 13 : 14,
                             height: 1.1,
                             fontWeight: FontWeight.w800,
-                            color: AppPalette.primary,
+                            color: colors.primary,
                           ),
                         ),
                       ),
@@ -1344,7 +1369,7 @@ class _CompactLinkCard extends StatelessWidget {
                       fontSize: compact ? 14 : 15,
                       height: 1.25,
                       fontWeight: FontWeight.w600,
-                      color: AppPalette.orangeWash02,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1356,7 +1381,7 @@ class _CompactLinkCard extends StatelessWidget {
                       fontSize: compact ? 12 : 13,
                       height: 1.1,
                       fontWeight: FontWeight.w600,
-                      color: AppPalette.white.withValues(alpha: 0.48),
+                      color: colors.textMuted,
                     ),
                   ),
                 ],
@@ -1366,7 +1391,7 @@ class _CompactLinkCard extends StatelessWidget {
             Icon(
               Icons.open_in_new_rounded,
               size: compact ? 18 : 20,
-              color: AppPalette.white.withValues(alpha: 0.44),
+              color: colors.textMuted,
             ),
           ],
         ),
@@ -1434,6 +1459,8 @@ class _FileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 380;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final metadata = item.metadata;
     final name = (metadata?.originalName.trim().isNotEmpty ?? false)
         ? metadata!.originalName.trim()
@@ -1442,7 +1469,7 @@ class _FileCard extends StatelessWidget {
         ? l10n.chatSharedUnknownFile
         : '${_formatSize(metadata.sizeBytes)} | ${metadata.extensionLabel}';
     final icon = _fileIcon(metadata);
-    final iconColor = _fileIconColor(metadata);
+    final iconColor = _fileIconColor(context, metadata);
 
     return GestureDetector(
       onTap: onTap,
@@ -1452,16 +1479,18 @@ class _FileCard extends StatelessWidget {
         constraints: BoxConstraints(minHeight: compact ? 136 : 148),
         padding: AppEdgeInsets.fromLTRB(16, 18, compact ? 14 : 18, 18),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface11,
+          color: colors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(30),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.025)),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.12),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          border: Border.all(color: colors.borderSoft),
+          boxShadow: isDarkV2
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.12),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -1469,7 +1498,7 @@ class _FileCard extends StatelessWidget {
               width: compact ? 72 : 78,
               height: compact ? 72 : 78,
               decoration: AppBoxDecoration(
-                color: AppPalette.warmSurface56,
+                color: colors.surfaceHigh,
                 borderRadius: AppBorderRadius.circular(24),
               ),
               child: Icon(icon, size: 38, color: iconColor),
@@ -1489,7 +1518,7 @@ class _FileCard extends StatelessWidget {
                       height: 1.18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.7,
-                      color: AppPalette.orangeWash04,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1500,7 +1529,7 @@ class _FileCard extends StatelessWidget {
                     style: AppTextStyle(
                       fontSize: compact ? 16 : 17,
                       height: 1.2,
-                      color: AppPalette.orangeSoft04,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -1560,21 +1589,26 @@ class _VoiceMessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface11,
+          color: colors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(24),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.025)),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.12),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          border: Border.all(color: colors.borderSoft),
+          boxShadow: isDarkV2
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(12),
@@ -1582,8 +1616,8 @@ class _VoiceMessageCard extends StatelessWidget {
             fileId: item.fileId,
             metadata: item.metadata,
             dense: true,
-            backgroundColor: AppPalette.black.withValues(alpha: 0.12),
-            borderColor: AppPalette.white.withValues(alpha: 0.04),
+            backgroundColor: colors.surfaceHigh,
+            borderColor: colors.borderSoft,
           ),
         ),
       ),
@@ -1604,24 +1638,24 @@ class _SharedDownloadBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       width: size,
       height: size,
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: downloaded
-            ? AppPalette.primary
-            : AppPalette.warmOverlaySurface16,
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.14)),
+        color: downloaded ? colors.primary : colors.surfaceHigh,
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Center(
         child: busy
-            ? const SizedBox(
+            ? SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppPalette.white,
+                  color: colors.white,
                 ),
               )
             : Icon(
@@ -1629,7 +1663,7 @@ class _SharedDownloadBadge extends StatelessWidget {
                     ? Icons.open_in_full_rounded
                     : Icons.download_rounded,
                 size: size * 0.52,
-                color: AppPalette.white,
+                color: downloaded ? colors.onPrimary : colors.textPrimary,
               ),
       ),
     );
@@ -1643,6 +1677,8 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Text(
       text,
       style: AppTextStyle(
@@ -1650,7 +1686,7 @@ class _SectionTitle extends StatelessWidget {
         height: 1.1,
         fontWeight: FontWeight.w800,
         letterSpacing: 2.6,
-        color: AppPalette.orangeSoft36,
+        color: colors.textMuted,
       ),
     );
   }
@@ -1669,6 +1705,8 @@ class _SharedAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final url = resolvePublicFileContentUrl(avatarFileId?.trim() ?? '');
     final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
 
@@ -1678,19 +1716,21 @@ class _SharedAvatar extends StatelessWidget {
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         gradient: url == null
-            ? const LinearGradient(
+            ? LinearGradient(
                 begin: Alignment(-0.3, -0.5),
                 end: Alignment(0.8, 1),
-                colors: [AppPalette.orangeSoft40, AppPalette.warmSurfaceHigh34],
+                colors: [colors.primary, colors.surfaceWarm],
               )
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: isDarkV2
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
       ),
       child: ClipOval(
         child: url == null
@@ -1700,7 +1740,7 @@ class _SharedAvatar extends StatelessWidget {
                   style: AppTextStyle(
                     fontSize: size * 0.38,
                     fontWeight: FontWeight.w800,
-                    color: AppPalette.white,
+                    color: colors.white,
                   ),
                 ),
               )
@@ -1713,7 +1753,7 @@ class _SharedAvatar extends StatelessWidget {
                     style: AppTextStyle(
                       fontSize: size * 0.38,
                       fontWeight: FontWeight.w800,
-                      color: AppPalette.white,
+                      color: colors.white,
                     ),
                   ),
                 ),
@@ -1741,18 +1781,19 @@ class _EmptyOrLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Padding(
       padding: const AppEdgeInsets.fromLTRB(24, 96, 24, 0),
       child: Column(
         children: [
           if (loading) ...[
-            const SizedBox(
+            SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: AppPalette.primary,
+                color: colors.primary,
               ),
             ),
             const SizedBox(height: 18),
@@ -1762,11 +1803,11 @@ class _EmptyOrLoadingState extends StatelessWidget {
               height: 64,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppPalette.primary.withValues(alpha: 0.12),
+                color: colors.primary.withValues(alpha: 0.12),
               ),
               child: Icon(
                 error == null ? Icons.inventory_2_outlined : Icons.wifi_off,
-                color: AppPalette.primary,
+                color: colors.primary,
                 size: 28,
               ),
             ),
@@ -1774,22 +1815,22 @@ class _EmptyOrLoadingState extends StatelessWidget {
           Text(
             error == null ? title : l10n.chatSharedLoadFailed,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
+            style: AppTextStyle(
               fontSize: 22,
               height: 1.15,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.6,
-              color: AppPalette.orangeWash10,
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             error == null ? subtitle : l10n.chatSharedLoadFailedSubtitle,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
+            style: AppTextStyle(
               fontSize: 15,
               height: 1.35,
-              color: AppPalette.orangeSoft04,
+              color: colors.textSecondary,
             ),
           ),
           if (error != null) ...[
@@ -1803,15 +1844,15 @@ class _EmptyOrLoadingState extends StatelessWidget {
                   vertical: 13,
                 ),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   borderRadius: AppBorderRadius.circular(999),
                 ),
                 child: Text(
                   l10n.retryButton,
-                  style: const AppTextStyle(
+                  style: AppTextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: AppPalette.white,
+                    color: colors.onPrimary,
                   ),
                 ),
               ),
@@ -1829,13 +1870,14 @@ class _PartialLoadWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.1),
+        color: colors.primary.withValues(alpha: 0.1),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.16)),
       ),
       child: Text(
         l10n.chatSharedPartialLoadWarning,
@@ -1844,7 +1886,7 @@ class _PartialLoadWarning extends StatelessWidget {
           fontSize: 13,
           height: 1.25,
           fontWeight: FontWeight.w600,
-          color: AppPalette.orangeSoft36,
+          color: colors.textSecondary,
         ),
       ),
     );
@@ -1969,36 +2011,29 @@ String _snippetAroundUrl({
   return '$prefix${content.substring(start, end).trim()}$suffix';
 }
 
-LinearGradient _fallbackGradient(String seed) {
-  final palettes = const [
+LinearGradient _fallbackGradient(BuildContext context, String seed) {
+  final colors = AppDesignSystem.colorsFor(context);
+  final palettes = [
+    [colors.secondaryContainer, colors.surfaceTeal, colors.surface],
     [
-      AppPalette.blueSoft06,
-      AppPalette.blueSurfaceHigh14,
-      AppPalette.blueSurface03,
+      colors.secondary.withValues(alpha: 0.32),
+      colors.surfaceHigh,
+      colors.surface,
     ],
+    [colors.primaryContainer, colors.surfaceWarm, colors.surface],
     [
-      AppPalette.blueMuted02,
-      AppPalette.blueSurfaceHigh16,
-      AppPalette.blueSurface04,
-    ],
-    [
-      AppPalette.warmSurface93,
-      AppPalette.warmSurfaceHigh28,
-      AppPalette.warmSurface29,
-    ],
-    [
-      AppPalette.warmSurfaceHigh13,
-      AppPalette.warmSurface42,
-      AppPalette.warmInk20,
+      colors.primary.withValues(alpha: 0.22),
+      colors.surfaceRaised,
+      colors.backgroundWarm,
     ],
   ];
   final index =
       seed.codeUnits.fold<int>(0, (sum, code) => sum + code) % palettes.length;
-  final colors = palettes[index];
+  final gradientColors = palettes[index];
   return LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: colors,
+    colors: gradientColors,
   );
 }
 
@@ -2017,15 +2052,16 @@ IconData _fileIcon(FileMetadataVm? metadata) {
   return Icons.description_rounded;
 }
 
-Color _fileIconColor(FileMetadataVm? metadata) {
+Color _fileIconColor(BuildContext context, FileMetadataVm? metadata) {
+  final colors = AppDesignSystem.colorsFor(context);
   final extension = metadata?.extensionLabel.toLowerCase() ?? '';
   if (extension == 'zip' || extension == 'rar' || extension == '7z') {
-    return AppPalette.blueLight02;
+    return colors.secondary;
   }
   if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
-    return AppPalette.orangeSoft35;
+    return colors.warning;
   }
-  return AppPalette.primary;
+  return colors.primary;
 }
 
 bool _isSharedMediaOrAudio(FileMetadataVm? metadata) {

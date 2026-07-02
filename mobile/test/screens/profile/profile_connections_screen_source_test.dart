@@ -73,6 +73,21 @@ void main() {
     },
   );
 
+  test('profile connections screen uses V2 colors only', () async {
+    final source = await File(
+      'lib/screens/profile/profile_connections_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test('profile connections show paginated incoming friend requests', () async {
     final source = await File(
       'lib/screens/profile/profile_connections_screen.dart',

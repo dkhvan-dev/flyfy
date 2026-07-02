@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'profile_style.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class ProfileSecurityScreen extends StatelessWidget {
   const ProfileSecurityScreen({super.key});
@@ -17,68 +17,91 @@ class ProfileSecurityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final padding = profileScaled(context, 20, min: 14, max: 20);
 
-    return Scaffold(
-      backgroundColor: AppPalette.transparent,
-      body: ProfileResponsiveScope(
-        child: ProfileGlassBackground(
-          child: SafeArea(
-            child: ListView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: ProfileResponsiveScope(
+          child: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
               ),
-              padding: AppEdgeInsets.fromLTRB(
-                padding,
-                profileScaled(context, 14, min: 10, max: 18),
-                padding,
-                profileScaled(context, 28, min: 20, max: 34),
+            ),
+            child: SafeArea(
+              child: ListView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                padding: AppEdgeInsets.fromLTRB(
+                  padding,
+                  profileScaled(context, 14, min: 10, max: 18),
+                  padding,
+                  profileScaled(context, 28, min: 20, max: 34),
+                ),
+                children: [
+                  const _SecurityTopBar(),
+                  SizedBox(
+                    height: profileScaled(context, 24, min: 18, max: 28),
+                  ),
+                  _SecurityHero(
+                    title: l10n.profileSecurityHeroTitle,
+                    subtitle: l10n.profileSecurityHeroSubtitle,
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  _SecuritySectionHeading(
+                    title: l10n.profileSecurityAccountSection,
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
+                  _SecurityInfoTile(
+                    icon: Icons.lock_reset_rounded,
+                    title: l10n.profileSecurityPasswordTitle,
+                    subtitle: l10n.profileSecurityPasswordSubtitle,
+                    statusLabel: l10n.profileSecurityPasswordAction,
+                    onTap: () => _showChangePasswordSheet(context),
+                  ),
+                  _SecurityInfoTile(
+                    icon: Icons.verified_user_outlined,
+                    title: l10n.profileSecurityTwoFactorTitle,
+                    subtitle: l10n.profileSecurityTwoFactorSubtitle,
+                    statusLabel: l10n.profileDisabledSoon,
+                    disabled: true,
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  _SecuritySectionHeading(
+                    title: l10n.profileSecurityDataSection,
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
+                  _SecurityInfoTile(
+                    icon: Icons.download_outlined,
+                    title: l10n.profileSecurityDataExportTitle,
+                    subtitle: l10n.profileSecurityDataExportSubtitle,
+                    statusLabel: l10n.profileDisabledSoon,
+                    disabled: true,
+                  ),
+                  _SecurityInfoTile(
+                    icon: Icons.delete_outline_rounded,
+                    title: l10n.profileSecurityDeleteTitle,
+                    subtitle: l10n.profileSecurityDeleteSubtitle,
+                    statusLabel: l10n.profileDisabledSoon,
+                    disabled: true,
+                    danger: true,
+                  ),
+                ],
               ),
-              children: [
-                const _SecurityTopBar(),
-                SizedBox(height: profileScaled(context, 24, min: 18, max: 28)),
-                _SecurityHero(
-                  title: l10n.profileSecurityHeroTitle,
-                  subtitle: l10n.profileSecurityHeroSubtitle,
-                ),
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(
-                  title: l10n.profileSecurityAccountSection,
-                ),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _SecurityInfoTile(
-                  icon: Icons.lock_reset_rounded,
-                  title: l10n.profileSecurityPasswordTitle,
-                  subtitle: l10n.profileSecurityPasswordSubtitle,
-                  statusLabel: l10n.profileSecurityPasswordAction,
-                  onTap: () => _showChangePasswordSheet(context),
-                ),
-                _SecurityInfoTile(
-                  icon: Icons.verified_user_outlined,
-                  title: l10n.profileSecurityTwoFactorTitle,
-                  subtitle: l10n.profileSecurityTwoFactorSubtitle,
-                  statusLabel: l10n.profileDisabledSoon,
-                  disabled: true,
-                ),
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(title: l10n.profileSecurityDataSection),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _SecurityInfoTile(
-                  icon: Icons.download_outlined,
-                  title: l10n.profileSecurityDataExportTitle,
-                  subtitle: l10n.profileSecurityDataExportSubtitle,
-                  statusLabel: l10n.profileDisabledSoon,
-                  disabled: true,
-                ),
-                _SecurityInfoTile(
-                  icon: Icons.delete_outline_rounded,
-                  title: l10n.profileSecurityDeleteTitle,
-                  subtitle: l10n.profileSecurityDeleteSubtitle,
-                  statusLabel: l10n.profileDisabledSoon,
-                  disabled: true,
-                  danger: true,
-                ),
-              ],
             ),
           ),
         ),
@@ -88,12 +111,13 @@ class ProfileSecurityScreen extends StatelessWidget {
 }
 
 void _showChangePasswordSheet(BuildContext context) {
+  final colors = AppDesignSystem.colorsFor(context);
   showAppModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     isDismissible: true,
     useSafeArea: false,
-    backgroundColor: AppPalette.transparent,
+    backgroundColor: colors.transparent,
     builder: (context) {
       return const _ChangePasswordSheet();
     },
@@ -105,12 +129,11 @@ class _SecurityTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
-        ProfileTopIconButton(
-          icon: Icons.arrow_back,
-          onTap: () => context.pop(),
-        ),
+        _SecurityBackButton(icon: Icons.arrow_back, onTap: () => context.pop()),
         Expanded(
           child: Padding(
             padding: AppEdgeInsets.symmetric(
@@ -120,7 +143,7 @@ class _SecurityTopBar extends StatelessWidget {
               AppLocalizations.of(context)!.profileSecurityPageTitle,
               textAlign: TextAlign.center,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
               ),
@@ -133,6 +156,53 @@ class _SecurityTopBar extends StatelessWidget {
   }
 }
 
+class _SecurityBackButton extends StatelessWidget {
+  const _SecurityBackButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final size = profileScaled(context, 38, min: 34, max: 40);
+    final iconSize = profileScaled(context, 20, min: 18, max: 20);
+
+    return Material(
+      color: colors.surfaceRaised,
+      shape: CircleBorder(side: BorderSide(color: colors.borderSoft)),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox.square(
+          dimension: size,
+          child: Icon(icon, size: iconSize, color: colors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecuritySectionHeading extends StatelessWidget {
+  const _SecuritySectionHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return Text(
+      title,
+      style: AppTextStyle(
+        color: colors.textPrimary,
+        fontSize: profileScaled(context, 18, min: 16, max: 22),
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
 class _SecurityHero extends StatelessWidget {
   const _SecurityHero({required this.title, required this.subtitle});
 
@@ -141,10 +211,13 @@ class _SecurityHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: AppEdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
-      decoration: profileCardDecoration(
+      decoration: _securityCardDecoration(
         context,
+        colors,
         highlighted: true,
         radius: profileScaled(context, 28, min: 22, max: 30),
       ),
@@ -155,14 +228,14 @@ class _SecurityHero extends StatelessWidget {
             width: profileScaled(context, 54, min: 48, max: 58),
             height: profileScaled(context, 54, min: 48, max: 58),
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.14),
+              color: colors.primary.withValues(alpha: 0.14),
               borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
             ),
             child: Icon(
               Icons.security_rounded,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: profileScaled(context, 26, min: 22, max: 28),
             ),
           ),
@@ -174,7 +247,7 @@ class _SecurityHero extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: colors.textPrimary,
                     fontSize: profileScaled(context, 20, min: 18, max: 22),
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -184,7 +257,7 @@ class _SecurityHero extends StatelessWidget {
                 Text(
                   subtitle,
                   style: AppTextStyle(
-                    color: profileTextSoft,
+                    color: colors.textSecondary,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     height: 1.45,
                   ),
@@ -219,7 +292,8 @@ class _SecurityInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = danger ? AppPalette.redLight01 : profileTextSoft;
+    final colors = AppDesignSystem.colorsFor(context);
+    final accentColor = danger ? colors.danger : colors.primary;
     final radius = profileScaled(context, 22, min: 18, max: 24);
     final isActionable = onTap != null && !disabled;
 
@@ -228,13 +302,14 @@ class _SecurityInfoTile extends StatelessWidget {
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       child: Container(
-        decoration: profileCardDecoration(
+        decoration: _securityCardDecoration(
           context,
+          colors,
           disabled: disabled,
           radius: radius,
         ),
         child: Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           borderRadius: AppBorderRadius.circular(radius),
           child: InkWell(
             borderRadius: AppBorderRadius.circular(radius),
@@ -266,8 +341,8 @@ class _SecurityInfoTile extends StatelessWidget {
                           title,
                           style: AppTextStyle(
                             color: disabled
-                                ? profileDisabled
-                                : AppPalette.textPrimary,
+                                ? colors.textDisabled
+                                : colors.textPrimary,
                             fontSize: profileScaled(
                               context,
                               16,
@@ -284,8 +359,8 @@ class _SecurityInfoTile extends StatelessWidget {
                           subtitle,
                           style: AppTextStyle(
                             color: disabled
-                                ? profileDisabled
-                                : profileTextMuted,
+                                ? colors.textDisabled
+                                : colors.textSecondary,
                             fontSize: profileScaled(
                               context,
                               13,
@@ -493,6 +568,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
+    final colors = AppDesignSystem.colorsFor(context);
     final isLoading = auth.isPasswordChangeLoading;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final availableHeight = MediaQuery.sizeOf(context).height - bottomInset;
@@ -502,324 +578,329 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
         ? _firstPasswordChangeValidationError(requireCode: _codeSent)
         : null;
 
-    return ProfileResponsiveScope(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Align(
-            alignment: Alignment.bottomCenter,
-            heightFactor: 1,
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: AppEdgeInsets.only(bottom: bottomInset),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: constraints.maxWidth,
-                  maxWidth: constraints.maxWidth,
-                  maxHeight: availableHeight * 0.92,
-                ),
-                child: DecoratedBox(
-                  decoration: AppBoxDecoration(
-                    color: profileBgBottom,
-                    borderRadius: AppBorderRadius.vertical(
-                      top: AppRadiusValue.circular(
-                        profileScaled(context, 28, min: 22, max: 30),
-                      ),
-                    ),
-                    border: Border.all(color: profileBorderSoft),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: ProfileResponsiveScope(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                padding: AppEdgeInsets.only(bottom: bottomInset),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: constraints.maxWidth,
+                    maxWidth: constraints.maxWidth,
+                    maxHeight: availableHeight * 0.92,
                   ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Flexible(
-                          child: SingleChildScrollView(
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: AppEdgeInsets.fromLTRB(
-                              profileScaled(context, 20, min: 16, max: 24),
-                              profileScaled(context, 14, min: 12, max: 18),
-                              profileScaled(context, 20, min: 16, max: 24),
-                              profileScaled(context, 16, min: 12, max: 18),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    width: profileScaled(
-                                      context,
-                                      42,
-                                      min: 36,
-                                      max: 46,
-                                    ),
-                                    height: 4,
-                                    decoration: AppBoxDecoration(
-                                      color: profileTextMuted.withValues(
-                                        alpha: 0.45,
+                  child: DecoratedBox(
+                    decoration: AppBoxDecoration(
+                      color: colors.surface,
+                      borderRadius: AppBorderRadius.vertical(
+                        top: AppRadiusValue.circular(
+                          profileScaled(context, 28, min: 22, max: 30),
+                        ),
+                      ),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Flexible(
+                            child: SingleChildScrollView(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding: AppEdgeInsets.fromLTRB(
+                                profileScaled(context, 20, min: 16, max: 24),
+                                profileScaled(context, 14, min: 12, max: 18),
+                                profileScaled(context, 20, min: 16, max: 24),
+                                profileScaled(context, 16, min: 12, max: 18),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      width: profileScaled(
+                                        context,
+                                        42,
+                                        min: 36,
+                                        max: 46,
                                       ),
-                                      borderRadius: AppBorderRadius.circular(
-                                        999,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: profileScaled(
-                                    context,
-                                    18,
-                                    min: 14,
-                                    max: 22,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        l10n.profileSecurityPasswordSheetTitle,
-                                        style: AppTextStyle(
-                                          color: AppPalette.textPrimary,
-                                          fontSize: profileScaled(
-                                            context,
-                                            22,
-                                            min: 19,
-                                            max: 24,
-                                          ),
-                                          fontWeight: FontWeight.w900,
+                                      height: 4,
+                                      decoration: AppBoxDecoration(
+                                        color: colors.textSecondary.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                        borderRadius: AppBorderRadius.circular(
+                                          999,
                                         ),
                                       ),
                                     ),
-                                    IconButton(
-                                      onPressed: isLoading
-                                          ? null
-                                          : () => Navigator.of(context).pop(),
-                                      icon: const Icon(Icons.close_rounded),
-                                      color: profileTextSoft,
-                                      tooltip: MaterialLocalizations.of(
-                                        context,
-                                      ).closeButtonTooltip,
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                  height: profileScaled(
-                                    context,
-                                    8,
-                                    min: 6,
-                                    max: 10,
-                                  ),
-                                ),
-                                Text(
-                                  l10n.profileSecurityPasswordSheetSubtitle,
-                                  style: AppTextStyle(
-                                    color: profileTextMuted,
-                                    fontSize: profileScaled(
-                                      context,
-                                      14,
-                                      min: 13,
-                                      max: 15,
-                                    ),
-                                    height: 1.45,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: profileScaled(
-                                    context,
-                                    22,
-                                    min: 18,
-                                    max: 26,
-                                  ),
-                                ),
-                                _PasswordField(
-                                  controller: _currentPasswordController,
-                                  label:
-                                      l10n.profileSecurityPasswordCurrentLabel,
-                                  hint: l10n.profileSecurityPasswordCurrentHint,
-                                  enabled: !isLoading,
-                                  obscureText: _obscureCurrentPassword,
-                                  textInputAction: TextInputAction.next,
-                                  errorText:
-                                      _showValidation &&
-                                          _currentPasswordController.text
-                                              .trim()
-                                              .isEmpty
-                                      ? l10n.passwordRequiredError
-                                      : null,
-                                  onVisibilityToggle: () => setState(
-                                    () => _obscureCurrentPassword =
-                                        !_obscureCurrentPassword,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: profileScaled(
-                                    context,
-                                    14,
-                                    min: 12,
-                                    max: 16,
-                                  ),
-                                ),
-                                _PasswordField(
-                                  controller: _newPasswordController,
-                                  label: l10n.profileSecurityPasswordNewLabel,
-                                  hint: l10n.passwordHint,
-                                  enabled: !isLoading,
-                                  obscureText: _obscureNewPassword,
-                                  textInputAction: TextInputAction.next,
-                                  errorText:
-                                      _showValidation &&
-                                          !_passwordLooksStrong(
-                                            _newPasswordController.text,
-                                          )
-                                      ? l10n.passwordWeakError
-                                      : _showValidation &&
-                                            _newPasswordController.text
-                                                    .trim() ==
-                                                _currentPasswordController.text
-                                                    .trim() &&
-                                            _newPasswordController.text
-                                                .trim()
-                                                .isNotEmpty
-                                      ? l10n.profileSecurityPasswordUnchangedError
-                                      : null,
-                                  onVisibilityToggle: () => setState(
-                                    () => _obscureNewPassword =
-                                        !_obscureNewPassword,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: profileScaled(
-                                    context,
-                                    14,
-                                    min: 12,
-                                    max: 16,
-                                  ),
-                                ),
-                                _PasswordField(
-                                  controller: _confirmPasswordController,
-                                  label:
-                                      l10n.profileSecurityPasswordConfirmLabel,
-                                  hint:
-                                      l10n.profileSecurityPasswordConfirmLabel,
-                                  enabled: !isLoading,
-                                  obscureText: _obscureConfirmPassword,
-                                  textInputAction: _codeSent
-                                      ? TextInputAction.next
-                                      : TextInputAction.done,
-                                  errorText:
-                                      _showValidation &&
-                                          _newPasswordController.text !=
-                                              _confirmPasswordController.text
-                                      ? l10n.profileSecurityPasswordMismatchError
-                                      : null,
-                                  onVisibilityToggle: () => setState(
-                                    () => _obscureConfirmPassword =
-                                        !_obscureConfirmPassword,
-                                  ),
-                                  onSubmitted: (_) {
-                                    if (isLoading) {
-                                      return;
-                                    }
-                                    if (_codeSent) {
-                                      _verifyPasswordChange();
-                                    } else {
-                                      _sendChangePasswordCode();
-                                    }
-                                  },
-                                ),
-                                if (_codeSent) ...[
-                                  SizedBox(
-                                    height: profileScaled(
-                                      context,
-                                      14,
-                                      min: 12,
-                                      max: 16,
-                                    ),
-                                  ),
-                                  _InfoBanner(
-                                    text:
-                                        l10n.profileSecurityPasswordCodeNotice,
                                   ),
                                   SizedBox(
                                     height: profileScaled(
                                       context,
-                                      14,
-                                      min: 12,
-                                      max: 16,
+                                      18,
+                                      min: 14,
+                                      max: 22,
                                     ),
                                   ),
-                                  TextFormField(
-                                    controller: _codeController,
-                                    enabled: !isLoading,
-                                    keyboardType: TextInputType.number,
-                                    textInputAction: TextInputAction.next,
-                                    autofillHints: const [
-                                      AutofillHints.oneTimeCode,
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          l10n.profileSecurityPasswordSheetTitle,
+                                          style: AppTextStyle(
+                                            color: colors.textPrimary,
+                                            fontSize: profileScaled(
+                                              context,
+                                              22,
+                                              min: 19,
+                                              max: 24,
+                                            ),
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: isLoading
+                                            ? null
+                                            : () => Navigator.of(context).pop(),
+                                        icon: const Icon(Icons.close_rounded),
+                                        color: colors.primary,
+                                        tooltip: MaterialLocalizations.of(
+                                          context,
+                                        ).closeButtonTooltip,
+                                      ),
                                     ],
-                                    decoration: _sheetInputDecoration(
-                                      context,
-                                      label: l10n.passwordResetCodeLabel,
-                                      hint: l10n.passwordResetCodeHint,
-                                      errorText:
-                                          _showValidation &&
-                                              _codeController.text
-                                                  .trim()
-                                                  .isEmpty
-                                          ? l10n.passwordResetCodeRequiredError
-                                          : null,
-                                    ),
                                   ),
-                                ],
-                                if (validationError != null) ...[
                                   SizedBox(
                                     height: profileScaled(
                                       context,
-                                      12,
-                                      min: 10,
-                                      max: 14,
+                                      8,
+                                      min: 6,
+                                      max: 10,
                                     ),
                                   ),
                                   Text(
-                                    validationError,
+                                    l10n.profileSecurityPasswordSheetSubtitle,
                                     style: AppTextStyle(
-                                      color: AppPalette.redLight05,
+                                      color: colors.textSecondary,
                                       fontSize: profileScaled(
                                         context,
-                                        12,
-                                        min: 11,
-                                        max: 13,
+                                        14,
+                                        min: 13,
+                                        max: 15,
                                       ),
-                                      fontWeight: FontWeight.w700,
+                                      height: 1.45,
                                     ),
                                   ),
+                                  SizedBox(
+                                    height: profileScaled(
+                                      context,
+                                      22,
+                                      min: 18,
+                                      max: 26,
+                                    ),
+                                  ),
+                                  _PasswordField(
+                                    controller: _currentPasswordController,
+                                    label: l10n
+                                        .profileSecurityPasswordCurrentLabel,
+                                    hint:
+                                        l10n.profileSecurityPasswordCurrentHint,
+                                    enabled: !isLoading,
+                                    obscureText: _obscureCurrentPassword,
+                                    textInputAction: TextInputAction.next,
+                                    errorText:
+                                        _showValidation &&
+                                            _currentPasswordController.text
+                                                .trim()
+                                                .isEmpty
+                                        ? l10n.passwordRequiredError
+                                        : null,
+                                    onVisibilityToggle: () => setState(
+                                      () => _obscureCurrentPassword =
+                                          !_obscureCurrentPassword,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: profileScaled(
+                                      context,
+                                      14,
+                                      min: 12,
+                                      max: 16,
+                                    ),
+                                  ),
+                                  _PasswordField(
+                                    controller: _newPasswordController,
+                                    label: l10n.profileSecurityPasswordNewLabel,
+                                    hint: l10n.passwordHint,
+                                    enabled: !isLoading,
+                                    obscureText: _obscureNewPassword,
+                                    textInputAction: TextInputAction.next,
+                                    errorText:
+                                        _showValidation &&
+                                            !_passwordLooksStrong(
+                                              _newPasswordController.text,
+                                            )
+                                        ? l10n.passwordWeakError
+                                        : _showValidation &&
+                                              _newPasswordController.text
+                                                      .trim() ==
+                                                  _currentPasswordController
+                                                      .text
+                                                      .trim() &&
+                                              _newPasswordController.text
+                                                  .trim()
+                                                  .isNotEmpty
+                                        ? l10n.profileSecurityPasswordUnchangedError
+                                        : null,
+                                    onVisibilityToggle: () => setState(
+                                      () => _obscureNewPassword =
+                                          !_obscureNewPassword,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: profileScaled(
+                                      context,
+                                      14,
+                                      min: 12,
+                                      max: 16,
+                                    ),
+                                  ),
+                                  _PasswordField(
+                                    controller: _confirmPasswordController,
+                                    label: l10n
+                                        .profileSecurityPasswordConfirmLabel,
+                                    hint: l10n
+                                        .profileSecurityPasswordConfirmLabel,
+                                    enabled: !isLoading,
+                                    obscureText: _obscureConfirmPassword,
+                                    textInputAction: _codeSent
+                                        ? TextInputAction.next
+                                        : TextInputAction.done,
+                                    errorText:
+                                        _showValidation &&
+                                            _newPasswordController.text !=
+                                                _confirmPasswordController.text
+                                        ? l10n.profileSecurityPasswordMismatchError
+                                        : null,
+                                    onVisibilityToggle: () => setState(
+                                      () => _obscureConfirmPassword =
+                                          !_obscureConfirmPassword,
+                                    ),
+                                    onSubmitted: (_) {
+                                      if (isLoading) {
+                                        return;
+                                      }
+                                      if (_codeSent) {
+                                        _verifyPasswordChange();
+                                      } else {
+                                        _sendChangePasswordCode();
+                                      }
+                                    },
+                                  ),
+                                  if (_codeSent) ...[
+                                    SizedBox(
+                                      height: profileScaled(
+                                        context,
+                                        14,
+                                        min: 12,
+                                        max: 16,
+                                      ),
+                                    ),
+                                    _InfoBanner(
+                                      text: l10n
+                                          .profileSecurityPasswordCodeNotice,
+                                    ),
+                                    SizedBox(
+                                      height: profileScaled(
+                                        context,
+                                        14,
+                                        min: 12,
+                                        max: 16,
+                                      ),
+                                    ),
+                                    TextFormField(
+                                      controller: _codeController,
+                                      enabled: !isLoading,
+                                      keyboardType: TextInputType.number,
+                                      textInputAction: TextInputAction.next,
+                                      autofillHints: const [
+                                        AutofillHints.oneTimeCode,
+                                      ],
+                                      decoration: _sheetInputDecoration(
+                                        context,
+                                        label: l10n.passwordResetCodeLabel,
+                                        hint: l10n.passwordResetCodeHint,
+                                        errorText:
+                                            _showValidation &&
+                                                _codeController.text
+                                                    .trim()
+                                                    .isEmpty
+                                            ? l10n.passwordResetCodeRequiredError
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                  if (validationError != null) ...[
+                                    SizedBox(
+                                      height: profileScaled(
+                                        context,
+                                        12,
+                                        min: 10,
+                                        max: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      validationError,
+                                      style: AppTextStyle(
+                                        color: colors.danger,
+                                        fontSize: profileScaled(
+                                          context,
+                                          12,
+                                          min: 11,
+                                          max: 13,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                        _PasswordChangeActions(
-                          isLoading: isLoading,
-                          codeSent: _codeSent,
-                          resendRemainingSeconds: _resendRemainingSeconds,
-                          resendCountdown: _formatResendCountdown(),
-                          onPrimaryPressed: isLoading
-                              ? null
-                              : _codeSent
-                              ? _verifyPasswordChange
-                              : _sendChangePasswordCode,
-                          onResendPressed: canResendPasswordChangeCode
-                              ? _sendChangePasswordCode
-                              : null,
-                        ),
-                      ],
+                          _PasswordChangeActions(
+                            isLoading: isLoading,
+                            codeSent: _codeSent,
+                            resendRemainingSeconds: _resendRemainingSeconds,
+                            resendCountdown: _formatResendCountdown(),
+                            onPrimaryPressed: isLoading
+                                ? null
+                                : _codeSent
+                                ? _verifyPasswordChange
+                                : _sendChangePasswordCode,
+                            onResendPressed: canResendPasswordChangeCode
+                                ? _sendChangePasswordCode
+                                : null,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -845,11 +926,12 @@ class _PasswordChangeActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: profileBgBottom,
-        border: Border(top: BorderSide(color: profileBorderSoft)),
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.borderSoft)),
       ),
       child: Padding(
         padding: AppEdgeInsets.fromLTRB(
@@ -865,11 +947,10 @@ class _PasswordChangeActions extends StatelessWidget {
             FilledButton(
               onPressed: onPrimaryPressed,
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
-                disabledBackgroundColor: AppPalette.primary.withValues(
-                  alpha: 0.35,
-                ),
+                backgroundColor: colors.primary,
+                foregroundColor: colors.textPrimary,
+                disabledBackgroundColor: colors.primary.withValues(alpha: 0.35),
+                disabledForegroundColor: colors.textDisabled,
                 padding: AppEdgeInsets.symmetric(
                   vertical: profileScaled(context, 15, min: 13, max: 16),
                 ),
@@ -883,9 +964,9 @@ class _PasswordChangeActions extends StatelessWidget {
                   ? SizedBox(
                       width: profileScaled(context, 20, min: 18, max: 22),
                       height: profileScaled(context, 20, min: 18, max: 22),
-                      child: const CircularProgressIndicator(
+                      child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        color: AppPalette.white,
+                        color: colors.textPrimary,
                       ),
                     )
                   : Text(
@@ -974,21 +1055,23 @@ class _InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: AppEdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: colors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 16, min: 14, max: 18),
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.mark_email_read_outlined,
-            color: AppPalette.primary,
+            color: colors.primary,
             size: profileScaled(context, 20, min: 18, max: 22),
           ),
           SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
@@ -996,7 +1079,7 @@ class _InfoBanner extends StatelessWidget {
             child: Text(
               text,
               style: AppTextStyle(
-                color: profileTextSoft,
+                color: colors.textSecondary,
                 fontSize: profileScaled(context, 13, min: 12, max: 14),
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -1016,6 +1099,7 @@ InputDecoration _sheetInputDecoration(
   String? errorText,
   Widget? suffixIcon,
 }) {
+  final colors = AppDesignSystem.colorsFor(context);
   final radius = AppBorderRadius.circular(
     profileScaled(context, 16, min: 14, max: 18),
   );
@@ -1024,27 +1108,61 @@ InputDecoration _sheetInputDecoration(
     hintText: hint,
     errorText: errorText,
     filled: true,
-    fillColor: profileSurfaceSoft.withValues(alpha: 0.72),
-    labelStyle: AppTextStyle(color: profileTextMuted),
-    hintStyle: AppTextStyle(color: profileTextMuted.withValues(alpha: 0.72)),
-    errorStyle: const AppTextStyle(fontWeight: FontWeight.w700),
+    fillColor: colors.surfaceRaised,
+    labelStyle: AppTextStyle(color: colors.textSecondary),
+    hintStyle: AppTextStyle(
+      color: colors.textSecondary.withValues(alpha: 0.72),
+    ),
+    errorStyle: AppTextStyle(color: colors.danger, fontWeight: FontWeight.w700),
     suffixIcon: suffixIcon,
     enabledBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: const BorderSide(color: profileBorderSoft),
+      borderSide: BorderSide(color: colors.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: BorderSide(color: AppPalette.primary.withValues(alpha: 0.7)),
+      borderSide: BorderSide(color: colors.primary.withValues(alpha: 0.7)),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: const BorderSide(color: AppPalette.redLight05),
+      borderSide: BorderSide(color: colors.danger),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: const BorderSide(color: AppPalette.redLight05),
+      borderSide: BorderSide(color: colors.danger),
     ),
+  );
+}
+
+BoxDecoration _securityCardDecoration(
+  BuildContext context,
+  AppColors colors, {
+  bool highlighted = false,
+  bool disabled = false,
+  double? radius,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final borderColor = disabled
+      ? colors.borderSoft
+      : highlighted
+      ? colors.borderPrimary
+      : colors.border;
+
+  return AppBoxDecoration(
+    color: disabled ? colors.surfaceRaised : colors.surface,
+    borderRadius: AppBorderRadius.circular(
+      radius ?? profileScaled(context, 22, min: 18, max: 24),
+    ),
+    border: Border.all(color: borderColor),
+    boxShadow: isDark && !disabled
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: highlighted ? 0.26 : 0.18),
+              blurRadius: profileScaled(context, 20, min: 14, max: 24),
+              offset: Offset(0, profileScaled(context, 8, min: 5, max: 10)),
+            ),
+          ]
+        : const [],
   );
 }
 
@@ -1061,6 +1179,8 @@ class _StatusTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 12, min: 10, max: 14),
@@ -1076,7 +1196,7 @@ class _StatusTag extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyle(
-          color: disabled ? profileDisabled : color,
+          color: disabled ? colors.textDisabled : color,
           fontSize: profileScaled(context, 11, min: 10, max: 12),
           fontWeight: FontWeight.w800,
           letterSpacing: 0.8,

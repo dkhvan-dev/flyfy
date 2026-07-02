@@ -17,21 +17,20 @@ class TripPreparationCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final width = MediaQuery.sizeOf(context).width;
     final compact = width < 380;
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(8),
         child: Ink(
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface36,
+            color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(8),
-            border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.34),
-            ),
+            border: Border.all(color: colors.borderPrimary),
           ),
           padding: AppEdgeInsets.all(compact ? 14 : 16),
           child: Wrap(
@@ -53,12 +52,12 @@ class TripPreparationCta extends StatelessWidget {
                       height: 42,
                       alignment: Alignment.center,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.primary.withValues(alpha: 0.16),
+                        color: colors.primary.withValues(alpha: 0.16),
                         borderRadius: AppBorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.fact_check_rounded,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                         size: 22,
                       ),
                     ),
@@ -72,8 +71,8 @@ class TripPreparationCta extends StatelessWidget {
                             title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: AppPalette.textPrimary,
+                            style: AppTextStyle(
+                              color: colors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0,
@@ -85,8 +84,8 @@ class TripPreparationCta extends StatelessWidget {
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                            style: AppTextStyle(
+                              color: colors.textSecondary,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0,
@@ -109,8 +108,8 @@ class TripPreparationCta extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.textPrimary,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.textPrimary,
                   minimumSize: const Size(0, 44),
                   padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(

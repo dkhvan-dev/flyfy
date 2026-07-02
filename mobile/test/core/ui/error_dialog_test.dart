@@ -10,11 +10,15 @@ void main() {
     final source = File('lib/core/ui/error_dialog.dart').readAsStringSync();
 
     expect(source, contains('showAppModalDialog<void>('));
-    expect(source, contains('AppModalAction<void>('));
+    expect(source, contains('AppModalDialogCard('));
     expect(source, contains('Icons.warning_amber_rounded'));
-    expect(source, isNot(contains('pageBuilder:')));
+    expect(
+      source,
+      contains('constraints: const BoxConstraints(maxWidth: 360)'),
+    );
+    expect(source, contains('AppButtonStyles.primary(dialogColors)'));
+    expect(source, isNot(contains('AppPalette.')));
     expect(source, isNot(contains('ElevatedButton(')));
-    expect(source, isNot(contains('Material(')));
   });
 
   test('feature error popups reuse showErrorDialog', () {
@@ -57,7 +61,7 @@ void main() {
     );
     expect(
       okButton.style?.foregroundColor?.resolve(<WidgetState>{}),
-      AppPalette.onPrimary,
+      AppColorSchemes.light.textPrimary,
     );
   });
 }

@@ -22,6 +22,60 @@ void main() {
     );
   });
 
+  test('notifications screens use the adaptive v2 design system', () async {
+    final source = await File(
+      'lib/screens/notifications/notifications_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('Theme('));
+    expect(source, contains('data: AppDesignSystem.themeFor(context)'));
+    expect(
+      source,
+      contains('final colors = AppDesignSystem.colorsFor(context)'),
+    );
+    expect(source, contains('backgroundColor: colors.background'));
+    expect(source, contains('colors: colors.screenGradientColors'));
+    expect(source, contains('AppPalette.primary'));
+    expect(source, contains('AppPalette.secondary'));
+    expect(source, contains('AppButtonStyles.icon(context.appColors)'));
+    expect(source, contains('AppButtonStyles.primary(context.appColors)'));
+    expect(
+      source,
+      isNot(
+        matches(
+          RegExp(
+            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal|primary|white|black|background|surface|text)',
+          ),
+        ),
+      ),
+    );
+  });
+
+  test('notifications panels only use shadows in dark v2', () async {
+    final source = await File(
+      'lib/screens/notifications/notifications_screen.dart',
+    ).readAsString();
+
+    final panelStart = source.indexOf('class _InteractivePanel');
+    final panelEnd = source.indexOf(
+      'String _notificationCategoryUnreadBadgeLabel',
+      panelStart,
+    );
+
+    expect(panelStart, isNonNegative);
+    expect(panelEnd, greaterThan(panelStart));
+
+    final panelSource = source.substring(panelStart, panelEnd);
+
+    expect(panelSource, contains('final isDarkV2'));
+    expect(panelSource, contains('Theme.of(context).brightness'));
+    expect(panelSource, contains('Brightness.dark'));
+    expect(panelSource, contains('boxShadow: isDarkV2'));
+    expect(panelSource, contains('? ['));
+    expect(panelSource, contains(': null'));
+  });
+
   testWidgets('localizes latest category preview text', (tester) async {
     final latest = _storyLikeNotification();
     final api = _FakeNotificationInboxClient(

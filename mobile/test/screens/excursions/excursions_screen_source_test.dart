@@ -3,6 +3,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('excursions screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/excursions_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('excursionsColors.primary'));
+    expect(source, contains('excursionsColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test('excursions screen renders the excursions story tray surface', () async {
     final source = await File(
       'lib/screens/excursions/excursions_screen.dart',
@@ -407,6 +419,75 @@ void main() {
       expect(source, contains('localizedLandmark:'));
       expect(source, contains('localizedExcursionTitle('));
       expect(source, contains('localizedExcursionLandmarkName('));
+    },
+  );
+
+  test(
+    'excursion cards use balanced V2 surfaces, text hierarchy, and dark-only depth',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf('bool _isLightExcursionsTheme');
+      final cardStart = source.indexOf('class ExcursionListCard');
+      final coverStart = source.indexOf('class _ExcursionCoverArt');
+      final painterStart = source.indexOf('class _ExcursionCoverPainter');
+
+      expect(helperStart, isNonNegative);
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+      expect(painterStart, greaterThan(coverStart));
+
+      final helperSource = source.substring(helperStart, cardStart);
+      final cardSource = source.substring(cardStart, coverStart);
+      final coverSource = source.substring(coverStart, painterStart);
+
+      expect(helperSource, contains('Brightness.light'));
+      expect(helperSource, contains('List<BoxShadow>? _excursionsCardShadow'));
+      expect(helperSource, contains('return null;'));
+      expect(helperSource, contains('Color _excursionsPrimaryTextColor'));
+
+      expect(cardSource, contains('surfaceRaised'));
+      expect(cardSource, contains('boxShadow: _excursionsCardShadow(context)'));
+      expect(cardSource, contains('_excursionsPrimaryTextColor(context)'));
+      expect(cardSource, contains('context.excursionsColors.textPrimary'));
+      expect(cardSource, contains('context.excursionsColors.textSecondary'));
+      expect(cardSource, isNot(contains('orangeLight28')));
+      expect(cardSource, isNot(contains('orangeSoft06')));
+
+      expect(coverSource, contains('_excursionCoverScrimGradient(context)'));
+      expect(coverSource, contains('if (scrimGradient != null)'));
+      expect(coverSource, contains('_excursionRatingBadgeBackground(context)'));
+      expect(coverSource, contains('context.excursionsColors.textPrimary'));
+    },
+  );
+
+  test(
+    'excursion cards use V2 primary for card accent text without raw brown colors',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf('Color _excursionsPrimaryTextColor');
+      final shadowStart = source.indexOf(
+        'List<BoxShadow>? _excursionsCardShadow',
+        helperStart,
+      );
+      final cardStart = source.indexOf('class ExcursionListCard');
+      final coverStart = source.indexOf('class _ExcursionCoverArt');
+
+      expect(helperStart, isNonNegative);
+      expect(shadowStart, greaterThan(helperStart));
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+
+      final helperSource = source.substring(helperStart, shadowStart);
+      final cardSource = source.substring(cardStart, coverStart);
+
+      expect(helperSource, contains('context.excursionsColors.primary'));
+      expect(helperSource, isNot(contains('Color(0xFFB45309)')));
+      expect(helperSource, isNot(contains('Brightness.light')));
+      expect(cardSource, contains('_excursionsPrimaryTextColor(context)'));
     },
   );
 

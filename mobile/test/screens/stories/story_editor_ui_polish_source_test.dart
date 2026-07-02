@@ -13,7 +13,7 @@ void main() {
     expect(source, isNot(contains('height: 64')));
   });
 
-  test('story editor template picker is not rendered as a disabled button', () {
+  test('story editor template picker opens a modal bottom sheet', () {
     final source = File(
       'lib/features/stories/editor/presentation/widgets/story_metadata_panel.dart',
     ).readAsStringSync();
@@ -26,14 +26,75 @@ void main() {
     final popupSource = source.substring(popupStart, formatStart);
     expect(popupSource, isNot(contains('onPressed: null')));
     expect(popupSource, isNot(contains('OutlinedButton.icon(')));
-    expect(popupSource, contains('DecoratedBox('));
-    expect(popupSource, contains('minWidth: fieldWidth'));
-    expect(popupSource, contains('maxWidth: fieldWidth'));
+    expect(
+      popupSource,
+      contains('showAppModalBottomSheet<StoryEditorTemplatePreset>'),
+    );
     expect(popupSource, contains('_StoryTemplateMenuItem('));
     expect(popupSource, contains('Icons.check_circle_rounded'));
+    expect(
+      popupSource,
+      isNot(contains('PopupMenuButton<StoryEditorTemplatePreset>')),
+    );
+    expect(
+      popupSource,
+      isNot(contains('PopupMenuItem<StoryEditorTemplatePreset>')),
+    );
   });
 
-  test('story editor metadata dropdowns use polished full-width menu items', () {
+  test(
+    'story editor template picker bottom sheet starts at phone bottom edge',
+    () {
+      final source = File(
+        'lib/features/stories/editor/presentation/widgets/story_metadata_panel.dart',
+      ).readAsStringSync();
+
+      final popupStart = source.indexOf('class _StoryTemplatePickerField');
+      final formatStart = source.indexOf('class _MetadataPopupField');
+      expect(popupStart, isNonNegative);
+      expect(formatStart, greaterThan(popupStart));
+
+      final popupSource = source.substring(popupStart, formatStart);
+      expect(popupSource, contains('useSafeArea: false'));
+    },
+  );
+
+  test('story editor header uses compact adaptive V2 chrome', () {
+    final source = File(
+      'lib/features/stories/editor/presentation/story_editor_screen.dart',
+    ).readAsStringSync();
+
+    final appBarStart = source.indexOf('class _StoryEditorAppBar');
+    final layoutStart = source.indexOf('class _EditorFormLayout');
+    expect(appBarStart, isNonNegative);
+    expect(layoutStart, greaterThan(appBarStart));
+
+    final appBarSource = source.substring(appBarStart, layoutStart);
+
+    expect(
+      appBarSource,
+      contains('Size get preferredSize => const Size.fromHeight(48)'),
+    );
+    expect(appBarSource, contains('toolbarHeight: 48'));
+    expect(appBarSource, contains('centerTitle: true'));
+    expect(
+      appBarSource,
+      contains('backgroundColor: context.storyEditorColors.surface'),
+    );
+    expect(
+      appBarSource,
+      contains('foregroundColor: context.storyEditorColors.textPrimary'),
+    );
+    expect(appBarSource, contains('shape: Border('));
+    expect(
+      appBarSource,
+      contains('BorderSide(color: context.storyEditorColors.border)'),
+    );
+    expect(appBarSource, isNot(contains('StoryPalette.backgroundTop')));
+    expect(appBarSource, isNot(contains('StoryPalette.text')));
+  });
+
+  test('story editor metadata pickers open modal bottom sheets', () {
     final source = File(
       'lib/features/stories/editor/presentation/widgets/story_metadata_panel.dart',
     ).readAsStringSync();
@@ -44,11 +105,13 @@ void main() {
     expect(popupEnd, greaterThan(popupStart));
     final popupSource = source.substring(popupStart, popupEnd);
 
-    expect(popupSource, contains('minWidth: fieldWidth'));
-    expect(popupSource, contains('maxWidth: fieldWidth'));
+    expect(popupSource, contains('showAppModalBottomSheet<String>'));
     expect(popupSource, contains('_StoryMetadataMenuItem('));
     expect(popupSource, contains('Icons.check_circle_rounded'));
-    expect(popupSource, contains('AppPalette.primary.withValues(alpha: 0.14)'));
+    expect(popupSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(popupSource, isNot(contains('PopupMenuButton<String>')));
+    expect(popupSource, isNot(contains('PopupMenuItem<String>')));
+    expect(popupSource, isNot(contains('AppPalette.')));
   });
 
   test('story editor exposes a broader reusable template set', () {
@@ -132,7 +195,7 @@ void main() {
     expect(placeHeaderSource, isNot(contains('titleMedium')));
   });
 
-  test('story editor chrome follows app palette and keyboard insets', () {
+  test('story editor chrome preserves keyboard insets and V2 migrated blocks', () {
     final screen = File(
       'lib/features/stories/editor/presentation/story_editor_screen.dart',
     ).readAsStringSync();
@@ -142,8 +205,20 @@ void main() {
     final canvas = File(
       'lib/features/stories/editor/presentation/widgets/story_block_canvas.dart',
     ).readAsStringSync();
+    final style = File(
+      'lib/features/stories/editor/presentation/widgets/story_editor_style.dart',
+    ).readAsStringSync();
     final media = File(
       'lib/features/stories/editor/presentation/widgets/story_media_block.dart',
+    ).readAsStringSync();
+    final metadata = File(
+      'lib/features/stories/editor/presentation/widgets/story_metadata_panel.dart',
+    ).readAsStringSync();
+    final publish = File(
+      'lib/features/stories/editor/presentation/widgets/story_publish_panel.dart',
+    ).readAsStringSync();
+    final addSheet = File(
+      'lib/features/stories/editor/presentation/widgets/story_add_block_sheet.dart',
     ).readAsStringSync();
     final text = File(
       'lib/features/stories/editor/presentation/widgets/story_text_block.dart',
@@ -151,10 +226,144 @@ void main() {
 
     expect(screen, contains('AnimatedPadding('));
     expect(screen, contains('MediaQuery.viewInsetsOf(context).bottom'));
-    for (final source in [toolbar, canvas, media, text]) {
-      expect(source, contains('AppPalette.'));
+    expect(screen, contains('app_design_system.dart'));
+    expect(screen, contains('AppDesignSystem.colorsFor(context)'));
+    expect(screen, contains('storyEditorColors.primary'));
+    expect(screen, isNot(contains('AppPalette.')));
+    for (final source in [
+      style,
+      toolbar,
+      text,
+      media,
+      canvas,
+      metadata,
+      publish,
+      addSheet,
+    ]) {
+      expect(source, contains('app_design_system.dart'));
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, isNot(contains('AppPalette.')));
       expect(source, isNot(contains('colorScheme.primary')));
     }
+  });
+
+  test('quick post editor uses clean adaptive V2 light-theme chrome', () {
+    final source = File(
+      'lib/features/stories/editor/presentation/story_editor_screen.dart',
+    ).readAsStringSync();
+
+    final colorsStart = source.indexOf('final class _StoryEditorColors');
+    final colorsEnd = source.indexOf('extension _StoryEditorColorContext');
+    final selectorStart = source.indexOf('class _StoryEditorPostModeSelector');
+    final composerStart = source.indexOf('class _QuickPostComposer');
+    final mediaStart = source.indexOf('class _QuickPostMediaPanel');
+    final thumbnailStart = source.indexOf('class _QuickPostMediaThumbnail');
+    final appBarStart = source.indexOf('class _StoryEditorAppBar');
+
+    expect(colorsStart, isNonNegative);
+    expect(colorsEnd, greaterThan(colorsStart));
+    expect(selectorStart, isNonNegative);
+    expect(composerStart, greaterThan(selectorStart));
+    expect(mediaStart, greaterThan(composerStart));
+    expect(thumbnailStart, greaterThan(mediaStart));
+    expect(appBarStart, greaterThan(thumbnailStart));
+
+    final colorsSource = source.substring(colorsStart, colorsEnd);
+    final selectorSource = source.substring(selectorStart, composerStart);
+    final composerSource = source.substring(composerStart, mediaStart);
+    final mediaSource = source.substring(mediaStart, thumbnailStart);
+    final thumbnailSource = source.substring(thumbnailStart, appBarStart);
+
+    expect(
+      colorsSource,
+      contains('Color get quickPostPanelSurface => colors.surfaceRaised'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get quickPostPanelBorder => colors.border'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get quickPostInputSurface => colors.surface'),
+    );
+    expect(
+      colorsSource,
+      contains(
+        'Color get quickPostSelectedChipSurface => colors.primaryContainer',
+      ),
+    );
+    expect(
+      colorsSource,
+      contains('Color get quickPostSelectedChipText => colors.textPrimary'),
+    );
+    expect(source, contains('List<BoxShadow>? _storyEditorDarkThemeShadow('));
+    expect(
+      source,
+      contains('if (Theme.of(context).brightness == Brightness.light)'),
+    );
+
+    for (final sectionSource in [
+      selectorSource,
+      composerSource,
+      mediaSource,
+      thumbnailSource,
+    ]) {
+      expect(sectionSource, isNot(contains('StoryPalette.')));
+    }
+
+    expect(
+      selectorSource,
+      contains('context.storyEditorColors.quickPostPanelSurface'),
+    );
+    expect(
+      selectorSource,
+      contains('context.storyEditorColors.quickPostPanelBorder'),
+    );
+    expect(
+      selectorSource,
+      contains('context.storyEditorColors.quickPostSelectedChipSurface'),
+    );
+    expect(selectorSource, contains('quickPostSelectedChipText'));
+    expect(selectorSource, isNot(contains('primary.withValues(alpha: 0.22)')));
+
+    expect(
+      composerSource,
+      contains('context.storyEditorColors.quickPostPanelSurface'),
+    );
+    expect(
+      composerSource,
+      contains('context.storyEditorColors.quickPostPanelBorder'),
+    );
+    expect(composerSource, contains('boxShadow: _storyEditorDarkThemeShadow('));
+    expect(
+      composerSource,
+      contains('context.storyEditorColors.quickPostInputSurface'),
+    );
+    expect(composerSource, isNot(contains('white.withValues(alpha: 0.08)')));
+    expect(
+      composerSource,
+      isNot(contains('surfaceRaised.withValues(alpha: 0.72)')),
+    );
+
+    expect(
+      mediaSource,
+      contains('context.storyEditorColors.quickPostPanelSurface'),
+    );
+    expect(
+      mediaSource,
+      contains('context.storyEditorColors.quickPostPanelBorder'),
+    );
+    expect(mediaSource, isNot(contains('primary.withValues(alpha: 0.22)')));
+
+    expect(
+      thumbnailSource,
+      contains('context.storyEditorColors.quickPostThumbnailSurface'),
+    );
+    expect(
+      thumbnailSource,
+      contains('context.storyEditorColors.quickPostPanelBorder'),
+    );
+    expect(thumbnailSource, isNot(contains('white.withValues(alpha: 0.08)')));
   });
 
   test('story block reordering starts from a delayed drag handle only', () {

@@ -82,6 +82,20 @@ void main() {
     expect(source, contains('storyCaptureFlashOnLabel'));
   });
 
+  test('story capture uses V2 colors only', () {
+    final source = File(
+      'lib/screens/stories/story_capture_screen.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, contains('colors.scrim'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test('publish uploads only captured story media blocks', () {
     final source = File(
       'lib/screens/stories/story_capture_screen.dart',

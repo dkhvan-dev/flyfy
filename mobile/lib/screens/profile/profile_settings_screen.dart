@@ -12,6 +12,7 @@ import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/theme_mode_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
@@ -138,6 +139,91 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     return showAppLanguageSheet(context);
   }
 
+  Future<void> _openAppThemeSettings() {
+    final themeModeProvider = context.read<ThemeModeProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
+    return showAppModalBottomSheet<void>(
+      context: context,
+      title: l10n.appThemeTitle,
+      subtitle: l10n.appThemeSubtitle,
+      icon: Icons.contrast_rounded,
+      initialChildSize: 0.42,
+      minChildSize: 0.28,
+      maxChildSize: 0.72,
+      builder: (sheetContext) {
+        final colors = AppDesignSystem.colorsFor(sheetContext);
+        return RadioGroup<AppThemeModePreference>(
+          groupValue: themeModeProvider.selectedMode,
+          onChanged: (value) async {
+            if (value == null) return;
+
+            await themeModeProvider.setThemeMode(value);
+            if (sheetContext.mounted) {
+              Navigator.of(sheetContext).pop();
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final mode in AppThemeModePreference.values)
+                RadioListTile<AppThemeModePreference>(
+                  value: mode,
+                  activeColor: colors.primary,
+                  contentPadding: AppEdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.trailing,
+                  secondary: Icon(_themeModeIcon(mode), color: colors.primary),
+                  title: Text(
+                    _themeModeLabel(l10n, mode),
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
+                      fontSize: profileScaled(context, 15, min: 14, max: 16),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _themeModeDescription(l10n, mode),
+                    style: AppTextStyle(
+                      color: colors.textMuted,
+                      fontSize: profileScaled(context, 13, min: 12, max: 13),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _themeModeLabel(AppLocalizations l10n, AppThemeModePreference mode) {
+    return switch (mode) {
+      AppThemeModePreference.system => l10n.appThemeSystem,
+      AppThemeModePreference.light => l10n.appThemeLight,
+      AppThemeModePreference.dark => l10n.appThemeDark,
+    };
+  }
+
+  String _themeModeDescription(
+    AppLocalizations l10n,
+    AppThemeModePreference mode,
+  ) {
+    return switch (mode) {
+      AppThemeModePreference.system => l10n.appThemeSystemDescription,
+      AppThemeModePreference.light => l10n.appThemeLightDescription,
+      AppThemeModePreference.dark => l10n.appThemeDarkDescription,
+    };
+  }
+
+  IconData _themeModeIcon(AppThemeModePreference mode) {
+    return switch (mode) {
+      AppThemeModePreference.system => Icons.brightness_auto_rounded,
+      AppThemeModePreference.light => Icons.light_mode_rounded,
+      AppThemeModePreference.dark => Icons.dark_mode_rounded,
+    };
+  }
+
   Future<void> _confirmLogout() async {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.read<AuthProvider>();
@@ -169,17 +255,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final profile = context.watch<SessionProvider>().profile;
 
     if (profile == null) {
-      return Scaffold(
-        body: ProfileResponsiveScope(
-          child: ProfileGlassBackground(
-            child: SafeArea(
-              child: Center(
-                child: Text(
-                  l10n.profileNotAvailable,
-                  style: const AppTextStyle(color: AppPalette.textPrimary),
+      return Theme(
+        data: AppDesignSystem.themeFor(context),
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: ProfileResponsiveScope(
+            child: DecoratedBox(
+              decoration: AppBoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: colors.screenGradientColors,
+                ),
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: Text(
+                    l10n.profileNotAvailable,
+                    style: AppTextStyle(color: colors.textPrimary),
+                  ),
                 ),
               ),
             ),
@@ -190,105 +288,129 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
     final padding = profileScaled(context, 20, min: 14, max: 20);
     final lang = Localizations.localeOf(context).languageCode;
+    final selectedThemeMode = context.watch<ThemeModeProvider>().selectedMode;
 
-    return Scaffold(
-      backgroundColor: AppPalette.transparent,
-      body: ProfileResponsiveScope(
-        child: ProfileGlassBackground(
-          child: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _refreshProfileSettings,
-              color: AppPalette.primary,
-              backgroundColor: AppPalette.surfaceCool,
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                padding: AppEdgeInsets.fromLTRB(
-                  padding,
-                  profileScaled(context, 14, min: 10, max: 18),
-                  padding,
-                  profileScaled(context, 28, min: 20, max: 34),
-                ),
-                children: [
-                  _SubpageTopBar(title: l10n.profileSettingsPageTitle),
-                  SizedBox(
-                    height: profileScaled(context, 26, min: 18, max: 30),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: ProfileResponsiveScope(
+          child: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
+              ),
+            ),
+            child: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: _refreshProfileSettings,
+                color: colors.primary,
+                backgroundColor: colors.surface,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  ProfileSectionHeading(
-                    title: l10n.profileOverviewSectionTitle,
+                  padding: AppEdgeInsets.fromLTRB(
+                    padding,
+                    profileScaled(context, 14, min: 10, max: 18),
+                    padding,
+                    profileScaled(context, 28, min: 20, max: 34),
                   ),
-                  SizedBox(
-                    height: profileScaled(context, 16, min: 12, max: 18),
-                  ),
-                  FutureBuilder<_ProfileReferenceLabels>(
-                    future: _referenceLabelsFutureFor(profile, lang),
-                    builder: (context, snapshot) {
-                      return _ProfileOverviewCard(
-                        profile: profile,
-                        labels: snapshot.data,
-                      );
-                    },
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 28, min: 24, max: 32),
-                  ),
-                  ProfileSectionHeading(title: l10n.profileAccountSectionTitle),
-                  SizedBox(
-                    height: profileScaled(context, 16, min: 12, max: 18),
-                  ),
-                  _SettingsActionTile(
-                    icon: Icons.edit_outlined,
-                    title: l10n.editProfileButton,
-                    subtitle: l10n.profileSettingsEditSubtitle,
-                    onTap: _openEditProfile,
-                  ),
-                  _SettingsActionTile(
-                    icon: Icons.language_rounded,
-                    title: l10n.appLanguageTitle,
-                    subtitle: l10n.profileLocale,
-                    onTap: _openAppLanguageSettings,
-                  ),
-                  _SettingsActionTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: l10n.profileNotificationsRowTitle,
-                    subtitle: l10n.profileNotificationsRowSubtitle,
-                    onTap: () => context.push('/profile/notifications'),
-                  ),
-                  _SettingsActionTile(
-                    icon: Icons.lock_outline_rounded,
-                    title: l10n.profileSecurityRowTitle,
-                    subtitle: l10n.profileSecurityRowSubtitle,
-                    onTap: () => context.push('/profile/security'),
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 26, min: 20, max: 30),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: _confirmLogout,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppPalette.danger,
-                      foregroundColor: AppPalette.textPrimary,
-                      minimumSize: Size(
-                        double.infinity,
-                        profileScaled(context, 54, min: 48, max: 56),
+                  children: [
+                    _SubpageTopBar(title: l10n.profileSettingsPageTitle),
+                    SizedBox(
+                      height: profileScaled(context, 26, min: 18, max: 30),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileOverviewSectionTitle,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 16, min: 12, max: 18),
+                    ),
+                    FutureBuilder<_ProfileReferenceLabels>(
+                      future: _referenceLabelsFutureFor(profile, lang),
+                      builder: (context, snapshot) {
+                        return _ProfileOverviewCard(
+                          profile: profile,
+                          labels: snapshot.data,
+                        );
+                      },
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileAccountSectionTitle,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 16, min: 12, max: 18),
+                    ),
+                    _SettingsActionTile(
+                      icon: Icons.edit_outlined,
+                      title: l10n.editProfileButton,
+                      subtitle: l10n.profileSettingsEditSubtitle,
+                      onTap: _openEditProfile,
+                    ),
+                    _SettingsActionTile(
+                      icon: Icons.language_rounded,
+                      title: l10n.appLanguageTitle,
+                      subtitle: l10n.profileLocale,
+                      onTap: _openAppLanguageSettings,
+                    ),
+                    _SettingsActionTile(
+                      icon: Icons.contrast_rounded,
+                      title: l10n.appThemeTitle,
+                      subtitle: _themeModeLabel(l10n, selectedThemeMode),
+                      onTap: _openAppThemeSettings,
+                    ),
+                    _SettingsActionTile(
+                      icon: Icons.notifications_none_rounded,
+                      title: l10n.profileNotificationsRowTitle,
+                      subtitle: l10n.profileNotificationsRowSubtitle,
+                      onTap: () => context.push('/profile/notifications'),
+                    ),
+                    _SettingsActionTile(
+                      icon: Icons.lock_outline_rounded,
+                      title: l10n.profileSecurityRowTitle,
+                      subtitle: l10n.profileSecurityRowSubtitle,
+                      onTap: () => context.push('/profile/security'),
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 26, min: 20, max: 30),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: _confirmLogout,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.danger,
+                        foregroundColor: colors.white,
+                        minimumSize: Size(
+                          double.infinity,
+                          profileScaled(context, 54, min: 48, max: 56),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppBorderRadius.circular(
+                            profileScaled(context, 20, min: 18, max: 22),
+                          ),
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppBorderRadius.circular(
-                          profileScaled(context, 20, min: 18, max: 22),
+                      child: Text(
+                        l10n.logoutButton,
+                        style: AppTextStyle(
+                          color: colors.white,
+                          fontSize: profileScaled(
+                            context,
+                            15,
+                            min: 14,
+                            max: 16,
+                          ),
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    child: Text(
-                      l10n.logoutButton,
-                      style: AppTextStyle(
-                        color: AppPalette.textPrimary,
-                        fontSize: profileScaled(context, 15, min: 14, max: 16),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -305,6 +427,7 @@ class _SubpageTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Row(
       children: [
         ProfileTopIconButton(
@@ -322,7 +445,7 @@ class _SubpageTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
@@ -358,6 +481,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final maxDialogHeight = MediaQuery.sizeOf(context).height * 0.84;
     final radius = AppBorderRadius.circular(
       profileScaled(context, 28, min: 24, max: 30),
@@ -368,7 +492,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
         horizontal: profileScaled(context, 18, min: 14, max: 24),
         vertical: profileScaled(context, 24, min: 18, max: 28),
       ),
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: colors.transparent,
       elevation: 0,
       child: SafeArea(
         child: ConstrainedBox(
@@ -379,22 +503,20 @@ class _LogoutConfirmDialog extends StatelessWidget {
           child: DecoratedBox(
             decoration: AppBoxDecoration(
               borderRadius: radius,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppPalette.warmSurface49, AppPalette.warmInk62],
+                colors: colors.screenGradientColors,
               ),
-              border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.28),
-              ),
+              border: Border.all(color: colors.borderPrimary),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.32),
+                  color: colors.black.withValues(alpha: 0.32),
                   blurRadius: 34,
                   offset: const Offset(0, 18),
                 ),
                 BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  color: colors.primary.withValues(alpha: 0.14),
                   blurRadius: 28,
                   offset: const Offset(0, 10),
                 ),
@@ -419,14 +541,14 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           borderRadius: AppBorderRadius.circular(
                             profileScaled(context, 20, min: 18, max: 22),
                           ),
-                          color: AppPalette.primary.withValues(alpha: 0.14),
+                          color: colors.primary.withValues(alpha: 0.14),
                           border: Border.all(
-                            color: AppPalette.primary.withValues(alpha: 0.28),
+                            color: colors.primary.withValues(alpha: 0.28),
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.logout_rounded,
-                          color: AppPalette.primary,
+                          color: colors.primary,
                         ),
                       ),
                     ),
@@ -436,7 +558,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: colors.textPrimary,
                         fontSize: profileScaled(context, 24, min: 21, max: 26),
                         height: 1.08,
                         fontWeight: FontWeight.w900,
@@ -448,7 +570,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     Text(
                       message,
                       style: AppTextStyle(
-                        color: profileTextSoft,
+                        color: colors.textSecondary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         height: 1.45,
                         fontWeight: FontWeight.w600,
@@ -465,10 +587,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
                         OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(false),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: profileTextSoft,
-                            side: BorderSide(
-                              color: AppPalette.white.withValues(alpha: 0.14),
-                            ),
+                            foregroundColor: colors.textSecondary,
+                            side: BorderSide(color: colors.border),
                             minimumSize: const Size(132, 48),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(999),
@@ -483,8 +603,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
                         FilledButton(
                           onPressed: () => Navigator.of(context).pop(true),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppPalette.primary,
-                            foregroundColor: AppPalette.white,
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.textPrimary,
                             minimumSize: const Size(132, 48),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(999),
@@ -518,6 +638,7 @@ class _ProfileOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final items = [
       (
         l10n.profileFullName,
@@ -553,11 +674,7 @@ class _ProfileOverviewCard extends StatelessWidget {
             decoration: AppBoxDecoration(
               border: index == items.length - 1
                   ? null
-                  : Border(
-                      bottom: BorderSide(
-                        color: AppPalette.white.withValues(alpha: 0.05),
-                      ),
-                    ),
+                  : Border(bottom: BorderSide(color: colors.borderSoft)),
             ),
             child: Row(
               children: [
@@ -565,7 +682,7 @@ class _ProfileOverviewCard extends StatelessWidget {
                   child: Text(
                     item.$1,
                     style: AppTextStyle(
-                      color: profileTextSoft,
+                      color: colors.textSecondary,
                       fontSize: profileScaled(context, 13, min: 12, max: 13),
                       fontWeight: FontWeight.w700,
                     ),
@@ -579,7 +696,7 @@ class _ProfileOverviewCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: colors.textPrimary,
                       fontSize: profileScaled(context, 14, min: 13, max: 15),
                       fontWeight: FontWeight.w800,
                     ),
@@ -621,6 +738,7 @@ class _SettingsActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final effectiveDisabled = onTap == null;
     return Padding(
       padding: AppEdgeInsets.only(
@@ -647,7 +765,7 @@ class _SettingsActionTile extends StatelessWidget {
                 width: profileScaled(context, 46, min: 40, max: 48),
                 height: profileScaled(context, 46, min: 40, max: 48),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(
+                  color: colors.primary.withValues(
                     alpha: effectiveDisabled ? 0.05 : 0.12,
                   ),
                   shape: BoxShape.circle,
@@ -655,8 +773,8 @@ class _SettingsActionTile extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: effectiveDisabled
-                      ? profileDisabled
-                      : AppPalette.primary,
+                      ? colors.textDisabled
+                      : colors.primary,
                 ),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -668,8 +786,8 @@ class _SettingsActionTile extends StatelessWidget {
                       title,
                       style: AppTextStyle(
                         color: effectiveDisabled
-                            ? profileDisabled
-                            : AppPalette.textPrimary,
+                            ? colors.textDisabled
+                            : colors.textPrimary,
                         fontSize: profileScaled(context, 16, min: 14, max: 17),
                         fontWeight: FontWeight.w800,
                       ),
@@ -679,8 +797,8 @@ class _SettingsActionTile extends StatelessWidget {
                       subtitle,
                       style: AppTextStyle(
                         color: effectiveDisabled
-                            ? profileDisabled
-                            : profileTextMuted,
+                            ? colors.textDisabled
+                            : colors.textMuted,
                         fontSize: profileScaled(context, 13, min: 12, max: 13),
                         height: 1.45,
                       ),
@@ -693,7 +811,9 @@ class _SettingsActionTile extends StatelessWidget {
                 effectiveDisabled
                     ? Icons.lock_outline_rounded
                     : Icons.chevron_right_rounded,
-                color: effectiveDisabled ? profileDisabled : profileTextMuted,
+                color: effectiveDisabled
+                    ? colors.textDisabled
+                    : colors.textMuted,
               ),
             ],
           ),

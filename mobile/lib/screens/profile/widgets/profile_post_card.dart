@@ -15,6 +15,7 @@ class ProfilePostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final coverSize = profileScaled(context, 96, min: 84, max: 108);
     final gap = profileScaled(context, 14, min: 12, max: 16);
     final metaText = [
@@ -28,7 +29,7 @@ class ProfilePostCard extends StatelessWidget {
       label: post.title,
       onTap: onTap,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(
@@ -61,7 +62,7 @@ class ProfilePostCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                              color: colors.textSecondary,
                               fontSize: profileScaled(
                                 context,
                                 12,
@@ -78,7 +79,7 @@ class ProfilePostCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.textPrimary,
+                            color: colors.textPrimary,
                             fontSize: profileScaled(
                               context,
                               15,
@@ -96,7 +97,7 @@ class ProfilePostCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                              color: colors.textSecondary,
                               fontSize: profileScaled(
                                 context,
                                 13,
@@ -119,7 +120,7 @@ class ProfilePostCard extends StatelessWidget {
                                 min: 14,
                                 max: 16,
                               ),
-                              color: AppPalette.primary.withValues(alpha: 0.78),
+                              color: colors.primary.withValues(alpha: 0.78),
                             ),
                             SizedBox(width: profileScaled(context, 5, min: 4)),
                             Flexible(
@@ -128,7 +129,7 @@ class ProfilePostCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTextStyle(
-                                  color: AppPalette.textCoolSecondary,
+                                  color: colors.textSecondary,
                                   fontSize: profileScaled(
                                     context,
                                     12,

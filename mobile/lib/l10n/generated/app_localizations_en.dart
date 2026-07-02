@@ -1316,6 +1316,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLanguageTitle => 'App language';
 
   @override
+  String get appThemeTitle => 'App theme';
+
+  @override
+  String get appThemeSubtitle => 'Light, dark, or system default';
+
+  @override
+  String get appThemeSystem => 'System';
+
+  @override
+  String get appThemeSystemDescription => 'Follow device settings';
+
+  @override
+  String get appThemeLight => 'Light';
+
+  @override
+  String get appThemeLightDescription => 'Use a light interface';
+
+  @override
+  String get appThemeDark => 'Dark';
+
+  @override
+  String get appThemeDarkDescription => 'Use a dark interface';
+
+  @override
   String get saveProfileButton => 'Save';
 
   @override
@@ -5967,7 +5991,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      'Please enter a maximum between 1 and 100 participants';
+      'Please enter a maximum between 2 and 100 participants';
 
   @override
   String get createMinParticipantsValidation =>

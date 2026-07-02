@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,20 @@ import 'package:inflap/providers/chat_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test('SupportTicketDetailScreen uses V2 design colors only', () {
+    final source = File(
+      'lib/features/help_center/presentation/support_tickets_screen.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.primary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   testWidgets(
     'SupportTicketsScreen opens the unified support chat instead of ticket list',
     (tester) async {
@@ -1031,7 +1046,7 @@ void main() {
         matching: find.byIcon(Icons.star_border_rounded),
       ),
     );
-    expect(initialStar.color, AppPalette.primary);
+    expect(initialStar.color, AppColorSchemes.light.primary);
 
     await tester.enterText(
       find.byKey(const ValueKey('support-ticket-csat-comment')),
@@ -1049,10 +1064,10 @@ void main() {
     final selectedStarButton = tester.widget<IconButton>(
       find.byKey(const ValueKey('support-ticket-csat-5')),
     );
-    expect(selectedStar.color, AppPalette.primary);
+    expect(selectedStar.color, AppColorSchemes.light.primary);
     expect(
       selectedStarButton.style?.backgroundColor?.resolve(<WidgetState>{}),
-      isNot(AppPalette.primary),
+      isNot(AppColorSchemes.light.primary),
     );
     expect(api.lastCSATTicketId, isNull);
     expect(api.lastCSATRating, isNull);

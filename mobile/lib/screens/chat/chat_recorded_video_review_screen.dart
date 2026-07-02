@@ -241,6 +241,7 @@ class _ChatRecordedVideoReviewScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final controller = _controller;
     final initialized = controller?.value.isInitialized ?? false;
     final duration = initialized ? controller!.value.duration : Duration.zero;
@@ -248,7 +249,7 @@ class _ChatRecordedVideoReviewScreenState
     final trimRange = _trimRange;
 
     return Scaffold(
-      backgroundColor: AppPalette.black,
+      backgroundColor: colors.backgroundDeep,
       body: SafeArea(
         child: Stack(
           children: [
@@ -258,13 +259,11 @@ class _ChatRecordedVideoReviewScreenState
                 onTap: initialized ? () => unawaited(_togglePlayback()) : null,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(
-                          color: AppPalette.primary,
-                        )
+                      ? CircularProgressIndicator(color: colors.primary)
                       : _loadFailed || !initialized
                       ? Icon(
                           Icons.movie_outlined,
-                          color: AppPalette.white.withValues(alpha: 0.5),
+                          color: colors.white.withValues(alpha: 0.5),
                           size: 54,
                         )
                       : AspectRatio(
@@ -282,9 +281,9 @@ class _ChatRecordedVideoReviewScreenState
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.black.withValues(alpha: 0.58),
-                        AppPalette.transparent,
-                        AppPalette.black.withValues(alpha: 0.78),
+                        colors.scrim.withValues(alpha: 0.58),
+                        colors.transparent,
+                        colors.scrim.withValues(alpha: 0.78),
                       ],
                       stops: const [0, 0.42, 1],
                     ),
@@ -379,6 +378,7 @@ class _ReviewControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final max = duration.inMilliseconds <= 0
         ? 1.0
         : duration.inMilliseconds.toDouble();
@@ -390,10 +390,10 @@ class _ReviewControls extends StatelessWidget {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppPalette.primary,
-            inactiveTrackColor: AppPalette.white.withValues(alpha: 0.24),
-            thumbColor: AppPalette.white,
-            overlayColor: AppPalette.primary.withValues(alpha: 0.18),
+            activeTrackColor: colors.primary,
+            inactiveTrackColor: colors.white.withValues(alpha: 0.24),
+            thumbColor: colors.white,
+            overlayColor: colors.primary.withValues(alpha: 0.18),
           ),
           child: Slider(
             min: 0,
@@ -431,15 +431,16 @@ class _TrimRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final max = duration.inMilliseconds.toDouble();
     final start = Duration(milliseconds: values.start.round());
     final end = Duration(milliseconds: values.end.round());
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.48),
+        color: colors.scrim.withValues(alpha: 0.48),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.14)),
+        border: Border.all(color: colors.white.withValues(alpha: 0.14)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.fromLTRB(14, 10, 14, 8),
@@ -451,8 +452,8 @@ class _TrimRangeSelector extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const AppTextStyle(
-                    color: AppPalette.white,
+                  style: AppTextStyle(
+                    color: colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -462,7 +463,7 @@ class _TrimRangeSelector extends StatelessWidget {
                 Text(
                   '${_formatReviewDuration(start)} - ${_formatReviewDuration(end)}',
                   style: AppTextStyle(
-                    color: AppPalette.white.withValues(alpha: 0.76),
+                    color: colors.white.withValues(alpha: 0.76),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -477,8 +478,8 @@ class _TrimRangeSelector extends StatelessWidget {
                 values.start.clamp(0.0, max).toDouble(),
                 values.end.clamp(0.0, max <= 0 ? 1 : max).toDouble(),
               ),
-              activeColor: AppPalette.primary,
-              inactiveColor: AppPalette.white.withValues(alpha: 0.24),
+              activeColor: colors.primary,
+              inactiveColor: colors.white.withValues(alpha: 0.24),
               onChanged: onChanged,
             ),
           ],
@@ -505,6 +506,8 @@ class _ReviewIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Semantics(
       button: true,
       label: label,
@@ -517,12 +520,12 @@ class _ReviewIconButton extends StatelessWidget {
           height: size,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.black.withValues(alpha: 0.48),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+            color: colors.scrim.withValues(alpha: 0.48),
+            border: Border.all(color: colors.white.withValues(alpha: 0.16)),
           ),
           child: Icon(
             icon,
-            color: AppPalette.white.withValues(alpha: onTap == null ? 0.36 : 1),
+            color: colors.white.withValues(alpha: onTap == null ? 0.36 : 1),
             size: iconSize,
           ),
         ),
@@ -539,6 +542,8 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Semantics(
       button: true,
       label: label,
@@ -549,8 +554,8 @@ class _SendButton extends StatelessWidget {
         child: DecoratedBox(
           decoration: AppBoxDecoration(
             color: onTap == null
-                ? AppPalette.white.withValues(alpha: 0.2)
-                : AppPalette.white,
+                ? colors.surfaceHigh.withValues(alpha: 0.72)
+                : colors.primary,
             borderRadius: AppBorderRadius.circular(999),
           ),
           child: Padding(
@@ -563,7 +568,7 @@ class _SendButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.black.withValues(
+                color: colors.textPrimary.withValues(
                   alpha: onTap == null ? 0.48 : 1,
                 ),
                 fontSize: 14,
@@ -585,19 +590,21 @@ class _ReviewErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.72),
+        color: colors.scrim.withValues(alpha: 0.72),
         borderRadius: AppBorderRadius.circular(14),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+        border: Border.all(color: colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const AppTextStyle(
-            color: AppPalette.white,
+          style: AppTextStyle(
+            color: colors.white,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,

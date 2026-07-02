@@ -13,6 +13,8 @@ class AppInlineFieldError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Semantics(
       container: true,
       liveRegion: true,
@@ -22,19 +24,15 @@ class AppInlineFieldError extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: AppPalette.danger,
-              size: 16,
-            ),
+            Icon(Icons.error_outline_rounded, color: colors.danger, size: 16),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 message,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.danger,
+                style: AppTextStyle(
+                  color: colors.danger,
                   fontSize: 12,
                   height: 1.3,
                   fontWeight: FontWeight.w700,

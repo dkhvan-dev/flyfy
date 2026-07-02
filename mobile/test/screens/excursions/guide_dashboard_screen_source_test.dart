@@ -4,6 +4,39 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
+    'guide dashboard journey cards do not draw card shadows in light V2',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+
+      final shadowStart = source.indexOf(
+        'List<BoxShadow> _guideDashboardCardShadow',
+      );
+      final journeyStart = source.indexOf('class _GuideJourneyCard');
+      expect(shadowStart, isNonNegative);
+      expect(journeyStart, greaterThan(shadowStart));
+
+      final shadowSource = source.substring(shadowStart, journeyStart);
+
+      expect(shadowSource, contains('Brightness.light'));
+      expect(shadowSource, contains('return const [];'));
+    },
+  );
+
+  test('guide dashboard screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('guideDashboardColors.primary'));
+    expect(source, contains('guideDashboardColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test(
     'guide dashboard screen uses full-width section tabs and status filters',
     () async {
       final source = await File(
@@ -63,7 +96,7 @@ void main() {
         source.contains('GuideBookingDashboardTab? _bookingStatusFilter'),
         isTrue,
       );
-      expect(source, contains('AppPalette.primary'));
+      expect(source, contains('context.guideDashboardColors.primary'));
       expect(source, contains('_matchesSmartQuery'));
       expect(source, contains('_bookingCountForOffer'));
       expect(source, contains('_archiveOffer'));
@@ -93,11 +126,20 @@ void main() {
       );
       expect(
         deleteDialogSource,
-        contains('backgroundColor: AppPalette.surface'),
+        contains('backgroundColor: context.guideDashboardColors.surface'),
       );
-      expect(deleteDialogSource, contains('AppPalette.warmSurface28'));
-      expect(deleteDialogSource, contains('AppPalette.orangeWash25'));
-      expect(deleteDialogSource, contains('AppPalette.primary'));
+      expect(
+        deleteDialogSource,
+        contains('context.guideDashboardColors.warmSurface28'),
+      );
+      expect(
+        deleteDialogSource,
+        contains('context.guideDashboardColors.orangeWash25'),
+      );
+      expect(
+        deleteDialogSource,
+        contains('context.guideDashboardColors.primary'),
+      );
       expect(
         source,
         contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),
@@ -147,6 +189,152 @@ void main() {
       expect(source, isNot(contains('Icons.more_vert_rounded')));
       expect(source, isNot(contains('bottomNavigationBar:')));
       expect(source, isNot(contains('CommonBottomNavigationBar')));
+    },
+  );
+
+  test('guide dashboard stat blocks use visible light-theme borders', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    final colorsStart = source.indexOf('final class _GuideDashboardColors');
+    final colorsEnd = source.indexOf('extension _GuideDashboardColorContext');
+    final statCardStart = source.indexOf('class _GuideStatCard');
+    final filtersStart = source.indexOf('class _GuideDashboardFilters');
+
+    expect(colorsStart, isNonNegative);
+    expect(colorsEnd, greaterThan(colorsStart));
+    expect(statCardStart, isNonNegative);
+    expect(filtersStart, greaterThan(statCardStart));
+
+    final colorsSource = source.substring(colorsStart, colorsEnd);
+    final statCardSource = source.substring(statCardStart, filtersStart);
+
+    expect(
+      colorsSource,
+      contains('Color get dataBlockSurface => colors.surfaceRaised'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get dataBlockBorder => colors.border'),
+    );
+    expect(
+      statCardSource,
+      contains('context.guideDashboardColors.dataBlockSurface'),
+    );
+    expect(
+      statCardSource,
+      contains('context.guideDashboardColors.dataBlockBorder'),
+    );
+    expect(statCardSource, isNot(contains('white.withValues(alpha: 0.05)')));
+  });
+
+  test('guide dashboard journey cards use clean light-theme chrome', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    final colorsStart = source.indexOf('final class _GuideDashboardColors');
+    final colorsEnd = source.indexOf('extension _GuideDashboardColorContext');
+    final shadowStart = source.indexOf(
+      'List<BoxShadow> _guideDashboardCardShadow',
+    );
+    final shadowEnd = shadowStart < 0
+        ? -1
+        : source.indexOf('class _GuideJourneyCard', shadowStart);
+    final journeyCardStart = source.indexOf('class _GuideJourneyCard');
+    final statusBadgeStart = source.indexOf('class _GuideStatusBadge');
+
+    expect(colorsStart, isNonNegative);
+    expect(colorsEnd, greaterThan(colorsStart));
+    expect(shadowStart, isNonNegative);
+    expect(shadowEnd, greaterThan(shadowStart));
+    expect(journeyCardStart, isNonNegative);
+    expect(statusBadgeStart, greaterThan(journeyCardStart));
+
+    final colorsSource = source.substring(colorsStart, colorsEnd);
+    final shadowSource = source.substring(shadowStart, shadowEnd);
+    final journeyCardSource = source.substring(
+      journeyCardStart,
+      statusBadgeStart,
+    );
+
+    expect(
+      colorsSource,
+      contains('Color get journeyCardSurface => colors.surfaceRaised'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get journeyCardMutedSurface => colors.surfaceHigh'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get journeyCardBorder => colors.border'),
+    );
+    expect(shadowSource, contains('Theme.of(context).brightness'));
+    expect(shadowSource, contains('Brightness.light'));
+    expect(shadowSource, contains('return const []'));
+    expect(
+      journeyCardSource,
+      contains('context.guideDashboardColors.journeyCardSurface'),
+    );
+    expect(
+      journeyCardSource,
+      contains('context.guideDashboardColors.journeyCardMutedSurface'),
+    );
+    expect(
+      journeyCardSource,
+      contains('context.guideDashboardColors.journeyCardBorder'),
+    );
+    expect(
+      journeyCardSource,
+      contains('boxShadow: _guideDashboardCardShadow(context)'),
+    );
+    expect(journeyCardSource, isNot(contains('warmSurface17.withValues')));
+    expect(journeyCardSource, isNot(contains('white.withValues(alpha: 0.05)')));
+    expect(journeyCardSource, isNot(contains('white.withValues(alpha: 0.10)')));
+  });
+
+  test(
+    'guide dashboard filter selected chip stays readable in light theme',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+
+      final colorsStart = source.indexOf('final class _GuideDashboardColors');
+      final colorsEnd = source.indexOf('extension _GuideDashboardColorContext');
+      final chipStart = source.indexOf('class _GuideStatusFilterChip');
+      final tabsStart = source.indexOf('class _GuideDashboardQuickActions');
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(chipStart, isNonNegative);
+      expect(tabsStart, greaterThan(chipStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final chipSource = source.substring(chipStart, tabsStart);
+
+      expect(
+        colorsSource,
+        contains('Color get filterChipSurface => colors.surfaceRaised'),
+      );
+      expect(
+        colorsSource,
+        contains(
+          'Color get filterChipSelectedSurface => colors.primaryContainer',
+        ),
+      );
+      expect(
+        colorsSource,
+        contains('Color get filterChipSelectedText => colors.textPrimary'),
+      );
+      expect(chipSource, contains('filterChipSelectedSurface'));
+      expect(chipSource, contains('filterChipSelectedText'));
+      expect(chipSource, contains('filterChipSurface'));
+      expect(chipSource, isNot(contains('amberWash10')));
+      expect(chipSource, isNot(contains('primary.withValues(alpha: 0.18)')));
+      expect(chipSource, isNot(contains('white.withValues(alpha: 0.025)')));
     },
   );
 
@@ -368,8 +556,9 @@ void main() {
         isFalse,
       );
       expect(journeyCardSource.contains('final destructiveButton ='), isTrue);
+      expect(journeyCardSource.contains('foregroundColor:'), isTrue);
       expect(
-        journeyCardSource.contains('foregroundColor: AppPalette.redLight04'),
+        journeyCardSource.contains('context.guideDashboardColors.redLight04'),
         isTrue,
       );
     },

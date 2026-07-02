@@ -333,7 +333,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
       isDismissible: true,
       useSafeArea: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (context) => const _BookingChecklistAddedSheet(),
     );
     return action ?? _BookingCompletionAction.myExcursions;
@@ -426,21 +426,26 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = AppDesignSystem.themeFor(context);
+    final bookingColors = _BookingColors.of(context);
 
     if (_isLoading) {
-      return const _BookingLoadingScaffold();
+      return Theme(data: theme, child: const _BookingLoadingScaffold());
     }
 
     final excursion = _excursion;
     if (excursion == null) {
-      return Scaffold(
-        backgroundColor: _BookingColors.base,
-        body: DecoratedBox(
-          decoration: _BookingColors.backgroundDecoration,
-          child: SafeArea(
-            child: ErrorView(
-              message: _loadError ?? l10n.excursionBookingLoadFailed,
-              onRetry: () => _ensureExcursionLoaded(),
+      return Theme(
+        data: theme,
+        child: Scaffold(
+          backgroundColor: bookingColors.base,
+          body: DecoratedBox(
+            decoration: bookingColors.backgroundDecoration,
+            child: SafeArea(
+              child: ErrorView(
+                message: _loadError ?? l10n.excursionBookingLoadFailed,
+                onRetry: () => _ensureExcursionLoaded(),
+              ),
             ),
           ),
         ),
@@ -451,35 +456,38 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
       context.watch<ExcursionProvider>().myExcursionBookings,
     );
 
-    return Scaffold(
-      backgroundColor: _BookingColors.base,
-      body: ExcursionBookingContent(
-        excursion: excursion,
-        slots: _slots,
-        selectedSlot: _selectedSlot,
-        isScheduleLoading: _isScheduleLoading,
-        scheduleError: _scheduleError,
-        selectedSlotUnavailableMessage: _selectedSlotUnavailableMessage,
-        adults: _adults,
-        children: _children,
-        maxTravelers: _travelerLimit,
-        isSubmitting: _isSubmitting,
-        existingBooking: existingBooking,
-        loadError: _loadError,
-        onBackTap: _goBack,
-        onSelectSlot: (slot) => setState(() {
-          _selectedSlot = slot;
-          _selectedSlotUnavailableMessage = null;
-          _clampTravelersToLimit(_travelerLimitFor(_excursion, slot));
-        }),
-        onReloadSchedule: _loadScheduleSlots,
-        onIncrementAdults: _incrementAdults,
-        onDecrementAdults: _decrementAdults,
-        onIncrementChildren: _incrementChildren,
-        onDecrementChildren: _decrementChildren,
-        onConfirm: _confirmBooking,
-        onOpenMyExcursions: () => context.go('/me/excursions'),
-        onRetry: () => _ensureExcursionLoaded(),
+    return Theme(
+      data: theme,
+      child: Scaffold(
+        backgroundColor: bookingColors.base,
+        body: ExcursionBookingContent(
+          excursion: excursion,
+          slots: _slots,
+          selectedSlot: _selectedSlot,
+          isScheduleLoading: _isScheduleLoading,
+          scheduleError: _scheduleError,
+          selectedSlotUnavailableMessage: _selectedSlotUnavailableMessage,
+          adults: _adults,
+          children: _children,
+          maxTravelers: _travelerLimit,
+          isSubmitting: _isSubmitting,
+          existingBooking: existingBooking,
+          loadError: _loadError,
+          onBackTap: _goBack,
+          onSelectSlot: (slot) => setState(() {
+            _selectedSlot = slot;
+            _selectedSlotUnavailableMessage = null;
+            _clampTravelersToLimit(_travelerLimitFor(_excursion, slot));
+          }),
+          onReloadSchedule: _loadScheduleSlots,
+          onIncrementAdults: _incrementAdults,
+          onDecrementAdults: _decrementAdults,
+          onIncrementChildren: _incrementChildren,
+          onDecrementChildren: _decrementChildren,
+          onConfirm: _confirmBooking,
+          onOpenMyExcursions: () => context.go('/me/excursions'),
+          onRetry: () => _ensureExcursionLoaded(),
+        ),
       ),
     );
   }
@@ -545,9 +553,10 @@ class ExcursionBookingContent extends StatelessWidget {
     );
     final selectedSlotCanFitTravelers =
         selectedSlot?.isBookableForBooking(adults + children) ?? false;
+    final bookingColors = _BookingColors.of(context);
 
     return DecoratedBox(
-      decoration: _BookingColors.backgroundDecoration,
+      decoration: bookingColors.backgroundDecoration,
       child: SafeArea(
         bottom: false,
         child: LayoutBuilder(
@@ -668,6 +677,7 @@ class _BookingTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final bookingColors = _BookingColors.of(context);
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: _bookingTopBarMinHeight(context)),
       child: Padding(
@@ -685,8 +695,8 @@ class _BookingTopBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: _BookingColors.text,
+                style: AppTextStyle(
+                  color: bookingColors.text,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -716,6 +726,8 @@ class _BookingExcursionCard extends StatelessWidget {
       excursion.currency,
     );
     final cityName = excursion.cityName?.trim() ?? '';
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -751,8 +763,8 @@ class _BookingExcursionCard extends StatelessWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.primary,
+                    style: AppTextStyle(
+                      color: colors.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                       height: 1,
@@ -763,8 +775,8 @@ class _BookingExcursionCard extends StatelessWidget {
                     excursion.title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _BookingColors.text,
+                    style: AppTextStyle(
+                      color: bookingColors.text,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       height: 0.98,
@@ -775,8 +787,8 @@ class _BookingExcursionCard extends StatelessWidget {
                     price,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.primary,
+                    style: AppTextStyle(
+                      color: colors.primary,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -818,26 +830,28 @@ class _BookingInfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingColors = _BookingColors.of(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.05),
+        color: bookingColors.panelOverlay,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
+        border: Border.all(color: bookingColors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: _BookingColors.muted, size: 13),
+            Icon(icon, color: bookingColors.muted, size: 13),
             const SizedBox(width: 5),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: _BookingColors.muted,
+                style: AppTextStyle(
+                  color: bookingColors.muted,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   height: 1,
@@ -942,8 +956,9 @@ class _BookingScheduleSection extends StatelessWidget {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (sheetContext) {
+        final bookingColors = _BookingColors.of(context);
         return AppModalDraggableSheet(
           expand: false,
           initialChildSize: 0.62,
@@ -951,9 +966,9 @@ class _BookingScheduleSection extends StatelessWidget {
           maxChildSize: 0.88,
           builder: (context, scrollController) {
             return DecoratedBox(
-              decoration: const AppBoxDecoration(
-                color: _BookingColors.base,
-                borderRadius: AppBorderRadius.vertical(
+              decoration: AppBoxDecoration(
+                color: bookingColors.base,
+                borderRadius: const AppBorderRadius.vertical(
                   top: AppRadiusValue.circular(28),
                 ),
               ),
@@ -970,7 +985,7 @@ class _BookingScheduleSection extends StatelessWidget {
                           width: 42,
                           height: 4,
                           decoration: AppBoxDecoration(
-                            color: AppPalette.white.withValues(alpha: 0.22),
+                            color: bookingColors.handle,
                             borderRadius: AppBorderRadius.circular(999),
                           ),
                         ),
@@ -980,7 +995,7 @@ class _BookingScheduleSection extends StatelessWidget {
                         AppLocalizations.of(
                           context,
                         )!.excursionBookingSelectSlot,
-                        style: _sectionTitleStyle,
+                        style: _sectionTitleStyle(context),
                       ),
                       const SizedBox(height: 18),
                       _BookingSlotSelector(
@@ -1032,11 +1047,11 @@ class _BookingSlotSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     if (isLoading && slots.isEmpty) {
-      return const _BookingScheduleStatePanel(
-        child: Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
-        ),
+      return _BookingScheduleStatePanel(
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       );
     }
     if (errorMessage != null) {
@@ -1047,8 +1062,8 @@ class _BookingSlotSelector extends StatelessWidget {
         child: Text(
           l10n.excursionBookingNoSlots,
           textAlign: TextAlign.center,
-          style: const AppTextStyle(
-            color: _BookingColors.muted,
+          style: AppTextStyle(
+            color: bookingColors.muted,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             height: 1.25,
@@ -1072,8 +1087,8 @@ class _BookingSlotSelector extends StatelessWidget {
             DateFormat.yMMMd(locale).format(grouped[i].day),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: _BookingColors.text,
+            style: AppTextStyle(
+              color: bookingColors.text,
               fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
@@ -1129,19 +1144,21 @@ class _BookingSlotChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final timeLabel = DateFormat.Hm(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(eventDateTime(slot.startAt, slot.timezone));
     final background = selected
-        ? AppPalette.primary
+        ? colors.primary
         : enabled
-        ? _BookingColors.panel
-        : _BookingColors.panel.withValues(alpha: 0.52);
+        ? bookingColors.panel
+        : bookingColors.panel.withValues(alpha: 0.52);
     final foreground = selected
-        ? AppPalette.textPrimary
+        ? colors.textPrimary
         : enabled
-        ? _BookingColors.text
-        : _BookingColors.muted.withValues(alpha: 0.58);
+        ? bookingColors.text
+        : bookingColors.muted.withValues(alpha: 0.58);
 
     return Semantics(
       button: true,
@@ -1204,15 +1221,17 @@ class _BookingScheduleStatePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingColors = _BookingColors.of(context);
+
     return Container(
       constraints: BoxConstraints(
         minHeight: _bookingScheduleStatePanelMinHeight(context),
       ),
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: _BookingColors.panel,
+        color: bookingColors.panel,
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(color: bookingColors.border),
       ),
       child: child,
     );
@@ -1265,7 +1284,10 @@ class _TravelersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.excursionBookingTravelers, style: _sectionTitleStyle),
+        Text(
+          l10n.excursionBookingTravelers,
+          style: _sectionTitleStyle(context),
+        ),
         const SizedBox(height: 22),
         _TravelerCounterRow(
           title: l10n.excursionBookingAdults,
@@ -1303,6 +1325,8 @@ class _BookingSummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final price = excursion.priceAmount;
     final adultTotal = price * adults;
     final childrenTotal = price * children;
@@ -1314,7 +1338,7 @@ class _BookingSummarySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.excursionBookingSummary, style: _sectionTitleStyle),
+        Text(l10n.excursionBookingSummary, style: _sectionTitleStyle(context)),
         const SizedBox(height: 24),
         _SummaryRow(
           label: l10n.excursionBookingAdultSummary(adults, priceLabel),
@@ -1336,9 +1360,9 @@ class _BookingSummarySection extends StatelessWidget {
           label: l10n.excursionBookingServiceFeeSummary,
           value: _formatBookingMoney(context, fee, excursion.currency),
         ),
-        const Padding(
-          padding: AppEdgeInsets.symmetric(vertical: 26),
-          child: Divider(height: 1, color: AppPalette.warmOverlayMuted05),
+        Padding(
+          padding: const AppEdgeInsets.symmetric(vertical: 26),
+          child: Divider(height: 1, color: bookingColors.border),
         ),
         Row(
           children: [
@@ -1347,8 +1371,8 @@ class _BookingSummarySection extends StatelessWidget {
                 l10n.excursionBookingTotalPrice,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: _BookingColors.text,
+                style: AppTextStyle(
+                  color: bookingColors.text,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -1362,8 +1386,8 @@ class _BookingSummarySection extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: const AppTextStyle(
-                  color: AppPalette.primary,
+                style: AppTextStyle(
+                  color: colors.primary,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -1401,6 +1425,8 @@ class _BookingFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final total = _BookingMath.total(
       pricePerTraveler: excursion.priceAmount,
@@ -1410,10 +1436,8 @@ class _BookingFooter extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk12.withValues(alpha: 0.98),
-        border: Border(
-          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
-        ),
+        color: bookingColors.footer,
+        border: Border(top: BorderSide(color: bookingColors.border)),
       ),
       child: SafeArea(
         top: false,
@@ -1434,10 +1458,13 @@ class _BookingFooter extends StatelessWidget {
                       ? null
                       : onConfirm,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.white,
-                    disabledBackgroundColor: AppPalette.primary.withValues(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.textPrimary,
+                    disabledBackgroundColor: colors.primary.withValues(
                       alpha: 0.45,
+                    ),
+                    disabledForegroundColor: colors.textPrimary.withValues(
+                      alpha: 0.68,
                     ),
                     shape: const StadiumBorder(),
                   ),
@@ -1447,13 +1474,13 @@ class _BookingFooter extends StatelessWidget {
                   label: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: isSubmitting
-                        ? const SizedBox(
-                            key: ValueKey('booking-progress'),
+                        ? SizedBox(
+                            key: const ValueKey('booking-progress'),
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: AppPalette.white,
+                              color: colors.textPrimary,
                             ),
                           )
                         : Text(
@@ -1482,8 +1509,8 @@ class _BookingFooter extends StatelessWidget {
                       ),
                 textAlign: TextAlign.center,
                 maxLines: 3,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeOverlayLight01,
+                style: AppTextStyle(
+                  color: bookingColors.muted,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
@@ -1510,6 +1537,8 @@ class _SectionHead extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
         Expanded(
@@ -1517,13 +1546,13 @@ class _SectionHead extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: _sectionTitleStyle,
+            style: _sectionTitleStyle(context),
           ),
         ),
         TextButton(
           onPressed: onActionTap,
           style: TextButton.styleFrom(
-            foregroundColor: AppPalette.primary,
+            foregroundColor: colors.primary,
             textStyle: const AppTextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -1555,10 +1584,12 @@ class _BookingScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final iconBoxSize = _bookingScheduleIconBoxSize(context);
 
     return Material(
-      color: _BookingColors.panel,
+      color: bookingColors.panel,
       borderRadius: AppBorderRadius.circular(25),
       child: InkWell(
         onTap: onTap,
@@ -1572,13 +1603,13 @@ class _BookingScheduleCard extends StatelessWidget {
                 height: iconBoxSize,
                 decoration: AppBoxDecoration(
                   color: active
-                      ? AppPalette.primary.withValues(alpha: 0.16)
-                      : AppPalette.white.withValues(alpha: 0.05),
+                      ? colors.primary.withValues(alpha: 0.16)
+                      : bookingColors.panelOverlay,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: active ? AppPalette.primary : AppPalette.orangeLight05,
+                  color: active ? colors.primary : bookingColors.muted,
                   size: 21,
                 ),
               ),
@@ -1591,8 +1622,8 @@ class _BookingScheduleCard extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _BookingColors.muted,
+                      style: AppTextStyle(
+                        color: bookingColors.muted,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         height: 1,
@@ -1605,8 +1636,8 @@ class _BookingScheduleCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
                         color: highlightValue
-                            ? AppPalette.primary
-                            : _BookingColors.text,
+                            ? colors.primary
+                            : bookingColors.text,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                         height: 1,
@@ -1643,13 +1674,14 @@ class _TravelerCounterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueWidth = _bookingCounterValueWidth(context);
+    final bookingColors = _BookingColors.of(context);
     return Container(
       constraints: BoxConstraints(
         minHeight: _bookingCounterRowMinHeight(context),
       ),
       padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: AppBoxDecoration(
-        color: _BookingColors.panel,
+        color: bookingColors.panel,
         borderRadius: AppBorderRadius.circular(25),
       ),
       child: Row(
@@ -1659,8 +1691,8 @@ class _TravelerCounterRow extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: _BookingColors.text,
+              style: AppTextStyle(
+                color: bookingColors.text,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 height: 1,
@@ -1678,8 +1710,8 @@ class _TravelerCounterRow extends StatelessWidget {
             child: Text(
               '$value',
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: _BookingColors.text,
+              style: AppTextStyle(
+                color: bookingColors.text,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 height: 1,
@@ -1713,6 +1745,8 @@ class _CounterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final filled = emphasized && enabled;
     final buttonSize = _bookingCounterButtonSize(context);
     return InkResponse(
@@ -1722,22 +1756,22 @@ class _CounterButton extends StatelessWidget {
         width: buttonSize,
         height: buttonSize,
         decoration: AppBoxDecoration(
-          color: filled ? AppPalette.primary : AppPalette.transparent,
+          color: filled ? colors.primary : colors.transparent,
           shape: BoxShape.circle,
           border: Border.all(
             color: emphasized
-                ? AppPalette.primary.withValues(alpha: enabled ? 1 : 0.32)
-                : AppPalette.orangeLight05.withValues(alpha: 0.23),
+                ? colors.primary.withValues(alpha: enabled ? 1 : 0.32)
+                : bookingColors.muted.withValues(alpha: 0.23),
             width: 1.4,
           ),
         ),
         child: Icon(
           icon,
           color: filled
-              ? AppPalette.white
+              ? colors.textPrimary
               : emphasized
-              ? AppPalette.primary.withValues(alpha: enabled ? 1 : 0.34)
-              : AppPalette.orangeLight05.withValues(alpha: enabled ? 1 : 0.35),
+              ? colors.primary.withValues(alpha: enabled ? 1 : 0.34)
+              : bookingColors.muted.withValues(alpha: enabled ? 1 : 0.35),
           size: 20,
         ),
       ),
@@ -1753,6 +1787,8 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingColors = _BookingColors.of(context);
+
     return Row(
       children: [
         Expanded(
@@ -1760,8 +1796,8 @@ class _SummaryRow extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: _BookingColors.muted,
+            style: AppTextStyle(
+              color: bookingColors.muted,
               fontSize: 17,
               fontWeight: FontWeight.w600,
               height: 1.15,
@@ -1775,8 +1811,8 @@ class _SummaryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
-            style: const AppTextStyle(
-              color: _BookingColors.muted,
+            style: AppTextStyle(
+              color: bookingColors.muted,
               fontSize: 17,
               fontWeight: FontWeight.w700,
               height: 1.1,
@@ -1797,29 +1833,27 @@ class _SoftErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface82.withValues(alpha: 0.42),
+        color: colors.primaryContainer.withValues(alpha: 0.42),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(14),
         child: Row(
           children: [
-            const Icon(
-              Icons.info_outline_rounded,
-              color: AppPalette.primary,
-              size: 20,
-            ),
+            Icon(Icons.info_outline_rounded, color: colors.primary, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: _BookingColors.text,
+                style: AppTextStyle(
+                  color: bookingColors.text,
                   fontSize: 13,
                   height: 1.25,
                   fontWeight: FontWeight.w600,
@@ -1849,6 +1883,8 @@ class _AlreadyBookedNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final localeName = Localizations.localeOf(context).toLanguageTag();
     final dateLabel = formatEventDateTime(
       booking.scheduledFor,
@@ -1858,18 +1894,18 @@ class _AlreadyBookedNotice extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: colors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(20),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.26)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.confirmation_number_rounded,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: 22,
             ),
             const SizedBox(width: 12),
@@ -1879,8 +1915,8 @@ class _AlreadyBookedNotice extends StatelessWidget {
                 children: [
                   Text(
                     l10n.excursionBookingAlreadyBookedTitle,
-                    style: const AppTextStyle(
-                      color: _BookingColors.text,
+                    style: AppTextStyle(
+                      color: bookingColors.text,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                       height: 1.15,
@@ -1889,8 +1925,8 @@ class _AlreadyBookedNotice extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$dateLabel · ${l10n.myExcursionsGuests(booking.totalSeats)}',
-                    style: const AppTextStyle(
-                      color: _BookingColors.muted,
+                    style: AppTextStyle(
+                      color: bookingColors.muted,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       height: 1.25,
@@ -1900,7 +1936,7 @@ class _AlreadyBookedNotice extends StatelessWidget {
                   TextButton(
                     onPressed: onOpenMyExcursions,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppPalette.primary,
+                      foregroundColor: colors.primary,
                       minimumSize: const Size(0, 48),
                       padding: const AppEdgeInsets.symmetric(horizontal: 12),
                     ),
@@ -1922,18 +1958,20 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
       padding: AppEdgeInsets.fromLTRB(14, 0, 14, 14 + bottomInset),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: _BookingColors.panel,
+          color: bookingColors.panel,
           borderRadius: AppBorderRadius.circular(26),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
-          boxShadow: const [
+          border: Border.all(color: bookingColors.border),
+          boxShadow: [
             BoxShadow(
-              color: AppPalette.neutralOverlayInk06,
+              color: bookingColors.sheetShadow,
               blurRadius: 28,
               offset: Offset(0, 14),
             ),
@@ -1950,23 +1988,19 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                   width: 42,
                   height: 4,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.white.withValues(alpha: 0.18),
+                    color: bookingColors.handle,
                     borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Icon(
-                Icons.checklist_rounded,
-                color: AppPalette.primary,
-                size: 34,
-              ),
+              Icon(Icons.checklist_rounded, color: colors.primary, size: 34),
               const SizedBox(height: 14),
               Text(
                 l10n.excursionBookingChecklistAddedTitle,
                 textAlign: TextAlign.center,
-                style: const AppTextStyle(
-                  color: _BookingColors.text,
+                style: AppTextStyle(
+                  color: bookingColors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   height: 1.08,
@@ -1976,8 +2010,8 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
               Text(
                 l10n.excursionBookingChecklistAddedMessage,
                 textAlign: TextAlign.center,
-                style: const AppTextStyle(
-                  color: _BookingColors.muted,
+                style: AppTextStyle(
+                  color: bookingColors.muted,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   height: 1.35,
@@ -1990,8 +2024,8 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 ).pop(_BookingCompletionAction.openChecklist),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.white,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.textPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(16),
                   ),
@@ -2010,10 +2044,8 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 ).pop(_BookingCompletionAction.myExcursions),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
-                  foregroundColor: _BookingColors.text,
-                  side: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.14),
-                  ),
+                  foregroundColor: bookingColors.text,
+                  side: BorderSide(color: bookingColors.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(16),
                   ),
@@ -2038,16 +2070,19 @@ class _BookingImageFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
+
+    return DecoratedBox(
       decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppPalette.warmSurfaceHigh05, AppPalette.warmInk40],
+          colors: [bookingColors.panel, bookingColors.imageFallbackEnd],
         ),
       ),
       child: Center(
-        child: Icon(Icons.terrain_rounded, color: AppPalette.primary, size: 34),
+        child: Icon(Icons.terrain_rounded, color: colors.primary, size: 34),
       ),
     );
   }
@@ -2066,6 +2101,8 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingColors = _BookingColors.of(context);
+
     return Tooltip(
       message: tooltip,
       child: InkResponse(
@@ -2075,11 +2112,11 @@ class _CircleIconButton extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.06),
+            color: bookingColors.panelOverlay,
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(color: bookingColors.border),
           ),
-          child: Icon(icon, color: _BookingColors.text, size: 18),
+          child: Icon(icon, color: bookingColors.text, size: 18),
         ),
       ),
     );
@@ -2091,13 +2128,14 @@ class _BookingLoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: _BookingColors.base,
+    final colors = AppDesignSystem.colorsFor(context);
+    final bookingColors = _BookingColors.of(context);
+
+    return Scaffold(
+      backgroundColor: bookingColors.base,
       body: DecoratedBox(
-        decoration: _BookingColors.backgroundDecoration,
-        child: Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
-        ),
+        decoration: bookingColors.backgroundDecoration,
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       ),
     );
   }
@@ -2116,31 +2154,47 @@ abstract final class _BookingMath {
   }
 }
 
-abstract final class _BookingColors {
-  static const base = AppPalette.warmInk21;
-  static const panel = AppPalette.warmInk110;
-  static const text = AppPalette.orangeWash06;
-  static const muted = AppPalette.orangeLight05;
+class _BookingColors {
+  const _BookingColors._(this.colors);
 
-  static const backgroundDecoration = AppBoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        AppPalette.warmInk96,
-        AppPalette.warmInk21,
-        AppPalette.warmInk12,
-      ],
-    ),
+  factory _BookingColors.of(BuildContext context) {
+    return _BookingColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  final AppColors colors;
+
+  Color get base => colors.background;
+  Color get panel => colors.surfaceRaised;
+  Color get text => colors.textPrimary;
+  Color get muted => colors.textSecondary;
+  Color get border => colors.borderSoft;
+  Color get handle => colors.border;
+  Color get footer => colors.surface.withValues(alpha: 0.98);
+  Color get panelOverlay => colors.surfaceHigh.withValues(alpha: 0.72);
+  Color get imageFallbackEnd => colors.surfaceWarm;
+  Color get sheetShadow => colors.black.withValues(
+    alpha: colors.background == AppColorSchemes.light.background ? 0 : 0.28,
   );
+
+  BoxDecoration get backgroundDecoration {
+    return AppBoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: colors.screenGradientColors,
+      ),
+    );
+  }
 }
 
-const _sectionTitleStyle = AppTextStyle(
-  color: _BookingColors.text,
-  fontSize: 24,
-  fontWeight: FontWeight.w900,
-  height: 1,
-);
+AppTextStyle _sectionTitleStyle(BuildContext context) {
+  return AppTextStyle(
+    color: _BookingColors.of(context).text,
+    fontSize: 24,
+    fontWeight: FontWeight.w900,
+    height: 1,
+  );
+}
 
 double _bookingHeightDensity(BuildContext context) {
   final height = MediaQuery.sizeOf(context).height;

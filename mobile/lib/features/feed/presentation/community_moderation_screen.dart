@@ -200,94 +200,100 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
   }
 
   Future<String?> _showRejectSheet(PostVm story) {
+    final colors = AppDesignSystem.colorsFor(context);
     return showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.surfaceCool,
+      backgroundColor: colors.surface,
       builder: (sheetContext) {
+        final sheetColors = AppDesignSystem.colorsFor(sheetContext);
         final l10n = AppLocalizations.of(sheetContext)!;
         final reasonController = TextEditingController();
 
-        return SafeArea(
-          child: Padding(
-            padding: AppEdgeInsets.fromLTRB(
-              20,
-              20,
-              20,
-              20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.communityModerationRejectAction,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppPalette.textPrimary,
-                    fontWeight: FontWeight.w700,
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: SafeArea(
+            child: Padding(
+              padding: AppEdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.communityModerationRejectAction,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(sheetContext).textTheme.titleMedium
+                        ?.copyWith(
+                          color: sheetColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  story.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: AppPalette.textCoolSecondary,
+                  const SizedBox(height: 8),
+                  Text(
+                    story.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(sheetContext).textTheme.bodyMedium
+                        ?.copyWith(color: sheetColors.textSecondary),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  key: const ValueKey('reject-reason-field'),
-                  controller: reasonController,
-                  maxLines: 3,
-                  minLines: 2,
-                  style: const AppTextStyle(color: AppPalette.textPrimary),
-                  decoration: AppInputDecoration(
-                    labelText: l10n.communityModerationRejectReasonLabel,
-                    labelStyle: const AppTextStyle(
-                      color: AppPalette.textCoolSecondary,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppBorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppPalette.outlineOverlay),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppBorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppPalette.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      child: Text(l10n.communityModerationRejectCancelAction),
-                    ),
-                    FilledButton(
-                      key: ValueKey('confirm-reject-${story.id}'),
-                      onPressed: () =>
-                          Navigator.of(sheetContext).pop(reasonController.text),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppPalette.danger,
-                        foregroundColor: AppPalette.textPrimary,
+                  const SizedBox(height: 16),
+                  TextField(
+                    key: const ValueKey('reject-reason-field'),
+                    controller: reasonController,
+                    maxLines: 3,
+                    minLines: 2,
+                    style: AppTextStyle(color: sheetColors.textPrimary),
+                    decoration: AppInputDecoration(
+                      labelText: l10n.communityModerationRejectReasonLabel,
+                      labelStyle: AppTextStyle(
+                        color: sheetColors.textSecondary,
                       ),
-                      child: Text(
-                        l10n.communityModerationRejectConfirmAction,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppBorderRadius.circular(8),
+                        borderSide: BorderSide(color: sheetColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppBorderRadius.circular(8),
+                        borderSide: BorderSide(color: sheetColors.primary),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(l10n.communityModerationRejectCancelAction),
+                      ),
+                      FilledButton(
+                        key: ValueKey('confirm-reject-${story.id}'),
+                        onPressed: () => Navigator.of(
+                          sheetContext,
+                        ).pop(reasonController.text),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: sheetColors.danger,
+                          foregroundColor: sheetColors.textPrimary,
+                        ),
+                        child: Text(
+                          l10n.communityModerationRejectConfirmAction,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -307,74 +313,81 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.surfaceCool,
+      backgroundColor: AppDesignSystem.colorsFor(context).surface,
       builder: (sheetContext) {
+        final sheetColors = AppDesignSystem.colorsFor(sheetContext);
         final l10n = AppLocalizations.of(sheetContext)!;
 
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
-            ),
-            child: Padding(
-              padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.communityModerationDecisionHistoryTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(sheetContext).textTheme.titleMedium
-                        ?.copyWith(
-                          color: AppPalette.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: FutureBuilder<PostModerationDecisionPageVm>(
-                      future: future,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppPalette.primary,
-                            ),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return _ModerationMessage(
-                            icon: Icons.wifi_off_rounded,
-                            title:
-                                l10n.communityModerationDecisionHistoryFailed,
-                            message: l10n.communityModerationLoadFailedMessage,
-                          );
-                        }
-
-                        final items = snapshot.data?.items ?? const [];
-                        if (items.isEmpty) {
-                          return _ModerationMessage(
-                            icon: Icons.history_rounded,
-                            title: l10n.communityModerationDecisionHistoryEmpty,
-                            message: story.title,
-                          );
-                        }
-
-                        return ListView.separated(
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            return _DecisionHistoryTile(decision: item);
-                          },
-                        );
-                      },
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
+              ),
+              child: Padding(
+                padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.communityModerationDecisionHistoryTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(sheetContext).textTheme.titleMedium
+                          ?.copyWith(
+                            color: sheetColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: FutureBuilder<PostModerationDecisionPageVm>(
+                        future: future,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState !=
+                              ConnectionState.done) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: sheetColors.primary,
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return _ModerationMessage(
+                              icon: Icons.wifi_off_rounded,
+                              title:
+                                  l10n.communityModerationDecisionHistoryFailed,
+                              message:
+                                  l10n.communityModerationLoadFailedMessage,
+                            );
+                          }
+
+                          final items = snapshot.data?.items ?? const [];
+                          if (items.isEmpty) {
+                            return _ModerationMessage(
+                              icon: Icons.history_rounded,
+                              title:
+                                  l10n.communityModerationDecisionHistoryEmpty,
+                              message: story.title,
+                            );
+                          }
+
+                          return ListView.separated(
+                            itemCount: items.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return _DecisionHistoryTile(decision: item);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -385,74 +398,77 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final communityTitle = (widget.communityTitle ?? '').trim();
 
-    return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
-      appBar: AppBar(
-        backgroundColor: AppPalette.backgroundWarm,
-        foregroundColor: AppPalette.textPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            key: const ValueKey('community-members-action'),
-            tooltip: l10n.communityMembersAction,
-            onPressed: () {
-              final encodedTitle = Uri.encodeComponent(communityTitle);
-              context.push(
-                '/communities/${Uri.encodeComponent(widget.communityId)}/members'
-                '?title=$encodedTitle',
-              );
-            },
-            icon: const Icon(Icons.group_outlined),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          backgroundColor: colors.background,
+          foregroundColor: colors.textPrimary,
+          elevation: 0,
+          actions: [
+            IconButton(
+              key: const ValueKey('community-members-action'),
+              tooltip: l10n.communityMembersAction,
+              onPressed: () {
+                final encodedTitle = Uri.encodeComponent(communityTitle);
+                context.push(
+                  '/communities/${Uri.encodeComponent(widget.communityId)}/members'
+                  '?title=$encodedTitle',
+                );
+              },
+              icon: const Icon(Icons.group_outlined),
+            ),
+          ],
+          title: Text(
+            l10n.communityModerationTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-        title: Text(
-          l10n.communityModerationTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(34),
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                communityTitle.isNotEmpty
-                    ? communityTitle
-                    : l10n.communityModerationSubtitle(_stories.length),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textCoolSecondary,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(34),
+            child: Padding(
+              padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  communityTitle.isNotEmpty
+                      ? communityTitle
+                      : l10n.communityModerationSubtitle(_stories.length),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: RefreshIndicator(
-          color: AppPalette.primary,
-          backgroundColor: AppPalette.surfaceCool,
-          onRefresh: () => _loadQueue(),
-          child: _buildBody(context),
+        body: SafeArea(
+          top: false,
+          child: RefreshIndicator(
+            color: colors.primary,
+            backgroundColor: colors.surface,
+            onRefresh: () => _loadQueue(),
+            child: _buildBody(context),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildBody(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
 
     if (_isLoading && _stories.isEmpty) {
-      return const _ModerationStateList(
-        child: Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
-        ),
+      return _ModerationStateList(
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       );
     }
 
@@ -465,8 +481,8 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
           action: FilledButton(
             onPressed: () => _loadQueue(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.backgroundWarm,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.textPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -500,10 +516,10 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
           itemCount: _stories.length + (_isLoadingMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index >= _stories.length) {
-              return const Padding(
-                padding: AppEdgeInsets.symmetric(vertical: 16),
+              return Padding(
+                padding: const AppEdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppPalette.primary),
+                  child: CircularProgressIndicator(color: colors.primary),
                 ),
               );
             }
@@ -542,6 +558,7 @@ class _ModerationPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
@@ -550,9 +567,9 @@ class _ModerationPostCard extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.surfaceCoolLight,
+            color: colors.surfaceHigh,
             borderRadius: AppBorderRadius.circular(8),
-            border: Border.all(color: AppPalette.outlineOverlay),
+            border: Border.all(color: colors.border),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(16),
@@ -564,7 +581,7 @@ class _ModerationPostCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleMedium?.copyWith(
-                    color: AppPalette.textPrimary,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -574,7 +591,7 @@ class _ModerationPostCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyMedium?.copyWith(
-                    color: AppPalette.textCoolSecondary,
+                    color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -595,14 +612,17 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('approve-${post.id}'),
                       onPressed: isReviewing ? null : onApprove,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppPalette.success,
-                        foregroundColor: AppPalette.backgroundWarm,
+                        backgroundColor: colors.success,
+                        foregroundColor: colors.textPrimary,
                       ),
                       icon: isReviewing
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: colors.textPrimary,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Icon(Icons.check_rounded, size: 18),
                       label: Text(l10n.communityModerationApproveAction),
@@ -611,8 +631,8 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('reject-${post.id}'),
                       onPressed: isReviewing ? null : onReject,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppPalette.danger,
-                        side: const BorderSide(color: AppPalette.danger),
+                        foregroundColor: colors.danger,
+                        side: BorderSide(color: colors.danger),
                       ),
                       icon: const Icon(Icons.close_rounded, size: 18),
                       label: Text(l10n.communityModerationRejectAction),
@@ -621,7 +641,7 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('history-${post.id}'),
                       onPressed: onHistory,
                       style: TextButton.styleFrom(
-                        foregroundColor: AppPalette.textCoolSecondary,
+                        foregroundColor: colors.textSecondary,
                       ),
                       icon: const Icon(Icons.history_rounded, size: 18),
                       label: Text(l10n.communityModerationHistoryAction),
@@ -644,14 +664,15 @@ class _DecisionHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final textTheme = Theme.of(context).textTheme;
     final reason = decision.reason.trim();
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCoolLight,
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.outlineOverlay),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(14),
@@ -663,7 +684,7 @@ class _DecisionHistoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleSmall?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -672,9 +693,7 @@ class _DecisionHistoryTile extends StatelessWidget {
               '${decision.previousStatus} -> ${decision.nextStatus}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppPalette.textCoolSecondary,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
             ),
             if (reason.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -683,7 +702,7 @@ class _DecisionHistoryTile extends StatelessWidget {
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                 ),
               ),
             ],
@@ -701,10 +720,13 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.tagBackground,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -713,7 +735,7 @@ class _StatusPill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppPalette.textPrimary,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -771,20 +793,21 @@ class _ModerationMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final textTheme = Theme.of(context).textTheme;
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCoolLight,
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.outlineOverlay),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.primary, size: 34),
+            Icon(icon, color: colors.primary, size: 34),
             const SizedBox(height: 14),
             Text(
               title,
@@ -792,7 +815,7 @@ class _ModerationMessage extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleMedium?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -803,7 +826,7 @@ class _ModerationMessage extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodyMedium?.copyWith(
-                color: AppPalette.textCoolSecondary,
+                color: colors.textSecondary,
               ),
             ),
             if (action != null) ...[const SizedBox(height: 18), action!],

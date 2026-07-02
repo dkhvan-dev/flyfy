@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,26 @@ import 'package:inflap/screens/stories/story_tray_viewer_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test('story tray viewer uses adaptive V2 colors', () async {
+    final source = await File(
+      'lib/screens/stories/story_tray_viewer_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('_storyViewerOverlayGradient('));
+    expect(source, contains('_storyViewerPillDecoration('));
+    expect(source, contains('AppColors colors'));
+    expect(source, contains('colors.black'));
+    expect(source, contains('colors.white'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, contains('colors.textSecondary'));
+    expect(source, contains('colors.danger'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   testWidgets('marks authenticated viewer seen for current and next story', (
     tester,
   ) async {

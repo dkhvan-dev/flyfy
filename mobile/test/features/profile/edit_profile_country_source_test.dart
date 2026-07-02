@@ -48,9 +48,10 @@ void main() {
       expect(countrySection, contains('_ProfileCountrySearchField('));
       expect(countrySection, contains('selectedCountry: _selectedCountry()'));
       expect(countrySection, contains('visibleCountries: _visibleCountries()'));
+      expect(countrySection, contains('searchHint:'));
       expect(
         countrySection,
-        contains('searchHint: l10n.excursionsFilterCountrySearchHint'),
+        contains('l10n.excursionsFilterCountrySearchHint'),
       );
       expect(
         countrySection,

@@ -55,6 +55,7 @@ class AppModalScaffold<T> extends StatelessWidget {
     this.scrollable = true,
     this.contentPadding = AppInsets.panel,
     this.maxWidth = 440,
+    this.surfaceBorderRadius = AppRadius.panel,
   });
 
   final String title;
@@ -68,28 +69,34 @@ class AppModalScaffold<T> extends StatelessWidget {
   final bool scrollable;
   final AppEdgeInsets contentPadding;
   final double maxWidth;
+  final BorderRadiusGeometry surfaceBorderRadius;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = context.appAdaptive;
+    final colors = AppDesignSystem.colorsFor(context);
     final titleStyle = AppTypography.titleLargeStyle.copyWith(
-      color: AppPalette.textPrimary,
+      color: colors.textPrimary,
       fontSize: adaptive.isNarrow ? 20 : 22,
       height: 1.16,
     );
     final subtitleStyle = AppTypography.bodyStyle.copyWith(
-      color: AppPalette.textSecondary,
+      color: colors.textSecondary,
       height: 1.42,
     );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: ClipRRect(
-          borderRadius: AppRadius.panel,
+          borderRadius: surfaceBorderRadius,
           child: DecoratedBox(
-            decoration: AppDecorations.raisedCard(),
+            decoration: _modalSurfaceDecoration(
+              context,
+              colors,
+              borderRadius: surfaceBorderRadius,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -200,22 +207,22 @@ class AppModalDialogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = context.appAdaptive;
+    final colors = AppDesignSystem.colorsFor(context);
     final horizontalPadding = adaptive.isNarrow ? AppSpacing.lg : AppSpacing.xl;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 440),
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: ClipRRect(
           borderRadius: AppRadius.panel,
           child: DecoratedBox(
             decoration: backgroundColor == null
-                ? AppDecorations.raisedCard()
-                : AppBoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: AppRadius.panel,
-                    border: const Border.fromBorderSide(AppBorders.strong),
-                    boxShadow: AppShadows.medium,
+                ? _modalSurfaceDecoration(context, colors)
+                : _modalSurfaceDecoration(
+                    context,
+                    colors,
+                    backgroundColor: backgroundColor,
                   ),
             child: Padding(
               padding: AppEdgeInsets.fromLTRB(
@@ -236,7 +243,7 @@ class AppModalDialogCard extends StatelessWidget {
                     DefaultTextStyle.merge(
                       textAlign: TextAlign.start,
                       style: AppTypography.titleLargeStyle
-                          .copyWith(color: AppPalette.textPrimary, height: 1.16)
+                          .copyWith(color: colors.textPrimary, height: 1.16)
                           .merge(titleTextStyle),
                       child: title!,
                     ),
@@ -244,10 +251,7 @@ class AppModalDialogCard extends StatelessWidget {
                     if (title != null) const SizedBox(height: AppSpacing.md),
                     DefaultTextStyle.merge(
                       style: AppTypography.bodyStyle
-                          .copyWith(
-                            color: AppPalette.textSecondary,
-                            height: 1.42,
-                          )
+                          .copyWith(color: colors.textSecondary, height: 1.42)
                           .merge(contentTextStyle),
                       child: content!,
                     ),
@@ -292,12 +296,26 @@ class AppModalSheetFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = Align(alignment: alignment, child: child);
+    final content = SizedBox(
+      width: double.infinity,
+      child: Align(alignment: alignment, child: child),
+    );
 
     if (!useSafeArea) return content;
 
     return SafeArea(top: safeAreaTop, bottom: safeAreaBottom, child: content);
   }
+}
+
+BoxConstraints _fullWidthBottomSheetConstraints(
+  BuildContext context,
+  BoxConstraints? constraints,
+) {
+  final viewportWidth = MediaQuery.sizeOf(context).width;
+  return (constraints ?? const BoxConstraints()).copyWith(
+    minWidth: viewportWidth,
+    maxWidth: viewportWidth,
+  );
 }
 
 class AppModalDraggableSheet extends StatelessWidget {
@@ -347,7 +365,6 @@ Future<T?> showAppModalDialog<T>({
   RouteTransitionsBuilder? transitionBuilder,
   IconData? icon,
   List<AppModalAction<T>> actions = const [],
-  bool barrierDismissible = true,
   String? barrierLabel,
   Color? barrierColor,
   bool useSafeArea = true,
@@ -360,12 +377,13 @@ Future<T?> showAppModalDialog<T>({
   final effectiveBarrierLabel =
       barrierLabel ??
       MaterialLocalizations.of(context).modalBarrierDismissLabel;
+  final colors = AppDesignSystem.colorsFor(context);
 
   return showGeneralDialog<T>(
     context: context,
-    barrierDismissible: barrierDismissible,
+    barrierDismissible: true,
     barrierLabel: effectiveBarrierLabel,
-    barrierColor: barrierColor ?? AppPalette.scrim.withValues(alpha: 0.72),
+    barrierColor: barrierColor ?? colors.scrim.withValues(alpha: 0.72),
     useRootNavigator: useRootNavigator,
     routeSettings: routeSettings,
     transitionDuration: transitionDuration,
@@ -467,6 +485,8 @@ Future<T?> showAppModalBottomSheet<T>({
   double minChildSize = 0.28,
   double maxChildSize = 0.92,
 }) {
+  final colors = AppDesignSystem.colorsFor(context);
+
   return showModalBottomSheet<T>(
     context: context,
     builder: (context) {
@@ -476,7 +496,10 @@ Future<T?> showAppModalBottomSheet<T>({
       if (title == null) {
         return Padding(
           padding: AppEdgeInsets.only(bottom: keyboardInset),
-          child: content ?? const SizedBox.shrink(),
+          child: SizedBox(
+            width: double.infinity,
+            child: content ?? const SizedBox.shrink(),
+          ),
         );
       }
 
@@ -484,6 +507,7 @@ Future<T?> showAppModalBottomSheet<T>({
         padding: AppEdgeInsets.only(bottom: keyboardInset),
         child: SafeArea(
           top: false,
+          bottom: false,
           child: DraggableScrollableSheet(
             expand: false,
             initialChildSize: initialChildSize,
@@ -492,15 +516,20 @@ Future<T?> showAppModalBottomSheet<T>({
             builder: (context, scrollController) {
               return Align(
                 alignment: Alignment.bottomCenter,
-                child: AppModalScaffold<T>(
-                  title: title,
-                  subtitle: subtitle,
-                  icon: icon,
-                  actions: actions,
-                  scrollController: scrollController,
-                  showDragHandle: showDragHandle ?? true,
-                  showCloseButton: showCloseButton,
-                  child: content ?? const SizedBox.shrink(),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: AppModalScaffold<T>(
+                    title: title,
+                    subtitle: subtitle,
+                    icon: icon,
+                    actions: actions,
+                    scrollController: scrollController,
+                    showDragHandle: showDragHandle ?? true,
+                    showCloseButton: showCloseButton,
+                    maxWidth: double.infinity,
+                    surfaceBorderRadius: AppRadius.sheetTop,
+                    child: content ?? const SizedBox.shrink(),
+                  ),
                 ),
               );
             },
@@ -508,13 +537,13 @@ Future<T?> showAppModalBottomSheet<T>({
         ),
       );
     },
-    backgroundColor: backgroundColor ?? AppPalette.transparent,
+    backgroundColor: backgroundColor ?? colors.transparent,
     barrierLabel: barrierLabel,
     elevation: elevation,
     shape: shape,
     clipBehavior: clipBehavior,
-    constraints: constraints,
-    barrierColor: barrierColor ?? AppPalette.scrim.withValues(alpha: 0.58),
+    constraints: _fullWidthBottomSheetConstraints(context, constraints),
+    barrierColor: barrierColor ?? colors.scrim.withValues(alpha: 0.58),
     isScrollControlled: isScrollControlled,
     scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
     useRootNavigator: useRootNavigator,
@@ -547,13 +576,52 @@ Future<T?> showAppActionSheet<T>({
   );
 }
 
+AppBoxDecoration _modalSurfaceDecoration(
+  BuildContext context,
+  AppColors colors, {
+  Color? backgroundColor,
+  BorderRadiusGeometry borderRadius = AppRadius.panel,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return AppBoxDecoration(
+    color: backgroundColor ?? colors.surface,
+    borderRadius: borderRadius,
+    border: Border.all(color: colors.borderSoft),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.28),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+            ),
+          ]
+        : null,
+  );
+}
+
+ButtonStyle _destructiveButtonStyle(AppColors colors) {
+  return FilledButton.styleFrom(
+    minimumSize: const Size(0, AppSizes.minTapTarget),
+    padding: AppInsets.button,
+    backgroundColor: colors.danger,
+    foregroundColor: colors.textPrimary,
+    disabledBackgroundColor: colors.surfaceHigh,
+    disabledForegroundColor: colors.textDisabled,
+    shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+    textStyle: AppTypography.bodyStrongStyle,
+  );
+}
+
 class _AppModalDragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppDecorations.pill(
-        background: AppPalette.textSecondary.withValues(alpha: 0.34),
-        border: AppPalette.transparent,
+        background: colors.textSecondary.withValues(alpha: 0.34),
+        border: colors.transparent,
       ),
       child: const SizedBox(width: 44, height: 5),
     );
@@ -567,11 +635,17 @@ class _AppModalIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
-      decoration: AppDecorations.status(color: AppPalette.primary),
+      decoration: AppBoxDecoration(
+        color: colors.primary.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(color: colors.borderPrimary),
+      ),
       child: SizedBox.square(
         dimension: AppSizes.minTapTarget,
-        child: Icon(icon, color: AppPalette.primary, size: AppSizes.iconMd),
+        child: Icon(icon, color: colors.primary, size: AppSizes.iconMd),
       ),
     );
   }
@@ -619,6 +693,7 @@ class _AppModalActionButton<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final onPressed = action.enabled
         ? () {
             action.onPressed?.call();
@@ -641,12 +716,12 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? FilledButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.primary(),
+                style: AppButtonStyles.primary(colors),
                 child: label,
               )
             : FilledButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.primary(),
+                style: AppButtonStyles.primary(colors),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -654,12 +729,12 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? FilledButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.destructive(),
+                style: _destructiveButtonStyle(colors),
                 child: label,
               )
             : FilledButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.destructive(),
+                style: _destructiveButtonStyle(colors),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -667,12 +742,12 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? TextButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.ghost(),
+                style: AppButtonStyles.ghost(colors),
                 child: label,
               )
             : TextButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.ghost(),
+                style: AppButtonStyles.ghost(colors),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -680,12 +755,12 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? OutlinedButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.secondary(),
+                style: AppButtonStyles.secondary(colors),
                 child: label,
               )
             : OutlinedButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.secondary(),
+                style: AppButtonStyles.secondary(colors),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -714,11 +789,12 @@ class _AppActionSheetTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = item.destructive ? AppPalette.danger : AppPalette.textPrimary;
-    final iconColor = item.destructive ? AppPalette.danger : AppPalette.primary;
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = item.destructive ? colors.danger : colors.textPrimary;
+    final iconColor = item.destructive ? colors.danger : colors.primary;
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: item.enabled
             ? () => Navigator.of(context).pop<T>(item.value)
@@ -744,7 +820,7 @@ class _AppActionSheetTile<T> extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyStrongStyle.copyWith(
-                        color: item.enabled ? color : AppPalette.textDisabled,
+                        color: item.enabled ? color : colors.textDisabled,
                       ),
                     ),
                     if (item.subtitle != null) ...[
@@ -752,7 +828,7 @@ class _AppActionSheetTile<T> extends StatelessWidget {
                       Text(
                         item.subtitle!,
                         style: AppTypography.captionStyle.copyWith(
-                          color: AppPalette.textMuted,
+                          color: colors.textMuted,
                         ),
                       ),
                     ],
@@ -762,9 +838,7 @@ class _AppActionSheetTile<T> extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Icon(
                 Icons.chevron_right_rounded,
-                color: item.enabled
-                    ? AppPalette.textMuted
-                    : AppPalette.textDisabled,
+                color: item.enabled ? colors.textMuted : colors.textDisabled,
                 size: AppSizes.iconSm,
               ),
             ],

@@ -5,19 +5,23 @@ import '../../../core/time/app_time.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
-Color guideScheduleStatusColor(ExcursionScheduleSlotVm slot) {
+Color guideScheduleStatusColor(
+  BuildContext context,
+  ExcursionScheduleSlotVm slot,
+) {
+  final colors = AppDesignSystem.colorsFor(context);
   switch (slot.status) {
     case ExcursionScheduleSlotStatus.available:
-      return AppPalette.tealMuted06;
+      return colors.secondary;
     case ExcursionScheduleSlotStatus.booked:
     case ExcursionScheduleSlotStatus.full:
-      return AppPalette.primary;
+      return colors.primary;
     case ExcursionScheduleSlotStatus.closed:
-      return AppPalette.blueSoft10;
+      return colors.textMuted;
     case ExcursionScheduleSlotStatus.cancelled:
-      return AppPalette.neutralMuted01;
+      return colors.textDisabled;
     case ExcursionScheduleSlotStatus.completed:
-      return AppPalette.greenMuted14;
+      return colors.success;
   }
 }
 
@@ -37,7 +41,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
       timezoneId: slot.timezone,
       localeName: locale,
     );
-    final color = guideScheduleStatusColor(slot);
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = guideScheduleStatusColor(context, slot);
     final title = slot.title.trim().isEmpty
         ? l10n.serviceExcursions
         : slot.title.trim();
@@ -56,7 +61,7 @@ class GuideScheduleSlotCard extends StatelessWidget {
       onTap: onTap,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.warmSurface20,
+          color: colors.surface,
           borderRadius: AppBorderRadius.circular(8),
           child: InkWell(
             onTap: onTap,
@@ -86,8 +91,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                           children: [
                             Text(
                               timeLabel,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
+                              style: AppTextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -103,8 +108,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                           title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.orangeLight30,
+                          style: AppTextStyle(
+                            color: colors.primary,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -112,8 +117,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           '${slot.bookedSeats}/${slot.capacity}',
-                          style: const AppTextStyle(
-                            color: AppPalette.textCoolSecondary,
+                          style: AppTextStyle(
+                            color: colors.textMuted,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
@@ -124,8 +129,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                             l10n.guideCalendarCancelReason(cancelReason),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                            style: AppTextStyle(
+                              color: colors.textMuted,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               height: 1.2,
@@ -136,10 +141,7 @@ class GuideScheduleSlotCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppPalette.white.withValues(alpha: 0.45),
-                  ),
+                  Icon(Icons.chevron_right_rounded, color: colors.textMuted),
                 ],
               ),
             ),

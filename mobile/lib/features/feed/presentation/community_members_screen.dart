@@ -170,45 +170,51 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
   }
 
   Future<void> _showRoleSheet(CommunityMemberVm member) async {
+    final colors = AppDesignSystem.colorsFor(context);
     final selectedRole = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.surfaceCool,
+      backgroundColor: colors.surface,
       builder: (sheetContext) {
+        final sheetColors = AppDesignSystem.colorsFor(sheetContext);
         final l10n = AppLocalizations.of(sheetContext)!;
-        return SafeArea(
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.communityMembersChangeRoleAction,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppPalette.textPrimary,
-                    fontWeight: FontWeight.w700,
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: SafeArea(
+            child: Padding(
+              padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.communityMembersChangeRoleAction,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(sheetContext).textTheme.titleMedium
+                        ?.copyWith(
+                          color: sheetColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                for (final option in _roleOptions(l10n))
-                  ListTile(
-                    contentPadding: AppEdgeInsets.zero,
-                    title: Text(
-                      option.label,
-                      style: const AppTextStyle(color: AppPalette.textPrimary),
+                  const SizedBox(height: 12),
+                  for (final option in _roleOptions(l10n))
+                    ListTile(
+                      contentPadding: AppEdgeInsets.zero,
+                      title: Text(
+                        option.label,
+                        style: AppTextStyle(color: sheetColors.textPrimary),
+                      ),
+                      trailing: member.role == option.value
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: sheetColors.primary,
+                            )
+                          : null,
+                      onTap: () => Navigator.of(sheetContext).pop(option.value),
                     ),
-                    trailing: member.role == option.value
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: AppPalette.primary,
-                          )
-                        : null,
-                    onTap: () => Navigator.of(sheetContext).pop(option.value),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -237,57 +243,69 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.surfaceCool,
+      backgroundColor: AppDesignSystem.colorsFor(context).surface,
       builder: (sheetContext) {
-        return _RoleHistorySheet(member: member, historyFuture: historyFuture);
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: _RoleHistorySheet(
+            member: member,
+            historyFuture: historyFuture,
+          ),
+        );
       },
     );
   }
 
   Future<void> _showStatusSheet(CommunityMemberVm member) async {
+    final colors = AppDesignSystem.colorsFor(context);
     final selectedStatus = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.surfaceCool,
+      backgroundColor: colors.surface,
       builder: (sheetContext) {
+        final sheetColors = AppDesignSystem.colorsFor(sheetContext);
         final l10n = AppLocalizations.of(sheetContext)!;
-        return SafeArea(
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.communityMembersChangeStatusAction,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppPalette.textPrimary,
-                    fontWeight: FontWeight.w700,
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: SafeArea(
+            child: Padding(
+              padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.communityMembersChangeStatusAction,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(sheetContext).textTheme.titleMedium
+                        ?.copyWith(
+                          color: sheetColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                for (final option in _statusActionOptions(l10n))
-                  ListTile(
-                    contentPadding: AppEdgeInsets.zero,
-                    title: Text(
-                      option.label,
-                      style: AppTextStyle(
-                        color: option.isDestructive
-                            ? AppPalette.materialDangerAccent
-                            : AppPalette.textPrimary,
+                  const SizedBox(height: 12),
+                  for (final option in _statusActionOptions(l10n))
+                    ListTile(
+                      contentPadding: AppEdgeInsets.zero,
+                      title: Text(
+                        option.label,
+                        style: AppTextStyle(
+                          color: option.isDestructive
+                              ? sheetColors.danger
+                              : sheetColors.textPrimary,
+                        ),
                       ),
+                      trailing: member.status == option.value
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: sheetColors.primary,
+                            )
+                          : null,
+                      onTap: () => Navigator.of(sheetContext).pop(option.value),
                     ),
-                    trailing: member.status == option.value
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: AppPalette.primary,
-                          )
-                        : null,
-                    onTap: () => Navigator.of(sheetContext).pop(option.value),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -403,60 +421,63 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final communityTitle = (widget.communityTitle ?? '').trim();
 
-    return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
-      appBar: AppBar(
-        backgroundColor: AppPalette.backgroundWarm,
-        foregroundColor: AppPalette.textPrimary,
-        elevation: 0,
-        title: Text(
-          l10n.communityMembersTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(34),
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                communityTitle.isNotEmpty
-                    ? communityTitle
-                    : l10n.communityMembersSubtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textCoolSecondary,
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          backgroundColor: colors.background,
+          foregroundColor: colors.textPrimary,
+          elevation: 0,
+          title: Text(
+            l10n.communityMembersTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(34),
+            child: Padding(
+              padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  communityTitle.isNotEmpty
+                      ? communityTitle
+                      : l10n.communityMembersSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: RefreshIndicator(
-          color: AppPalette.primary,
-          backgroundColor: AppPalette.surfaceCool,
-          onRefresh: () => _loadMembers(),
-          child: _buildBody(context),
+        body: SafeArea(
+          top: false,
+          child: RefreshIndicator(
+            color: colors.primary,
+            backgroundColor: colors.surface,
+            onRefresh: () => _loadMembers(),
+            child: _buildBody(context),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildBody(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
 
     if (_isLoading && _members.isEmpty) {
-      return const _MembersStateList(
-        child: Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
-        ),
+      return _MembersStateList(
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       );
     }
 
@@ -469,8 +490,8 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
           action: FilledButton(
             onPressed: () => _loadMembers(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.backgroundWarm,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.textPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -519,10 +540,10 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
             }
 
             if (memberIndex >= _members.length) {
-              return const Padding(
-                padding: AppEdgeInsets.symmetric(vertical: 16),
+              return Padding(
+                padding: const AppEdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppPalette.primary),
+                  child: CircularProgressIndicator(color: colors.primary),
                 ),
               );
             }
@@ -560,15 +581,16 @@ class _MemberFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.surfaceCoolLight,
+            color: colors.surfaceHigh,
             borderRadius: AppBorderRadius.circular(8),
-            border: Border.all(color: AppPalette.outlineOverlay),
+            border: Border.all(color: colors.border),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(12),
@@ -578,8 +600,9 @@ class _MemberFilters extends StatelessWidget {
                   key: const ValueKey('community-members-role-filter'),
                   initialValue: selectedRole,
                   isExpanded: true,
-                  dropdownColor: AppPalette.surfaceCool,
+                  dropdownColor: colors.surface,
                   decoration: _filterDecoration(
+                    context,
                     l10n.communityMembersRoleFilterLabel,
                   ),
                   items: [
@@ -599,8 +622,9 @@ class _MemberFilters extends StatelessWidget {
                   key: const ValueKey('community-members-status-filter'),
                   initialValue: selectedStatus,
                   isExpanded: true,
-                  dropdownColor: AppPalette.surfaceCool,
+                  dropdownColor: colors.surface,
                   decoration: _filterDecoration(
+                    context,
                     l10n.communityMembersStatusFilterLabel,
                   ),
                   items: [
@@ -660,6 +684,7 @@ class _CommunityMemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
@@ -668,9 +693,9 @@ class _CommunityMemberTile extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.surfaceCoolLight,
+            color: colors.surfaceHigh,
             borderRadius: AppBorderRadius.circular(8),
-            border: Border.all(color: AppPalette.outlineOverlay),
+            border: Border.all(color: colors.border),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(14),
@@ -687,7 +712,7 @@ class _CommunityMemberTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.titleSmall?.copyWith(
-                          color: AppPalette.textPrimary,
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -718,10 +743,13 @@ class _CommunityMemberTile extends StatelessWidget {
                       tooltip: l10n.communityMembersChangeRoleAction,
                       onPressed: isUpdating ? null : onChangeRole,
                       icon: isUpdating
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: colors.textPrimary,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Icon(Icons.manage_accounts_rounded),
                     ),
@@ -750,6 +778,7 @@ class _RoleHistorySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
 
@@ -766,7 +795,7 @@ class _RoleHistorySheet extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -775,9 +804,9 @@ class _RoleHistorySheet extends StatelessWidget {
                 member.user.preferredName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textCoolSecondary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -785,10 +814,8 @@ class _RoleHistorySheet extends StatelessWidget {
                   future: historyFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppPalette.primary,
-                        ),
+                      return Center(
+                        child: CircularProgressIndicator(color: colors.primary),
                       );
                     }
                     if (snapshot.hasError) {
@@ -812,7 +839,7 @@ class _RoleHistorySheet extends StatelessWidget {
                     return ListView.separated(
                       itemCount: changes.length,
                       separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: AppPalette.outlineOverlay),
+                          Divider(height: 1, color: colors.border),
                       itemBuilder: (context, index) {
                         return _RoleHistoryTile(change: changes[index]);
                       },
@@ -835,6 +862,7 @@ class _RoleHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final actorName = change.actor.preferredName;
     final changedAt = _formatRoleChangeDate(change.createdAt);
@@ -849,7 +877,7 @@ class _RoleHistoryTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppPalette.textPrimary,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -858,9 +886,9 @@ class _RoleHistoryTile extends StatelessWidget {
             '${l10n.communityMembersRoleHistoryChangedBy} $actorName',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppPalette.textCoolSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
           if (changedAt.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -868,9 +896,9 @@ class _RoleHistoryTile extends StatelessWidget {
               changedAt,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppPalette.textCoolSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
           ],
         ],
@@ -886,16 +914,14 @@ class _MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final initials = label.trim().isEmpty ? 'I' : label.trim()[0].toUpperCase();
     return CircleAvatar(
       radius: 22,
-      backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+      backgroundColor: colors.primary.withValues(alpha: 0.18),
       child: Text(
         initials,
-        style: const AppTextStyle(
-          color: AppPalette.primary,
-          fontWeight: FontWeight.w800,
-        ),
+        style: AppTextStyle(color: colors.primary, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -908,11 +934,13 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCool,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.outlineOverlay),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -921,7 +949,7 @@ class _StatusPill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppPalette.textCoolSecondary,
+            color: colors.textSecondary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -963,19 +991,21 @@ class _MembersMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.textCoolSecondary, size: 42),
+            Icon(icon, color: colors.textSecondary, size: 42),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -983,9 +1013,9 @@ class _MembersMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppPalette.textCoolSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -1052,17 +1082,19 @@ List<_StatusOption> _statusActionOptions(AppLocalizations l10n) {
   ];
 }
 
-InputDecoration _filterDecoration(String label) {
+InputDecoration _filterDecoration(BuildContext context, String label) {
+  final colors = AppDesignSystem.colorsFor(context);
+
   return AppInputDecoration(
     labelText: label,
-    labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+    labelStyle: AppTextStyle(color: colors.textSecondary),
     enabledBorder: OutlineInputBorder(
       borderRadius: AppBorderRadius.circular(8),
-      borderSide: BorderSide(color: AppPalette.outlineOverlay),
+      borderSide: BorderSide(color: colors.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: AppBorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppPalette.primary),
+      borderSide: BorderSide(color: colors.primary),
     ),
   );
 }

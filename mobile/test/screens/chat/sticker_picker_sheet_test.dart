@@ -54,6 +54,20 @@ void main() {
       expect(source, isNot(contains('Image.network')));
     },
   );
+
+  test('sticker picker uses adaptive V2 colors directly', () async {
+    final source = await File(
+      'lib/screens/chat/widgets/sticker_picker_sheet.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.background'));
+    expect(source, contains('colors.surfaceHigh'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
 }
 
 Widget _buildTestApp(

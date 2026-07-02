@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/excursions/models/create_excursion_review_request.dart';
 import '../../../features/excursions/models/excursion_booking_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum ExcursionReviewAction { edit, delete }
 
@@ -24,20 +24,21 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
   BuildContext context,
 ) {
   final l10n = AppLocalizations.of(context)!;
+  final colors = AppDesignSystem.colorsFor(context);
   return showAppModalBottomSheet<ExcursionReviewAction>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: AppPalette.transparent,
+    backgroundColor: colors.transparent,
     builder: (context) {
       return AppModalSheetFrame(
         child: Container(
           width: double.infinity,
           padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 22),
-          decoration: const AppBoxDecoration(
-            color: AppPalette.warmInk78,
-            borderRadius: AppBorderRadius.vertical(
+          decoration: AppBoxDecoration(
+            color: colors.surface,
+            borderRadius: const AppBorderRadius.vertical(
               top: AppRadiusValue.circular(24),
             ),
           ),
@@ -52,7 +53,7 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
                     width: 42,
                     height: 4,
                     decoration: AppBoxDecoration(
-                      color: AppPalette.white.withValues(alpha: 0.18),
+                      color: colors.border,
                       borderRadius: AppBorderRadius.circular(99),
                     ),
                   ),
@@ -60,8 +61,8 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
                 const SizedBox(height: 18),
                 Text(
                   l10n.excursionReviewActionsTitle,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -93,12 +94,13 @@ Future<ExcursionReviewEditDraft?> showExcursionReviewEditSheet(
   BuildContext context, {
   required ExcursionReviewVm review,
 }) {
+  final colors = AppDesignSystem.colorsFor(context);
   return showAppModalBottomSheet<ExcursionReviewEditDraft>(
     context: context,
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: AppPalette.transparent,
+    backgroundColor: colors.transparent,
     builder: (context) => _ExcursionReviewEditSheet(review: review),
   );
 }
@@ -118,9 +120,10 @@ class _ReviewActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppPalette.danger : AppPalette.primary;
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = destructive ? colors.danger : colors.primary;
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(8),
@@ -187,15 +190,17 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+
     return AppModalSheetFrame(
       child: Container(
         width: double.infinity,
         padding: AppEdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        decoration: const AppBoxDecoration(
-          color: AppPalette.warmInk78,
-          borderRadius: AppBorderRadius.vertical(
+        decoration: AppBoxDecoration(
+          color: colors.surface,
+          borderRadius: const AppBorderRadius.vertical(
             top: AppRadiusValue.circular(24),
           ),
         ),
@@ -207,8 +212,8 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
             children: [
               Text(
                 l10n.excursionReviewEditTitle,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
@@ -225,7 +230,7 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
                       value <= _rating.round()
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,
-                      color: AppPalette.primary,
+                      color: colors.primary,
                       size: 32,
                     ),
                   );
@@ -237,15 +242,13 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
                 maxLines: 5,
                 minLines: 3,
                 maxLength: 600,
-                cursorColor: AppPalette.primary,
-                style: const AppTextStyle(color: AppPalette.textPrimary),
+                cursorColor: colors.primary,
+                style: AppTextStyle(color: colors.textPrimary),
                 decoration: AppInputDecoration(
                   hintText: l10n.myExcursionsReviewHint,
-                  hintStyle: const AppTextStyle(
-                    color: AppPalette.orangeMuted02,
-                  ),
+                  hintStyle: AppTextStyle(color: colors.textMuted),
                   filled: true,
-                  fillColor: AppPalette.surfaceHigh,
+                  fillColor: colors.surfaceHigh,
                   border: OutlineInputBorder(
                     borderRadius: AppBorderRadius.circular(8),
                     borderSide: BorderSide.none,

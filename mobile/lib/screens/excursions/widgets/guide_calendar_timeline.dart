@@ -20,6 +20,7 @@ class GuideCalendarTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     if (isLoading && slots.isEmpty) {
       return SliverList.separated(
         itemCount: 4,
@@ -38,22 +39,19 @@ class GuideCalendarTimeline extends StatelessWidget {
           child: Container(
             padding: const AppEdgeInsets.all(18),
             decoration: AppBoxDecoration(
-              color: AppPalette.warmSurface20,
+              color: colors.surface,
               borderRadius: AppBorderRadius.circular(8),
-              border: Border.all(color: AppPalette.outlineOverlay),
+              border: Border.all(color: colors.border),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.event_available_rounded,
-                  color: AppPalette.primary,
-                ),
+                Icon(Icons.event_available_rounded, color: colors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     l10n.guideCalendarEmptyDay,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -87,13 +85,15 @@ class _TimelineSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         minHeight: _guideTimelineSkeletonMinHeight(context),
       ),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface20.withValues(alpha: 0.68),
+          color: colors.surface.withValues(alpha: 0.68),
           borderRadius: AppBorderRadius.circular(8),
         ),
       ),

@@ -3,6 +3,19 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('profile settings screen uses V2 design colors only', () async {
+    final source = await File(
+      'lib/screens/profile/profile_settings_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.primary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test(
     'profile settings starts with localized profile parameters only',
     () async {
@@ -118,6 +131,76 @@ void main() {
     },
   );
 
+  test(
+    'profile settings opens app theme sheet below app language action',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_settings_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../providers/theme_mode_provider.dart';"),
+      );
+      expect(source, contains('Future<void> _openAppThemeSettings()'));
+      expect(source, contains('context.read<ThemeModeProvider>()'));
+      expect(source, contains('AppThemeModePreference.values'));
+      expect(source, contains('RadioListTile<AppThemeModePreference>'));
+
+      final languageAction = source.indexOf('title: l10n.appLanguageTitle');
+      final themeIcon = source.indexOf(
+        'icon: Icons.contrast_rounded',
+        languageAction,
+      );
+      final themeAction = source.indexOf(
+        'title: l10n.appThemeTitle',
+        themeIcon,
+      );
+      final notificationsAction = source.indexOf(
+        'title: l10n.profileNotificationsRowTitle',
+      );
+
+      expect(languageAction, isNonNegative);
+      expect(themeIcon, greaterThan(languageAction));
+      expect(themeAction, greaterThan(languageAction));
+      expect(themeAction, greaterThan(themeIcon));
+      expect(notificationsAction, greaterThan(themeAction));
+
+      final themeTileSource = source.substring(themeIcon, notificationsAction);
+      expect(themeTileSource, contains('Icons.contrast_rounded'));
+      expect(themeTileSource, contains('_themeModeLabel(l10n'));
+      expect(themeTileSource, contains('onTap: _openAppThemeSettings'));
+    },
+  );
+
+  test('main app listens to persisted app theme mode', () async {
+    final source = await File('lib/main.dart').readAsString();
+    final designSystemSource = await File(
+      'lib/core/ui/app_design_system.dart',
+    ).readAsString();
+
+    expect(source, contains("import 'providers/theme_mode_provider.dart';"));
+    expect(
+      source,
+      contains('late final ThemeModeProvider _themeModeProvider;'),
+    );
+    expect(source, contains('_themeModeProvider = ThemeModeProvider();'));
+    expect(
+      source,
+      contains('ChangeNotifierProvider<ThemeModeProvider>.value('),
+    );
+    expect(source, contains('value: _themeModeProvider'));
+    expect(source, contains('Consumer2<LocaleProvider, ThemeModeProvider>'));
+    expect(source, contains('themeMode: themeModeProvider.themeMode'));
+    expect(source, contains('theme: AppDesignSystem.lightTheme()'));
+    expect(source, contains('darkTheme: AppDesignSystem.darkTheme()'));
+    expect(source, contains('unawaited(_themeModeProvider.load())'));
+
+    expect(designSystemSource, contains('static ThemeData lightTheme()'));
+    expect(designSystemSource, contains('static ThemeData light()'));
+    expect(designSystemSource, contains('Brightness.light'));
+  });
+
   test('profile settings action subtitles do not end with periods', () async {
     final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
     final enArb = await File('lib/l10n/app_en.arb').readAsString();
@@ -134,6 +217,10 @@ void main() {
       contains(
         '"profileNotificationsRowSubtitle": "Push, email и SMS-уведомления по вашим активностям"',
       ),
+    );
+    expect(
+      ruArb,
+      contains('"appThemeSubtitle": "Светлая, темная или как в системе"'),
     );
     expect(
       ruArb,
@@ -156,6 +243,10 @@ void main() {
     );
     expect(
       enArb,
+      contains('"appThemeSubtitle": "Light, dark, or system default"'),
+    );
+    expect(
+      enArb,
       contains(
         '"profileSecurityRowSubtitle": "Account protection, data export, and privacy controls"',
       ),
@@ -172,6 +263,10 @@ void main() {
       contains(
         '"profileNotificationsRowSubtitle": "Белсенділіктерге қатысты push, email және SMS жаңартулары"',
       ),
+    );
+    expect(
+      kkArb,
+      contains('"appThemeSubtitle": "Жарық, қараңғы немесе жүйе бойынша"'),
     );
     expect(
       kkArb,
@@ -194,8 +289,9 @@ void main() {
     expect(source, contains('_LogoutConfirmDialog('));
     expect(source, isNot(contains('return AlertDialog(')));
     expect(dialogSource, contains('Dialog('));
-    expect(dialogSource, contains('AppPalette.primary'));
+    expect(dialogSource, contains('colors.primary'));
     expect(dialogSource, contains('LinearGradient('));
+    expect(dialogSource, contains('colors.screenGradientColors'));
     expect(dialogSource, contains('Icons.logout_rounded'));
     expect(dialogSource, contains('profileScaled(context'));
     expect(dialogSource, contains('SafeArea('));

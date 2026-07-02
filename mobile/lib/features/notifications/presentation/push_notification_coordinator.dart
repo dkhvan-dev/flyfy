@@ -262,7 +262,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
   }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   static const _notificationIcon = 'ic_stat_inflap_notification';
-  static const _notificationColor = AppPalette.tealMuted03;
+  static const _notificationColor = AppPalette.secondary;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final bool _showForegroundNotification;

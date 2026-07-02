@@ -170,6 +170,7 @@ class _HeadingBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final level = (block.level ?? 1).clamp(1, 3);
     final size = switch (level) {
       1 => 24.0,
@@ -180,7 +181,7 @@ class _HeadingBlock extends StatelessWidget {
       text: block.text ?? '',
       marks: block.marks,
       style: AppTextStyle(
-        color: StoryPalette.text,
+        color: colors.textPrimary,
         fontSize: adaptive.scale(size),
         height: 1.18,
         fontWeight: FontWeight.w800,
@@ -197,11 +198,12 @@ class _ParagraphBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return _MarkedText(
       text: block.text ?? '',
       marks: block.marks,
       style: AppTextStyle(
-        color: AppPalette.white.withValues(alpha: 0.84),
+        color: colors.textSecondary,
         fontSize: adaptive.scale(15),
         height: 1.8,
       ),
@@ -218,6 +220,7 @@ class _ListBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final items = _listItems(block.text);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +239,7 @@ class _ListBlock extends StatelessWidget {
                       ? Text(
                           '${index + 1}',
                           style: AppTextStyle(
-                            color: AppPalette.primary,
+                            color: colors.primary,
                             fontSize: adaptive.scale(13),
                             fontWeight: FontWeight.w800,
                             height: 1.65,
@@ -247,7 +250,7 @@ class _ListBlock extends StatelessWidget {
                           child: Icon(
                             Icons.circle,
                             size: adaptive.scale(6),
-                            color: AppPalette.primary,
+                            color: colors.primary,
                           ),
                         ),
                 ),
@@ -256,7 +259,7 @@ class _ListBlock extends StatelessWidget {
                     text: items[index],
                     marks: const [],
                     style: AppTextStyle(
-                      color: AppPalette.white.withValues(alpha: 0.84),
+                      color: colors.textSecondary,
                       fontSize: adaptive.scale(15),
                       height: 1.65,
                     ),
@@ -278,11 +281,12 @@ class _QuoteBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
         border: Border(
           left: BorderSide(
-            color: AppPalette.primary.withValues(alpha: 0.75),
+            color: colors.primary.withValues(alpha: 0.75),
             width: adaptive.scale(3),
           ),
         ),
@@ -294,7 +298,7 @@ class _QuoteBlock extends StatelessWidget {
           children: [
             Icon(
               Icons.format_quote_rounded,
-              color: AppPalette.primary.withValues(alpha: 0.7),
+              color: colors.primary.withValues(alpha: 0.7),
               size: adaptive.scale(24),
             ),
             SizedBox(width: adaptive.scale(8)),
@@ -303,7 +307,7 @@ class _QuoteBlock extends StatelessWidget {
                 text: block.text ?? '',
                 marks: block.marks,
                 style: AppTextStyle(
-                  color: StoryPalette.textSoft,
+                  color: colors.textSecondary,
                   fontSize: adaptive.scale(17),
                   height: 1.55,
                   fontStyle: FontStyle.italic,
@@ -326,20 +330,21 @@ class _CalloutBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       width: double.infinity,
       padding: AppEdgeInsets.all(adaptive.scale(14)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-        color: AppPalette.primary.withValues(alpha: 0.10),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        color: colors.primary.withValues(alpha: 0.10),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.22)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.lightbulb_outline_rounded,
-            color: AppPalette.primary,
+            color: colors.primary,
             size: adaptive.scale(20),
           ),
           SizedBox(width: adaptive.scale(10)),
@@ -348,7 +353,7 @@ class _CalloutBlock extends StatelessWidget {
               text: block.text ?? '',
               marks: block.marks,
               style: AppTextStyle(
-                color: StoryPalette.text,
+                color: colors.textPrimary,
                 fontSize: adaptive.scale(14),
                 height: 1.55,
                 fontWeight: FontWeight.w600,
@@ -450,6 +455,7 @@ class _ResponsiveImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final imageUrl = resolvePublicFileContentUrl(fileId);
     if (imageUrl == null) {
       return const SizedBox.shrink();
@@ -460,7 +466,7 @@ class _ResponsiveImage extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: aspectRatio,
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(color: AppPalette.warmInk113),
+          decoration: AppBoxDecoration(color: colors.surfaceHigh),
           child: Image.network(
             imageUrl,
             fit: BoxFit.cover,
@@ -471,10 +477,10 @@ class _ResponsiveImage extends StatelessWidget {
               return const _RenderedImageLoadingPlaceholder();
             },
             errorBuilder: (context, error, stackTrace) {
-              return const Center(
+              return Center(
                 child: Icon(
                   Icons.broken_image_outlined,
-                  color: AppPalette.white54,
+                  color: colors.textMuted,
                   size: 30,
                 ),
               );
@@ -507,12 +513,13 @@ class _RenderedImageLoadingPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Center(
       child: SizedBox.square(
         dimension: adaptive.scale(26),
         child: CircularProgressIndicator(
           strokeWidth: adaptive.scale(2),
-          color: AppPalette.primary,
+          color: colors.primary,
         ),
       ),
     );
@@ -524,9 +531,10 @@ class _DividerBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Divider(
       height: StoryAdaptive.of(context).scale(28),
-      color: StoryPalette.line,
+      color: colors.border,
       thickness: 1,
     );
   }
@@ -540,6 +548,7 @@ class _PlaceReferenceBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final place = block.place!;
     final title = _placeTitle(block);
     final details = [
@@ -552,15 +561,15 @@ class _PlaceReferenceBlock extends StatelessWidget {
       padding: AppEdgeInsets.all(adaptive.scale(13)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-        color: AppPalette.white.withValues(alpha: 0.05),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.place_outlined,
-            color: AppPalette.primary,
+            color: colors.primary,
             size: adaptive.scale(20),
           ),
           SizedBox(width: adaptive.scale(10)),
@@ -571,7 +580,7 @@ class _PlaceReferenceBlock extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: StoryPalette.text,
+                    color: colors.textPrimary,
                     fontSize: adaptive.scale(14),
                     height: 1.3,
                     fontWeight: FontWeight.w800,
@@ -582,7 +591,7 @@ class _PlaceReferenceBlock extends StatelessWidget {
                   Text(
                     details,
                     style: AppTextStyle(
-                      color: StoryPalette.textMuted,
+                      color: colors.textMuted,
                       fontSize: adaptive.scale(11),
                       height: 1.3,
                       fontWeight: FontWeight.w700,
@@ -607,6 +616,8 @@ class _RouteReferenceBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final route = block.route!;
     final title = _routeTitle(block);
@@ -638,19 +649,21 @@ class _RouteReferenceBlock extends StatelessWidget {
       padding: AppEdgeInsets.all(adaptive.scale(13)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppPalette.warmSurface48, AppPalette.warmInk94],
+          colors: [colors.surfaceRaised, colors.surface],
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.34)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: adaptive.scale(18),
-            offset: Offset(0, adaptive.scale(8)),
-          ),
-        ],
+        border: Border.all(color: colors.borderPrimary),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.20),
+                  blurRadius: adaptive.scale(18),
+                  offset: Offset(0, adaptive.scale(8)),
+                ),
+              ]
+            : const [],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,14 +673,12 @@ class _RouteReferenceBlock extends StatelessWidget {
             height: adaptive.scale(42),
             decoration: AppBoxDecoration(
               borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
-              color: AppPalette.primary.withValues(alpha: 0.16),
-              border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.28),
-              ),
+              color: colors.primary.withValues(alpha: 0.16),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.28)),
             ),
             child: Icon(
               Icons.route_rounded,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: adaptive.scale(22),
             ),
           ),
@@ -681,7 +692,7 @@ class _RouteReferenceBlock extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: StoryPalette.text,
+                    color: colors.textPrimary,
                     fontSize: adaptive.scale(14.5),
                     height: 1.24,
                     fontWeight: FontWeight.w900,
@@ -695,7 +706,7 @@ class _RouteReferenceBlock extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: StoryPalette.textSoft.withValues(alpha: 0.84),
+                      color: colors.textSecondary,
                       fontSize: adaptive.scale(12),
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -730,7 +741,7 @@ class _RouteReferenceBlock extends StatelessWidget {
       button: true,
       label: title,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
           onTap: () => openRoute(routeId),
@@ -756,11 +767,12 @@ class _RouteReferenceMetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.13),
+        color: colors.primary.withValues(alpha: 0.13),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(
@@ -770,16 +782,12 @@ class _RouteReferenceMetricChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              metric.icon,
-              color: AppPalette.primary,
-              size: adaptive.scale(14),
-            ),
+            Icon(metric.icon, color: colors.primary, size: adaptive.scale(14)),
             SizedBox(width: adaptive.scale(5)),
             Text(
               metric.value,
               style: AppTextStyle(
-                color: AppPalette.amberLight16,
+                color: colors.textPrimary,
                 fontSize: adaptive.scale(11),
                 height: 1.1,
                 fontWeight: FontWeight.w800,
@@ -806,6 +814,7 @@ class _MarkedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final trimmed = text.trim();
     if (marks.isEmpty || trimmed.length != text.length) {
       return Text(trimmed, style: style);
@@ -843,14 +852,18 @@ class _MarkedText extends StatelessWidget {
       spans.add(
         TextSpan(
           text: text.substring(start, end),
-          style: _styleForMarks(style, activeMarks),
+          style: _styleForMarks(style, activeMarks, colors.primary),
         ),
       );
     }
     return Text.rich(TextSpan(style: style, children: spans));
   }
 
-  TextStyle _styleForMarks(TextStyle base, Iterable<StoryInlineMark> marks) {
+  TextStyle _styleForMarks(
+    TextStyle base,
+    Iterable<StoryInlineMark> marks,
+    Color linkColor,
+  ) {
     var next = base;
     final decorations = <TextDecoration>[];
 
@@ -871,7 +884,7 @@ class _MarkedText extends StatelessWidget {
         case StoryInlineMarkType.strikethrough:
           addDecoration(TextDecoration.lineThrough);
         case StoryInlineMarkType.link:
-          next = next.copyWith(color: AppPalette.primary);
+          next = next.copyWith(color: linkColor);
           addDecoration(TextDecoration.underline);
       }
     }
@@ -879,7 +892,7 @@ class _MarkedText extends StatelessWidget {
       next = next.copyWith(
         decoration: TextDecoration.combine(decorations),
         decorationColor: decorations.contains(TextDecoration.underline)
-            ? AppPalette.primary
+            ? linkColor
             : next.decorationColor,
       );
     }

@@ -9,6 +9,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppDesignSystem.lightTheme(),
         home: Scaffold(
           body: AppFilterSheetHeader(
             title: 'Filters',
@@ -26,7 +27,10 @@ void main() {
 
     expect(title.textAlign, TextAlign.center);
     expect(title.maxLines, 1);
-    expect(clear.style?.foregroundColor?.resolve({}), AppPalette.primary);
+    expect(
+      clear.style?.foregroundColor?.resolve({}),
+      AppColorSchemes.light.primary,
+    );
   });
 
   testWidgets('filter apply button stretches and keeps entity count label', (

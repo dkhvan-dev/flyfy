@@ -67,16 +67,16 @@ class StoryAdaptive {
 }
 
 abstract final class StoryPalette {
-  static const backgroundTop = AppPalette.warmInk58;
-  static const background = AppPalette.background;
-  static const backgroundDeep = AppPalette.warmInk01;
-  static const surface = AppPalette.warmInk97;
-  static const surfaceRaised = AppPalette.warmSurface23;
-  static const surfaceCard = AppPalette.warmInk85;
-  static const text = AppPalette.textWarm;
-  static const textSoft = AppPalette.orangeLight14;
-  static const textMuted = AppPalette.warmMuted08;
-  static const line = AppPalette.orangeOverlaySoft02;
+  static const backgroundTop = Color(0xFF111B21);
+  static const background = Color(0xFF111B21);
+  static const backgroundDeep = Color(0xFF070B0E);
+  static const surface = Color(0xFF151B20);
+  static const surfaceRaised = Color(0xFF1A2127);
+  static const surfaceCard = Color(0xFF222A31);
+  static const text = Color(0xFFF4F7FA);
+  static const textSoft = Color(0xFFB7C0CA);
+  static const textMuted = Color(0xFF8A949F);
+  static const line = Color(0x332B343C);
 }
 
 String formatStoryCategory(AppLocalizations l10n, String rawCategory) {
@@ -159,23 +159,27 @@ extension StoryEntryStateX on StoryEntryState {
     };
   }
 
-  Color get foreground {
+  Color foreground(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return switch (this) {
-      StoryEntryState.available => StoryPalette.textSoft,
-      StoryEntryState.seen => AppPalette.greenInk02,
-      StoryEntryState.expired => AppPalette.orangeLight49,
-      StoryEntryState.pending => AppPalette.warmInk116,
-      StoryEntryState.hidden => AppPalette.redWash02,
+      StoryEntryState.available => colors.primary,
+      StoryEntryState.seen => colors.white,
+      StoryEntryState.expired => colors.primarySoft,
+      StoryEntryState.pending => colors.primary,
+      StoryEntryState.hidden => colors.white,
     };
   }
 
   Color background(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return switch (this) {
-      StoryEntryState.available => AppPalette.transparent,
-      StoryEntryState.seen => AppPalette.success,
-      StoryEntryState.expired => AppPalette.black.withValues(alpha: 0.64),
-      StoryEntryState.pending => AppPalette.amberSoft09,
-      StoryEntryState.hidden => AppPalette.danger.withValues(alpha: 0.88),
+      StoryEntryState.available => colors.transparent,
+      StoryEntryState.seen => colors.success,
+      StoryEntryState.expired =>
+        isDark ? colors.black.withValues(alpha: 0.64) : colors.surfaceHigh,
+      StoryEntryState.pending => colors.primaryContainer,
+      StoryEntryState.hidden => colors.danger,
     };
   }
 
@@ -280,6 +284,8 @@ class StoryStateAffordance extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
     final label = state.label(l10n);
+    final colors = AppDesignSystem.colorsFor(context);
+    final foreground = state.foreground(context);
     final horizontalPadding = compact ? 8.0 : 10.0;
     final verticalPadding = compact ? 5.0 : 7.0;
 
@@ -298,14 +304,14 @@ class StoryStateAffordance extends StatelessWidget {
         decoration: AppBoxDecoration(
           color: state.background(context),
           borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+          border: Border.all(color: colors.borderPrimary),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               state.icon,
-              color: state.foreground,
+              color: foreground,
               size: adaptive.scale(compact ? 13 : 15),
             ),
             SizedBox(width: adaptive.scale(5)),
@@ -315,7 +321,7 @@ class StoryStateAffordance extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: state.foreground,
+                  color: foreground,
                   fontSize: adaptive.scale(compact ? 11 : 12),
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -329,16 +335,13 @@ class StoryStateAffordance extends StatelessWidget {
   }
 }
 
-BoxDecoration storyScreenBackground() {
-  return const AppBoxDecoration(
+BoxDecoration storyScreenBackground(BuildContext context) {
+  final colors = AppDesignSystem.colorsFor(context);
+  return AppBoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        StoryPalette.backgroundTop,
-        StoryPalette.background,
-        StoryPalette.backgroundDeep,
-      ],
+      colors: colors.screenGradientColors,
       stops: [0, 0.34, 1],
     ),
   );
@@ -360,8 +363,10 @@ class StoryAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = borderColor ?? AppPalette.primary.withValues(alpha: 0.35);
+    final colors = AppDesignSystem.colorsFor(context);
+    final border = borderColor ?? colors.borderPrimary;
     final normalized = label.trim().isEmpty ? 'F' : label.trim().toUpperCase();
+    final image = imageUrl?.trim();
 
     return Container(
       width: size,
@@ -371,54 +376,40 @@ class StoryAvatar extends StatelessWidget {
         border: Border.all(color: border, width: math.max(1.5, size * 0.06)),
       ),
       child: ClipOval(
-        child: imageUrl == null
-            ? DecoratedBox(
-                decoration: const AppBoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [AppPalette.orangeWash17, AppPalette.orangeSoft37],
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    normalized,
-                    style: AppTextStyle(
-                      color: AppPalette.warmSurface26,
-                      fontSize: size * 0.38,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              )
+        child: image == null || image.isEmpty
+            ? _StoryAvatarFallback(label: normalized, size: size)
             : Image.network(
-                imageUrl!,
+                image,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  return DecoratedBox(
-                    decoration: const AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppPalette.orangeWash17,
-                          AppPalette.orangeSoft37,
-                        ],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        normalized,
-                        style: AppTextStyle(
-                          color: AppPalette.warmSurface26,
-                          fontSize: size * 0.38,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  );
+                  return _StoryAvatarFallback(label: normalized, size: size);
                 },
               ),
+      ),
+    );
+  }
+}
+
+class _StoryAvatarFallback extends StatelessWidget {
+  const _StoryAvatarFallback({required this.label, required this.size});
+
+  final String label;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return DecoratedBox(
+      decoration: AppBoxDecoration(color: colors.surfaceWarm),
+      child: Center(
+        child: Text(
+          label,
+          style: AppTextStyle(
+            color: colors.textPrimary,
+            fontSize: size * 0.38,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
   }
@@ -431,12 +422,13 @@ class StorySeenMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.success,
+        color: colors.success,
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppPalette.background.withValues(alpha: 0.82),
+          color: colors.background.withValues(alpha: 0.82),
           width: math.max(1.2, size * 0.08),
         ),
       ),
@@ -444,7 +436,7 @@ class StorySeenMarker extends StatelessWidget {
         dimension: size,
         child: Icon(
           Icons.check_rounded,
-          color: AppPalette.greenInk01,
+          color: colors.white,
           size: size * 0.72,
         ),
       ),
@@ -460,21 +452,16 @@ class StoryCoverImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.trim().isEmpty) {
+      final colors = AppDesignSystem.colorsFor(context);
       return DecoratedBox(
         decoration: AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppPalette.primary.withValues(alpha: 0.25),
-              AppPalette.warmInk86,
-            ],
-          ),
+          color: colors.surfaceWarm,
+          border: Border.all(color: colors.border),
         ),
         child: Center(
           child: Icon(
             Icons.auto_stories_rounded,
-            color: AppPalette.white.withValues(alpha: 0.72),
+            color: colors.primary.withValues(alpha: 0.72),
             size: StoryAdaptive.of(context).scale(44),
           ),
         ),
@@ -576,6 +563,7 @@ class _StoryVideoCoverState extends State<_StoryVideoCover> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final controller = _controller;
     if (controller != null && controller.value.isInitialized) {
       return FittedBox(
@@ -588,12 +576,12 @@ class _StoryVideoCoverState extends State<_StoryVideoCover> {
       );
     }
     if (_failed) {
-      return const DecoratedBox(
-        decoration: AppBoxDecoration(color: AppPalette.warmInk86),
+      return DecoratedBox(
+        decoration: AppBoxDecoration(color: colors.surfaceHigh),
         child: Center(
           child: Icon(
             Icons.broken_image_outlined,
-            color: AppPalette.white54,
+            color: colors.textMuted,
             size: 34,
           ),
         ),
@@ -608,14 +596,15 @@ class _StoryImageLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
-      decoration: const AppBoxDecoration(color: AppPalette.warmInk86),
+      decoration: AppBoxDecoration(color: colors.surfaceHigh),
       child: Center(
         child: SizedBox.square(
           dimension: StoryAdaptive.of(context).scale(26),
           child: CircularProgressIndicator(
             strokeWidth: StoryAdaptive.of(context).scale(2),
-            color: AppPalette.primary,
+            color: colors.primary,
           ),
         ),
       ),

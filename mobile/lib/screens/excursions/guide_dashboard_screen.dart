@@ -25,6 +25,107 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+final class _GuideDashboardColors {
+  const _GuideDashboardColors._(this.colors);
+
+  final AppColors colors;
+
+  static _GuideDashboardColors of(BuildContext context) {
+    return _GuideDashboardColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get onPrimary => colors.onPrimary;
+  Color get secondary => colors.secondary;
+  Color get secondaryPressed => colors.secondaryPressed;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get onSecondary => colors.onSecondary;
+  Color get background => colors.background;
+  Color get backgroundDeep => colors.backgroundDeep;
+  Color get backgroundWarm => colors.backgroundWarm;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get dataBlockSurface => colors.surfaceRaised;
+  Color get journeyCardSurface => colors.surfaceRaised;
+  Color get journeyCardMutedSurface => colors.surfaceHigh;
+  Color get filterChipSurface => colors.surfaceRaised;
+  Color get filterChipSelectedSurface => colors.primaryContainer;
+  Color get filterChipSelectedText => colors.textPrimary;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
+  Color get dataBlockBorder => colors.border;
+  Color get journeyCardBorder => colors.border;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+  Color get scrim => colors.scrim;
+
+  Color get amberLight08 => colors.primarySoft;
+  Color get amberSoft07 => colors.primarySoft;
+  Color get amberSoft13 => colors.primarySoft;
+  Color get amberWash10 => colors.primaryContainer;
+  Color get greenMuted08 => colors.secondarySoft;
+  Color get greenSoft02 => colors.success;
+  Color get greenSurface03 => colors.surfaceTeal;
+  Color get greenSurface05 => colors.surfaceTeal;
+  Color get greenSurfaceHigh17 => colors.secondaryContainer;
+  Color get neutralOverlayWash02 => colors.white.withValues(alpha: 0.08);
+  Color get orangeLight01 => colors.textSecondary;
+  Color get orangeLight15 => colors.textSecondary;
+  Color get orangeLight26 => colors.primary;
+  Color get orangeLight39 => colors.primary;
+  Color get orangeLight46 => colors.primarySoft;
+  Color get orangeWash25 => colors.textPrimary;
+  Color get redLight04 => colors.danger;
+  Color get redLight07 => colors.danger;
+  Color get redOverlaySoft02 => colors.danger.withValues(alpha: 0.16);
+  Color get redSoft11 => colors.danger;
+  Color get redSurfaceHigh03 => colors.surfaceWarm;
+  Color get tealSoft06 => colors.secondarySoft;
+  Color get tealSoft08 => colors.secondarySoft;
+  Color get tealSurface04 => colors.surfaceTeal;
+  Color get tealSurface05 => colors.surfaceTeal;
+  Color get tealSurfaceHigh05 => colors.secondaryContainer;
+  Color get tealSurfaceHigh10 => colors.secondaryContainer;
+  Color get warmInk22 => colors.backgroundDeep;
+  Color get warmInk63 => colors.background;
+  Color get warmInk78 => colors.backgroundDeep;
+  Color get warmMuted22 => colors.textMuted;
+  Color get warmMuted27 => colors.textMuted;
+  Color get warmMuted28 => colors.textSecondary;
+  Color get warmOverlayInk16 => colors.surface;
+  Color get warmOverlaySurface20 => colors.surfaceRaised;
+  Color get warmSurface17 => colors.surface;
+  Color get warmSurface21 => colors.surface;
+  Color get warmSurface28 => colors.surfaceWarm;
+  Color get warmSurface39 => colors.surfaceWarm;
+  Color get warmSurface66 => colors.border;
+  Color get warmSurface77 => colors.surfaceHigh;
+  Color get warmSurfaceHigh22 => colors.surfaceHigh;
+  Color get warmSurfaceHigh31 => colors.surfaceHigh;
+}
+
+extension _GuideDashboardColorContext on BuildContext {
+  _GuideDashboardColors get guideDashboardColors =>
+      _GuideDashboardColors.of(this);
+}
+
 enum GuideDashboardSection { offers, bookings }
 
 enum GuideOfferDashboardTab { active, draft, review, archive, rejected }
@@ -143,8 +244,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
-      barrierColor: AppPalette.black.withValues(alpha: 0.58),
+      backgroundColor: context.guideDashboardColors.transparent,
+      barrierColor: context.guideDashboardColors.black.withValues(alpha: 0.58),
       builder: (_) => _GuideDashboardStatusFiltersSheet(
         activeSection: _activeSection,
         initialOfferStatus: _offerStatusFilter,
@@ -202,7 +303,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.guideDashboardColors.transparent,
       builder: (_) => _GuideBookingDetailsSheet(
         booking: booking,
         relatedBookings: relatedBookings,
@@ -231,7 +332,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.guideDashboardColors.transparent,
       builder: (_) => _GuideCancelExcursionSheet(
         refundAmount: refundAmount,
         refundCurrency: refundCurrency,
@@ -296,45 +397,51 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) => AppModalDialogCard(
-        backgroundColor: AppPalette.surface,
-        surfaceTintColor: AppPalette.transparent,
+        backgroundColor: context.guideDashboardColors.surface,
+        surfaceTintColor: context.guideDashboardColors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(28),
-          side: const BorderSide(color: AppPalette.border),
+          side: BorderSide(color: context.guideDashboardColors.border),
         ),
         icon: Container(
           width: 58,
           height: 58,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.warmSurface28,
+            color: context.guideDashboardColors.warmSurface28,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.24),
+              color: context.guideDashboardColors.primary.withValues(
+                alpha: 0.24,
+              ),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.primary.withValues(alpha: 0.14),
+                color: context.guideDashboardColors.primary.withValues(
+                  alpha: 0.14,
+                ),
                 blurRadius: 22,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.delete_outline_rounded,
-            color: AppPalette.primary,
+            color: context.guideDashboardColors.primary,
             size: 27,
           ),
         ),
         title: Text(l10n.guideDashboardDeleteDraftTitle),
-        titleTextStyle: const AppTextStyle(
-          color: AppPalette.orangeWash25,
+        titleTextStyle: AppTextStyle(
+          color: context.guideDashboardColors.orangeWash25,
           fontSize: 23,
           height: 1.12,
           fontWeight: FontWeight.w900,
         ),
         content: Text(l10n.guideDashboardDeleteDraftMessage),
         contentTextStyle: AppTextStyle(
-          color: AppPalette.textSecondary.withValues(alpha: 0.88),
+          color: context.guideDashboardColors.textSecondary.withValues(
+            alpha: 0.88,
+          ),
           fontSize: 15,
           height: 1.45,
           fontWeight: FontWeight.w500,
@@ -344,8 +451,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             style: TextButton.styleFrom(
-              backgroundColor: AppPalette.warmSurface28,
-              foregroundColor: AppPalette.orangeLight15,
+              backgroundColor: context.guideDashboardColors.warmSurface28,
+              foregroundColor: context.guideDashboardColors.orangeLight15,
               minimumSize: const Size(0, 48),
               padding: const AppEdgeInsets.symmetric(
                 horizontal: 16,
@@ -353,9 +460,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(16),
-                side: const BorderSide(color: AppPalette.warmSurface66),
+                side: BorderSide(
+                  color: context.guideDashboardColors.warmSurface66,
+                ),
               ),
-              textStyle: const AppTextStyle(
+              textStyle: AppTextStyle(
                 fontSize: 15,
                 height: 1.1,
                 fontWeight: FontWeight.w900,
@@ -366,8 +475,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.textPrimary,
+              backgroundColor: context.guideDashboardColors.primary,
+              foregroundColor: context.guideDashboardColors.textPrimary,
               minimumSize: const Size(0, 48),
               padding: const AppEdgeInsets.symmetric(
                 horizontal: 16,
@@ -376,7 +485,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(16),
               ),
-              textStyle: const AppTextStyle(
+              textStyle: AppTextStyle(
                 fontSize: 15,
                 height: 1.1,
                 fontWeight: FontWeight.w900,
@@ -486,13 +595,16 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         : double.infinity;
 
     return Scaffold(
-      backgroundColor: AppPalette.warmInk22,
+      backgroundColor: context.guideDashboardColors.warmInk22,
       body: DecoratedBox(
-        decoration: const AppBoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppPalette.warmInk78, AppPalette.warmInk22],
+            colors: [
+              context.guideDashboardColors.warmInk78,
+              context.guideDashboardColors.warmInk22,
+            ],
           ),
         ),
         child: SafeArea(
@@ -552,8 +664,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                   provider.myGuideExcursionBookings.isEmpty;
 
               return RefreshIndicator(
-                color: AppPalette.primary,
-                backgroundColor: AppPalette.warmSurface17,
+                color: context.guideDashboardColors.primary,
+                backgroundColor: context.guideDashboardColors.warmSurface17,
                 onRefresh: provider.refreshGuideDashboardData,
                 child: Center(
                   child: ConstrainedBox(
@@ -1411,9 +1523,9 @@ class _GuideStatCard extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 88),
       padding: const AppEdgeInsets.all(18),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface17,
+        color: context.guideDashboardColors.dataBlockSurface,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        border: Border.all(color: context.guideDashboardColors.dataBlockBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1423,8 +1535,8 @@ class _GuideStatCard extends StatelessWidget {
             label.toUpperCase(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.orangeLight01,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.orangeLight01,
               fontSize: 11,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.1,
@@ -1439,8 +1551,8 @@ class _GuideStatCard extends StatelessWidget {
                   value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.guideDashboardColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     height: 1.08,
@@ -1449,7 +1561,11 @@ class _GuideStatCard extends StatelessWidget {
               ),
               if (suffix != null) ...[
                 const SizedBox(width: 4),
-                Icon(suffix, color: AppPalette.primary, size: 20),
+                Icon(
+                  suffix,
+                  color: context.guideDashboardColors.primary,
+                  size: 20,
+                ),
               ],
             ],
           ),
@@ -1632,15 +1748,20 @@ class _GuideDashboardStatusFiltersSheetState
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Container(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
+              colors: [
+                context.guideDashboardColors.warmSurface21,
+                context.guideDashboardColors.warmInk63,
+              ],
             ),
             borderRadius: const AppBorderRadius.vertical(
               top: AppRadiusValue.circular(26),
             ),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
+            border: Border.all(
+              color: context.guideDashboardColors.white.withValues(alpha: 0.04),
+            ),
           ),
           child: SafeArea(
             top: false,
@@ -1672,16 +1793,16 @@ class _GuideDashboardStatusFiltersSheetState
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.fact_check_outlined,
-                              color: AppPalette.primary,
+                              color: context.guideDashboardColors.primary,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               l10n.myActivitiesFilterStatus,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
+                              style: AppTextStyle(
+                                color: context.guideDashboardColors.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1734,10 +1855,14 @@ class _GuideDashboardStatusFiltersSheetState
                   decoration: AppBoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        color: AppPalette.primary.withValues(alpha: 0.09),
+                        color: context.guideDashboardColors.primary.withValues(
+                          alpha: 0.09,
+                        ),
                       ),
                     ),
-                    color: AppPalette.black.withValues(alpha: 0.06),
+                    color: context.guideDashboardColors.black.withValues(
+                      alpha: 0.06,
+                    ),
                   ),
                   child: AppFilterApplyButton(
                     label:
@@ -1773,11 +1898,11 @@ class _GuideStatusFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final foreground = selected
-        ? AppPalette.amberWash10
-        : AppPalette.orangeLight26;
+        ? context.guideDashboardColors.filterChipSelectedText
+        : context.guideDashboardColors.orangeLight26;
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.guideDashboardColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
@@ -1786,13 +1911,15 @@ class _GuideStatusFilterChip extends StatelessWidget {
           padding: const AppEdgeInsets.symmetric(horizontal: 12),
           decoration: AppBoxDecoration(
             color: selected
-                ? AppPalette.primary.withValues(alpha: 0.18)
-                : AppPalette.white.withValues(alpha: 0.025),
+                ? context.guideDashboardColors.filterChipSelectedSurface
+                : context.guideDashboardColors.filterChipSurface,
             borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? AppPalette.primary
-                  : AppPalette.primary.withValues(alpha: 0.14),
+                  ? context.guideDashboardColors.primary
+                  : context.guideDashboardColors.primary.withValues(
+                      alpha: 0.14,
+                    ),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -1803,16 +1930,20 @@ class _GuideStatusFilterChip extends StatelessWidget {
                 height: 28,
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: selected ? AppPalette.primary : AppPalette.transparent,
+                  color: selected
+                      ? context.guideDashboardColors.primary
+                      : context.guideDashboardColors.transparent,
                   border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.56),
+                    color: context.guideDashboardColors.primary.withValues(
+                      alpha: 0.56,
+                    ),
                     width: 1.5,
                   ),
                 ),
                 child: selected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
-                        color: AppPalette.white,
+                        color: context.guideDashboardColors.textPrimary,
                         size: 18,
                       )
                     : null,
@@ -1837,14 +1968,16 @@ class _GuideStatusFilterChip extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  color: context.guideDashboardColors.primary.withValues(
+                    alpha: 0.14,
+                  ),
                   borderRadius: AppBorderRadius.circular(999),
                 ),
                 child: Text(
                   '$count',
                   textAlign: TextAlign.center,
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
+                  style: AppTextStyle(
+                    color: context.guideDashboardColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1929,7 +2062,7 @@ class _GuideDashboardActionTile extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: AppPalette.transparent,
+        color: context.guideDashboardColors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(8),
@@ -1939,10 +2072,12 @@ class _GuideDashboardActionTile extends StatelessWidget {
               vertical: 12,
             ),
             decoration: AppBoxDecoration(
-              color: AppPalette.warmSurface17,
+              color: context.guideDashboardColors.warmSurface17,
               borderRadius: AppBorderRadius.circular(8),
               border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.20),
+                color: context.guideDashboardColors.primary.withValues(
+                  alpha: 0.20,
+                ),
               ),
             ),
             child: ExcludeSemantics(
@@ -1952,10 +2087,16 @@ class _GuideDashboardActionTile extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.14),
+                      color: context.guideDashboardColors.primary.withValues(
+                        alpha: 0.14,
+                      ),
                       borderRadius: AppBorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: AppPalette.primary, size: 21),
+                    child: Icon(
+                      icon,
+                      color: context.guideDashboardColors.primary,
+                      size: 21,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1963,17 +2104,17 @@ class _GuideDashboardActionTile extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.guideDashboardColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: AppPalette.orangeLight01,
+                    color: context.guideDashboardColors.orangeLight01,
                     size: 20,
                   ),
                 ],
@@ -2034,9 +2175,11 @@ class _GuideDashboardSegmentedTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.07),
+        color: context.guideDashboardColors.white.withValues(alpha: 0.07),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(
+          color: context.guideDashboardColors.primary.withValues(alpha: 0.16),
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -2088,9 +2231,13 @@ class _GuideSegmentedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppPalette.textPrimary : AppPalette.amberLight08;
+    final color = selected
+        ? context.guideDashboardColors.textPrimary
+        : context.guideDashboardColors.amberLight08;
     return Material(
-      color: selected ? AppPalette.primary : AppPalette.transparent,
+      color: selected
+          ? context.guideDashboardColors.primary
+          : context.guideDashboardColors.transparent,
       borderRadius: AppBorderRadius.circular(14),
       child: InkWell(
         onTap: selected ? null : onTap,
@@ -2281,7 +2428,7 @@ class _ExcursionAttendanceQrAction extends StatelessWidget {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.guideDashboardColors.transparent,
       builder: (_) => _ExcursionAttendanceQrSheet(
         scheduleSlotId: scheduleSlotId,
         relatedBookings: relatedBookings,
@@ -2297,16 +2444,18 @@ class _ExcursionAttendanceQrAction extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () => _openSheet(context),
-        icon: const Icon(Icons.qr_code_scanner),
+        icon: Icon(Icons.qr_code_scanner),
         label: Text(
           l10n.guideDashboardShowAttendanceQr.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppPalette.orangeLight46,
+          foregroundColor: context.guideDashboardColors.orangeLight46,
           side: BorderSide(
-            color: AppPalette.orangeLight46.withValues(alpha: 0.38),
+            color: context.guideDashboardColors.orangeLight46.withValues(
+              alpha: 0.38,
+            ),
           ),
           minimumSize: const Size(0, 48),
           shape: RoundedRectangleBorder(
@@ -2479,19 +2628,23 @@ class _ExcursionAttendanceQrSheetState
                 top: AppRadiusValue.circular(28),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.08),
+                color: context.guideDashboardColors.white.withValues(
+                  alpha: 0.08,
+                ),
               ),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.warmOverlaySurface20,
-                  AppPalette.warmOverlayInk16,
+                  context.guideDashboardColors.warmOverlaySurface20,
+                  context.guideDashboardColors.warmOverlayInk16,
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.34),
+                  color: context.guideDashboardColors.black.withValues(
+                    alpha: 0.34,
+                  ),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
@@ -2513,7 +2666,9 @@ class _ExcursionAttendanceQrSheetState
                       width: 52,
                       height: 5,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: context.guideDashboardColors.white.withValues(
+                          alpha: 0.18,
+                        ),
                         borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
@@ -2527,7 +2682,7 @@ class _ExcursionAttendanceQrSheetState
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.textPrimary,
+                            color: context.guideDashboardColors.textPrimary,
                             fontSize: compact ? 21 : 23,
                             fontWeight: FontWeight.w900,
                           ),
@@ -2536,8 +2691,8 @@ class _ExcursionAttendanceQrSheetState
                       const SizedBox(width: 12),
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: const Icon(Icons.close_rounded),
-                        color: AppPalette.orangeLight01,
+                        icon: Icon(Icons.close_rounded),
+                        color: context.guideDashboardColors.orangeLight01,
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
@@ -2566,8 +2721,10 @@ class _ExcursionAttendanceQrSheetState
         constraints: BoxConstraints(
           minHeight: _guideQrLoadingMinHeight(context),
         ),
-        child: const Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: context.guideDashboardColors.primary,
+          ),
         ),
       );
     }
@@ -2575,17 +2732,17 @@ class _ExcursionAttendanceQrSheetState
     if (_error != null || (_token ?? '').isEmpty) {
       return Column(
         children: [
-          const Icon(
+          Icon(
             Icons.qr_code_2_rounded,
-            color: AppPalette.primary,
+            color: context.guideDashboardColors.primary,
             size: 34,
           ),
           const SizedBox(height: 10),
           Text(
             l10n.activityAttendanceQrLoadFailed,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
@@ -2606,18 +2763,18 @@ class _ExcursionAttendanceQrSheetState
               height: qrSize,
               padding: const AppEdgeInsets.all(12),
               decoration: AppBoxDecoration(
-                color: AppPalette.white,
+                color: context.guideDashboardColors.white,
                 borderRadius: AppBorderRadius.circular(18),
               ),
               child: QrImageView(
                 data: _token!,
-                backgroundColor: AppPalette.white,
-                eyeStyle: const QrEyeStyle(
+                backgroundColor: context.guideDashboardColors.white,
+                eyeStyle: QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: AppPalette.black,
+                  color: context.guideDashboardColors.black,
                 ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  color: AppPalette.black,
+                dataModuleStyle: QrDataModuleStyle(
+                  color: context.guideDashboardColors.black,
                   dataModuleShape: QrDataModuleShape.square,
                 ),
               ),
@@ -2626,8 +2783,8 @@ class _ExcursionAttendanceQrSheetState
             Text(
               _countdownLabel(l10n),
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: AppPalette.orangeLight01,
+              style: AppTextStyle(
+                color: context.guideDashboardColors.orangeLight01,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -2674,17 +2831,19 @@ class _GuideAttendanceParticipantStatusList extends StatelessWidget {
           width: double.infinity,
           padding: const AppEdgeInsets.all(14),
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.05),
+            color: context.guideDashboardColors.white.withValues(alpha: 0.05),
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: context.guideDashboardColors.white.withValues(alpha: 0.08),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.guideDashboardAttendanceParticipants,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.guideDashboardColors.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -2720,8 +2879,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
     final statusColor = checkedIn
-        ? AppPalette.greenSoft02
-        : AppPalette.orangeLight46;
+        ? context.guideDashboardColors.greenSoft02
+        : context.guideDashboardColors.orangeLight46;
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -2746,8 +2905,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
                 _guideAttendanceParticipantName(booking),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.guideDashboardColors.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2757,8 +2916,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
                 l10n.myExcursionsGuests(booking.totalSeats),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeLight01,
+                style: AppTextStyle(
+                  color: context.guideDashboardColors.orangeLight01,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2907,19 +3066,23 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                 top: AppRadiusValue.circular(28),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.08),
+                color: context.guideDashboardColors.white.withValues(
+                  alpha: 0.08,
+                ),
               ),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.warmOverlaySurface20,
-                  AppPalette.warmOverlayInk16,
+                  context.guideDashboardColors.warmOverlaySurface20,
+                  context.guideDashboardColors.warmOverlayInk16,
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.34),
+                  color: context.guideDashboardColors.black.withValues(
+                    alpha: 0.34,
+                  ),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
@@ -2941,7 +3104,9 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                       width: 52,
                       height: 5,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: context.guideDashboardColors.white.withValues(
+                          alpha: 0.18,
+                        ),
                         borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
@@ -2950,7 +3115,7 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                   Text(
                     l10n.guideDashboardBookingSheetTitle,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: context.guideDashboardColors.textPrimary,
                       fontSize: compact ? 21 : 23,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2960,8 +3125,8 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                     primaryBooking.title.trim().isEmpty
                         ? l10n.myExcursionsUntitled
                         : primaryBooking.title.trim(),
-                    style: const AppTextStyle(
-                      color: AppPalette.orangeLight01,
+                    style: AppTextStyle(
+                      color: context.guideDashboardColors.orangeLight01,
                       fontSize: 14,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
@@ -3030,9 +3195,11 @@ class _GuideBookingGuestBreakdown extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.05),
+        color: context.guideDashboardColors.white.withValues(alpha: 0.05),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: context.guideDashboardColors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(
         children: [
@@ -3045,9 +3212,12 @@ class _GuideBookingGuestBreakdown extends StatelessWidget {
             label: l10n.guideDashboardChildren,
             value: '$children',
           ),
-          const Padding(
+          Padding(
             padding: AppEdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1, color: AppPalette.neutralOverlayWash02),
+            child: Divider(
+              height: 1,
+              color: context.guideDashboardColors.neutralOverlayWash02,
+            ),
           ),
           _GuideBookingBreakdownRow(
             label: l10n.guideDashboardTotalGuests,
@@ -3080,8 +3250,8 @@ class _GuideBookingAuthorsList extends StatelessWidget {
           children: [
             Text(
               l10n.guideDashboardBookingAuthorsTitle,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.guideDashboardColors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
@@ -3126,10 +3296,14 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: AppPalette.orangeLight39.withValues(alpha: 0.1),
+        color: context.guideDashboardColors.orangeLight39.withValues(
+          alpha: 0.1,
+        ),
         borderRadius: AppBorderRadius.circular(18),
         border: Border.all(
-          color: AppPalette.orangeLight39.withValues(alpha: 0.22),
+          color: context.guideDashboardColors.orangeLight39.withValues(
+            alpha: 0.22,
+          ),
         ),
       ),
       child: Column(
@@ -3137,17 +3311,17 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.event_busy_rounded,
-                color: AppPalette.orangeLight39,
+                color: context.guideDashboardColors.orangeLight39,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.guideDashboardColors.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -3162,8 +3336,8 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
                     booking.refundPercent,
                   )
                 : l10n.myExcursionsCancelledWithoutRefund,
-            style: const AppTextStyle(
-              color: AppPalette.redLight07,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.redLight07,
               fontWeight: FontWeight.w800,
               height: 1.3,
             ),
@@ -3172,8 +3346,8 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               l10n.guideDashboardCancellationReason(reason),
-              style: const AppTextStyle(
-                color: AppPalette.orangeLight01,
+              style: AppTextStyle(
+                color: context.guideDashboardColors.orangeLight01,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
@@ -3260,19 +3434,23 @@ class _GuideCancelExcursionSheetState
                 top: AppRadiusValue.circular(28),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.08),
+                color: context.guideDashboardColors.white.withValues(
+                  alpha: 0.08,
+                ),
               ),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.warmOverlaySurface20,
-                  AppPalette.warmOverlayInk16,
+                  context.guideDashboardColors.warmOverlaySurface20,
+                  context.guideDashboardColors.warmOverlayInk16,
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.34),
+                  color: context.guideDashboardColors.black.withValues(
+                    alpha: 0.34,
+                  ),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
@@ -3294,7 +3472,9 @@ class _GuideCancelExcursionSheetState
                       width: 52,
                       height: 5,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: context.guideDashboardColors.white.withValues(
+                          alpha: 0.18,
+                        ),
                         borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
@@ -3303,7 +3483,7 @@ class _GuideCancelExcursionSheetState
                   Text(
                     l10n.guideDashboardCancelTitle,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: context.guideDashboardColors.textPrimary,
                       fontSize: compact ? 21 : 23,
                       fontWeight: FontWeight.w900,
                     ),
@@ -3311,8 +3491,8 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 10),
                   Text(
                     l10n.guideDashboardCancelDescription,
-                    style: const AppTextStyle(
-                      color: AppPalette.orangeLight01,
+                    style: AppTextStyle(
+                      color: context.guideDashboardColors.orangeLight01,
                       fontSize: 14,
                       height: 1.42,
                       fontWeight: FontWeight.w600,
@@ -3323,16 +3503,20 @@ class _GuideCancelExcursionSheetState
                     width: double.infinity,
                     padding: const AppEdgeInsets.all(14),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.11),
+                      color: context.guideDashboardColors.primary.withValues(
+                        alpha: 0.11,
+                      ),
                       borderRadius: AppBorderRadius.circular(16),
                       border: Border.all(
-                        color: AppPalette.primary.withValues(alpha: 0.22),
+                        color: context.guideDashboardColors.primary.withValues(
+                          alpha: 0.22,
+                        ),
                       ),
                     ),
                     child: Text(
                       l10n.guideDashboardRefundAmount(refund),
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.guideDashboardColors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3341,8 +3525,8 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 18),
                   Text(
                     l10n.guideDashboardCancelReasonLabel,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: context.guideDashboardColors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -3350,12 +3534,16 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 10),
                   DecoratedBox(
                     decoration: AppBoxDecoration(
-                      color: AppPalette.white.withValues(alpha: 0.05),
+                      color: context.guideDashboardColors.white.withValues(
+                        alpha: 0.05,
+                      ),
                       borderRadius: AppBorderRadius.circular(18),
                       border: Border.all(
                         color: _errorText == null
-                            ? AppPalette.white.withValues(alpha: 0.08)
-                            : AppPalette.redOverlaySoft02,
+                            ? context.guideDashboardColors.white.withValues(
+                                alpha: 0.08,
+                              )
+                            : context.guideDashboardColors.redOverlaySoft02,
                       ),
                     ),
                     child: TextField(
@@ -3365,22 +3553,21 @@ class _GuideCancelExcursionSheetState
                       minLines: 3,
                       maxLength: 160,
                       textCapitalization: TextCapitalization.sentences,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.guideDashboardColors.textPrimary,
                         fontSize: 14,
                         height: 1.4,
                       ),
                       decoration: AppInputDecoration(
                         hintText: l10n.guideDashboardCancelReasonPlaceholder,
                         hintStyle: AppTextStyle(
-                          color: AppPalette.orangeLight01.withValues(
-                            alpha: 0.72,
-                          ),
+                          color: context.guideDashboardColors.orangeLight01
+                              .withValues(alpha: 0.72),
                           fontSize: 14,
                         ),
                         border: InputBorder.none,
-                        counterStyle: const AppTextStyle(
-                          color: AppPalette.orangeLight01,
+                        counterStyle: AppTextStyle(
+                          color: context.guideDashboardColors.orangeLight01,
                           fontSize: 12,
                         ),
                         contentPadding: const AppEdgeInsets.fromLTRB(
@@ -3403,8 +3590,8 @@ class _GuideCancelExcursionSheetState
                     const SizedBox(height: 8),
                     Text(
                       _errorText!,
-                      style: const AppTextStyle(
-                        color: AppPalette.redSoft11,
+                      style: AppTextStyle(
+                        color: context.guideDashboardColors.redSoft11,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -3417,9 +3604,11 @@ class _GuideCancelExcursionSheetState
                       final keep = OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppPalette.textPrimary,
+                          foregroundColor:
+                              context.guideDashboardColors.textPrimary,
                           side: BorderSide(
-                            color: AppPalette.white.withValues(alpha: 0.12),
+                            color: context.guideDashboardColors.white
+                                .withValues(alpha: 0.12),
                           ),
                           minimumSize: const Size(0, 50),
                         ),
@@ -3427,11 +3616,12 @@ class _GuideCancelExcursionSheetState
                       );
                       final confirm = FilledButton.icon(
                         onPressed: _submit,
-                        icon: const Icon(Icons.event_busy_rounded),
+                        icon: Icon(Icons.event_busy_rounded),
                         label: Text(l10n.guideDashboardCancelConfirm),
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppPalette.primary,
-                          foregroundColor: AppPalette.white,
+                          backgroundColor: context.guideDashboardColors.primary,
+                          foregroundColor:
+                              context.guideDashboardColors.textPrimary,
                           minimumSize: const Size(0, 50),
                         ),
                       );
@@ -3483,19 +3673,23 @@ class _GuideBookingAuthorRow extends StatelessWidget {
     return Container(
       padding: const AppEdgeInsets.all(12),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.04),
+        color: context.guideDashboardColors.white.withValues(alpha: 0.04),
         borderRadius: AppBorderRadius.circular(16),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
+        border: Border.all(
+          color: context.guideDashboardColors.white.withValues(alpha: 0.07),
+        ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 21,
-            backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+            backgroundColor: context.guideDashboardColors.primary.withValues(
+              alpha: 0.16,
+            ),
             child: Text(
               initial,
-              style: const AppTextStyle(
-                color: AppPalette.primary,
+              style: AppTextStyle(
+                color: context.guideDashboardColors.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -3509,8 +3703,8 @@ class _GuideBookingAuthorRow extends StatelessWidget {
                   nickname,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.guideDashboardColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
@@ -3548,8 +3742,8 @@ class _GuideBookingAuthorGuestsText extends StatelessWidget {
       ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: const AppTextStyle(
-        color: AppPalette.orangeLight01,
+      style: AppTextStyle(
+        color: context.guideDashboardColors.orangeLight01,
         fontSize: 12,
         height: 1.25,
         fontWeight: FontWeight.w700,
@@ -3572,8 +3766,8 @@ class _GuideBookingAttendanceStatusPill extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
     final statusColor = checkedIn
-        ? AppPalette.greenSoft02
-        : AppPalette.orangeLight46;
+        ? context.guideDashboardColors.greenSoft02
+        : context.guideDashboardColors.orangeLight46;
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -3632,18 +3826,18 @@ class _GuideBookingInfoPill extends StatelessWidget {
     return Container(
       padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: context.guideDashboardColors.white.withValues(alpha: 0.06),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppPalette.primary, size: 16),
+          Icon(icon, color: context.guideDashboardColors.primary, size: 16),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -3674,8 +3868,8 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
             label,
             style: AppTextStyle(
               color: emphasized
-                  ? AppPalette.textPrimary
-                  : AppPalette.orangeLight01,
+                  ? context.guideDashboardColors.textPrimary
+                  : context.guideDashboardColors.orangeLight01,
               fontSize: emphasized ? 15 : 14,
               fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
             ),
@@ -3684,7 +3878,7 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
         Text(
           value,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.guideDashboardColors.textPrimary,
             fontSize: emphasized ? 18 : 15,
             fontWeight: FontWeight.w900,
           ),
@@ -3692,6 +3886,20 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
       ],
     );
   }
+}
+
+List<BoxShadow> _guideDashboardCardShadow(BuildContext context) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return const [];
+  }
+
+  return [
+    BoxShadow(
+      color: context.guideDashboardColors.black.withValues(alpha: 0.14),
+      blurRadius: 22,
+      offset: const Offset(0, 14),
+    ),
+  ];
 }
 
 class _GuideJourneyCard extends StatelessWidget {
@@ -3745,29 +3953,20 @@ class _GuideJourneyCard extends StatelessWidget {
       label: semanticLabel,
       onTap: onTap,
       child: Material(
-        color: AppPalette.transparent,
+        color: context.guideDashboardColors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(22),
           child: Ink(
             decoration: AppBoxDecoration(
               color: muted
-                  ? AppPalette.warmSurface17.withValues(alpha: 0.72)
-                  : AppPalette.warmSurface17,
+                  ? context.guideDashboardColors.journeyCardMutedSurface
+                  : context.guideDashboardColors.journeyCardSurface,
               borderRadius: AppBorderRadius.circular(22),
               border: Border.all(
-                color: muted
-                    ? AppPalette.white.withValues(alpha: 0.10)
-                    : AppPalette.white.withValues(alpha: 0.05),
-                style: muted ? BorderStyle.solid : BorderStyle.solid,
+                color: context.guideDashboardColors.journeyCardBorder,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.14),
-                  blurRadius: 22,
-                  offset: const Offset(0, 14),
-                ),
-              ],
+              boxShadow: _guideDashboardCardShadow(context),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3808,8 +4007,8 @@ class _GuideJourneyCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: context.guideDashboardColors.textPrimary,
                           fontSize: 23,
                           height: 1.08,
                           fontWeight: FontWeight.w900,
@@ -3821,8 +4020,8 @@ class _GuideJourneyCard extends StatelessWidget {
                           subtitle.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.orangeLight01,
+                          style: AppTextStyle(
+                            color: context.guideDashboardColors.orangeLight01,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
@@ -3856,8 +4055,11 @@ class _GuideJourneyCard extends StatelessWidget {
                               ? FilledButton(
                                   onPressed: onTap,
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: AppPalette.primary,
-                                    foregroundColor: AppPalette.white,
+                                    backgroundColor:
+                                        context.guideDashboardColors.primary,
+                                    foregroundColor: context
+                                        .guideDashboardColors
+                                        .textPrimary,
                                     minimumSize: const Size(0, 48),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: AppBorderRadius.circular(
@@ -3869,7 +4071,7 @@ class _GuideJourneyCard extends StatelessWidget {
                                     primary.toUpperCase(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const AppTextStyle(
+                                    style: AppTextStyle(
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1.1,
                                     ),
@@ -3883,11 +4085,13 @@ class _GuideJourneyCard extends StatelessWidget {
                           final secondaryButton = OutlinedButton(
                             onPressed: onSecondaryActionTap,
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppPalette.orangeLight46,
+                              foregroundColor:
+                                  context.guideDashboardColors.orangeLight46,
                               side: BorderSide(
-                                color: AppPalette.orangeLight46.withValues(
-                                  alpha: 0.38,
-                                ),
+                                color: context
+                                    .guideDashboardColors
+                                    .orangeLight46
+                                    .withValues(alpha: 0.38),
                               ),
                               minimumSize: const Size(0, 48),
                               shape: RoundedRectangleBorder(
@@ -3898,7 +4102,7 @@ class _GuideJourneyCard extends StatelessWidget {
                               secondary.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
+                              style: AppTextStyle(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.1,
                               ),
@@ -3907,13 +4111,13 @@ class _GuideJourneyCard extends StatelessWidget {
 
                           final destructiveButton = OutlinedButton.icon(
                             onPressed: onDestructiveActionTap,
-                            icon: const Icon(Icons.delete_outline_rounded),
+                            icon: Icon(Icons.delete_outline_rounded),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppPalette.redLight04,
+                              foregroundColor:
+                                  context.guideDashboardColors.redLight04,
                               side: BorderSide(
-                                color: AppPalette.redLight04.withValues(
-                                  alpha: 0.46,
-                                ),
+                                color: context.guideDashboardColors.redLight04
+                                    .withValues(alpha: 0.46),
                               ),
                               minimumSize: const Size(0, 48),
                               shape: RoundedRectangleBorder(
@@ -3924,7 +4128,7 @@ class _GuideJourneyCard extends StatelessWidget {
                               destructive.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
+                              style: AppTextStyle(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.1,
                               ),
@@ -4013,7 +4217,7 @@ class _GuideStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk22.withValues(alpha: 0.88),
+        color: context.guideDashboardColors.warmInk22.withValues(alpha: 0.88),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -4021,7 +4225,9 @@ class _GuideStatusBadge extends StatelessWidget {
         child: Text(
           label.toUpperCase(),
           style: AppTextStyle(
-            color: muted ? AppPalette.orangeLight01 : AppPalette.primary,
+            color: muted
+                ? context.guideDashboardColors.orangeLight01
+                : context.guideDashboardColors.primary,
             fontSize: 11,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
@@ -4043,12 +4249,12 @@ class _GuideMetaChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppPalette.orangeLight01, size: 16),
+        Icon(icon, color: context.guideDashboardColors.orangeLight01, size: 16),
         const SizedBox(width: 5),
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeLight01,
+          style: AppTextStyle(
+            color: context.guideDashboardColors.orangeLight01,
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
@@ -4080,7 +4286,7 @@ class _GuideCoverArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _GuideCoverPalette.forCategory(categorySlug, seed);
+    final palette = _GuideCoverPalette.forCategory(context, categorySlug, seed);
     final resolvedImageUrl = imageUrl?.trim() ?? '';
 
     return Stack(
@@ -4098,7 +4304,7 @@ class _GuideCoverArt extends StatelessWidget {
         if (muted)
           DecoratedBox(
             decoration: AppBoxDecoration(
-              color: AppPalette.black.withValues(alpha: 0.34),
+              color: context.guideDashboardColors.black.withValues(alpha: 0.34),
               backgroundBlendMode: BlendMode.saturation,
             ),
           ),
@@ -4108,8 +4314,10 @@ class _GuideCoverArt extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppPalette.transparent,
-                AppPalette.warmSurface17.withValues(alpha: 0.76),
+                context.guideDashboardColors.transparent,
+                context.guideDashboardColors.warmSurface17.withValues(
+                  alpha: 0.76,
+                ),
               ],
             ),
           ),
@@ -4155,7 +4363,8 @@ class _GuideCoverPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final ridge = Paint()..color = palette.ridge;
     final ridgeDark = Paint()..color = palette.ridgeDark;
-    final highlight = Paint()..color = AppPalette.white.withValues(alpha: 0.32);
+    final highlight = Paint()
+      ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.32);
     final offset = (seed.abs() % 5) * size.width * 0.04;
 
     final back = Path()
@@ -4201,39 +4410,43 @@ class _GuideCoverPalette {
   final Color ridge;
   final Color ridgeDark;
 
-  static _GuideCoverPalette forCategory(String? categorySlug, int seed) {
+  static _GuideCoverPalette forCategory(
+    BuildContext context,
+    String? categorySlug,
+    int seed,
+  ) {
     switch (categorySlug?.toLowerCase()) {
       case 'culinary':
-        return const _GuideCoverPalette(
-          sky: AppPalette.amberSoft13,
-          haze: AppPalette.warmSurfaceHigh31,
-          ground: AppPalette.warmSurface39,
-          ridge: AppPalette.warmMuted28,
-          ridgeDark: AppPalette.redSurfaceHigh03,
+        return _GuideCoverPalette(
+          sky: context.guideDashboardColors.amberSoft13,
+          haze: context.guideDashboardColors.warmSurfaceHigh31,
+          ground: context.guideDashboardColors.warmSurface39,
+          ridge: context.guideDashboardColors.warmMuted28,
+          ridgeDark: context.guideDashboardColors.redSurfaceHigh03,
         );
       case 'wellness':
-        return const _GuideCoverPalette(
-          sky: AppPalette.tealSoft06,
-          haze: AppPalette.greenMuted08,
-          ground: AppPalette.greenSurface05,
-          ridge: AppPalette.greenSurfaceHigh17,
-          ridgeDark: AppPalette.greenSurface03,
+        return _GuideCoverPalette(
+          sky: context.guideDashboardColors.tealSoft06,
+          haze: context.guideDashboardColors.greenMuted08,
+          ground: context.guideDashboardColors.greenSurface05,
+          ridge: context.guideDashboardColors.greenSurfaceHigh17,
+          ridgeDark: context.guideDashboardColors.greenSurface03,
         );
       default:
         final variants = [
-          const _GuideCoverPalette(
-            sky: AppPalette.amberSoft07,
-            haze: AppPalette.warmMuted22,
-            ground: AppPalette.warmSurface77,
-            ridge: AppPalette.warmMuted27,
-            ridgeDark: AppPalette.warmSurfaceHigh22,
+          _GuideCoverPalette(
+            sky: context.guideDashboardColors.amberSoft07,
+            haze: context.guideDashboardColors.warmMuted22,
+            ground: context.guideDashboardColors.warmSurface77,
+            ridge: context.guideDashboardColors.warmMuted27,
+            ridgeDark: context.guideDashboardColors.warmSurfaceHigh22,
           ),
-          const _GuideCoverPalette(
-            sky: AppPalette.tealSoft08,
-            haze: AppPalette.tealSurfaceHigh10,
-            ground: AppPalette.tealSurface04,
-            ridge: AppPalette.tealSurfaceHigh05,
-            ridgeDark: AppPalette.tealSurface05,
+          _GuideCoverPalette(
+            sky: context.guideDashboardColors.tealSoft08,
+            haze: context.guideDashboardColors.tealSurfaceHigh10,
+            ground: context.guideDashboardColors.tealSurface04,
+            ridge: context.guideDashboardColors.tealSurfaceHigh05,
+            ridgeDark: context.guideDashboardColors.tealSurface05,
           ),
         ];
         return variants[seed.abs() % variants.length];
@@ -4262,19 +4475,21 @@ class _GuideDashboardInfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(22),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface17,
+        color: context.guideDashboardColors.warmSurface17,
         borderRadius: AppBorderRadius.circular(20),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.guideDashboardColors.white.withValues(alpha: 0.06),
+        ),
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppPalette.primary, size: 34),
+          Icon(icon, color: context.guideDashboardColors.primary, size: 34),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -4283,8 +4498,8 @@ class _GuideDashboardInfoCard extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.orangeLight01,
+            style: AppTextStyle(
+              color: context.guideDashboardColors.orangeLight01,
               height: 1.4,
             ),
           ),
@@ -4293,8 +4508,8 @@ class _GuideDashboardInfoCard extends StatelessWidget {
             FilledButton(
               onPressed: onActionTap,
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
+                backgroundColor: context.guideDashboardColors.primary,
+                foregroundColor: context.guideDashboardColors.textPrimary,
               ),
               child: Text(actionLabel!),
             ),
@@ -4315,7 +4530,7 @@ class _GuideDashboardSkeletonCard extends StatelessWidget {
         minHeight: _guideDashboardSkeletonMinHeight(context),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface17,
+        color: context.guideDashboardColors.warmSurface17,
         borderRadius: AppBorderRadius.circular(22),
       ),
     );

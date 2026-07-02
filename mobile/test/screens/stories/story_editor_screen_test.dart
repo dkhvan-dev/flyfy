@@ -22,7 +22,6 @@ import 'package:inflap/features/stories/editor/presentation/widgets/story_media_
 import 'package:inflap/features/stories/editor/presentation/widgets/story_publish_panel.dart';
 import 'package:inflap/features/stories/models/post_profile_contract.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
-import 'package:inflap/features/stories/story_ui.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/stories/create_story_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -412,16 +411,17 @@ void main() {
       );
     });
 
-    testWidgets('editor material controls use the app accent color', (
+    testWidgets('editor material controls use the V2 accent colors', (
       tester,
     ) async {
       await tester.pumpWidget(_app(_screen()));
 
       final theme = Theme.of(tester.element(find.byType(StoryMetadataPanel)));
+      final colors = AppColorSchemes.dark;
 
-      expect(theme.colorScheme.primary, AppPalette.primary);
-      expect(theme.colorScheme.secondary, AppPalette.primary);
-      expect(theme.textSelectionTheme.cursorColor, AppPalette.primary);
+      expect(theme.colorScheme.primary, colors.primary);
+      expect(theme.colorScheme.secondary, colors.secondary);
+      expect(theme.textSelectionTheme.cursorColor, colors.primary);
     });
 
     testWidgets('preview mode renders a read-only published-style story', (
@@ -484,18 +484,18 @@ void main() {
       expect(find.text('weekend'), findsOneWidget);
     });
 
-    testWidgets('metadata dropdown menus use the story picker palette', (
-      tester,
-    ) async {
+    testWidgets('metadata pickers open V2 modal bottom sheets', (tester) async {
       await tester.pumpWidget(_app(_screen()));
 
-      await _expectDropdownMenuUsesStoryPalette(
+      await _expectMetadataPickerBottomSheet(
         tester,
         const ValueKey('story-editor-format-field'),
+        'Content type',
       );
-      await _expectDropdownMenuUsesStoryPalette(
+      await _expectMetadataPickerBottomSheet(
         tester,
         const ValueKey('story-editor-category-field'),
+        'Topic',
       );
     });
 
@@ -554,12 +554,7 @@ void main() {
       controller.initializeCreate(userId: 'user-1');
 
       await tester.pumpWidget(_app(_screen(controller: controller)));
-      final templatePicker = tester
-          .widget<PopupMenuButton<StoryEditorTemplatePreset>>(
-            find.byType(PopupMenuButton<StoryEditorTemplatePreset>),
-          );
-      templatePicker.onSelected?.call(StoryEditorTemplatePreset.weekendGuide);
-      await tester.pump();
+      await _selectStoryTemplate(tester, 'Weekend guide');
 
       expect(controller.state.metadata.format, 'GUIDE');
       expect(controller.state.document.blocks, isNotEmpty);
@@ -573,20 +568,14 @@ void main() {
         controller.initializeCreate(userId: 'user-1');
 
         await tester.pumpWidget(_app(_screen(controller: controller)));
-        final templatePicker = tester
-            .widget<PopupMenuButton<StoryEditorTemplatePreset>>(
-              find.byType(PopupMenuButton<StoryEditorTemplatePreset>),
-            );
-        templatePicker.onSelected?.call(StoryEditorTemplatePreset.weekendGuide);
-        await tester.pump();
+        await _selectStoryTemplate(tester, 'Weekend guide');
         controller.updateBlock(
           'heading-template-1',
           (block) => block.copyWith(text: 'My weekend'),
         );
         await tester.pump();
 
-        templatePicker.onSelected?.call(StoryEditorTemplatePreset.photoEssay);
-        await tester.pumpAndSettle();
+        await _selectStoryTemplate(tester, 'Photo essay');
 
         expect(find.text('APPLY NEW STORY STRUCTURE?'), findsOneWidget);
         expect(find.text('Replace template'), findsOneWidget);
@@ -822,7 +811,7 @@ void main() {
       final coverChrome = tester.widget<DecoratedBox>(coverFieldFinder);
       final decoration = coverChrome.decoration as BoxDecoration;
       final border = decoration.border! as Border;
-      expect(border.top.color, AppPalette.danger);
+      expect(border.top.color, AppColorSchemes.dark.danger);
       expect(tester.getTopLeft(coverFieldFinder).dy, greaterThanOrEqualTo(0));
     });
 
@@ -1308,18 +1297,20 @@ void main() {
       final sheetChrome = tester.widget<DecoratedBox>(
         find.byKey(const ValueKey('story-add-block-sheet-chrome')),
       );
+      final colors = AppColorSchemes.dark;
       final sheetDecoration = sheetChrome.decoration as BoxDecoration;
-      final sheetGradient = sheetDecoration.gradient as LinearGradient;
-      expect(sheetGradient.colors, [
-        const Color(0xFF2B1808),
-        const Color(0xFF201208),
-      ]);
+      expect(sheetDecoration.gradient, isNull);
+      expect(sheetDecoration.color, colors.surface);
+      final sheetBorder = sheetDecoration.border! as Border;
+      expect(sheetBorder.top.color, colors.border);
 
       final quoteOption = tester.widget<Ink>(
         find.byKey(const ValueKey('story-add-block-option-quote')),
       );
       final quoteDecoration = quoteOption.decoration as BoxDecoration;
-      expect(quoteDecoration.color, const Color(0xFF2C2118));
+      expect(quoteDecoration.color, colors.surfaceRaised);
+      final quoteBorder = quoteDecoration.border! as Border;
+      expect(quoteBorder.top.color, colors.borderPrimary);
 
       await tester.tap(find.text('Quote'));
       await tester.pumpAndSettle();
@@ -2306,46 +2297,35 @@ Finder _storyBlockCanvasFinder() {
   );
 }
 
-Future<void> _expectDropdownMenuUsesStoryPalette(
+Future<void> _expectMetadataPickerBottomSheet(
   WidgetTester tester,
   ValueKey<String> fieldKey,
+  String title,
 ) async {
+  final colors = AppColorSchemes.dark;
   final field = find.byKey(fieldKey);
   await tester.ensureVisible(field);
   await tester.pumpAndSettle();
-  final popupFinder = find.descendant(
-    of: field,
-    matching: find.byType(PopupMenuButton<String>),
-  );
-  final popup = tester.widget<PopupMenuButton<String>>(popupFinder);
-  final fieldWidth = tester.getSize(field).width;
-
-  expect(popup.color, StoryPalette.surfaceRaised);
-  expect(popup.surfaceTintColor, Colors.transparent);
-  expect(popup.position, PopupMenuPosition.under);
-  expect(popup.padding, EdgeInsets.zero);
-  expect(popup.constraints?.minWidth, fieldWidth);
-  expect(popup.constraints?.maxWidth, fieldWidth);
-
-  await tester.tap(popupFinder);
+  await tester.tap(field);
   await tester.pumpAndSettle();
 
-  final fieldRect = tester.getRect(field);
-  final firstMenuItem = find.byType(PopupMenuItem<String>).first;
-  final firstMenuItemRect = tester.getRect(firstMenuItem);
-  expect(firstMenuItemRect.width, moreOrLessEquals(fieldRect.width));
-  expect(firstMenuItemRect.left, moreOrLessEquals(fieldRect.left));
-  expect(firstMenuItemRect.right, moreOrLessEquals(fieldRect.right));
-  expect(
-    find.byWidgetPredicate(
-      (widget) =>
-          widget is Material && widget.color == StoryPalette.surfaceRaised,
-      description: 'story-palette popup menu material',
-    ),
-    findsWidgets,
-  );
+  expect(find.byType(BottomSheet), findsOneWidget);
+  expect(find.byType(AppModalScaffold<String>), findsOneWidget);
+  expect(find.text(title), findsWidgets);
+  expect(colors.surface, isNot(colors.transparent));
 
   await tester.tapAt(Offset.zero);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectStoryTemplate(WidgetTester tester, String label) async {
+  final field = find.byKey(const ValueKey('story-editor-template-picker'));
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pumpAndSettle();
+
+  expect(find.byType(BottomSheet), findsOneWidget);
+  await tester.tap(find.text(label).last);
   await tester.pumpAndSettle();
 }
 

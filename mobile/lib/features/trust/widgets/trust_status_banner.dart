@@ -21,7 +21,8 @@ class TrustStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _TrustStatusBannerColors.forKind(kind);
+    final colors = AppDesignSystem.colorsFor(context);
+    final bannerColors = _TrustStatusBannerColors.forKind(colors, kind);
     final icon = switch (kind) {
       TrustStatusBannerKind.blocked => Icons.block_outlined,
       TrustStatusBannerKind.muted => Icons.notifications_off_outlined,
@@ -34,8 +35,8 @@ class TrustStatusBanner extends StatelessWidget {
       container: true,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: colors.background,
-          border: Border.all(color: colors.border),
+          color: bannerColors.background,
+          border: Border.all(color: bannerColors.border),
           borderRadius: AppBorderRadius.circular(8),
         ),
         child: Padding(
@@ -43,7 +44,7 @@ class TrustStatusBanner extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: colors.foreground, size: 22),
+              Icon(icon, color: bannerColors.foreground, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: LayoutBuilder(
@@ -64,7 +65,7 @@ class TrustStatusBanner extends StatelessWidget {
                               child: TextButton(
                                 onPressed: onAction,
                                 style: TextButton.styleFrom(
-                                  foregroundColor: colors.foreground,
+                                  foregroundColor: bannerColors.foreground,
                                   padding: const AppEdgeInsets.symmetric(
                                     horizontal: 10,
                                     vertical: 8,
@@ -104,6 +105,7 @@ class _TrustStatusBannerCopy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
@@ -113,7 +115,7 @@ class _TrustStatusBannerCopy extends StatelessWidget {
         Text(
           title,
           style: textTheme.titleSmall?.copyWith(
-            color: AppPalette.textPrimary,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
           maxLines: 3,
@@ -122,9 +124,7 @@ class _TrustStatusBannerCopy extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           message,
-          style: textTheme.bodySmall?.copyWith(
-            color: AppPalette.textCoolSecondary,
-          ),
+          style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           maxLines: 6,
           overflow: TextOverflow.ellipsis,
         ),
@@ -144,27 +144,30 @@ class _TrustStatusBannerColors {
   final Color border;
   final Color foreground;
 
-  static _TrustStatusBannerColors forKind(TrustStatusBannerKind kind) {
+  static _TrustStatusBannerColors forKind(
+    AppColors colors,
+    TrustStatusBannerKind kind,
+  ) {
     return switch (kind) {
       TrustStatusBannerKind.blocked => _TrustStatusBannerColors(
-        background: AppPalette.danger.withValues(alpha: 0.12),
-        border: AppPalette.danger.withValues(alpha: 0.45),
-        foreground: AppPalette.danger,
+        background: colors.danger.withValues(alpha: 0.12),
+        border: colors.danger.withValues(alpha: 0.45),
+        foreground: colors.danger,
       ),
       TrustStatusBannerKind.muted => _TrustStatusBannerColors(
-        background: AppPalette.surfaceCoolLight,
-        border: AppPalette.outlineOverlay,
-        foreground: AppPalette.textCoolSecondary,
+        background: colors.surfaceHigh,
+        border: colors.border,
+        foreground: colors.textSecondary,
       ),
       TrustStatusBannerKind.pendingAppeal => _TrustStatusBannerColors(
-        background: AppPalette.primary.withValues(alpha: 0.12),
-        border: AppPalette.primary.withValues(alpha: 0.42),
-        foreground: AppPalette.primary,
+        background: colors.primary.withValues(alpha: 0.12),
+        border: colors.primary.withValues(alpha: 0.42),
+        foreground: colors.primary,
       ),
       TrustStatusBannerKind.rejected => _TrustStatusBannerColors(
-        background: AppPalette.warmSurfaceHigh37.withValues(alpha: 0.12),
-        border: AppPalette.warmSurfaceHigh37.withValues(alpha: 0.42),
-        foreground: AppPalette.warmSurfaceHigh37,
+        background: colors.warning.withValues(alpha: 0.12),
+        border: colors.warning.withValues(alpha: 0.42),
+        foreground: colors.warning,
       ),
     };
   }

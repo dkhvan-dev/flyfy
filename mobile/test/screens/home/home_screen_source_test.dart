@@ -3,6 +3,399 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('home screen uses the adaptive v2 design system', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('Theme('));
+    expect(source, contains('data: AppDesignSystem.themeFor(context)'));
+    expect(
+      source,
+      contains('final colors = AppDesignSystem.colorsFor(context)'),
+    );
+    expect(source, contains('AppPalette.primary'));
+    expect(source, contains('AppPalette.secondary'));
+    expect(source, contains('style: ServiceGridStyle.v2(context)'));
+    expect(source, contains('style: AppBottomNavigationBarStyle.v2(context)'));
+    final locationIconStart = source.indexOf('Icons.location_on_rounded');
+    expect(locationIconStart, isNonNegative);
+    final locationIconBlockStart = source.lastIndexOf(
+      'Container(',
+      locationIconStart,
+    );
+    final locationIconBlockEnd = source.indexOf(
+      'SizedBox(width: isCompact ? 8 : 10)',
+      locationIconStart,
+    );
+    expect(locationIconBlockStart, isNonNegative);
+    expect(locationIconBlockEnd, greaterThan(locationIconStart));
+    final locationIconBlock = source.substring(
+      locationIconBlockStart,
+      locationIconBlockEnd,
+    );
+    expect(locationIconBlock, contains('color: AppPalette.primary'));
+    expect(locationIconBlock, isNot(contains('AppPalette.secondary')));
+    expect(
+      source,
+      isNot(
+        matches(
+          RegExp(
+            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal)',
+          ),
+        ),
+      ),
+    );
+  });
+
+  test(
+    'home top chrome uses a status-bar gradient without warm glow',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+
+      final bodyStart = source.indexOf('body: DecoratedBox(');
+      final headerUsageStart = source.indexOf('_HomeHeader(', bodyStart);
+      final headerClassStart = source.indexOf('class _HomeHeader');
+      final headerClassEnd = source.indexOf(
+        'class _HeaderAvatarButton',
+        headerClassStart,
+      );
+
+      expect(bodyStart, isNonNegative);
+      expect(headerUsageStart, greaterThan(bodyStart));
+      expect(headerClassStart, isNonNegative);
+      expect(headerClassEnd, greaterThan(headerClassStart));
+
+      final topChromeSource = source.substring(bodyStart, headerUsageStart);
+      final headerSource = source.substring(headerClassStart, headerClassEnd);
+
+      expect(source, contains("import 'package:flutter/services.dart';"));
+      expect(source, contains('AnnotatedRegion<SystemUiOverlayStyle>'));
+      expect(source, contains('statusBarColor: colors.transparent'));
+      expect(topChromeSource, isNot(contains('RadialGradient(')));
+      expect(topChromeSource, isNot(contains('top: -120')));
+      expect(topChromeSource, isNot(contains('AppPalette.primary.withValues')));
+      expect(topChromeSource, contains('colors.background'));
+      expect(topChromeSource, contains('_homeBackgroundGradientColors('));
+      expect(topChromeSource, contains('_homeBackgroundGradientStops('));
+      expect(headerSource, contains('color: AppPalette.transparent'));
+      expect(headerSource, isNot(contains('color: AppPalette.surface')));
+      expect(headerSource, isNot(contains('color: AppPalette.backgroundDeep')));
+      expect(headerSource, isNot(contains('gradient:')));
+    },
+  );
+
+  test('home dark background keeps the approved graphite balance', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final gradientHelperStart = source.indexOf(
+      'List<Color> _homeBackgroundGradientColors',
+    );
+    final stopsHelperStart = source.indexOf(
+      'List<double> _homeBackgroundGradientStops',
+    );
+    final nextHelperStart = source.indexOf(
+      'LinearGradient? _homePromoImageScrimGradient',
+    );
+
+    expect(gradientHelperStart, isNonNegative);
+    expect(stopsHelperStart, greaterThan(gradientHelperStart));
+    expect(nextHelperStart, greaterThan(stopsHelperStart));
+
+    final gradientHelperSource = source.substring(
+      gradientHelperStart,
+      stopsHelperStart,
+    );
+    final stopsHelperSource = source.substring(
+      stopsHelperStart,
+      nextHelperStart,
+    );
+
+    expect(gradientHelperSource, contains('Brightness.dark'));
+    expect(
+      gradientHelperSource,
+      contains('return [colors.surface, colors.background, colors.background]'),
+    );
+    expect(
+      gradientHelperSource,
+      contains('return colors.screenGradientColors'),
+    );
+    expect(gradientHelperSource, isNot(contains('colors.backgroundDeep')));
+    expect(gradientHelperSource, isNot(contains('colors.backgroundWarm')));
+    expect(stopsHelperSource, contains('Brightness.dark'));
+    expect(stopsHelperSource, contains('return const [0, 0.18, 1]'));
+    expect(stopsHelperSource, contains('return const [0, 0.22, 1]'));
+  });
+
+  test('home search bar only uses shadow in dark v2', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final searchBarStart = source.indexOf('class _SearchBar');
+    final searchBarEnd = source.indexOf('class _SectionHeader', searchBarStart);
+
+    expect(searchBarStart, isNonNegative);
+    expect(searchBarEnd, greaterThan(searchBarStart));
+
+    final searchBarSource = source.substring(searchBarStart, searchBarEnd);
+    expect(searchBarSource, contains('final isDarkV2'));
+    expect(
+      searchBarSource,
+      contains('Theme.of(context).brightness == Brightness.dark'),
+    );
+    expect(searchBarSource, contains('boxShadow: isDarkV2'));
+    expect(searchBarSource, contains(': null'));
+  });
+
+  test('home image cards only use external shadows in dark v2', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final helperStart = source.indexOf(
+      'List<BoxShadow>? _homeDarkV2CardShadow',
+    );
+    final helperEnd = helperStart < 0
+        ? -1
+        : source.indexOf('double _homeTextScaleFactor', helperStart);
+    final promoStart = source.indexOf('class _PromoCard');
+    final promoEnd = source.indexOf('class _TopDestinationsRow', promoStart);
+    final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
+    final destinationEnd = source.indexOf(
+      'class _DestinationBookmarkBadge',
+      destinationStart,
+    );
+    final topPostStart = source.indexOf('class _TopPostCard');
+    final topPostEnd = source.indexOf('class _TopPostTag', topPostStart);
+
+    expect(helperStart, isNonNegative);
+    expect(helperEnd, greaterThan(helperStart));
+    expect(promoStart, isNonNegative);
+    expect(promoEnd, greaterThan(promoStart));
+    expect(destinationStart, isNonNegative);
+    expect(destinationEnd, greaterThan(destinationStart));
+    expect(topPostStart, isNonNegative);
+    expect(topPostEnd, greaterThan(topPostStart));
+
+    final helperSource = source.substring(helperStart, helperEnd);
+    final promoSource = source.substring(promoStart, promoEnd);
+    final destinationSource = source.substring(
+      destinationStart,
+      destinationEnd,
+    );
+    final topPostSource = source.substring(topPostStart, topPostEnd);
+
+    expect(helperSource, contains('Brightness.dark'));
+    expect(helperSource, contains('return null'));
+    expect(promoSource, contains('_homeDarkV2CardShadow('));
+    expect(destinationSource, contains('_homeDarkV2CardShadow('));
+    expect(topPostSource, contains('_homeDarkV2CardShadow('));
+    expect(promoSource, isNot(contains('boxShadow: [')));
+    expect(destinationSource, isNot(contains('boxShadow: [')));
+    expect(topPostSource, isNot(contains('boxShadow: [')));
+  });
+
+  test('home image scrims avoid dark shadow overlays in light v2', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final promoHelperStart = source.indexOf('_homePromoImageScrimGradient');
+    final bottomHelperStart = source.indexOf(
+      'LinearGradient? _homeBottomImageScrimGradient',
+    );
+    final helperEnd = bottomHelperStart < 0
+        ? -1
+        : source.indexOf('List<BoxShadow>? _homeDarkV2CardShadow');
+    final promoStart = source.indexOf('class _PromoCard');
+    final promoEnd = source.indexOf('class _TopDestinationsRow', promoStart);
+    final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
+    final destinationEnd = source.indexOf(
+      'class _DestinationBookmarkBadge',
+      destinationStart,
+    );
+    final topPostStart = source.indexOf('class _TopPostCard');
+    final topPostEnd = source.indexOf('class _TopPostTag', topPostStart);
+
+    expect(promoHelperStart, isNonNegative);
+    expect(bottomHelperStart, greaterThan(promoHelperStart));
+    expect(helperEnd, greaterThan(bottomHelperStart));
+    expect(promoStart, isNonNegative);
+    expect(promoEnd, greaterThan(promoStart));
+    expect(destinationStart, isNonNegative);
+    expect(destinationEnd, greaterThan(destinationStart));
+    expect(topPostStart, isNonNegative);
+    expect(topPostEnd, greaterThan(topPostStart));
+
+    final helperSource = source.substring(promoHelperStart, helperEnd);
+    final promoSource = source.substring(promoStart, promoEnd);
+    final destinationSource = source.substring(
+      destinationStart,
+      destinationEnd,
+    );
+    final topPostSource = source.substring(topPostStart, topPostEnd);
+
+    expect(helperSource, contains('Brightness.dark'));
+    expect(helperSource, contains('return null'));
+    expect(helperSource, isNot(contains('colors.white.withValues')));
+    expect(
+      helperSource,
+      contains('LinearGradient? _homePromoImageScrimGradient'),
+    );
+    expect(promoSource, contains('final promoScrimGradient'));
+    expect(promoSource, contains('if (promoScrimGradient != null)'));
+    expect(destinationSource, contains('_homeBottomImageScrimGradient('));
+    expect(topPostSource, contains('_homeBottomImageScrimGradient('));
+    expect(
+      promoSource,
+      isNot(contains('AppPalette.black.withValues(alpha: 0.82)')),
+    );
+    expect(
+      destinationSource,
+      isNot(contains('AppPalette.black.withValues(alpha: 0.58)')),
+    );
+    expect(
+      topPostSource,
+      isNot(contains('AppPalette.black.withValues(alpha: 0.62)')),
+    );
+  });
+
+  test('home promo text uses a local contrast panel in light v2', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final promoStart = source.indexOf('class _PromoCard');
+    final panelStart = source.indexOf('class _PromoTextContrastPanel');
+    final promoEnd = panelStart < 0
+        ? source.indexOf('class _TopDestinationsRow', promoStart)
+        : panelStart;
+    final panelEnd = panelStart < 0
+        ? -1
+        : source.indexOf('class _TopDestinationsRow', panelStart);
+
+    expect(promoStart, isNonNegative);
+    expect(promoEnd, greaterThan(promoStart));
+    expect(panelStart, isNonNegative);
+    expect(panelEnd, greaterThan(panelStart));
+
+    final promoSource = source.substring(promoStart, promoEnd);
+    final panelSource = source.substring(panelStart, panelEnd);
+
+    expect(promoSource, contains('_PromoTextContrastPanel('));
+    expect(panelSource, contains('class _PromoTextContrastPanel'));
+    expect(panelSource, contains('Brightness.dark'));
+    expect(panelSource, contains('return child'));
+    expect(panelSource, contains('colors.surface.withValues(alpha: 0.82)'));
+    expect(panelSource, contains('Border.all'));
+    expect(panelSource, contains('ClipRRect('));
+  });
+
+  test('home top destination price uses adaptive readable secondary', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
+    final destinationEnd = source.indexOf(
+      'class _DestinationBookmarkBadge',
+      destinationStart,
+    );
+
+    expect(destinationStart, isNonNegative);
+    expect(destinationEnd, greaterThan(destinationStart));
+
+    final destinationSource = source.substring(
+      destinationStart,
+      destinationEnd,
+    );
+
+    expect(destinationSource, contains('color: context.appColors.secondary'));
+    expect(
+      destinationSource,
+      isNot(contains('color: AppPalette.secondarySoft')),
+    );
+  });
+
+  test('home body does not draw a shadow overlay above bottom nav', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final bodyStart = source.indexOf('body: DecoratedBox(');
+    final bottomNavigationStart = source.indexOf(
+      'bottomNavigationBar: CommonBottomNavigationBar(',
+    );
+    expect(bodyStart, isNonNegative);
+    expect(bottomNavigationStart, isNonNegative);
+
+    expect(source, isNot(contains('const _HomeBottomNavGradient()')));
+    expect(source, isNot(contains('class _HomeBottomNavGradient')));
+
+    final bodySource = source.substring(bodyStart);
+    expect(
+      bodySource,
+      isNot(contains('bottom: 1,\n      child: IgnorePointer')),
+    );
+    expect(bodySource, isNot(contains('child: const SizedBox(height: 24)')));
+    expect(
+      bodySource,
+      isNot(
+        contains('colors: [AppPalette.transparent, context.appColors.surface]'),
+      ),
+    );
+  });
+
+  test(
+    'unauthenticated home header avatar uses profile icon and notification color',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+
+      final avatarButtonStart = source.indexOf('class _HeaderAvatarButton');
+      final initialsStart = source.indexOf('class _HeaderAvatarInitials');
+      final fallbackStart = source.indexOf('class _HeaderAvatarFallbackIcon');
+      final fallbackEnd = source.indexOf('class _SearchBar');
+      expect(avatarButtonStart, isNonNegative);
+      expect(initialsStart, isNonNegative);
+      expect(fallbackStart, greaterThan(initialsStart));
+      expect(fallbackEnd, greaterThan(fallbackStart));
+
+      final avatarButtonSource = source.substring(
+        avatarButtonStart,
+        initialsStart,
+      );
+      expect(avatarButtonSource, contains('profile == null'));
+      expect(avatarButtonSource, contains('_HeaderAvatarFallbackIcon('));
+      expect(avatarButtonSource, contains('_HeaderAvatarInitials('));
+      expect(
+        avatarButtonSource,
+        contains('color: AppPalette.primary.withValues(alpha: 0.12)'),
+      );
+      expect(avatarButtonSource, contains('alpha: 0.24'));
+      expect(avatarButtonSource, isNot(contains('boxShadow:')));
+
+      final initialsSource = source.substring(initialsStart, fallbackStart);
+      expect(initialsSource, contains('color: context.appColors.textPrimary'));
+      expect(initialsSource, isNot(contains('color: AppPalette.onPrimary')));
+      expect(initialsSource, isNot(contains('LinearGradient(')));
+      expect(initialsSource, contains('color: AppPalette.transparent'));
+
+      final fallbackSource = source.substring(fallbackStart, fallbackEnd);
+      expect(fallbackSource, contains('Icons.person_rounded'));
+      expect(fallbackSource, contains('color: AppPalette.primary'));
+      expect(fallbackSource, contains('size: iconSize'));
+      expect(fallbackSource, isNot(contains('Text(')));
+    },
+  );
+
   test(
     'home screen renders contextual story tray from the home feed',
     () async {
@@ -27,6 +420,31 @@ void main() {
       expect(trayStart - authGuardStart, lessThan(220));
     },
   );
+
+  test('home keeps story tray close to services section', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final trayStart = source.indexOf('ContextualStoryTrayBlock(');
+    final servicesStart = source.indexOf(
+      'title: l10n.servicesSectionTitle',
+      trayStart,
+    );
+    final loggedInBranchEnd = source.indexOf('] else', trayStart);
+
+    expect(trayStart, isNonNegative);
+    expect(servicesStart, greaterThan(trayStart));
+    expect(loggedInBranchEnd, greaterThan(trayStart));
+
+    final trayToServicesSource = source.substring(trayStart, loggedInBranchEnd);
+
+    expect(trayToServicesSource, contains('height: isCompact ? 10 : 14'));
+    expect(
+      trayToServicesSource,
+      isNot(contains('height: isCompact ? 24 : 30')),
+    );
+  });
 
   test(
     'top destinations cards size their footer from scaled text metrics',
@@ -243,9 +661,26 @@ void main() {
       expect(sheetSource, contains('citiesByCountry('));
       expect(sheetSource, contains('.take(_initialCountryCityLimit)'));
       expect(sheetSource, contains('Icons.location_off_rounded'));
-      expect(sheetSource, contains('color: AppPalette.primary'));
+      expect(sheetSource, contains('color: colors.primary'));
     },
   );
+
+  test('home location sheet uses adaptive V2 design system colors', () async {
+    final sheetSource = await File(
+      'lib/screens/home/widgets/home_location_picker_sheet.dart',
+    ).readAsString();
+
+    expect(
+      sheetSource,
+      contains("import 'package:inflap/core/ui/app_design_system.dart';"),
+    );
+    expect(sheetSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(sheetSource, contains('colors.screenGradientColors'));
+    expect(sheetSource, contains('colors.surface'));
+    expect(sheetSource, contains('colors.surfaceRaised'));
+    expect(sheetSource, contains('colors.primary'));
+    expect(sheetSource, isNot(contains('AppPalette.')));
+  });
 
   test(
     'home discovery location can prefill activity creation location',
@@ -325,12 +760,9 @@ void main() {
       ).readAsString();
 
       final buildStart = source.indexOf('@override\n  Widget build');
-      final scaffoldStart = source.indexOf('return Scaffold(', buildStart);
+      final scaffoldStart = source.indexOf('child: Scaffold(', buildStart);
       final headerStart = source.indexOf('class _HomeHeader');
-      final headerEnd = source.indexOf(
-        'class _HeaderActionButton',
-        headerStart,
-      );
+      final headerEnd = source.indexOf('class _SearchBar', headerStart);
 
       expect(buildStart, isNonNegative);
       expect(scaffoldStart, greaterThan(buildStart));

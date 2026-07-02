@@ -83,6 +83,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return SafeArea(
       top: false,
@@ -93,9 +94,9 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
         child: Container(
           key: const ValueKey('sticker-picker-sheet'),
           height: _sheetHeight(context),
-          decoration: const AppBoxDecoration(
-            color: AppPalette.warmInk55,
-            borderRadius: AppBorderRadius.vertical(
+          decoration: AppBoxDecoration(
+            color: colors.background,
+            borderRadius: const AppBorderRadius.vertical(
               top: AppRadiusValue.circular(22),
             ),
           ),
@@ -119,7 +120,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                     width: 42,
                     height: 4,
                     decoration: AppBoxDecoration(
-                      color: AppPalette.white.withValues(alpha: 0.20),
+                      color: colors.textDisabled.withValues(alpha: 0.36),
                       borderRadius: AppBorderRadius.circular(999),
                     ),
                   ),
@@ -186,6 +187,8 @@ class _StickerSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
@@ -194,25 +197,22 @@ class _StickerSearchField extends StatelessWidget {
           controller: controller,
           onChanged: onChanged,
           textInputAction: TextInputAction.search,
-          style: const AppTextStyle(
-            color: AppPalette.amberWash03,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 15,
             letterSpacing: 0,
           ),
           decoration: AppInputDecoration(
-            prefixIcon: Icon(
-              Icons.search_rounded,
-              color: AppPalette.white.withValues(alpha: 0.52),
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: colors.primary),
             suffixIcon: searching
-                ? const Padding(
+                ? Padding(
                     padding: AppEdgeInsets.all(14),
                     child: SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                       ),
                     ),
                   )
@@ -222,29 +222,24 @@ class _StickerSearchField extends StatelessWidget {
                       context,
                     ).deleteButtonTooltip,
                     onPressed: onClear,
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: AppPalette.white.withValues(alpha: 0.56),
-                    ),
+                    icon: Icon(Icons.close_rounded, color: colors.primary),
                   )
                 : null,
             hintText: hintText,
             hintStyle: AppTextStyle(
-              color: AppPalette.white.withValues(alpha: 0.46),
+              color: colors.textMuted,
               fontSize: 15,
               letterSpacing: 0,
             ),
             filled: true,
-            fillColor: AppPalette.warmSurface14,
+            fillColor: colors.surfaceHigh,
             border: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppPalette.primary.withValues(alpha: 0.42),
-              ),
+              borderSide: BorderSide(color: colors.borderPrimary),
             ),
             isDense: true,
             contentPadding: const AppEdgeInsets.symmetric(
@@ -351,6 +346,8 @@ class _StickerGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GridView.builder(
       padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 18),
       physics: const NeverScrollableScrollPhysics(),
@@ -363,7 +360,7 @@ class _StickerGridSkeleton extends StatelessWidget {
       itemBuilder: (context, index) => DecoratedBox(
         decoration: AppBoxDecoration(
           borderRadius: AppBorderRadius.circular(16),
-          color: AppPalette.white.withValues(alpha: 0.06),
+          color: colors.surfaceHigh,
         ),
       ),
     );
@@ -385,6 +382,7 @@ class _StickerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = _stickerSemanticLabel(context, sticker);
+    final colors = AppDesignSystem.colorsFor(context);
     return Semantics(
       button: true,
       label: label,
@@ -394,8 +392,8 @@ class _StickerButton extends StatelessWidget {
         child: DecoratedBox(
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(16),
-            color: AppPalette.white.withValues(alpha: 0.06),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            color: colors.surfaceHigh,
+            border: Border.all(color: colors.borderSoft),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(8),
@@ -596,13 +594,14 @@ class _StickerFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading && emoji.isEmpty) {
-      return const Center(
+      final colors = AppDesignSystem.colorsFor(context);
+      return Center(
         child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppPalette.primary,
+            color: colors.primary,
           ),
         ),
       );
@@ -633,23 +632,21 @@ class _StickerMessageState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Center(
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 34,
-              color: AppPalette.white.withValues(alpha: 0.40),
-            ),
+            Icon(icon, size: 34, color: colors.textDisabled),
             const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
               style: AppTextStyle(
-                color: AppPalette.white.withValues(alpha: 0.70),
+                color: colors.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -661,10 +658,7 @@ class _StickerMessageState extends StatelessWidget {
                 onPressed: onAction,
                 child: Text(
                   actionLabel!,
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
-                    letterSpacing: 0,
-                  ),
+                  style: AppTextStyle(color: colors.primary, letterSpacing: 0),
                 ),
               ),
             ],

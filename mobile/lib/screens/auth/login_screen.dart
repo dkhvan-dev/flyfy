@@ -176,268 +176,257 @@ class _LoginScreenState extends State<LoginScreen> {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final isCompact = screenWidth < 375 || textScale > 1.02;
     final isNarrow = screenWidth < 360 || textScale > 1.08;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      body: AuthResponsiveTextScope(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuBduazwzIicGU9fDEXAz9OgOyFeni4k4elOe6XduNdQoG3iY1-qa2p2g8PvzmXdNrTJctUljZlDddvYm99io6whN9d3A0r8s6v6c-1W2giZFcC3P3wiIhlpfiKdGpC0fK8sY4vBFTQDRjqXUHRHyTgxLx5_rxq0mI11TkZ2NTQ_Kmi8c9Sb7EtHqmi-DOVm2ZpH5eFB89IKkMgkReWTlea9VKkr7SlVd8mHVoYpo5204yiI4tQxuNcUlQrjU2R2epHWOD9Ij-h0bTHM',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppPalette.backgroundWarm),
-            ),
-            Container(
-              decoration: AppBoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppPalette.backgroundWarm.withValues(alpha: 0.15),
-                    AppPalette.backgroundWarm.withValues(alpha: 0.92),
-                  ],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-                  final keyboardOpen = bottomInset > 0;
-                  final compactHeight =
-                      constraints.maxHeight < 760 || textScale > 1.02;
-                  final horizontalPadding = authScaled(
-                    context,
-                    isCompact ? 20 : 24,
-                    min: 16,
-                    max: 28,
-                  );
-                  final panelPadding = authScaled(
-                    context,
-                    compactHeight ? 20 : 28,
-                    min: 18,
-                    max: 30,
-                  );
-                  final bottomPanelPadding = authScaled(
-                    context,
-                    keyboardOpen ? 16 : (compactHeight ? 24 : 40),
-                    min: 14,
-                    max: 44,
-                  );
-                  final titleSize = authScaled(
-                    context,
-                    isCompact ? 28 : 32,
-                    min: 24,
-                    max: 32,
-                  );
-                  final logoSize = authScaled(context, 40, min: 34, max: 40);
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: AuthResponsiveTextScope(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const _AuthV2Background(),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                    final keyboardOpen = bottomInset > 0;
+                    final compactHeight =
+                        constraints.maxHeight < 760 || textScale > 1.02;
+                    final horizontalPadding = authScaled(
+                      context,
+                      isCompact ? 20 : 24,
+                      min: 16,
+                      max: 28,
+                    );
+                    final panelPadding = authScaled(
+                      context,
+                      compactHeight ? 20 : 28,
+                      min: 18,
+                      max: 30,
+                    );
+                    final bottomPanelPadding = authScaled(
+                      context,
+                      keyboardOpen ? 16 : (compactHeight ? 24 : 40),
+                      min: 14,
+                      max: 44,
+                    );
+                    final titleSize = authScaled(
+                      context,
+                      isCompact ? 28 : 32,
+                      min: 24,
+                      max: 32,
+                    );
+                    final logoSize = authScaled(context, 40, min: 34, max: 40);
 
-                  return AnimatedPadding(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    padding: AppEdgeInsets.only(bottom: bottomInset),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: AppEdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
+                    return AnimatedPadding(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                      padding: AppEdgeInsets.only(bottom: bottomInset),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Padding(
-                              padding: AppEdgeInsets.symmetric(
-                                vertical: authScaled(
-                                  context,
-                                  isCompact ? 18 : 24,
-                                  min: 16,
-                                  max: 24,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  InkWell(
-                                    onTap: () => context.go('/'),
-                                    borderRadius: AppBorderRadius.circular(999),
-                                    child: Row(
-                                      children: [
-                                        ClipOval(
-                                          child: Image.asset(
-                                            'assets/icons/inflap_app_icon_white_bg_256.png',
-                                            width: logoSize,
-                                            height: logoSize,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: authScaled(
-                                            context,
-                                            8,
-                                            min: 6,
-                                            max: 8,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Inflap',
-                                          style: AppTextStyle(
-                                            fontSize: authScaled(
-                                              context,
-                                              24,
-                                              min: 20,
-                                              max: 24,
-                                            ),
-                                            fontWeight: FontWeight.w800,
-                                            color: AppPalette.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => context.go('/'),
-                                    child: Text(
-                                      l10n.skip,
-                                      style: AppTextStyle(
-                                        color: AppPalette.textPrimary
-                                            .withValues(alpha: 0.8),
-                                        fontSize: authScaled(
-                                          context,
-                                          14,
-                                          min: 13,
-                                          max: 14,
-                                        ),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: AppEdgeInsets.only(
-                                bottom: bottomPanelPadding,
-                              ),
-                              child: Container(
-                                padding: AppEdgeInsets.all(panelPadding),
-                                decoration: AppBoxDecoration(
-                                  color: AppPalette.backgroundWarm.withValues(
-                                    alpha: 0.72,
-                                  ),
-                                  border: Border.all(
-                                    color: AppPalette.primary.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                  ),
-                                  borderRadius: AppBorderRadius.circular(
-                                    authScaled(context, 24, min: 18, max: 24),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: AppEdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: AppEdgeInsets.symmetric(
+                                  vertical: authScaled(
+                                    context,
+                                    isCompact ? 18 : 24,
+                                    min: 16,
+                                    max: 24,
                                   ),
                                 ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      _mode == _AuthEntryMode.login
-                                          ? l10n.authLoginTitle
-                                          : l10n.authRegisterTitle,
-                                      style: AppTextStyle(
-                                        fontSize: titleSize,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppPalette.textPrimary,
-                                        height: 1.1,
+                                    InkWell(
+                                      onTap: () => context.go('/'),
+                                      borderRadius: AppBorderRadius.circular(
+                                        999,
                                       ),
-                                    ),
-                                    SizedBox(
-                                      height: authScaled(
-                                        context,
-                                        20,
-                                        min: 16,
-                                        max: 22,
-                                      ),
-                                    ),
-                                    _AuthModeSwitch(
-                                      mode: _mode,
-                                      onChanged: (mode) {
-                                        FocusScope.of(context).unfocus();
-                                        setState(() {
-                                          _mode = mode;
-                                          _showLoginValidation = false;
-                                          _showRegisterValidation = false;
-                                        });
-                                      },
-                                    ),
-                                    SizedBox(
-                                      height: authScaled(
-                                        context,
-                                        20,
-                                        min: 16,
-                                        max: 22,
-                                      ),
-                                    ),
-                                    IndexedStack(
-                                      index: _mode == _AuthEntryMode.login
-                                          ? 0
-                                          : 1,
-                                      sizing: StackFit.loose,
-                                      children: [
-                                        _AuthModePane(
-                                          isActive:
-                                              _mode == _AuthEntryMode.login,
-                                          child: _buildLoginForm(
-                                            context,
-                                            l10n,
-                                            isNarrow,
+                                      child: Row(
+                                        children: [
+                                          ClipOval(
+                                            child: Image.asset(
+                                              'assets/icons/inflap_app_icon_white_bg_256.png',
+                                              width: logoSize,
+                                              height: logoSize,
+                                              fit: BoxFit.cover,
+                                            ),
                                           ),
-                                        ),
-                                        _AuthModePane(
-                                          isActive:
-                                              _mode == _AuthEntryMode.register,
-                                          child: _buildRegisterForm(
-                                            context,
-                                            l10n,
-                                            isNarrow,
+                                          SizedBox(
+                                            width: authScaled(
+                                              context,
+                                              8,
+                                              min: 6,
+                                              max: 8,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(
-                                      height: authScaled(
-                                        context,
-                                        22,
-                                        min: 18,
-                                        max: 24,
+                                          Text(
+                                            'Inflap',
+                                            style: AppTextStyle(
+                                              fontSize: authScaled(
+                                                context,
+                                                24,
+                                                min: 20,
+                                                max: 24,
+                                              ),
+                                              fontWeight: FontWeight.w800,
+                                              color:
+                                                  context.appColors.textPrimary,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    TermsAgreementRichText(
-                                      text: l10n.termsAgreementText,
-                                      onTermsTap: () {},
-                                      onPrivacyTap: () {},
+                                    TextButton(
+                                      onPressed: () => context.go('/'),
+                                      child: Text(
+                                        l10n.skip,
+                                        style: AppTextStyle(
+                                          color: AppPalette.primary,
+                                          fontSize: authScaled(
+                                            context,
+                                            14,
+                                            min: 13,
+                                            max: 14,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                              Padding(
+                                padding: AppEdgeInsets.only(
+                                  bottom: bottomPanelPadding,
+                                ),
+                                child: Container(
+                                  padding: AppEdgeInsets.all(panelPadding),
+                                  decoration: AppBoxDecoration(
+                                    color: context.appColors.surface.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                    border: Border.all(
+                                      color: context.appColors.borderPrimary,
+                                    ),
+                                    borderRadius: AppBorderRadius.circular(
+                                      authScaled(context, 24, min: 18, max: 24),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        _mode == _AuthEntryMode.login
+                                            ? l10n.authLoginTitle
+                                            : l10n.authRegisterTitle,
+                                        style: AppTextStyle(
+                                          fontSize: titleSize,
+                                          fontWeight: FontWeight.bold,
+                                          color: context.appColors.textPrimary,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: authScaled(
+                                          context,
+                                          20,
+                                          min: 16,
+                                          max: 22,
+                                        ),
+                                      ),
+                                      _AuthModeSwitch(
+                                        mode: _mode,
+                                        onChanged: (mode) {
+                                          FocusScope.of(context).unfocus();
+                                          setState(() {
+                                            _mode = mode;
+                                            _showLoginValidation = false;
+                                            _showRegisterValidation = false;
+                                          });
+                                        },
+                                      ),
+                                      SizedBox(
+                                        height: authScaled(
+                                          context,
+                                          20,
+                                          min: 16,
+                                          max: 22,
+                                        ),
+                                      ),
+                                      IndexedStack(
+                                        index: _mode == _AuthEntryMode.login
+                                            ? 0
+                                            : 1,
+                                        sizing: StackFit.loose,
+                                        children: [
+                                          _AuthModePane(
+                                            isActive:
+                                                _mode == _AuthEntryMode.login,
+                                            child: _buildLoginForm(
+                                              context,
+                                              l10n,
+                                              isNarrow,
+                                            ),
+                                          ),
+                                          _AuthModePane(
+                                            isActive:
+                                                _mode ==
+                                                _AuthEntryMode.register,
+                                            child: _buildRegisterForm(
+                                              context,
+                                              l10n,
+                                              isNarrow,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(
+                                        height: authScaled(
+                                          context,
+                                          22,
+                                          min: 18,
+                                          max: 24,
+                                        ),
+                                      ),
+                                      TermsAgreementRichText(
+                                        text: l10n.termsAgreementText,
+                                        onTermsTap: () {},
+                                        onPrivacyTap: () {},
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -796,6 +785,60 @@ void _finishAuthenticatedNavigation(BuildContext ctx, String? from) {
 
 enum _OAuthProvider { google, apple }
 
+const _authScenicBackgroundUrl =
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBduazwzIicGU9fDEXAz9OgOyFeni4k4elOe6XduNdQoG3iY1-qa2p2g8PvzmXdNrTJctUljZlDddvYm99io6whN9d3A0r8s6v6c-1W2giZFcC3P3wiIhlpfiKdGpC0fK8sY4vBFTQDRjqXUHRHyTgxLx5_rxq0mI11TkZ2NTQ_Kmi8c9Sb7EtHqmi-DOVm2ZpH5eFB89IKkMgkReWTlea9VKkr7SlVd8mHVoYpo5204yiI4tQxuNcUlQrjU2R2epHWOD9Ij-h0bTHM';
+
+class _AuthV2Background extends StatelessWidget {
+  const _AuthV2Background();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
+          ),
+        ),
+        Image.network(
+          _authScenicBackgroundUrl,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          color: isDark
+              ? colors.scrim.withValues(alpha: 0.22)
+              : colors.white.withValues(alpha: 0.54),
+          colorBlendMode: isDark ? BlendMode.darken : BlendMode.lighten,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+        DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const [0, 0.48, 1],
+              colors: [
+                (isDark ? colors.scrim : colors.white).withValues(
+                  alpha: isDark ? 0.5 : 0.22,
+                ),
+                colors.background.withValues(alpha: isDark ? 0.74 : 0.82),
+                colors.backgroundDeep.withValues(alpha: isDark ? 0.92 : 0.96),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _AuthModePane extends StatelessWidget {
   final bool isActive;
   final Widget child;
@@ -864,15 +907,15 @@ class _AuthModeSwitch extends StatelessWidget {
       showSelectedIcon: false,
       onSelectionChanged: (selection) => onChanged(selection.first),
       style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary),
-        iconColor: WidgetStateProperty.all(AppPalette.textPrimary),
+        foregroundColor: WidgetStateProperty.all(context.appColors.textPrimary),
+        iconColor: WidgetStateProperty.all(context.appColors.textPrimary),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppPalette.primary
-              : AppPalette.white.withValues(alpha: 0.06),
+              : context.appColors.surfaceRaised,
         ),
         side: WidgetStateProperty.all(
-          BorderSide(color: AppPalette.primary.withValues(alpha: 0.18)),
+          BorderSide(color: context.appColors.borderPrimary),
         ),
       ),
     );
@@ -921,18 +964,18 @@ class _AuthTextField extends StatelessWidget {
       autofillHints: autofillHints,
       onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      style: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      style: AppTextStyle(
+        color: context.appColors.textPrimary,
         fontWeight: FontWeight.w600,
       ),
       decoration: AppInputDecoration(
         labelText: label,
-        labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+        labelStyle: AppTextStyle(color: context.appColors.textSecondary),
         hintText: hint,
-        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
+        hintStyle: AppTextStyle(color: context.appColors.textMuted),
         errorText: errorText,
         filled: true,
-        fillColor: AppPalette.white.withValues(alpha: 0.05),
+        fillColor: context.appColors.surfaceRaised,
         prefixIcon: Icon(icon, color: AppPalette.primary),
         suffixIcon: suffixIcon,
         contentPadding: AppEdgeInsets.symmetric(
@@ -943,23 +986,19 @@ class _AuthTextField extends StatelessWidget {
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.1),
-          ),
+          borderSide: BorderSide(color: context.appColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.1),
-          ),
+          borderSide: BorderSide(color: context.appColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
+          borderSide: BorderSide(color: AppPalette.primary, width: 1.4),
         ),
       ),
     );
@@ -990,42 +1029,46 @@ class _PrimaryAuthButton extends StatelessWidget {
           borderRadius: AppBorderRadius.circular(999),
         ),
         alignment: Alignment.center,
-        child: const SizedBox(
+        child: SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
-            color: AppPalette.backgroundWarm,
+            color: context.appColors.textPrimary,
             strokeWidth: 2.5,
           ),
         ),
       );
     }
 
-    return ElevatedButton.icon(
+    final contentColor = onPressed == null
+        ? context.appColors.textDisabled
+        : context.appColors.textPrimary;
+
+    return FilledButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20, color: AppPalette.textPrimary),
+      icon: Icon(icon, size: 20, color: contentColor),
       label: Text(
         label,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
         style: AppTextStyle(
-          color: AppPalette.textPrimary,
+          color: contentColor,
           fontSize: authScaled(context, 16, min: 14, max: 16),
           fontWeight: FontWeight.bold,
         ),
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: AppPalette.backgroundWarm,
-        disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.45),
-        minimumSize: Size(double.infinity, buttonHeight),
-        padding: AppEdgeInsets.symmetric(
-          horizontal: authScaled(context, 16, min: 12, max: 18),
+      style: AppButtonStyles.primary(context.appColors).copyWith(
+        minimumSize: WidgetStateProperty.all(
+          Size(double.infinity, buttonHeight),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppBorderRadius.circular(999),
+        padding: WidgetStateProperty.all(
+          AppEdgeInsets.symmetric(
+            horizontal: authScaled(context, 16, min: 12, max: 18),
+          ),
         ),
-        elevation: 0,
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(999)),
+        ),
       ),
     );
   }
@@ -1056,7 +1099,7 @@ class _OAuthButton extends StatelessWidget {
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.white.withValues(alpha: 0.1),
+          color: context.appColors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(999),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -1065,7 +1108,7 @@ class _OAuthButton extends StatelessWidget {
               height: buttonHeight,
               decoration: AppBoxDecoration(
                 border: Border.all(
-                  color: AppPalette.white.withValues(alpha: 0.1),
+                  color: AppPalette.secondary.withValues(alpha: 0.32),
                 ),
                 borderRadius: AppBorderRadius.circular(999),
               ),
@@ -1077,20 +1120,20 @@ class _OAuthButton extends StatelessWidget {
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppPalette.white,
+                          AppPalette.primary,
                         ),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(icon, color: AppPalette.white, size: iconSize),
+                        Icon(icon, color: AppPalette.secondary, size: iconSize),
                         SizedBox(width: authScaled(context, 8, min: 6, max: 8)),
                         Flexible(
                           child: Text(
                             label,
                             style: AppTextStyle(
-                              color: AppPalette.white,
+                              color: context.appColors.textPrimary,
                               fontSize: labelSize,
                               fontWeight: FontWeight.bold,
                             ),

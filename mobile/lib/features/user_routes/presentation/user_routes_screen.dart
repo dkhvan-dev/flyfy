@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/ui/error_view.dart';
@@ -91,88 +91,105 @@ class _UserRoutesScreenState extends State<UserRoutesScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
-      appBar: AppBar(
-        title: Text(l10n.userRoutesTitle),
-        backgroundColor: AppPalette.backgroundWarm,
-        foregroundColor: AppPalette.textPrimary,
-        actions: [
-          if (UserRouteFeatureFlags.customRoutesEnabled)
-            IconButton(
-              tooltip: l10n.mapRouteBuilderTitle,
-              onPressed: () => context.push('/map?mode=route-builder'),
-              icon: const Icon(Icons.add_location_alt_rounded),
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppPalette.primary,
-          labelColor: AppPalette.primary,
-          unselectedLabelColor: AppPalette.textCoolSecondary,
-          tabs: [
-            Tab(text: l10n.userRoutesPublicTab),
-            Tab(text: l10n.userRoutesMineTab),
-            Tab(text: l10n.userRoutesSavedTab),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          title: Text(l10n.userRoutesTitle),
+          backgroundColor: colors.background,
+          foregroundColor: colors.textPrimary,
+          surfaceTintColor: colors.transparent,
+          actions: [
+            if (UserRouteFeatureFlags.customRoutesEnabled)
+              IconButton(
+                tooltip: l10n.mapRouteBuilderTitle,
+                onPressed: () => context.push('/map?mode=route-builder'),
+                icon: const Icon(Icons.add_location_alt_rounded),
+                color: colors.primary,
+              ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: colors.primary,
+            labelColor: colors.primary,
+            unselectedLabelColor: colors.textSecondary,
+            tabs: [
+              Tab(text: l10n.userRoutesPublicTab),
+              Tab(text: l10n.userRoutesMineTab),
+              Tab(text: l10n.userRoutesSavedTab),
+            ],
+          ),
         ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: Consumer2<UserRoutesProvider, AuthProvider>(
-          builder: (context, provider, authProvider, _) {
-            final tab = _currentTab;
-            final isAuthenticated =
-                authProvider.state == AuthState.authenticated;
-            if (tab != _UserRoutesTab.publicRoutes && !isAuthenticated) {
-              return _UserRoutesAuthPrompt(
-                onLogin: () => context.push('/login?from=/user-routes'),
-              );
-            }
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Consumer2<UserRoutesProvider, AuthProvider>(
+              builder: (context, provider, authProvider, _) {
+                final tab = _currentTab;
+                final isAuthenticated =
+                    authProvider.state == AuthState.authenticated;
+                if (tab != _UserRoutesTab.publicRoutes && !isAuthenticated) {
+                  return _UserRoutesAuthPrompt(
+                    onLogin: () => context.push('/login?from=/user-routes'),
+                  );
+                }
 
-            final routes = _routesForTab(provider, tab);
-            final isInitialLoading =
-                provider.state == UserRoutesState.loading && routes.isEmpty;
-            final isInitialError =
-                provider.state == UserRoutesState.error && routes.isEmpty;
+                final routes = _routesForTab(provider, tab);
+                final isInitialLoading =
+                    provider.state == UserRoutesState.loading && routes.isEmpty;
+                final isInitialError =
+                    provider.state == UserRoutesState.error && routes.isEmpty;
 
-            if (isInitialLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppPalette.primary),
-              );
-            }
+                if (isInitialLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: colors.primary),
+                  );
+                }
 
-            if (isInitialError) {
-              return ErrorView(
-                message: provider.errorMessage ?? l10n.userRoutesSaveFailed,
-                onRetry: () => _loadCurrentTab(force: true),
-              );
-            }
+                if (isInitialError) {
+                  return ErrorView(
+                    message: provider.errorMessage ?? l10n.userRoutesSaveFailed,
+                    onRetry: () => _loadCurrentTab(force: true),
+                  );
+                }
 
-            return RefreshIndicator(
-              color: AppPalette.primary,
-              onRefresh: () => _loadCurrentTab(force: true),
-              child: routes.isEmpty
-                  ? _UserRoutesEmptyState(tab: tab)
-                  : ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const AppEdgeInsets.fromLTRB(16, 16, 16, 28),
-                      itemCount: routes.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final route = routes[index];
-                        return _UserRouteCard(
-                          route: route,
-                          onTap: () => context.push(
-                            '/user-routes/${Uri.encodeComponent(route.id)}',
-                            extra: route,
-                          ),
-                        );
-                      },
-                    ),
-            );
-          },
+                return RefreshIndicator(
+                  color: colors.primary,
+                  backgroundColor: colors.surface,
+                  onRefresh: () => _loadCurrentTab(force: true),
+                  child: routes.isEmpty
+                      ? _UserRoutesEmptyState(tab: tab)
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const AppEdgeInsets.fromLTRB(16, 16, 16, 28),
+                          itemCount: routes.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final route = routes[index];
+                            return _UserRouteCard(
+                              route: route,
+                              onTap: () => context.push(
+                                '/user-routes/${Uri.encodeComponent(route.id)}',
+                                extra: route,
+                              ),
+                            );
+                          },
+                        ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -189,17 +206,14 @@ class _UserRouteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
+    final radius = AppBorderRadius.circular(8);
 
-    return Card(
-      color: AppPalette.warmInk75,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppBorderRadius.circular(8),
-        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.28)),
-      ),
+    return DecoratedBox(
+      decoration: _userRouteCardDecoration(context, colors),
       child: InkWell(
         onTap: onTap,
-        borderRadius: AppBorderRadius.circular(8),
+        borderRadius: radius,
         child: Padding(
           padding: const AppEdgeInsets.all(14),
           child: Column(
@@ -208,7 +222,7 @@ class _UserRouteCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.route_rounded, color: AppPalette.primary),
+                  Icon(Icons.route_rounded, color: colors.primary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -216,7 +230,7 @@ class _UserRouteCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppPalette.textPrimary,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -232,7 +246,7 @@ class _UserRouteCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppPalette.textCoolSecondary,
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -276,6 +290,7 @@ class _UserRoutesEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final (title, subtitle) = switch (tab) {
       _UserRoutesTab.publicRoutes => (
         l10n.userRoutesPublicEmptyTitle,
@@ -296,17 +311,13 @@ class _UserRoutesEmptyState extends StatelessWidget {
       padding: const AppEdgeInsets.all(24),
       children: [
         const SizedBox(height: 96),
-        Icon(
-          Icons.route_outlined,
-          size: 64,
-          color: AppPalette.primary.withValues(alpha: 0.82),
-        ),
+        Icon(Icons.route_outlined, size: 64, color: colors.primary),
         const SizedBox(height: 18),
         Text(
           title,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppPalette.textPrimary,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -315,7 +326,7 @@ class _UserRoutesEmptyState extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppPalette.textCoolSecondary,
+            color: colors.textSecondary,
             height: 1.4,
           ),
         ),
@@ -332,6 +343,7 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Center(
       child: SingleChildScrollView(
@@ -341,17 +353,13 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.lock_outline_rounded,
-                size: 60,
-                color: AppPalette.primary,
-              ),
+              Icon(Icons.lock_outline_rounded, size: 60, color: colors.primary),
               const SizedBox(height: 18),
               Text(
                 l10n.userRoutesLoginRequiredTitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -360,7 +368,7 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
                 l10n.userRoutesLoginRequiredSubtitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textCoolSecondary,
+                  color: colors.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -370,8 +378,8 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onLogin,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.warmInk90,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppBorderRadius.circular(8),
                     ),
@@ -395,6 +403,7 @@ class _VisibilityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final label = switch (visibility) {
       UserRouteVisibility.private => l10n.userRoutesVisibilityPrivate,
       UserRouteVisibility.unlisted => l10n.userRoutesVisibilityUnlisted,
@@ -403,8 +412,9 @@ class _VisibilityBadge extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.13),
+        color: colors.primarySoft,
         borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -413,7 +423,7 @@ class _VisibilityBadge extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppPalette.primary,
+            color: colors.primary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -430,24 +440,27 @@ class _RouteMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppPalette.primary),
+            Icon(icon, size: 15, color: colors.primary),
             const SizedBox(width: 5),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppPalette.textCoolSecondary,
+                color: colors.textSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -456,4 +469,23 @@ class _RouteMetaChip extends StatelessWidget {
       ),
     );
   }
+}
+
+BoxDecoration _userRouteCardDecoration(BuildContext context, AppColors colors) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return AppBoxDecoration(
+    color: colors.surface,
+    borderRadius: AppBorderRadius.circular(8),
+    border: Border.all(color: isDark ? colors.borderPrimary : colors.border),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ]
+        : const [],
+  );
 }

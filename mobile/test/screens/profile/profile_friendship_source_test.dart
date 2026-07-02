@@ -44,13 +44,13 @@ void main() {
       expect(profileSource, contains('_ProfileRelationshipConfirmDialog'));
       expect(profileSource, contains('_showRelationshipConfirmDialog'));
       expect(profileSource, contains('_ActivitiesStyleConfirmAction'));
-      expect(profileSource, contains('AppPalette.warmSurface21'));
-      expect(profileSource, contains('AppPalette.warmInk63'));
+      expect(profileSource, contains('context.profileColors.surfaceRaised'));
+      expect(profileSource, contains('context.profileColors.background'));
       expect(profileSource, contains('Semantics('));
       expect(profileSource, contains('shape: const CircleBorder()'));
       expect(profileSource, contains('Icons.check_rounded'));
       expect(profileSource, contains('Icons.close_rounded'));
-      expect(profileSource, contains('AppPalette.danger'));
+      expect(profileSource, contains('context.profileColors.danger'));
       expect(profileSource, isNot(contains('profileFriendsAction')));
 
       expect(apiSource, contains('sendFriendRequest'));

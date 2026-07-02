@@ -54,4 +54,24 @@ void main() {
       expect(bodySource, isNot(contains('size: 280')));
     },
   );
+
+  test('activity attendance QR screen uses adaptive V2 colors', () async {
+    final source = await File(
+      'lib/screens/activities/activity_attendance_qr_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('_attendanceQrCardDecoration('));
+    expect(source, contains('AppColors colors'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.surfaceRaised'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, contains('colors.textSecondary'));
+    expect(source, contains('colors.danger'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
 }

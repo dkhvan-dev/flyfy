@@ -12,8 +12,6 @@ import '../../../providers/excursion_provider.dart';
 import '../../../providers/excursion_schedule_provider.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
-const _slotSheetFieldIconColor = AppPalette.orangeSoft11;
-
 class GuideScheduleSlotSheet extends StatefulWidget {
   const GuideScheduleSlotSheet({super.key, this.slot, this.initialDate});
 
@@ -78,6 +76,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<ExcursionScheduleProvider>();
     final guideExcursions = context
@@ -98,337 +97,345 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
         !provider.isActionConflict;
     final isReadonly = widget.slot?.isReadonly == true;
 
-    return SafeArea(
-      child: AppModalDraggableSheet(
-        expand: false,
-        initialChildSize: 0.78,
-        minChildSize: 0.45,
-        maxChildSize: 0.95,
-        builder: (context, controller) {
-          return DecoratedBox(
-            decoration: const AppBoxDecoration(
-              color: AppPalette.warmSurface01,
-              borderRadius: AppBorderRadius.vertical(
-                top: AppRadiusValue.circular(8),
-              ),
-            ),
-            child: ListView(
-              controller: controller,
-              padding: AppEdgeInsets.fromLTRB(
-                20,
-                18,
-                20,
-                24 + MediaQuery.paddingOf(context).bottom,
-              ),
-              children: [
-                Text(
-                  isReadonly
-                      ? l10n.guideCalendarViewSlot
-                      : isEditing
-                      ? l10n.guideCalendarEditSlot
-                      : l10n.guideCalendarAddSlot,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: SafeArea(
+        child: AppModalDraggableSheet(
+          expand: false,
+          initialChildSize: 0.78,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, controller) {
+            return DecoratedBox(
+              decoration: AppBoxDecoration(
+                color: colors.surface,
+                borderRadius: const AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(8),
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedOfferId,
-                  menuMaxHeight: 320,
-                  itemHeight: 74,
-                  borderRadius: AppBorderRadius.circular(8),
-                  items: dropdownOptions
-                      .map((option) {
-                        return DropdownMenuItem<String>(
-                          value: option.id,
-                          child: _OfferOptionTile(option: option),
-                        );
-                      })
-                      .toList(growable: false),
-                  selectedItemBuilder: (context) => dropdownOptions
-                      .map((option) {
-                        return Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Text(
-                            option.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: AppPalette.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        );
-                      })
-                      .toList(growable: false),
-                  onChanged: isReadonly || !hasOfferOptions
-                      ? null
-                      : (value) => setState(() {
-                          _selectedOfferId = value;
-                          _offerError = null;
-                          _showConflictBanner = false;
-                        }),
-                  isExpanded: true,
-                  dropdownColor: AppPalette.warmSurface01,
-                  iconEnabledColor: _slotSheetFieldIconColor,
-                  iconDisabledColor: _slotSheetFieldIconColor,
-                  style: const AppTextStyle(color: AppPalette.textPrimary),
-                  decoration: _inputDecoration(l10n.guideCalendarOfferLabel)
-                      .copyWith(
-                        errorText: _offerError,
-                        helperText: !isEditing && !hasOfferOptions
-                            ? l10n.guideCalendarNoPublishedOffers
-                            : null,
-                        helperMaxLines: 2,
-                      ),
+              ),
+              child: ListView(
+                controller: controller,
+                padding: AppEdgeInsets.fromLTRB(
+                  20,
+                  18,
+                  20,
+                  24 + MediaQuery.paddingOf(context).bottom,
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _SlotTextField(
-                      label: l10n.guideCalendarDateLabel,
-                      hint: l10n.guideCalendarDateHint,
-                      controller: _dateController,
-                      icon: Icons.calendar_today_rounded,
-                      enabled: !isReadonly,
-                      keyboardType: TextInputType.datetime,
-                      inputFormatters: const [_DateInputFormatter()],
-                      errorText: _dateError,
-                      onChanged: _handleDateTextChanged,
+                children: [
+                  Text(
+                    isReadonly
+                        ? l10n.guideCalendarViewSlot
+                        : isEditing
+                        ? l10n.guideCalendarEditSlot
+                        : l10n.guideCalendarAddSlot,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
                     ),
-                    _SlotTextField(
-                      label: l10n.guideCalendarTimeLabel,
-                      hint: l10n.guideCalendarTimeHint,
-                      controller: _timeController,
-                      icon: Icons.schedule_rounded,
-                      enabled: !isReadonly,
-                      keyboardType: TextInputType.datetime,
-                      inputFormatters: const [_TimeInputFormatter()],
-                      errorText: _timeError,
-                      onChanged: _handleTimeTextChanged,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedOfferId,
+                    menuMaxHeight: 320,
+                    itemHeight: 74,
+                    borderRadius: AppBorderRadius.circular(8),
+                    items: dropdownOptions
+                        .map((option) {
+                          return DropdownMenuItem<String>(
+                            value: option.id,
+                            child: _OfferOptionTile(option: option),
+                          );
+                        })
+                        .toList(growable: false),
+                    selectedItemBuilder: (context) => dropdownOptions
+                        .map((option) {
+                          return Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              option.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyle(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(growable: false),
+                    onChanged: isReadonly || !hasOfferOptions
+                        ? null
+                        : (value) => setState(() {
+                            _selectedOfferId = value;
+                            _offerError = null;
+                            _showConflictBanner = false;
+                          }),
+                    isExpanded: true,
+                    dropdownColor: colors.surface,
+                    iconEnabledColor: colors.primary,
+                    iconDisabledColor: colors.textDisabled,
+                    style: AppTextStyle(color: colors.textPrimary),
+                    decoration: _inputDecoration(l10n.guideCalendarOfferLabel)
+                        .copyWith(
+                          errorText: _offerError,
+                          helperText: !isEditing && !hasOfferOptions
+                              ? l10n.guideCalendarNoPublishedOffers
+                              : null,
+                          helperMaxLines: 2,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _SlotTextField(
+                        label: l10n.guideCalendarDateLabel,
+                        hint: l10n.guideCalendarDateHint,
+                        controller: _dateController,
+                        icon: Icons.calendar_today_rounded,
+                        enabled: !isReadonly,
+                        keyboardType: TextInputType.datetime,
+                        inputFormatters: const [_DateInputFormatter()],
+                        errorText: _dateError,
+                        onChanged: _handleDateTextChanged,
+                      ),
+                      _SlotTextField(
+                        label: l10n.guideCalendarTimeLabel,
+                        hint: l10n.guideCalendarTimeHint,
+                        controller: _timeController,
+                        icon: Icons.schedule_rounded,
+                        enabled: !isReadonly,
+                        keyboardType: TextInputType.datetime,
+                        inputFormatters: const [_TimeInputFormatter()],
+                        errorText: _timeError,
+                        onChanged: _handleTimeTextChanged,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _capacityController,
+                    keyboardType: TextInputType.number,
+                    enabled: !isReadonly,
+                    cursorColor: colors.primary,
+                    style: AppTextStyle(color: colors.textPrimary),
+                    onChanged: (_) => _clearActionHints(clearCapacity: true),
+                    decoration:
+                        _inputDecoration(
+                          l10n.guideCalendarCapacityLabel,
+                        ).copyWith(
+                          errorText: _capacityError,
+                          helperText: selectedOffer?.maxCapacity == null
+                              ? null
+                              : l10n.guideCalendarCapacityMax(
+                                  selectedOffer!.maxCapacity!,
+                                ),
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  ChipTheme(
+                    data: _chipTheme(context),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilterChip(
+                          label: Text(l10n.guideCalendarRepeatWeekly),
+                          selected: _repeatWeekly,
+                          onSelected: isEditing
+                              ? null
+                              : (value) =>
+                                    setState(() => _repeatWeekly = value),
+                        ),
+                        for (final day in _weekdayOptions(context))
+                          FilterChip(
+                            label: Text(day.label),
+                            selected:
+                                _repeatWeekly && _weekdays.contains(day.value),
+                            onSelected: !_repeatWeekly || isEditing
+                                ? null
+                                : (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        _weekdays.add(day.value);
+                                      } else if (_weekdays.length > 1) {
+                                        _weekdays.remove(day.value);
+                                      }
+                                    });
+                                  },
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (_showConflictBanner) ...[
+                    const SizedBox(height: 16),
+                    _GuideCalendarConflictBanner(
+                      title: l10n.guideCalendarConflictTitle,
+                      suggestionLabel: l10n.guideCalendarSuggestNextTime,
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _capacityController,
-                  keyboardType: TextInputType.number,
-                  enabled: !isReadonly,
-                  cursorColor: AppPalette.primary,
-                  style: const AppTextStyle(color: AppPalette.textPrimary),
-                  onChanged: (_) => _clearActionHints(clearCapacity: true),
-                  decoration: _inputDecoration(l10n.guideCalendarCapacityLabel)
-                      .copyWith(
-                        errorText: _capacityError,
-                        helperText: selectedOffer?.maxCapacity == null
-                            ? null
-                            : l10n.guideCalendarCapacityMax(
-                                selectedOffer!.maxCapacity!,
-                              ),
+                  if (isReadonly) ...[
+                    const SizedBox(height: 16),
+                    _GuideCalendarReadonlyBanner(
+                      title: l10n.guideCalendarReadonlyCompletedSlot,
+                    ),
+                  ],
+                  if (showActionError) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      provider.actionErrorMessage!,
+                      style: AppTextStyle(
+                        color: colors.danger,
+                        fontWeight: FontWeight.w700,
                       ),
-                ),
-                const SizedBox(height: 16),
-                ChipTheme(
-                  data: _chipTheme(context),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.end,
                     children: [
-                      FilterChip(
-                        label: Text(l10n.guideCalendarRepeatWeekly),
-                        selected: _repeatWeekly,
-                        onSelected: isEditing
-                            ? null
-                            : (value) => setState(() => _repeatWeekly = value),
-                      ),
-                      for (final day in _weekdayOptions(context))
-                        FilterChip(
-                          label: Text(day.label),
-                          selected:
-                              _repeatWeekly && _weekdays.contains(day.value),
-                          onSelected: !_repeatWeekly || isEditing
+                      if (isEditing && !isReadonly) ...[
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.textPrimary,
+                          ),
+                          onPressed:
+                              provider.actionState ==
+                                      ExcursionScheduleActionState.loading ||
+                                  !hasOfferOptions
                               ? null
-                              : (selected) {
-                                  setState(() {
-                                    if (selected) {
-                                      _weekdays.add(day.value);
-                                    } else if (_weekdays.length > 1) {
-                                      _weekdays.remove(day.value);
-                                    }
-                                  });
-                                },
+                              : () => _save(provider),
+                          icon: const Icon(Icons.check_rounded),
+                          label: Text(l10n.guideCalendarSaveSlot),
+                        ),
+                        OutlinedButton.icon(
+                          style: _closeSlotButtonStyle(),
+                          onPressed:
+                              provider.actionState ==
+                                  ExcursionScheduleActionState.loading
+                              ? null
+                              : () => _closeSlot(provider),
+                          icon: const Icon(Icons.lock_clock_rounded),
+                          label: Text(l10n.guideCalendarCloseSlot),
+                        ),
+                        OutlinedButton.icon(
+                          style: _cancelSlotButtonStyle(),
+                          onPressed:
+                              provider.actionState ==
+                                  ExcursionScheduleActionState.loading
+                              ? null
+                              : () => _cancelSlot(provider),
+                          icon: const Icon(Icons.event_busy_rounded),
+                          label: Text(l10n.guideCalendarCancelSlot),
+                        ),
+                        OutlinedButton.icon(
+                          style: _deleteSlotButtonStyle(),
+                          onPressed:
+                              provider.actionState ==
+                                  ExcursionScheduleActionState.loading
+                              ? null
+                              : () => _deleteSlot(provider),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: Text(l10n.guideCalendarDeleteSlot),
+                        ),
+                      ] else
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.textPrimary,
+                          ),
+                          onPressed:
+                              provider.actionState ==
+                                      ExcursionScheduleActionState.loading ||
+                                  !hasOfferOptions
+                              ? null
+                              : () => _save(provider),
+                          icon: const Icon(Icons.check_rounded),
+                          label: Text(l10n.guideCalendarSaveSlot),
                         ),
                     ],
                   ),
-                ),
-                if (_showConflictBanner) ...[
-                  const SizedBox(height: 16),
-                  _GuideCalendarConflictBanner(
-                    title: l10n.guideCalendarConflictTitle,
-                    suggestionLabel: l10n.guideCalendarSuggestNextTime,
-                  ),
                 ],
-                if (isReadonly) ...[
-                  const SizedBox(height: 16),
-                  _GuideCalendarReadonlyBanner(
-                    title: l10n.guideCalendarReadonlyCompletedSlot,
-                  ),
-                ],
-                if (showActionError) ...[
-                  const SizedBox(height: 14),
-                  Text(
-                    provider.actionErrorMessage!,
-                    style: const AppTextStyle(
-                      color: AppPalette.redLight03,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    if (isEditing && !isReadonly) ...[
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppPalette.primary,
-                          foregroundColor: AppPalette.textPrimary,
-                        ),
-                        onPressed:
-                            provider.actionState ==
-                                    ExcursionScheduleActionState.loading ||
-                                !hasOfferOptions
-                            ? null
-                            : () => _save(provider),
-                        icon: const Icon(Icons.check_rounded),
-                        label: Text(l10n.guideCalendarSaveSlot),
-                      ),
-                      OutlinedButton.icon(
-                        style: _closeSlotButtonStyle(),
-                        onPressed:
-                            provider.actionState ==
-                                ExcursionScheduleActionState.loading
-                            ? null
-                            : () => _closeSlot(provider),
-                        icon: const Icon(Icons.lock_clock_rounded),
-                        label: Text(l10n.guideCalendarCloseSlot),
-                      ),
-                      OutlinedButton.icon(
-                        style: _cancelSlotButtonStyle(),
-                        onPressed:
-                            provider.actionState ==
-                                ExcursionScheduleActionState.loading
-                            ? null
-                            : () => _cancelSlot(provider),
-                        icon: const Icon(Icons.event_busy_rounded),
-                        label: Text(l10n.guideCalendarCancelSlot),
-                      ),
-                      OutlinedButton.icon(
-                        style: _deleteSlotButtonStyle(),
-                        onPressed:
-                            provider.actionState ==
-                                ExcursionScheduleActionState.loading
-                            ? null
-                            : () => _deleteSlot(provider),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: Text(l10n.guideCalendarDeleteSlot),
-                      ),
-                    ] else
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppPalette.primary,
-                          foregroundColor: AppPalette.textPrimary,
-                        ),
-                        onPressed:
-                            provider.actionState ==
-                                    ExcursionScheduleActionState.loading ||
-                                !hasOfferOptions
-                            ? null
-                            : () => _save(provider),
-                        icon: const Icon(Icons.check_rounded),
-                        label: Text(l10n.guideCalendarSaveSlot),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
   InputDecoration _inputDecoration(String label) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return AppInputDecoration(
       labelText: label,
-      labelStyle: const AppTextStyle(
-        color: AppPalette.orangeSoft11,
+      labelStyle: AppTextStyle(
+        color: colors.textSecondary,
         fontWeight: FontWeight.w700,
       ),
-      hintStyle: const AppTextStyle(
-        color: AppPalette.orangeSoft11,
+      hintStyle: AppTextStyle(
+        color: colors.textMuted,
         fontSize: 16,
         height: 1.2,
       ),
       errorMaxLines: 2,
-      helperStyle: const AppTextStyle(
-        color: AppPalette.orangeSoft11,
+      helperStyle: AppTextStyle(
+        color: colors.textSecondary,
         fontWeight: FontWeight.w600,
       ),
       isDense: true,
       contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 18, 17),
       filled: true,
-      fillColor: AppPalette.warmSurface47,
+      fillColor: colors.surfaceRaised,
       border: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
+        borderSide: BorderSide(color: colors.borderSoft),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
+        borderSide: BorderSide(color: colors.borderSoft),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: BorderSide(
-          color: AppPalette.primary.withValues(alpha: 0.55),
-        ),
+        borderSide: BorderSide(color: colors.primary.withValues(alpha: 0.72)),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
+        borderSide: BorderSide(color: colors.borderSoft),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: const BorderSide(color: AppPalette.redLight03),
+        borderSide: BorderSide(color: colors.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: AppBorderRadius.circular(999),
-        borderSide: const BorderSide(color: AppPalette.redLight03),
+        borderSide: BorderSide(color: colors.danger),
       ),
     );
   }
 
   ChipThemeData _chipTheme(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Theme.of(context).chipTheme.copyWith(
-      backgroundColor: AppPalette.warmSurface47,
-      selectedColor: AppPalette.primary,
-      disabledColor: AppPalette.warmSurface47.withValues(alpha: 0.52),
-      checkmarkColor: AppPalette.textPrimary,
-      labelStyle: const AppTextStyle(
-        color: AppPalette.orangeLight30,
+      backgroundColor: colors.surfaceRaised,
+      selectedColor: colors.primary,
+      disabledColor: colors.surfaceHigh.withValues(alpha: 0.52),
+      checkmarkColor: colors.textPrimary,
+      labelStyle: AppTextStyle(
+        color: colors.textSecondary,
         fontWeight: FontWeight.w800,
       ),
-      secondaryLabelStyle: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      secondaryLabelStyle: AppTextStyle(
+        color: colors.textPrimary,
         fontWeight: FontWeight.w900,
       ),
-      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.26)),
+      side: BorderSide(color: colors.borderPrimary),
       shape: RoundedRectangleBorder(
         borderRadius: AppBorderRadius.circular(999),
       ),
@@ -437,26 +444,32 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   }
 
   ButtonStyle _closeSlotButtonStyle() {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return OutlinedButton.styleFrom(
-      foregroundColor: AppPalette.textPrimary,
-      backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
-      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.58)),
+      foregroundColor: colors.textPrimary,
+      backgroundColor: colors.primary.withValues(alpha: 0.16),
+      side: BorderSide(color: colors.primary.withValues(alpha: 0.58)),
     );
   }
 
   ButtonStyle _cancelSlotButtonStyle() {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return OutlinedButton.styleFrom(
-      foregroundColor: AppPalette.amberLight15,
-      backgroundColor: AppPalette.warmSurfaceHigh25.withValues(alpha: 0.34),
-      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.34)),
+      foregroundColor: colors.primary,
+      backgroundColor: colors.surfaceHigh.withValues(alpha: 0.34),
+      side: BorderSide(color: colors.borderPrimary),
     );
   }
 
   ButtonStyle _deleteSlotButtonStyle() {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return OutlinedButton.styleFrom(
-      foregroundColor: AppPalette.redWash01,
-      backgroundColor: AppPalette.redSurfaceHigh02.withValues(alpha: 0.42),
-      side: BorderSide(color: AppPalette.redSoft12.withValues(alpha: 0.36)),
+      foregroundColor: colors.danger,
+      backgroundColor: colors.danger.withValues(alpha: 0.12),
+      side: BorderSide(color: colors.danger.withValues(alpha: 0.36)),
     );
   }
 
@@ -652,7 +665,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (_) => const _GuideCancelSlotReasonSheet(),
     );
     if (!mounted || reason == null) return;
@@ -947,6 +960,8 @@ class _OfferOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Padding(
       padding: const AppEdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -955,14 +970,10 @@ class _OfferOptionTile extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.16),
+              color: colors.primary.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.route_rounded,
-              color: AppPalette.primary,
-              size: 18,
-            ),
+            child: Icon(Icons.route_rounded, color: colors.primary, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -974,8 +985,8 @@ class _OfferOptionTile extends StatelessWidget {
                   option.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -985,8 +996,8 @@ class _OfferOptionTile extends StatelessWidget {
                     option.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textCoolSecondary,
+                    style: AppTextStyle(
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1055,6 +1066,8 @@ class _SlotTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 150, maxWidth: 230),
       child: TextField(
@@ -1063,11 +1076,9 @@ class _SlotTextField extends StatelessWidget {
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         onChanged: onChanged,
-        cursorColor: AppPalette.primary,
+        cursorColor: colors.primary,
         style: AppTextStyle(
-          color: enabled
-              ? AppPalette.textPrimary
-              : AppPalette.textPrimary.withValues(alpha: 0.72),
+          color: enabled ? colors.textPrimary : colors.textMuted,
           fontSize: 16,
           height: 1.2,
         ),
@@ -1076,16 +1087,16 @@ class _SlotTextField extends StatelessWidget {
           hintText: hint,
           errorText: errorText,
           errorMaxLines: 2,
-          labelStyle: const AppTextStyle(
-            color: AppPalette.orangeSoft11,
+          labelStyle: AppTextStyle(
+            color: colors.textSecondary,
             fontWeight: FontWeight.w700,
           ),
-          hintStyle: const AppTextStyle(
-            color: AppPalette.orangeSoft11,
+          hintStyle: AppTextStyle(
+            color: colors.textMuted,
             fontSize: 16,
             height: 1.2,
           ),
-          suffixIcon: Icon(icon, color: _slotSheetFieldIconColor, size: 20),
+          suffixIcon: Icon(icon, color: colors.primary, size: 20),
           suffixIconConstraints: const BoxConstraints(
             minWidth: 44,
             minHeight: 64,
@@ -1093,38 +1104,32 @@ class _SlotTextField extends StatelessWidget {
           isDense: true,
           contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 8, 17),
           filled: true,
-          fillColor: AppPalette.warmSurface47,
+          fillColor: colors.surfaceRaised,
           border: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
-            borderSide: BorderSide(
-              color: AppPalette.white.withValues(alpha: 0.03),
-            ),
+            borderSide: BorderSide(color: colors.borderSoft),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
-            borderSide: BorderSide(
-              color: AppPalette.white.withValues(alpha: 0.03),
-            ),
+            borderSide: BorderSide(color: colors.borderSoft),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
             borderSide: BorderSide(
-              color: AppPalette.primary.withValues(alpha: 0.55),
+              color: colors.primary.withValues(alpha: 0.72),
             ),
           ),
           disabledBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
-            borderSide: BorderSide(
-              color: AppPalette.white.withValues(alpha: 0.03),
-            ),
+            borderSide: BorderSide(color: colors.borderSoft),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
-            borderSide: const BorderSide(color: AppPalette.redLight03),
+            borderSide: BorderSide(color: colors.danger),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(999),
-            borderSide: const BorderSide(color: AppPalette.redLight03),
+            borderSide: BorderSide(color: colors.danger),
           ),
         ),
       ),
@@ -1223,16 +1228,18 @@ class _GuideCalendarConflictBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: const AppEdgeInsets.all(14),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: colors.primary.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppPalette.primary),
+          Icon(Icons.warning_amber_rounded, color: colors.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1240,16 +1247,16 @@ class _GuideCalendarConflictBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   suggestionLabel,
-                  style: const AppTextStyle(
-                    color: AppPalette.orangeLight30,
+                  style: AppTextStyle(
+                    color: colors.textSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1269,22 +1276,24 @@ class _GuideCalendarReadonlyBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: const AppEdgeInsets.all(14),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface47.withValues(alpha: 0.68),
+        color: colors.surfaceRaised.withValues(alpha: 0.68),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         children: [
-          const Icon(Icons.visibility_rounded, color: AppPalette.orangeLight01),
+          Icon(Icons.visibility_rounded, color: colors.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
-              style: const AppTextStyle(
-                color: AppPalette.orangeLight30,
+              style: AppTextStyle(
+                color: colors.textSecondary,
                 fontWeight: FontWeight.w800,
                 height: 1.25,
               ),
@@ -1333,196 +1342,195 @@ class _GuideCancelSlotReasonSheetState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 390;
 
-    return SafeArea(
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: AppEdgeInsets.fromLTRB(
-          12,
-          0,
-          12,
-          mediaQuery.viewInsets.bottom,
-        ),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 540,
-              maxHeight: mediaQuery.size.height * 0.86,
-            ),
-            child: DecoratedBox(
-              decoration: AppBoxDecoration(
-                color: AppPalette.warmSurface01,
-                borderRadius: const AppBorderRadius.vertical(
-                  top: AppRadiusValue.circular(24),
-                ),
-                border: Border.all(
-                  color: AppPalette.white.withValues(alpha: 0.08),
-                ),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: SafeArea(
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: AppEdgeInsets.fromLTRB(
+            12,
+            0,
+            12,
+            mediaQuery.viewInsets.bottom,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 540,
+                maxHeight: mediaQuery.size.height * 0.86,
               ),
-              child: SingleChildScrollView(
-                padding: AppEdgeInsets.fromLTRB(
-                  compact ? 16 : 20,
-                  14,
-                  compact ? 16 : 20,
-                  22 + MediaQuery.paddingOf(context).bottom,
+              child: DecoratedBox(
+                decoration: AppBoxDecoration(
+                  color: colors.surface,
+                  borderRadius: const AppBorderRadius.vertical(
+                    top: AppRadiusValue.circular(24),
+                  ),
+                  border: Border.all(color: colors.borderSoft),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 52,
-                        height: 5,
-                        decoration: AppBoxDecoration(
-                          color: AppPalette.white.withValues(alpha: 0.18),
-                          borderRadius: AppBorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.guideDashboardCancelTitle,
-                      style: AppTextStyle(
-                        color: AppPalette.textPrimary,
-                        fontSize: compact ? 21 : 23,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      l10n.guideDashboardCancelDescription,
-                      style: const AppTextStyle(
-                        color: AppPalette.orangeLight01,
-                        fontSize: 14,
-                        height: 1.42,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      l10n.guideDashboardCancelReasonLabel,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    DecoratedBox(
-                      decoration: AppBoxDecoration(
-                        color: AppPalette.white.withValues(alpha: 0.05),
-                        borderRadius: AppBorderRadius.circular(18),
-                        border: Border.all(
-                          color: _errorText == null
-                              ? AppPalette.white.withValues(alpha: 0.08)
-                              : AppPalette.redOverlaySoft02,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _reasonController,
-                        focusNode: _reasonFocusNode,
-                        maxLines: 4,
-                        minLines: 3,
-                        maxLength: 160,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                        decoration: AppInputDecoration(
-                          hintText: l10n.guideDashboardCancelReasonPlaceholder,
-                          hintStyle: AppTextStyle(
-                            color: AppPalette.orangeLight01.withValues(
-                              alpha: 0.72,
-                            ),
-                            fontSize: 14,
-                          ),
-                          border: InputBorder.none,
-                          counterStyle: const AppTextStyle(
-                            color: AppPalette.orangeLight01,
-                            fontSize: 12,
-                          ),
-                          contentPadding: const AppEdgeInsets.fromLTRB(
-                            14,
-                            12,
-                            14,
-                            8,
+                child: SingleChildScrollView(
+                  padding: AppEdgeInsets.fromLTRB(
+                    compact ? 16 : 20,
+                    14,
+                    compact ? 16 : 20,
+                    22 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 52,
+                          height: 5,
+                          decoration: AppBoxDecoration(
+                            color: colors.border,
+                            borderRadius: AppBorderRadius.circular(999),
                           ),
                         ),
-                        onChanged: (_) {
-                          if (_errorText != null &&
-                              _reasonController.text.trim().isNotEmpty) {
-                            setState(() => _errorText = null);
-                          }
-                        },
-                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
                       ),
-                    ),
-                    if (_errorText != null) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 20),
                       Text(
-                        _errorText!,
-                        style: const AppTextStyle(
-                          color: AppPalette.redSoft11,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                        l10n.guideDashboardCancelTitle,
+                        style: AppTextStyle(
+                          color: colors.textPrimary,
+                          fontSize: compact ? 21 : 23,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 18),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final stack = constraints.maxWidth < 360;
-                        final keep = OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppPalette.textPrimary,
-                            side: BorderSide(
-                              color: AppPalette.white.withValues(alpha: 0.12),
+                      const SizedBox(height: 10),
+                      Text(
+                        l10n.guideDashboardCancelDescription,
+                        style: AppTextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 14,
+                          height: 1.42,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        l10n.guideDashboardCancelReasonLabel,
+                        style: AppTextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      DecoratedBox(
+                        decoration: AppBoxDecoration(
+                          color: colors.surfaceRaised,
+                          borderRadius: AppBorderRadius.circular(18),
+                          border: Border.all(
+                            color: _errorText == null
+                                ? colors.borderSoft
+                                : colors.danger,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _reasonController,
+                          focusNode: _reasonFocusNode,
+                          maxLines: 4,
+                          minLines: 3,
+                          maxLength: 160,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                          decoration: AppInputDecoration(
+                            hintText:
+                                l10n.guideDashboardCancelReasonPlaceholder,
+                            hintStyle: AppTextStyle(
+                              color: colors.textMuted,
+                              fontSize: 14,
                             ),
-                            minimumSize: const Size(0, 50),
+                            border: InputBorder.none,
+                            counterStyle: AppTextStyle(
+                              color: colors.textMuted,
+                              fontSize: 12,
+                            ),
+                            contentPadding: const AppEdgeInsets.fromLTRB(
+                              14,
+                              12,
+                              14,
+                              8,
+                            ),
                           ),
-                          child: Text(l10n.cancelButton),
-                        );
-                        final confirm = FilledButton.icon(
-                          onPressed: _submit,
-                          icon: const Icon(Icons.event_busy_rounded),
-                          label: Text(l10n.guideDashboardCancelConfirm),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppPalette.primary,
-                            foregroundColor: AppPalette.white,
-                            minimumSize: const Size(0, 50),
+                          onChanged: (_) {
+                            if (_errorText != null &&
+                                _reasonController.text.trim().isNotEmpty) {
+                              setState(() => _errorText = null);
+                            }
+                          },
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        ),
+                      ),
+                      if (_errorText != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorText!,
+                          style: AppTextStyle(
+                            color: colors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
                           ),
-                        );
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stack = constraints.maxWidth < 360;
+                          final keep = OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.textPrimary,
+                              side: BorderSide(color: colors.borderSoft),
+                              minimumSize: const Size(0, 50),
+                            ),
+                            child: Text(l10n.cancelButton),
+                          );
+                          final confirm = FilledButton.icon(
+                            onPressed: _submit,
+                            icon: const Icon(Icons.event_busy_rounded),
+                            label: Text(l10n.guideDashboardCancelConfirm),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colors.primary,
+                              foregroundColor: colors.textPrimary,
+                              minimumSize: const Size(0, 50),
+                            ),
+                          );
 
-                        if (stack) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          if (stack) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                keep,
+                                const SizedBox(height: 10),
+                                confirm,
+                              ],
+                            );
+                          }
+
+                          return Row(
                             children: [
-                              keep,
-                              const SizedBox(height: 10),
-                              confirm,
+                              Expanded(child: keep),
+                              const SizedBox(width: 10),
+                              Expanded(child: confirm),
                             ],
                           );
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(child: keep),
-                            const SizedBox(width: 10),
-                            Expanded(child: confirm),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

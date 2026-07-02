@@ -25,21 +25,58 @@ enum _GuideVerificationStep { identity, identityDocument, professional, review }
 
 enum _GuideDocumentKind { identity, professional, firstAid, language }
 
-const Color _guideAmberGold = AppPalette.warning;
-const Color _guideAmberInk = AppPalette.textOnInverse;
-const Color _guideExcursionAmberStatusAccent = AppPalette.primary;
-const Color _guideExcursionAmberStatusInk = AppPalette.warmSurfaceHigh23;
-const List<Color> _guideAmberHeroGradientColors = [
-  AppPalette.warning,
-  AppPalette.primary,
-  AppPalette.warmSurface80,
-];
-const List<Color> _guideExcursionAmberStatusGradientColors = [
-  AppPalette.amberSoft19,
-  AppPalette.orangeSoft46,
-  AppPalette.orangeMuted06,
-  AppPalette.primary,
-];
+final class _GuideVerificationColors {
+  const _GuideVerificationColors._(this.colors);
+
+  final AppColors colors;
+
+  static _GuideVerificationColors of(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return _GuideVerificationColors._(colors);
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get background => colors.background;
+  Color get backgroundWarm => colors.backgroundWarm;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+
+  Color get inputFill => colors.surfaceRaised;
+  Color get heroOverlayInk => colors.black;
+  Color get accentIcon => colors.white;
+
+  List<Color> get amberHeroGradientColors => [
+    colors.warning,
+    colors.primary,
+    colors.primaryContainer,
+  ];
+
+  List<Color> get excursionAmberStatusGradientColors => [
+    colors.primarySoft,
+    colors.primary,
+    colors.primaryPressed,
+    colors.primary,
+  ];
+}
+
+extension _GuideVerificationColorContext on BuildContext {
+  _GuideVerificationColors get guideColors => _GuideVerificationColors.of(this);
+}
 
 class GuideVerificationScreen extends StatefulWidget {
   const GuideVerificationScreen({super.key});
@@ -577,7 +614,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppPalette.transparent,
+        backgroundColor: context.guideColors.transparent,
         body: ProfileResponsiveScope(
           child: ProfileGlassBackground(
             child: const SafeArea(
@@ -594,7 +631,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     final isRevoked = application?.profile.isRevoked == true;
 
     return Scaffold(
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.guideColors.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -669,7 +706,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 child: Text(
                   l10n.guideVerificationTitle,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.guideColors.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -679,7 +716,10 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             ],
           ),
         ),
-        Divider(color: AppPalette.white.withValues(alpha: 0.06), height: 1),
+        Divider(
+          color: context.guideColors.white.withValues(alpha: 0.06),
+          height: 1,
+        ),
         Expanded(
           child: ListView(
             physics: const BouncingScrollPhysics(
@@ -1339,26 +1379,30 @@ BoxDecoration _guideAmberGlassDecoration(
       end: Alignment.bottomRight,
       colors: strong
           ? [
-              AppPalette.warmSurface49.withValues(alpha: 0.96),
-              AppPalette.warmInk91.withValues(alpha: 0.98),
+              context.guideColors.surfaceWarm.withValues(alpha: 0.96),
+              context.guideColors.backgroundWarm.withValues(alpha: 0.98),
             ]
           : [
-              AppPalette.primary.withValues(alpha: 0.08),
-              AppPalette.white.withValues(alpha: 0.018),
+              context.guideColors.primary.withValues(alpha: 0.08),
+              context.guideColors.white.withValues(alpha: 0.018),
             ],
     ),
     borderRadius: AppBorderRadius.circular(effectiveRadius),
     border: Border.all(
-      color: AppPalette.primary.withValues(alpha: strong ? 0.28 : 0.18),
+      color: context.guideColors.primary.withValues(
+        alpha: strong ? 0.28 : 0.18,
+      ),
     ),
     boxShadow: [
       BoxShadow(
-        color: AppPalette.black.withValues(alpha: 0.26),
+        color: context.guideColors.black.withValues(alpha: 0.26),
         blurRadius: profileScaled(context, 26, min: 18, max: 32),
         offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
       ),
       BoxShadow(
-        color: AppPalette.primary.withValues(alpha: strong ? 0.18 : 0.1),
+        color: context.guideColors.primary.withValues(
+          alpha: strong ? 0.18 : 0.1,
+        ),
         blurRadius: profileScaled(context, 24, min: 14, max: 30),
         offset: Offset(0, profileScaled(context, 8, min: 4, max: 10)),
       ),
@@ -1377,7 +1421,7 @@ BoxDecoration _guideAmberGradientButtonDecoration(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: enabled
-          ? const [_guideAmberGold, AppPalette.primary]
+          ? [context.guideColors.warning, context.guideColors.primary]
           : [
               profileSurfaceMuted.withValues(alpha: 0.84),
               profileSurface.withValues(alpha: 0.84),
@@ -1385,13 +1429,13 @@ BoxDecoration _guideAmberGradientButtonDecoration(
     ),
     border: Border.all(
       color: enabled
-          ? _guideAmberGold.withValues(alpha: 0.58)
+          ? context.guideColors.warning.withValues(alpha: 0.58)
           : profileBorderSoft,
     ),
     boxShadow: enabled
         ? [
             BoxShadow(
-              color: AppPalette.primary.withValues(alpha: 0.3),
+              color: context.guideColors.primary.withValues(alpha: 0.3),
               blurRadius: profileScaled(context, 28, min: 18, max: 34),
               offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
             ),
@@ -1422,12 +1466,14 @@ Widget _guideHeroAccentIcon(BuildContext context, IconData icon) {
       borderRadius: AppBorderRadius.circular(
         profileScaled(context, 18, min: 16, max: 20),
       ),
-      color: AppPalette.white.withValues(alpha: 0.13),
-      border: Border.all(color: AppPalette.white.withValues(alpha: 0.22)),
+      color: context.guideColors.white.withValues(alpha: 0.13),
+      border: Border.all(
+        color: context.guideColors.white.withValues(alpha: 0.22),
+      ),
     ),
     child: Icon(
       icon,
-      color: AppPalette.amberWash06,
+      color: context.guideColors.accentIcon,
       size: profileScaled(context, 28, min: 24, max: 32),
     ),
   );
@@ -1459,16 +1505,16 @@ class _ProgressMeta extends StatelessWidget {
                   vertical: profileScaled(context, 6, min: 5, max: 7),
                 ),
                 decoration: AppBoxDecoration(
-                  color: _guideAmberGold.withValues(alpha: 0.12),
+                  color: context.guideColors.warning.withValues(alpha: 0.12),
                   borderRadius: AppBorderRadius.circular(999),
                   border: Border.all(
-                    color: _guideAmberGold.withValues(alpha: 0.24),
+                    color: context.guideColors.warning.withValues(alpha: 0.24),
                   ),
                 ),
                 child: Text(
                   stepLabel,
                   style: AppTextStyle(
-                    color: _guideAmberGold,
+                    color: context.guideColors.warning,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
@@ -1498,9 +1544,11 @@ class _ProgressMeta extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: profileScaled(context, 8, min: 6, max: 9),
-              backgroundColor: AppPalette.primary.withValues(alpha: 0.14),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppPalette.warning,
+              backgroundColor: context.guideColors.primary.withValues(
+                alpha: 0.14,
+              ),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                context.guideColors.warning,
               ),
             ),
           ),
@@ -1542,8 +1590,9 @@ class _HeroBanner extends StatelessWidget {
     final borderRadius = AppBorderRadius.circular(
       profileScaled(context, 24, min: 18, max: 28),
     );
-    final effectiveAccentColor = accentColor ?? AppPalette.primary;
-    final effectiveOverlayInkColor = overlayInkColor ?? _guideAmberInk;
+    final effectiveAccentColor = accentColor ?? context.guideColors.primary;
+    final effectiveOverlayInkColor =
+        overlayInkColor ?? context.guideColors.heroOverlayInk;
     final effectiveOverlayMidAlpha = overlayMidAlpha ?? 0.16;
     final effectiveOverlayEndAlpha = overlayEndAlpha ?? 0.52;
 
@@ -1559,7 +1608,7 @@ class _HeroBanner extends StatelessWidget {
             offset: const Offset(0, 16),
           ),
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.22),
+            color: context.guideColors.black.withValues(alpha: 0.22),
             blurRadius: 34,
             offset: const Offset(0, 20),
           ),
@@ -1567,7 +1616,7 @@ class _HeroBanner extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: gradientColors ?? _guideAmberHeroGradientColors,
+          colors: gradientColors ?? context.guideColors.amberHeroGradientColors,
           stops: gradientColors == null ? const [0, 0.58, 1] : null,
         ),
       ),
@@ -1596,7 +1645,7 @@ class _HeroBanner extends StatelessWidget {
                       profileScaled(context, 42, min: 32, max: 48),
                     ),
                     border: Border.all(
-                      color: AppPalette.white.withValues(alpha: 0.13),
+                      color: context.guideColors.white.withValues(alpha: 0.13),
                     ),
                   ),
                 ),
@@ -1613,7 +1662,7 @@ class _HeroBanner extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppPalette.transparent,
+                          context.guideColors.transparent,
                           effectiveOverlayInkColor.withValues(
                             alpha: effectiveOverlayMidAlpha,
                           ),
@@ -1641,7 +1690,7 @@ class _HeroBanner extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyle(
-                      color: AppPalette.white,
+                      color: context.guideColors.white,
                       fontSize: compact
                           ? profileScaled(context, 28, min: 22, max: 32)
                           : profileScaled(context, 32, min: 24, max: 38),
@@ -1654,7 +1703,7 @@ class _HeroBanner extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyle(
-                      color: AppPalette.white.withValues(alpha: 0.78),
+                      color: context.guideColors.white.withValues(alpha: 0.78),
                       fontSize: profileScaled(context, 14, min: 12, max: 15),
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -1691,17 +1740,17 @@ class _SectionTitle extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                _guideAmberGold.withValues(alpha: 0.18),
-                AppPalette.primary.withValues(alpha: 0.06),
+                context.guideColors.warning.withValues(alpha: 0.18),
+                context.guideColors.primary.withValues(alpha: 0.06),
               ],
             ),
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.18),
+              color: context.guideColors.primary.withValues(alpha: 0.18),
             ),
           ),
           child: Icon(
             icon,
-            color: _guideAmberGold,
+            color: context.guideColors.warning,
             size: profileScaled(context, 22, min: 19, max: 24),
           ),
         ),
@@ -1710,7 +1759,7 @@ class _SectionTitle extends StatelessWidget {
           child: Text(
             title,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.guideColors.textPrimary,
               fontSize: profileScaled(context, 20, min: 18, max: 22),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.6,
@@ -1746,7 +1795,7 @@ class _ProgressTitle extends StatelessWidget {
             child: Text(
               eyebrow!,
               style: AppTextStyle(
-                color: AppPalette.primary,
+                color: context.guideColors.primary,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.4,
@@ -1756,7 +1805,7 @@ class _ProgressTitle extends StatelessWidget {
         Text(
           title,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.guideColors.textPrimary,
             fontSize: profileScaled(context, 30, min: 24, max: 34),
             fontWeight: FontWeight.w900,
             letterSpacing: -1.1,
@@ -1828,7 +1877,7 @@ class _FieldBlock extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle(
-                color: AppPalette.orangeLight40,
+                color: context.guideColors.danger,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -1864,7 +1913,7 @@ class _DarkInput extends StatelessWidget {
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       style: AppTextStyle(
-        color: AppPalette.textPrimary,
+        color: context.guideColors.textPrimary,
         fontSize: profileScaled(context, 16, min: 15, max: 17),
         fontWeight: FontWeight.w600,
       ),
@@ -1875,18 +1924,18 @@ class _DarkInput extends StatelessWidget {
           fontSize: profileScaled(context, 15, min: 14, max: 16),
         ),
         filled: true,
-        fillColor: _guideAmberInk,
+        fillColor: context.guideColors.inputFill,
         border: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: _guideAmberDropdownBorderSide(),
+          borderSide: _guideAmberDropdownBorderSide(context),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: _guideAmberDropdownBorderSide(),
+          borderSide: _guideAmberDropdownBorderSide(context),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: _guideAmberDropdownBorderSide(),
+          borderSide: _guideAmberDropdownBorderSide(context),
         ),
         contentPadding: AppEdgeInsets.symmetric(
           horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -1901,9 +1950,9 @@ BorderRadius _guideDropdownBorderRadius(BuildContext context) {
   return AppBorderRadius.circular(profileScaled(context, 18, min: 16, max: 20));
 }
 
-BorderSide _guideAmberDropdownBorderSide() {
+BorderSide _guideAmberDropdownBorderSide(BuildContext context) {
   return BorderSide(
-    color: AppPalette.primary.withValues(alpha: 0.34),
+    color: context.guideColors.primary.withValues(alpha: 0.34),
     width: 1.6,
   );
 }
@@ -2135,10 +2184,10 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
         TextField(
           controller: _controller,
           focusNode: _focusNode,
-          cursorColor: AppPalette.primary,
+          cursorColor: context.guideColors.primary,
           textInputAction: TextInputAction.search,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.guideColors.textPrimary,
             fontSize: profileScaled(context, 16, min: 15, max: 17),
             fontWeight: FontWeight.w700,
           ),
@@ -2149,9 +2198,9 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               fontWeight: FontWeight.w600,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.search_rounded,
-              color: AppPalette.primary,
+              color: context.guideColors.primary,
             ),
             suffixIcon: Icon(
               _isOpen
@@ -2160,18 +2209,18 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
               color: profileTextSoft,
             ),
             filled: true,
-            fillColor: _guideAmberInk,
+            fillColor: context.guideColors.inputFill,
             border: OutlineInputBorder(
               borderRadius: borderRadius,
-              borderSide: _guideAmberDropdownBorderSide(),
+              borderSide: _guideAmberDropdownBorderSide(context),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: borderRadius,
-              borderSide: _guideAmberDropdownBorderSide(),
+              borderSide: _guideAmberDropdownBorderSide(context),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: borderRadius,
-              borderSide: _guideAmberDropdownBorderSide(),
+              borderSide: _guideAmberDropdownBorderSide(context),
             ),
             contentPadding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -2186,15 +2235,15 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
               maxHeight: profileScaled(context, 224, min: 176, max: 260),
             ),
             decoration: AppBoxDecoration(
-              color: _guideAmberInk,
+              color: context.guideColors.inputFill,
               borderRadius: borderRadius,
               border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.34),
+                color: context.guideColors.primary.withValues(alpha: 0.34),
                 width: 1.6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.22),
+                  color: context.guideColors.black.withValues(alpha: 0.22),
                   blurRadius: profileScaled(context, 18, min: 12, max: 24),
                   offset: Offset(
                     0,
@@ -2208,14 +2257,14 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                     padding: AppEdgeInsets.all(
                       profileScaled(context, 16, min: 14, max: 18),
                     ),
-                    child: const Align(
+                    child: Align(
                       alignment: Alignment.centerLeft,
                       child: SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.4,
-                          color: AppPalette.primary,
+                          color: context.guideColors.primary,
                         ),
                       ),
                     ),
@@ -2227,9 +2276,9 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.flag_circle_rounded,
-                          color: AppPalette.primary,
+                          color: context.guideColors.primary,
                           size: 18,
                         ),
                         SizedBox(
@@ -2239,7 +2288,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                           child: Text(
                             widget.noResultsText,
                             style: AppTextStyle(
-                              color: AppPalette.primary,
+                              color: context.guideColors.primary,
                               fontSize: profileScaled(
                                 context,
                                 13,
@@ -2261,7 +2310,9 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                     itemCount: displayCountries.length,
                     separatorBuilder: (_, _) => Divider(
                       height: 1,
-                      color: AppPalette.primary.withValues(alpha: 0.08),
+                      color: context.guideColors.primary.withValues(
+                        alpha: 0.08,
+                      ),
                     ),
                     itemBuilder: (context, index) {
                       final country = displayCountries[index];
@@ -2294,7 +2345,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle(
-                                    color: AppPalette.textPrimary,
+                                    color: context.guideColors.textPrimary,
                                     fontSize: profileScaled(
                                       context,
                                       15,
@@ -2308,9 +2359,9 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                                 ),
                               ),
                               if (isSelected)
-                                const Icon(
+                                Icon(
                                   Icons.check_circle_rounded,
-                                  color: AppPalette.primary,
+                                  color: context.guideColors.primary,
                                   size: 20,
                                 ),
                             ],
@@ -2341,14 +2392,16 @@ class _NoticeCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppPalette.primary.withValues(alpha: 0.14),
-            AppPalette.primary.withValues(alpha: 0.04),
+            context.guideColors.primary.withValues(alpha: 0.14),
+            context.guideColors.primary.withValues(alpha: 0.04),
           ],
         ),
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 20, min: 18, max: 24),
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
+        border: Border.all(
+          color: context.guideColors.primary.withValues(alpha: 0.24),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2357,11 +2410,13 @@ class _NoticeCard extends StatelessWidget {
             width: profileScaled(context, 40, min: 36, max: 44),
             height: profileScaled(context, 40, min: 36, max: 44),
             decoration: AppBoxDecoration(
-              color: _guideAmberGold.withValues(alpha: 0.14),
+              color: context.guideColors.warning.withValues(alpha: 0.14),
               borderRadius: AppBorderRadius.circular(14),
-              border: Border.all(color: _guideAmberGold.withValues(alpha: 0.2)),
+              border: Border.all(
+                color: context.guideColors.warning.withValues(alpha: 0.2),
+              ),
             ),
-            child: Icon(icon, color: _guideAmberGold),
+            child: Icon(icon, color: context.guideColors.warning),
           ),
           SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
           Expanded(
@@ -2408,27 +2463,27 @@ class _DarkDropdown extends StatelessWidget {
       label: label,
       child: DropdownButtonFormField<String>(
         initialValue: value,
-        icon: const Icon(Icons.expand_more_rounded, color: profileTextSoft),
+        icon: Icon(Icons.expand_more_rounded, color: profileTextSoft),
         dropdownColor: profileSurfaceSoft,
         style: AppTextStyle(
-          color: AppPalette.textPrimary,
+          color: context.guideColors.textPrimary,
           fontSize: profileScaled(context, 17, min: 15, max: 18),
           fontWeight: FontWeight.w600,
         ),
         decoration: AppInputDecoration(
           filled: true,
-          fillColor: _guideAmberInk,
+          fillColor: context.guideColors.inputFill,
           border: OutlineInputBorder(
             borderRadius: borderRadius,
-            borderSide: _guideAmberDropdownBorderSide(),
+            borderSide: _guideAmberDropdownBorderSide(context),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: borderRadius,
-            borderSide: _guideAmberDropdownBorderSide(),
+            borderSide: _guideAmberDropdownBorderSide(context),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: borderRadius,
-            borderSide: _guideAmberDropdownBorderSide(),
+            borderSide: _guideAmberDropdownBorderSide(context),
           ),
           contentPadding: AppEdgeInsets.symmetric(
             horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -2515,16 +2570,16 @@ class _TipCard extends StatelessWidget {
             width: profileScaled(context, 48, min: 42, max: 52),
             height: profileScaled(context, 48, min: 42, max: 52),
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: context.guideColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppPalette.primary),
+            child: Icon(icon, color: context.guideColors.primary),
           ),
           SizedBox(height: profileScaled(context, 16, min: 14, max: 18)),
           Text(
             title,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.guideColors.textPrimary,
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               fontWeight: FontWeight.w800,
             ),
@@ -2570,7 +2625,7 @@ class _UploadCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: AppPalette.transparent,
+          color: context.guideColors.transparent,
           child: InkWell(
             onTap: isUploading ? null : onTap,
             borderRadius: AppBorderRadius.circular(
@@ -2589,12 +2644,12 @@ class _UploadCard extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppPalette.primary.withValues(alpha: 0.12),
-                    AppPalette.white.withValues(alpha: 0.018),
+                    context.guideColors.primary.withValues(alpha: 0.12),
+                    context.guideColors.white.withValues(alpha: 0.018),
                   ],
                 ),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.34),
+                  color: context.guideColors.primary.withValues(alpha: 0.34),
                   width: 1.6,
                   strokeAlign: BorderSide.strokeAlignInside,
                 ),
@@ -2605,7 +2660,9 @@ class _UploadCard extends StatelessWidget {
                     width: profileScaled(context, 80, min: 60, max: 96),
                     height: profileScaled(context, 80, min: 60, max: 96),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.12),
+                      color: context.guideColors.primary.withValues(
+                        alpha: 0.12,
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: isUploading
@@ -2613,14 +2670,14 @@ class _UploadCard extends StatelessWidget {
                             padding: AppEdgeInsets.all(
                               profileScaled(context, 26, min: 20, max: 28),
                             ),
-                            child: const CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: AppPalette.primary,
+                              color: context.guideColors.primary,
                             ),
                           )
                         : Icon(
                             icon,
-                            color: AppPalette.primary,
+                            color: context.guideColors.primary,
                             size: profileScaled(context, 32, min: 24, max: 36),
                           ),
                   ),
@@ -2631,7 +2688,7 @@ class _UploadCard extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: context.guideColors.textPrimary,
                       fontSize: profileScaled(context, 20, min: 17, max: 22),
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
@@ -2654,8 +2711,8 @@ class _UploadCard extends StatelessWidget {
                   FilledButton(
                     onPressed: isUploading ? null : onTap,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppPalette.primary,
-                      foregroundColor: AppPalette.white,
+                      backgroundColor: context.guideColors.primary,
+                      foregroundColor: context.guideColors.textPrimary,
                       padding: AppEdgeInsets.symmetric(
                         horizontal: profileScaled(
                           context,
@@ -2681,7 +2738,7 @@ class _UploadCard extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle(
-                color: AppPalette.orangeLight40,
+                color: context.guideColors.danger,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -2717,7 +2774,7 @@ class _ConfirmCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: AppPalette.transparent,
+          color: context.guideColors.transparent,
           child: InkWell(
             onTap: () => onChanged(!value),
             borderRadius: borderRadius,
@@ -2727,22 +2784,24 @@ class _ConfirmCard extends StatelessWidget {
               ),
               decoration: hasError
                   ? AppBoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppPalette.redSurface03,
-                          AppPalette.redSurface01,
+                          context.guideColors.danger,
+                          context.guideColors.danger,
                         ],
                       ),
                       borderRadius: borderRadius,
                       border: Border.all(
-                        color: AppPalette.redSoft03,
+                        color: context.guideColors.danger,
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppPalette.black.withValues(alpha: 0.22),
+                          color: context.guideColors.black.withValues(
+                            alpha: 0.22,
+                          ),
                           blurRadius: profileScaled(
                             context,
                             24,
@@ -2755,7 +2814,7 @@ class _ConfirmCard extends StatelessWidget {
                           ),
                         ),
                         BoxShadow(
-                          color: AppPalette.redOverlayMuted01,
+                          color: context.guideColors.danger,
                           blurRadius: profileScaled(
                             context,
                             20,
@@ -2776,7 +2835,7 @@ class _ConfirmCard extends StatelessWidget {
                   Checkbox(
                     value: value,
                     onChanged: (next) => onChanged(next ?? false),
-                    activeColor: AppPalette.primary,
+                    activeColor: context.guideColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppBorderRadius.circular(8),
                     ),
@@ -2789,7 +2848,7 @@ class _ConfirmCard extends StatelessWidget {
                       child: Text(
                         text,
                         style: AppTextStyle(
-                          color: AppPalette.textPrimary,
+                          color: context.guideColors.textPrimary,
                           fontSize: profileScaled(
                             context,
                             14,
@@ -2815,7 +2874,7 @@ class _ConfirmCard extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle(
-                color: AppPalette.orangeLight40,
+                color: context.guideColors.danger,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -2845,7 +2904,7 @@ class _SectionHeaderRow extends StatelessWidget {
           child: Text(
             title,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.guideColors.textPrimary,
               fontSize: profileScaled(context, 24, min: 20, max: 28),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.8,
@@ -2856,7 +2915,7 @@ class _SectionHeaderRow extends StatelessWidget {
           TextButton(
             onPressed: onActionTap,
             style: TextButton.styleFrom(
-              foregroundColor: AppPalette.primary,
+              foregroundColor: context.guideColors.primary,
               textStyle: AppTextStyle(
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 fontWeight: FontWeight.w800,
@@ -2894,7 +2953,7 @@ class _OptionalCertificateCard extends StatelessWidget {
     );
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.guideColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: borderRadius,
@@ -2909,12 +2968,12 @@ class _OptionalCertificateCard extends StatelessWidget {
                 width: profileScaled(context, 42, min: 38, max: 46),
                 height: profileScaled(context, 42, min: 38, max: 46),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.white.withValues(alpha: 0.06),
+                  color: context.guideColors.white.withValues(alpha: 0.06),
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 12, min: 10, max: 12),
                   ),
                 ),
-                child: Icon(icon, color: AppPalette.primary),
+                child: Icon(icon, color: context.guideColors.primary),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
               Expanded(
@@ -2924,7 +2983,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.guideColors.textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -2945,7 +3004,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                       Text(
                         l10n.guideVerificationVerifiedUpload,
                         style: AppTextStyle(
-                          color: AppPalette.primary,
+                          color: context.guideColors.primary,
                           fontSize: profileScaled(
                             context,
                             12,
@@ -2963,7 +3022,9 @@ class _OptionalCertificateCard extends StatelessWidget {
                 isExpanded
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
-                color: isUploaded ? AppPalette.primary : profileTextSoft,
+                color: isUploaded
+                    ? context.guideColors.primary
+                    : profileTextSoft,
                 size: profileScaled(context, 24, min: 22, max: 26),
               ),
             ],
@@ -2988,7 +3049,7 @@ class _TimelineCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.schedule_outlined, color: AppPalette.primary),
+          Icon(Icons.schedule_outlined, color: context.guideColors.primary),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
           Expanded(
             child: Column(
@@ -2997,7 +3058,7 @@ class _TimelineCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.guideColors.textPrimary,
                     fontSize: profileScaled(context, 18, min: 16, max: 20),
                     fontWeight: FontWeight.w800,
                   ),
@@ -3044,14 +3105,14 @@ class _ReviewDocumentCard extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.white.withValues(alpha: 0.09),
-                  AppPalette.white.withValues(alpha: 0.02),
+                  context.guideColors.white.withValues(alpha: 0.09),
+                  context.guideColors.white.withValues(alpha: 0.02),
                 ],
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.description_outlined,
-              color: AppPalette.primary,
+              color: context.guideColors.primary,
             ),
           ),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -3062,7 +3123,7 @@ class _ReviewDocumentCard extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyle(
-                    color: AppPalette.primary,
+                    color: context.guideColors.primary,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -3072,7 +3133,7 @@ class _ReviewDocumentCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.guideColors.textPrimary,
                     fontSize: profileScaled(context, 17, min: 15, max: 18),
                     fontWeight: FontWeight.w800,
                     height: 1.2,
@@ -3084,14 +3145,14 @@ class _ReviewDocumentCard extends StatelessWidget {
                     Container(
                       width: profileScaled(context, 18, min: 16, max: 18),
                       height: profileScaled(context, 18, min: 16, max: 18),
-                      decoration: const AppBoxDecoration(
-                        color: AppPalette.greenMuted02,
+                      decoration: AppBoxDecoration(
+                        color: context.guideColors.success,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.check,
                         size: 12,
-                        color: AppPalette.greenInk03,
+                        color: context.guideColors.background,
                       ),
                     ),
                     SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
@@ -3189,8 +3250,8 @@ class _GuideSolidActionButton extends StatelessWidget {
     return FilledButton(
       onPressed: busy ? null : onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: AppPalette.white,
+        backgroundColor: context.guideColors.primary,
+        foregroundColor: context.guideColors.textPrimary,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
@@ -3205,9 +3266,9 @@ class _GuideSolidActionButton extends StatelessWidget {
           ? SizedBox(
               width: profileScaled(context, 18, min: 16, max: 18),
               height: profileScaled(context, 18, min: 16, max: 18),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppPalette.white,
+                color: context.guideColors.textPrimary,
               ),
             )
           : Text(
@@ -3253,7 +3314,7 @@ class _AmberGradientButton extends StatelessWidget {
             enabled: enabled,
           ),
           child: Material(
-            color: AppPalette.transparent,
+            color: context.guideColors.transparent,
             borderRadius: AppBorderRadius.circular(999),
             child: InkWell(
               onTap: enabled ? onPressed : null,
@@ -3272,9 +3333,9 @@ class _AmberGradientButton extends StatelessWidget {
                         SizedBox(
                           width: profileScaled(context, 22, min: 20, max: 24),
                           height: profileScaled(context, 22, min: 20, max: 24),
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            color: AppPalette.white,
+                            color: context.guideColors.white,
                           ),
                         )
                       else ...[
@@ -3285,7 +3346,7 @@ class _AmberGradientButton extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: AppTextStyle(
-                              color: AppPalette.white,
+                              color: context.guideColors.white,
                               fontSize: profileScaled(
                                 context,
                                 15,
@@ -3300,9 +3361,9 @@ class _AmberGradientButton extends StatelessWidget {
                         SizedBox(
                           width: profileScaled(context, 8, min: 6, max: 8),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.arrow_forward_rounded,
-                          color: AppPalette.white,
+                          color: context.guideColors.white,
                         ),
                       ],
                     ],
@@ -3352,7 +3413,7 @@ class _StatusScreen extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.guideVerificationTitle,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.guideColors.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -3362,7 +3423,10 @@ class _StatusScreen extends StatelessWidget {
             ],
           ),
         ),
-        Divider(color: AppPalette.white.withValues(alpha: 0.06), height: 1),
+        Divider(
+          color: context.guideColors.white.withValues(alpha: 0.06),
+          height: 1,
+        ),
         Expanded(
           child: Padding(
             padding: AppEdgeInsets.all(padding),
@@ -3372,9 +3436,10 @@ class _StatusScreen extends StatelessWidget {
                   title: title,
                   subtitle: subtitle,
                   variant: 3,
-                  gradientColors: _guideExcursionAmberStatusGradientColors,
-                  accentColor: _guideExcursionAmberStatusAccent,
-                  overlayInkColor: _guideExcursionAmberStatusInk,
+                  gradientColors:
+                      context.guideColors.excursionAmberStatusGradientColors,
+                  accentColor: context.guideColors.primary,
+                  overlayInkColor: context.guideColors.heroOverlayInk,
                   overlayMidAlpha: 0.08,
                   overlayEndAlpha: 0.32,
                 ),

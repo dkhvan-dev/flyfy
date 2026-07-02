@@ -3,6 +3,24 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'activity payment screen uses adaptive V2 colors instead of legacy palette',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_payment_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import 'package:inflap/core/ui/app_design_system.dart';"),
+      );
+      expect(source, contains('AppDesignSystem.themeFor(context)'));
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, contains('colors.screenGradientColors'));
+      expect(source, isNot(contains('AppPalette.')));
+    },
+  );
+
   test('activity payment screen is clearly marked as mock checkout', () async {
     final source = await File(
       'lib/screens/activities/activity_payment_screen.dart',

@@ -136,26 +136,23 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Scaffold(
-      backgroundColor: StoryPalette.backgroundDeep,
+      backgroundColor: colors.backgroundDeep,
       appBar: AppBar(
-        backgroundColor: StoryPalette.backgroundDeep,
-        foregroundColor: StoryPalette.text,
+        backgroundColor: colors.backgroundDeep,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
         centerTitle: true,
         title: Text(l10n.myStoryArchiveTitle),
       ),
       body: DecoratedBox(
-        decoration: const AppBoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              StoryPalette.backgroundTop,
-              StoryPalette.background,
-              StoryPalette.backgroundDeep,
-            ],
+            colors: colors.screenGradientColors,
           ),
         ),
         child: SafeArea(
@@ -171,8 +168,8 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
               ),
               Expanded(
                 child: RefreshIndicator(
-                  color: AppPalette.primary,
-                  backgroundColor: StoryPalette.surfaceRaised,
+                  color: colors.primary,
+                  backgroundColor: colors.surfaceRaised,
                   onRefresh: _refreshCurrentTab,
                   child: _buildBody(context),
                 ),
@@ -186,13 +183,12 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
 
   Widget _buildBody(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final state = _currentState;
     final isArchive = _selectedTab == _StoryArchiveTab.archive;
 
     if (state.isLoading && state.stories.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppPalette.primary),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.primary));
     }
 
     if (state.error != null && state.stories.isEmpty) {
@@ -230,7 +226,7 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
             child: Text(
               formatStoryDate(context, group.date),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -275,7 +271,7 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
                   ? l10n.storyArchiveSubtitle
                   : l10n.storyArchiveActiveSubtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: StoryPalette.textSoft,
+                color: colors.textSecondary,
                 height: 1.35,
               ),
             ),
@@ -289,17 +285,20 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
               child: FilledButton.icon(
                 onPressed: state.isLoadingMore ? null : _loadMoreCurrentTab,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  disabledBackgroundColor: AppPalette.primary.withValues(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.textPrimary,
+                  disabledBackgroundColor: colors.primary.withValues(
                     alpha: 0.32,
                   ),
-                  foregroundColor: AppPalette.warmInk93,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 icon: state.isLoadingMore
-                    ? const SizedBox.square(
+                    ? SizedBox.square(
                         dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.textPrimary,
+                        ),
                       )
                     : const Icon(Icons.expand_more_rounded),
                 label: Text(l10n.storyArchiveLoadMoreAction),
@@ -363,12 +362,13 @@ class _StoryArchiveTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: StoryPalette.surfaceRaised.withValues(alpha: 0.68),
+        color: colors.surfaceRaised.withValues(alpha: 0.68),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -409,25 +409,27 @@ class _StoryArchiveTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       decoration: AppBoxDecoration(
-        color: selected ? AppPalette.primary : AppPalette.transparent,
+        color: selected ? colors.primary : colors.transparent,
         borderRadius: AppBorderRadius.circular(14),
-        boxShadow: selected
+        boxShadow: selected && isDark
             ? [
                 BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.28),
+                  color: colors.primary.withValues(alpha: 0.28),
                   blurRadius: 14,
                   offset: const Offset(0, 6),
                 ),
               ]
-            : null,
+            : const [],
       ),
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           borderRadius: AppBorderRadius.circular(14),
           onTap: onTap,
@@ -442,7 +444,7 @@ class _StoryArchiveTabButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleSmall?.copyWith(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -468,26 +470,28 @@ class _ArchivedStoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
         child: Ink(
           decoration: AppBoxDecoration(
-            color: StoryPalette.surfaceCard,
+            color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.22),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.24),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            border: Border.all(color: colors.borderPrimary),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.24),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : const [],
           ),
           child: ClipRRect(
             borderRadius: AppBorderRadius.circular(18),
@@ -501,9 +505,9 @@ class _ArchivedStoryTile extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.black.withValues(alpha: 0.12),
-                        AppPalette.black.withValues(alpha: 0.1),
-                        AppPalette.black.withValues(alpha: 0.78),
+                        colors.black.withValues(alpha: 0.12),
+                        colors.black.withValues(alpha: 0.1),
+                        colors.black.withValues(alpha: 0.78),
                       ],
                       stops: const [0, 0.42, 1],
                     ),
@@ -522,7 +526,7 @@ class _ArchivedStoryTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.titleSmall?.copyWith(
-                          color: AppPalette.white,
+                          color: colors.white,
                           fontWeight: FontWeight.w900,
                           height: 1.12,
                         ),
@@ -533,7 +537,7 @@ class _ArchivedStoryTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.labelSmall?.copyWith(
-                          color: AppPalette.white.withValues(alpha: 0.72),
+                          color: colors.white.withValues(alpha: 0.72),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -563,6 +567,7 @@ class _ArchiveMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -579,11 +584,9 @@ class _ArchiveMessage extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 420),
               child: DecoratedBox(
                 decoration: AppBoxDecoration(
-                  color: StoryPalette.surfaceRaised.withValues(alpha: 0.86),
+                  color: colors.surfaceRaised.withValues(alpha: 0.86),
                   borderRadius: AppBorderRadius.circular(24),
-                  border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.22),
-                  ),
+                  border: Border.all(color: colors.borderPrimary),
                 ),
                 child: Padding(
                   padding: const AppEdgeInsets.all(24),
@@ -595,16 +598,16 @@ class _ArchiveMessage extends StatelessWidget {
                         height: 58,
                         decoration: AppBoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppPalette.primary.withValues(alpha: 0.16),
+                          color: colors.primary.withValues(alpha: 0.16),
                         ),
-                        child: Icon(icon, color: AppPalette.primary, size: 30),
+                        child: Icon(icon, color: colors.primary, size: 30),
                       ),
                       const SizedBox(height: 18),
                       Text(
                         title,
                         textAlign: TextAlign.center,
                         style: textTheme.titleLarge?.copyWith(
-                          color: StoryPalette.text,
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -613,7 +616,7 @@ class _ArchiveMessage extends StatelessWidget {
                         subtitle,
                         textAlign: TextAlign.center,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: StoryPalette.textSoft,
+                          color: colors.textSecondary,
                           height: 1.38,
                         ),
                       ),

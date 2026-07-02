@@ -41,4 +41,41 @@ void main() {
     expect(source, contains('onEvent: _handleMapEvent'));
     expect(source, isNot(contains('onStyleLoaded:')));
   });
+
+  test(
+    'app map card uses adaptive v2 colors instead of legacy palette',
+    () async {
+      final source = await File(
+        'lib/shared/widgets/app_map_card.dart',
+      ).readAsString();
+
+      expect(source, contains('app_design_system.dart'));
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, contains('_FallbackMapPainter(colors: colors)'));
+      expect(
+        source,
+        contains('class _FallbackMapPainter extends CustomPainter'),
+      );
+      expect(source, contains('final AppColors colors;'));
+      expect(source, contains('color: colors.primary'));
+      expect(source, contains('color: colors.surface'));
+      expect(source, isNot(contains('AppPalette.')));
+    },
+  );
+
+  test('app map card only paints internal shadow scrim in dark v2', () async {
+    final source = await File(
+      'lib/shared/widgets/app_map_card.dart',
+    ).readAsString();
+
+    expect(
+      source,
+      contains(
+        'final isDarkV2 = Theme.of(context).brightness == Brightness.dark;',
+      ),
+    );
+    expect(source, contains('if (isDarkV2)'));
+    expect(source, contains('colors.black.withValues(alpha: 0.10)'));
+    expect(source, contains('colors.black.withValues(alpha: 0.18)'));
+  });
 }

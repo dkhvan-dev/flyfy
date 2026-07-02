@@ -15,19 +15,34 @@ import '../../providers/routing_provider.dart';
 import '../../shared/reference/app_country_names.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
-abstract final class _ChecklistAmber {
-  static const backgroundTop = AppPalette.warmSurface43;
-  static const backgroundBottom = AppPalette.warmInk10;
-  static const surface = AppPalette.warmSurface24;
-  static const surfaceElevated = AppPalette.warmSurface58;
-  static const surfacePressed = AppPalette.warmInk98;
-  static const itemSurface = AppPalette.warmInk106;
-  static const border = AppPalette.warmSurfaceHigh33;
-  static const amber = AppPalette.primary;
-  static const amberSoft = AppPalette.amberSoft15;
-  static const textPrimary = AppPalette.amberWash08;
-  static const textSecondary = AppPalette.amberLight02;
-  static const textMuted = AppPalette.amberMuted02;
+final class _ChecklistAmber {
+  const _ChecklistAmber._(this.colors);
+
+  final AppColors colors;
+
+  static _ChecklistAmber of(BuildContext context) {
+    return _ChecklistAmber._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get backgroundTop => colors.backgroundDeep;
+  Color get backgroundBottom => colors.background;
+  Color get backgroundWarm => colors.backgroundWarm;
+  List<Color> get screenGradientColors => colors.screenGradientColors;
+  Color get surface => colors.surface;
+  Color get surfaceElevated => colors.surfaceRaised;
+  Color get surfacePressed => colors.surfaceHigh;
+  Color get itemSurface => colors.surfaceRaised;
+  Color get border => colors.border;
+  Color get amber => colors.primary;
+  Color get amberSoft => colors.primarySoft;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get danger => colors.danger;
+  Color get success => colors.success;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
 }
 
 enum _ChecklistListFilter { all, upcoming, manual, activities, excursions }
@@ -118,110 +133,110 @@ class _TravelChecklistListScreenState extends State<TravelChecklistListScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final palette = _ChecklistAmber.of(context);
 
-    return Scaffold(
-      backgroundColor: _ChecklistAmber.backgroundBottom,
-      floatingActionButton: FloatingActionButton(
-        key: const ValueKey('travel-checklist-list-create'),
-        onPressed: _createPreparation,
-        tooltip: l10n.travelChecklistQuickPrepSubmit,
-        backgroundColor: _ChecklistAmber.amber,
-        foregroundColor: AppPalette.textPrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppBorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.add_rounded),
-      ),
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _ChecklistAmber.backgroundTop,
-              AppPalette.backgroundWarm,
-              _ChecklistAmber.backgroundBottom,
-            ],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: palette.backgroundBottom,
+        floatingActionButton: FloatingActionButton(
+          key: const ValueKey('travel-checklist-list-create'),
+          onPressed: _createPreparation,
+          tooltip: l10n.travelChecklistQuickPrepSubmit,
+          backgroundColor: palette.amber,
+          foregroundColor: palette.textPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppBorderRadius.circular(16),
           ),
+          child: Icon(Icons.add_rounded),
         ),
-        child: SafeArea(
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding = constraints.maxWidth < 340
-                  ? 10.0
-                  : constraints.maxWidth < 390
-                  ? 14.0
-                  : 18.0;
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: palette.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final horizontalPadding = constraints.maxWidth < 340
+                    ? 10.0
+                    : constraints.maxWidth < 390
+                    ? 14.0
+                    : 18.0;
 
-              return CustomScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                slivers: [
-                  SliverPadding(
-                    padding: AppEdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      constraints.maxWidth < 390 ? 18 : 24,
-                      horizontalPadding,
-                      32,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 720),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _Header(
-                                title: l10n.travelChecklistRecentTitle,
-                                subtitle: l10n.travelChecklistRecentMessage,
-                              ),
-                              const SizedBox(height: 18),
-                              FutureBuilder<List<CachedTravelChecklistEntry>>(
-                                future: _entriesFuture,
-                                builder: (context, snapshot) {
-                                  final entries =
-                                      snapshot.data ??
-                                      const <CachedTravelChecklistEntry>[];
-                                  if (snapshot.connectionState ==
-                                          ConnectionState.waiting ||
-                                      snapshot.connectionState ==
-                                          ConnectionState.active) {
-                                    return const _ChecklistListLoadingPanel();
-                                  }
-                                  if (snapshot.hasError) {
-                                    return _ChecklistErrorView(
-                                      message: l10n.travelChecklistLoadFailed,
-                                      retryLabel: l10n.travelChecklistRetry,
-                                      onRetry: _reload,
+                return CustomScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
+                    SliverPadding(
+                      padding: AppEdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        constraints.maxWidth < 390 ? 18 : 24,
+                        horizontalPadding,
+                        32,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 720),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _Header(
+                                  title: l10n.travelChecklistRecentTitle,
+                                  subtitle: l10n.travelChecklistRecentMessage,
+                                ),
+                                const SizedBox(height: 18),
+                                FutureBuilder<List<CachedTravelChecklistEntry>>(
+                                  future: _entriesFuture,
+                                  builder: (context, snapshot) {
+                                    final entries =
+                                        snapshot.data ??
+                                        const <CachedTravelChecklistEntry>[];
+                                    if (snapshot.connectionState ==
+                                            ConnectionState.waiting ||
+                                        snapshot.connectionState ==
+                                            ConnectionState.active) {
+                                      return const _ChecklistListLoadingPanel();
+                                    }
+                                    if (snapshot.hasError) {
+                                      return _ChecklistErrorView(
+                                        message: l10n.travelChecklistLoadFailed,
+                                        retryLabel: l10n.travelChecklistRetry,
+                                        onRetry: _reload,
+                                      );
+                                    }
+                                    if (entries.isEmpty) {
+                                      return _ChecklistListEmptyPanel(
+                                        onCreate: _createPreparation,
+                                      );
+                                    }
+                                    return _SavedChecklistsPanel(
+                                      entries: entries,
+                                      selectedFilter: _selectedFilter,
+                                      onFilterChanged: (filter) {
+                                        setState(() {
+                                          _selectedFilter = filter;
+                                        });
+                                      },
+                                      onOpen: _openChecklist,
                                     );
-                                  }
-                                  if (entries.isEmpty) {
-                                    return _ChecklistListEmptyPanel(
-                                      onCreate: _createPreparation,
-                                    );
-                                  }
-                                  return _SavedChecklistsPanel(
-                                    entries: entries,
-                                    selectedFilter: _selectedFilter,
-                                    onFilterChanged: (filter) {
-                                      setState(() {
-                                        _selectedFilter = filter;
-                                      });
-                                    },
-                                    onOpen: _openChecklist,
-                                  );
-                                },
-                              ),
-                            ],
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -706,7 +721,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: _ChecklistAmber.of(context).transparent,
       builder: (context) => const _CustomChecklistItemSheet(),
     );
     if (draft == null || !mounted) return;
@@ -719,7 +734,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: _ChecklistAmber.of(context).transparent,
       builder: (context) => _CustomChecklistItemSheet(item: item),
     );
     if (draft == null || !mounted) return;
@@ -829,21 +844,21 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
         ? Icons.error_outline_rounded
         : Icons.check_circle_rounded;
     final accentColor = isError
-        ? AppPalette.redSoft11
-        : _ChecklistAmber.amberSoft;
+        ? _ChecklistAmber.of(context).danger
+        : _ChecklistAmber.of(context).amberSoft;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: _ChecklistAmber.surfaceElevated,
+          backgroundColor: _ChecklistAmber.of(context).surfaceElevated,
           elevation: 12,
           margin: const AppEdgeInsets.fromLTRB(16, 0, 16, 18),
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(8),
             side: BorderSide(
-              color: _ChecklistAmber.amber.withValues(alpha: 0.42),
+              color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.42),
             ),
           ),
           content: Row(
@@ -853,8 +868,8 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
               Expanded(
                 child: Text(
                   message,
-                  style: const AppTextStyle(
-                    color: _ChecklistAmber.textPrimary,
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     height: 1.25,
@@ -872,81 +887,86 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final routeArgs = _routeArgs;
+    final palette = _ChecklistAmber.of(context);
 
-    return Scaffold(
-      backgroundColor: _ChecklistAmber.backgroundBottom,
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _ChecklistAmber.backgroundTop,
-              AppPalette.backgroundWarm,
-              _ChecklistAmber.backgroundBottom,
-            ],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: palette.backgroundBottom,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: palette.screenGradientColors,
+            ),
           ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: routeArgs == null
-              ? _MissingChecklistContextView(
-                  referenceApi: _referenceApi,
-                  onCreatePreparation: _startQuickPreparation,
-                )
-              : FutureBuilder<_ChecklistLoadResult>(
-                  future: _checklistFuture,
-                  builder: (context, snapshot) {
-                    final result = snapshot.data;
-                    final content = result != null
-                        ? _ChecklistContent(
-                            scrollController: _scrollController,
-                            routeArgs: routeArgs,
-                            checklist: result.checklist,
-                            isOffline: result.isOffline,
-                            isReadOnly: routeArgs.isPreview,
-                            carrySearchController: _carrySearchController,
-                            checklistItemSearchController:
-                                _checklistItemSearchController,
-                            checklistItemSearchQuery: _checklistItemSearchQuery,
-                            carryResults: _carryResults,
-                            carrySearchError: _carrySearchError,
-                            isSearchingCarryItem: _isSearchingCarryItem,
-                            isOptimizingDayRoute: _isOptimizingDayRoute,
-                            optimizedItinerary: _optimizedItinerary,
-                            optimizedItineraryError: _optimizedItineraryError,
-                            updatingChecklistItemIds: _updatingChecklistItemIds,
-                            submittingFeedbackItemIds:
-                                _submittingFeedbackItemIds,
-                            updatingCustomItemIds: _updatingCustomItemIds,
-                            deletingCustomItemIds: _deletingCustomItemIds,
-                            selectedFeedbackByItemId: _selectedFeedbackByItemId,
-                            isSavingCustomItem: _isSavingCustomItem,
-                            onSearchCarryItem: _searchCarryItem,
-                            onOptimizeDayRoute: _optimizeDayRoute,
-                            onChecklistItemSearchChanged:
-                                _setChecklistItemSearchQuery,
-                            onToggleChecklistItem: _toggleChecklistItem,
-                            onSubmitItemFeedback: _submitChecklistItemFeedback,
-                            onAddCustomItem: _openCreateCustomItemSheet,
-                            onToggleCustomItem: _toggleCustomChecklistItem,
-                            onEditCustomItem: _openEditCustomItemSheet,
-                            onDeleteCustomItem: _deleteCustomChecklistItem,
-                          )
-                        : switch (snapshot.connectionState) {
-                            ConnectionState.waiting || ConnectionState.active =>
-                              const _ChecklistLoadingView(),
-                            _ when snapshot.hasError => _ChecklistErrorView(
-                              message: l10n.travelChecklistLoadFailed,
-                              retryLabel: l10n.travelChecklistRetry,
-                              onRetry: _reloadChecklist,
-                            ),
-                            _ => const _ChecklistLoadingView(),
-                          };
+          child: SafeArea(
+            bottom: false,
+            child: routeArgs == null
+                ? _MissingChecklistContextView(
+                    referenceApi: _referenceApi,
+                    onCreatePreparation: _startQuickPreparation,
+                  )
+                : FutureBuilder<_ChecklistLoadResult>(
+                    future: _checklistFuture,
+                    builder: (context, snapshot) {
+                      final result = snapshot.data;
+                      final content = result != null
+                          ? _ChecklistContent(
+                              scrollController: _scrollController,
+                              routeArgs: routeArgs,
+                              checklist: result.checklist,
+                              isOffline: result.isOffline,
+                              isReadOnly: routeArgs.isPreview,
+                              carrySearchController: _carrySearchController,
+                              checklistItemSearchController:
+                                  _checklistItemSearchController,
+                              checklistItemSearchQuery:
+                                  _checklistItemSearchQuery,
+                              carryResults: _carryResults,
+                              carrySearchError: _carrySearchError,
+                              isSearchingCarryItem: _isSearchingCarryItem,
+                              isOptimizingDayRoute: _isOptimizingDayRoute,
+                              optimizedItinerary: _optimizedItinerary,
+                              optimizedItineraryError: _optimizedItineraryError,
+                              updatingChecklistItemIds:
+                                  _updatingChecklistItemIds,
+                              submittingFeedbackItemIds:
+                                  _submittingFeedbackItemIds,
+                              updatingCustomItemIds: _updatingCustomItemIds,
+                              deletingCustomItemIds: _deletingCustomItemIds,
+                              selectedFeedbackByItemId:
+                                  _selectedFeedbackByItemId,
+                              isSavingCustomItem: _isSavingCustomItem,
+                              onSearchCarryItem: _searchCarryItem,
+                              onOptimizeDayRoute: _optimizeDayRoute,
+                              onChecklistItemSearchChanged:
+                                  _setChecklistItemSearchQuery,
+                              onToggleChecklistItem: _toggleChecklistItem,
+                              onSubmitItemFeedback:
+                                  _submitChecklistItemFeedback,
+                              onAddCustomItem: _openCreateCustomItemSheet,
+                              onToggleCustomItem: _toggleCustomChecklistItem,
+                              onEditCustomItem: _openEditCustomItemSheet,
+                              onDeleteCustomItem: _deleteCustomChecklistItem,
+                            )
+                          : switch (snapshot.connectionState) {
+                              ConnectionState.waiting ||
+                              ConnectionState.active =>
+                                const _ChecklistLoadingView(),
+                              _ when snapshot.hasError => _ChecklistErrorView(
+                                message: l10n.travelChecklistLoadFailed,
+                                retryLabel: l10n.travelChecklistRetry,
+                                onRetry: _reloadChecklist,
+                              ),
+                              _ => const _ChecklistLoadingView(),
+                            };
 
-                    return content;
-                  },
-                ),
+                      return content;
+                    },
+                  ),
+          ),
         ),
       ),
     );
@@ -1155,8 +1175,8 @@ class _Header extends StatelessWidget {
             if (canPop) ...[
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                color: _ChecklistAmber.textPrimary,
+                icon: Icon(Icons.arrow_back_ios_new_rounded),
+                color: _ChecklistAmber.of(context).textPrimary,
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
@@ -1168,7 +1188,7 @@ class _Header extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: _ChecklistAmber.textPrimary,
+                  color: _ChecklistAmber.of(context).textPrimary,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   height: 1.08,
@@ -1182,8 +1202,8 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             subtitle,
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textSecondary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textSecondary,
               fontSize: 14,
               height: 1.35,
               letterSpacing: 0,
@@ -1467,8 +1487,10 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 8),
                                 Text(
                                   l10n.travelChecklistMissingContextMessage,
-                                  style: const AppTextStyle(
-                                    color: _ChecklistAmber.textSecondary,
+                                  style: AppTextStyle(
+                                    color: _ChecklistAmber.of(
+                                      context,
+                                    ).textSecondary,
                                     fontSize: 14,
                                     height: 1.35,
                                     letterSpacing: 0,
@@ -1477,8 +1499,10 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 16),
                                 Text(
                                   l10n.travelChecklistQuickPrepTitle,
-                                  style: const AppTextStyle(
-                                    color: _ChecklistAmber.textPrimary,
+                                  style: AppTextStyle(
+                                    color: _ChecklistAmber.of(
+                                      context,
+                                    ).textPrimary,
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
                                     height: 1.15,
@@ -1488,8 +1512,10 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 8),
                                 Text(
                                   l10n.travelChecklistQuickPrepMessage,
-                                  style: const AppTextStyle(
-                                    color: _ChecklistAmber.textSecondary,
+                                  style: AppTextStyle(
+                                    color: _ChecklistAmber.of(
+                                      context,
+                                    ).textSecondary,
                                     fontSize: 14,
                                     height: 1.35,
                                     letterSpacing: 0,
@@ -1741,11 +1767,15 @@ class _MissingChecklistContextViewState
                                   onChanged: (value) => setState(() {
                                     _hasChildren = value;
                                   }),
-                                  activeThumbColor: _ChecklistAmber.amber,
+                                  activeThumbColor: _ChecklistAmber.of(
+                                    context,
+                                  ).amber,
                                   title: Text(
                                     l10n.travelChecklistQuickPrepWithChildren,
-                                    style: const AppTextStyle(
-                                      color: _ChecklistAmber.textPrimary,
+                                    style: AppTextStyle(
+                                      color: _ChecklistAmber.of(
+                                        context,
+                                      ).textPrimary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
                                       height: 1.25,
@@ -1757,13 +1787,17 @@ class _MissingChecklistContextViewState
                                 FilledButton.icon(
                                   key: const ValueKey('quick-prep-submit'),
                                   onPressed: _submit,
-                                  icon: const Icon(Icons.checklist_rtl_rounded),
+                                  icon: Icon(Icons.checklist_rtl_rounded),
                                   label: Text(
                                     l10n.travelChecklistQuickPrepSubmit,
                                   ),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: _ChecklistAmber.amber,
-                                    foregroundColor: AppPalette.textPrimary,
+                                    backgroundColor: _ChecklistAmber.of(
+                                      context,
+                                    ).amber,
+                                    foregroundColor: _ChecklistAmber.of(
+                                      context,
+                                    ).textPrimary,
                                     minimumSize: const Size.fromHeight(48),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: AppBorderRadius.circular(8),
@@ -1773,8 +1807,10 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 18),
                                 Text(
                                   l10n.travelChecklistQuickPrepAlternativeTitle,
-                                  style: const AppTextStyle(
-                                    color: _ChecklistAmber.textMuted,
+                                  style: AppTextStyle(
+                                    color: _ChecklistAmber.of(
+                                      context,
+                                    ).textMuted,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                     height: 1.2,
@@ -1922,12 +1958,14 @@ class _ChecklistListLoadingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _SurfacePanel(
+    return _SurfacePanel(
       prominent: true,
       child: Padding(
         padding: AppEdgeInsets.symmetric(vertical: 20),
         child: Center(
-          child: CircularProgressIndicator(color: _ChecklistAmber.amber),
+          child: CircularProgressIndicator(
+            color: _ChecklistAmber.of(context).amber,
+          ),
         ),
       ),
     );
@@ -1955,8 +1993,8 @@ class _ChecklistListEmptyPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             l10n.travelChecklistRecentEmptyMessage,
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textSecondary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textSecondary,
               fontSize: 13,
               height: 1.35,
               letterSpacing: 0,
@@ -1965,15 +2003,15 @@ class _ChecklistListEmptyPanel extends StatelessWidget {
           const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: onCreate,
-            icon: const Icon(Icons.add_task_rounded),
+            icon: Icon(Icons.add_task_rounded),
             label: Text(
               l10n.travelChecklistQuickPrepSubmit,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: _ChecklistAmber.amber,
-              foregroundColor: AppPalette.textPrimary,
+              backgroundColor: _ChecklistAmber.of(context).amber,
+              foregroundColor: _ChecklistAmber.of(context).textPrimary,
               minimumSize: const Size(0, 46),
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(8),
@@ -2021,8 +2059,8 @@ class _SavedChecklistsPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             l10n.travelChecklistRecentMessage,
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textSecondary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textSecondary,
               fontSize: 13,
               height: 1.35,
               letterSpacing: 0,
@@ -2144,19 +2182,19 @@ class _ChecklistListFilterChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: AppTextStyle(
           color: selected
-              ? AppPalette.textPrimary
-              : _ChecklistAmber.textSecondary,
+              ? _ChecklistAmber.of(context).textPrimary
+              : _ChecklistAmber.of(context).textSecondary,
           fontWeight: FontWeight.w900,
           fontSize: 12.5,
           letterSpacing: 0,
         ),
       ),
-      backgroundColor: _ChecklistAmber.surfacePressed,
-      selectedColor: _ChecklistAmber.amberSoft,
+      backgroundColor: _ChecklistAmber.of(context).surfacePressed,
+      selectedColor: _ChecklistAmber.of(context).amberSoft,
       side: BorderSide(
         color: selected
-            ? _ChecklistAmber.amberSoft
-            : _ChecklistAmber.border.withValues(alpha: 0.48),
+            ? _ChecklistAmber.of(context).amberSoft
+            : _ChecklistAmber.of(context).border.withValues(alpha: 0.48),
       ),
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2175,10 +2213,10 @@ class _ChecklistFilterEmptyPanel extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.itemSurface.withValues(alpha: 0.56),
+        color: _ChecklistAmber.of(context).itemSurface.withValues(alpha: 0.56),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.border.withValues(alpha: 0.28),
+          color: _ChecklistAmber.of(context).border.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
@@ -2188,8 +2226,8 @@ class _ChecklistFilterEmptyPanel extends StatelessWidget {
           children: [
             Text(
               l10n.travelChecklistFilterEmptyTitle,
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textPrimary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -2198,8 +2236,8 @@ class _ChecklistFilterEmptyPanel extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               l10n.travelChecklistFilterEmptyMessage,
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textSecondary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textSecondary,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
                 height: 1.35,
@@ -2234,7 +2272,7 @@ class _RecentChecklistTile extends StatelessWidget {
     );
 
     return Material(
-      color: _ChecklistAmber.itemSurface.withValues(alpha: 0.72),
+      color: _ChecklistAmber.of(context).itemSurface.withValues(alpha: 0.72),
       borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         key: ValueKey('travel-checklist-recent-${routeArgs.normalizedTripId}'),
@@ -2246,14 +2284,16 @@ class _RecentChecklistTile extends StatelessWidget {
             children: [
               DecoratedBox(
                 decoration: AppBoxDecoration(
-                  color: _ChecklistAmber.amber.withValues(alpha: 0.18),
+                  color: _ChecklistAmber.of(
+                    context,
+                  ).amber.withValues(alpha: 0.18),
                   borderRadius: AppBorderRadius.circular(8),
                 ),
-                child: const Padding(
+                child: Padding(
                   padding: AppEdgeInsets.all(9),
                   child: Icon(
                     Icons.luggage_rounded,
-                    color: _ChecklistAmber.amberSoft,
+                    color: _ChecklistAmber.of(context).amberSoft,
                     size: 21,
                   ),
                 ),
@@ -2267,8 +2307,8 @@ class _RecentChecklistTile extends StatelessWidget {
                       destination,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _ChecklistAmber.textPrimary,
+                      style: AppTextStyle(
+                        color: _ChecklistAmber.of(context).textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                         height: 1.15,
@@ -2289,8 +2329,8 @@ class _RecentChecklistTile extends StatelessWidget {
                       '$dates · ${l10n.travelChecklistReadiness} $readiness%',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _ChecklistAmber.textSecondary,
+                      style: AppTextStyle(
+                        color: _ChecklistAmber.of(context).textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
@@ -2304,9 +2344,9 @@ class _RecentChecklistTile extends StatelessWidget {
               IconButton(
                 tooltip: l10n.travelChecklistOpen,
                 onPressed: () => onOpen(routeArgs),
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_forward_rounded,
-                  color: _ChecklistAmber.amberSoft,
+                  color: _ChecklistAmber.of(context).amberSoft,
                 ),
               ),
             ],
@@ -2360,8 +2400,8 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
               onChanged: onChanged,
               textCapitalization: textCapitalization,
               autocorrect: false,
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textPrimary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -2369,40 +2409,48 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
               decoration: AppInputDecoration(
                 labelText: label,
                 hintText: hint,
-                labelStyle: const AppTextStyle(
-                  color: _ChecklistAmber.textSecondary,
+                labelStyle: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textSecondary,
                 ),
                 hintStyle: AppTextStyle(
-                  color: _ChecklistAmber.textMuted.withValues(alpha: 0.8),
+                  color: _ChecklistAmber.of(
+                    context,
+                  ).textMuted.withValues(alpha: 0.8),
                 ),
                 filled: true,
-                fillColor: _ChecklistAmber.surfaceElevated.withValues(
-                  alpha: 0.72,
-                ),
-                suffixIcon: const Icon(
+                fillColor: _ChecklistAmber.of(
+                  context,
+                ).surfaceElevated.withValues(alpha: 0.72),
+                suffixIcon: Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  color: _ChecklistAmber.amberSoft,
+                  color: _ChecklistAmber.of(context).amberSoft,
                 ),
                 errorMaxLines: 3,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(8),
                   borderSide: BorderSide(
-                    color: _ChecklistAmber.border.withValues(alpha: 0.5),
+                    color: _ChecklistAmber.of(
+                      context,
+                    ).border.withValues(alpha: 0.5),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: _ChecklistAmber.amberSoft,
+                  borderSide: BorderSide(
+                    color: _ChecklistAmber.of(context).amberSoft,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppPalette.redSoft09),
+                  borderSide: BorderSide(
+                    color: _ChecklistAmber.of(context).danger,
+                  ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppPalette.redSoft09),
+                  borderSide: BorderSide(
+                    color: _ChecklistAmber.of(context).danger,
+                  ),
                 ),
               ),
             );
@@ -2411,19 +2459,23 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
         return Align(
           alignment: Alignment.topLeft,
           child: Material(
-            color: AppPalette.transparent,
+            color: _ChecklistAmber.of(context).transparent,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720, maxHeight: 240),
               child: DecoratedBox(
                 decoration: AppBoxDecoration(
-                  color: _ChecklistAmber.surfaceElevated,
+                  color: _ChecklistAmber.of(context).surfaceElevated,
                   borderRadius: AppBorderRadius.circular(8),
                   border: Border.all(
-                    color: _ChecklistAmber.amber.withValues(alpha: 0.36),
+                    color: _ChecklistAmber.of(
+                      context,
+                    ).amber.withValues(alpha: 0.36),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.32),
+                      color: _ChecklistAmber.of(
+                        context,
+                      ).black.withValues(alpha: 0.32),
                       blurRadius: 18,
                       offset: const Offset(0, 10),
                     ),
@@ -2441,8 +2493,10 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
                       onTap: () => onSelected(option),
                       child: Container(
                         color: isHighlighted
-                            ? _ChecklistAmber.amber.withValues(alpha: 0.16)
-                            : AppPalette.transparent,
+                            ? _ChecklistAmber.of(
+                                context,
+                              ).amber.withValues(alpha: 0.16)
+                            : _ChecklistAmber.of(context).transparent,
                         padding: const AppEdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 11,
@@ -2451,8 +2505,8 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
                           displayStringForOption(option),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: _ChecklistAmber.textPrimary,
+                          style: AppTextStyle(
+                            color: _ChecklistAmber.of(context).textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             height: 1.2,
@@ -2806,7 +2860,7 @@ class _QuickPrepDateButton extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
+            style: AppTextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               height: 1.1,
@@ -2817,7 +2871,7 @@ class _QuickPrepDateButton extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
+            style: AppTextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
               height: 1.2,
@@ -2827,10 +2881,12 @@ class _QuickPrepDateButton extends StatelessWidget {
         ],
       ),
       style: OutlinedButton.styleFrom(
-        foregroundColor: _ChecklistAmber.amberSoft,
+        foregroundColor: _ChecklistAmber.of(context).amberSoft,
         minimumSize: const Size(136, 48),
         padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        side: BorderSide(color: _ChecklistAmber.amber.withValues(alpha: 0.45)),
+        side: BorderSide(
+          color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.45),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(8),
         ),
@@ -2888,10 +2944,10 @@ class _QuickPrepChoiceChip extends StatelessWidget {
             width: 16,
             height: 16,
             child: selected
-                ? const Icon(
+                ? Icon(
                     Icons.check_rounded,
                     size: 16,
-                    color: AppPalette.textPrimary,
+                    color: _ChecklistAmber.of(context).textPrimary,
                   )
                 : null,
           ),
@@ -2903,8 +2959,8 @@ class _QuickPrepChoiceChip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
                 color: selected
-                    ? AppPalette.textPrimary
-                    : _ChecklistAmber.textSecondary,
+                    ? _ChecklistAmber.of(context).textPrimary
+                    : _ChecklistAmber.of(context).textSecondary,
                 fontWeight: FontWeight.w900,
                 fontSize: 13,
                 letterSpacing: 0,
@@ -2913,12 +2969,12 @@ class _QuickPrepChoiceChip extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: _ChecklistAmber.surfacePressed,
-      selectedColor: _ChecklistAmber.amberSoft,
+      backgroundColor: _ChecklistAmber.of(context).surfacePressed,
+      selectedColor: _ChecklistAmber.of(context).amberSoft,
       side: BorderSide(
         color: selected
-            ? _ChecklistAmber.amberSoft
-            : _ChecklistAmber.border.withValues(alpha: 0.48),
+            ? _ChecklistAmber.of(context).amberSoft
+            : _ChecklistAmber.of(context).border.withValues(alpha: 0.48),
       ),
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
@@ -2941,15 +2997,15 @@ class _MissingContextAlternativeActions extends StatelessWidget {
         FilledButton.icon(
           key: const ValueKey('travel-checklist-open-excursions'),
           onPressed: () => context.go('/excursions'),
-          icon: const Icon(Icons.travel_explore_rounded),
+          icon: Icon(Icons.travel_explore_rounded),
           label: Text(
             l10n.travelChecklistMissingContextPrimaryAction,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           style: FilledButton.styleFrom(
-            backgroundColor: _ChecklistAmber.surfaceElevated,
-            foregroundColor: _ChecklistAmber.amberSoft,
+            backgroundColor: _ChecklistAmber.of(context).surfaceElevated,
+            foregroundColor: _ChecklistAmber.of(context).amberSoft,
             minimumSize: const Size(0, 44),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
@@ -2959,17 +3015,17 @@ class _MissingContextAlternativeActions extends StatelessWidget {
         OutlinedButton.icon(
           key: const ValueKey('travel-checklist-open-activities'),
           onPressed: () => context.go('/activities'),
-          icon: const Icon(Icons.hiking_rounded),
+          icon: Icon(Icons.hiking_rounded),
           label: Text(
             l10n.travelChecklistMissingContextSecondaryAction,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           style: OutlinedButton.styleFrom(
-            foregroundColor: _ChecklistAmber.amberSoft,
+            foregroundColor: _ChecklistAmber.of(context).amberSoft,
             minimumSize: const Size(0, 44),
             side: BorderSide(
-              color: _ChecklistAmber.amber.withValues(alpha: 0.45),
+              color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.45),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
@@ -3086,15 +3142,15 @@ class _OptimizedItineraryCard extends StatelessWidget {
               final action = FilledButton.icon(
                 onPressed: isLoading ? null : onOptimizeTap,
                 icon: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: _ChecklistAmber.backgroundBottom,
+                          color: _ChecklistAmber.of(context).textPrimary,
                         ),
                       )
-                    : const Icon(Icons.auto_awesome_motion_rounded),
+                    : Icon(Icons.auto_awesome_motion_rounded),
                 label: Text(
                   optimized == null
                       ? l10n.travelChecklistOptimizeRouteButton
@@ -3103,8 +3159,8 @@ class _OptimizedItineraryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _ChecklistAmber.amber,
-                  foregroundColor: _ChecklistAmber.backgroundBottom,
+                  backgroundColor: _ChecklistAmber.of(context).amber,
+                  foregroundColor: _ChecklistAmber.of(context).backgroundBottom,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(8),
@@ -3137,8 +3193,8 @@ class _OptimizedItineraryCard extends StatelessWidget {
             l10n.travelChecklistOptimizeRouteSubtitle(
               routeArgs.routeStops.length,
             ),
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textSecondary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textSecondary,
               fontSize: 13,
               height: 1.35,
               letterSpacing: 0,
@@ -3148,8 +3204,8 @@ class _OptimizedItineraryCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               error,
-              style: const AppTextStyle(
-                color: AppPalette.redLight04,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).danger,
                 fontSize: 13,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
@@ -3209,16 +3265,18 @@ class _OptimizedStopRow extends StatelessWidget {
             height: 24,
             alignment: Alignment.center,
             decoration: AppBoxDecoration(
-              color: _ChecklistAmber.amber.withValues(alpha: 0.18),
+              color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.18),
               borderRadius: AppBorderRadius.circular(8),
               border: Border.all(
-                color: _ChecklistAmber.amber.withValues(alpha: 0.42),
+                color: _ChecklistAmber.of(
+                  context,
+                ).amber.withValues(alpha: 0.42),
               ),
             ),
             child: Text(
               '$index',
-              style: const AppTextStyle(
-                color: _ChecklistAmber.amberSoft,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).amberSoft,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -3230,8 +3288,8 @@ class _OptimizedStopRow extends StatelessWidget {
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textPrimary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 height: 1.28,
@@ -3264,8 +3322,8 @@ class _ContextTextLine extends StatelessWidget {
         value,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: const AppTextStyle(
-          color: _ChecklistAmber.textPrimary,
+        style: AppTextStyle(
+          color: _ChecklistAmber.of(context).textPrimary,
           fontSize: 13,
           fontWeight: FontWeight.w800,
           height: 1.25,
@@ -3319,7 +3377,11 @@ class _ContextLineShell extends StatelessWidget {
       children: [
         Padding(
           padding: const AppEdgeInsets.only(top: 2),
-          child: Icon(icon, color: _ChecklistAmber.textMuted, size: 18),
+          child: Icon(
+            icon,
+            color: _ChecklistAmber.of(context).textMuted,
+            size: 18,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -3328,8 +3390,8 @@ class _ContextLineShell extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const AppTextStyle(
-                  color: _ChecklistAmber.textMuted,
+                style: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   height: 1.15,
@@ -3356,10 +3418,10 @@ class _OfflineChecklistNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.amber.withValues(alpha: 0.12),
+        color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
+          color: _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
@@ -3367,9 +3429,9 @@ class _OfflineChecklistNotice extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_off_rounded,
-              color: _ChecklistAmber.amberSoft,
+              color: _ChecklistAmber.of(context).amberSoft,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -3381,8 +3443,8 @@ class _OfflineChecklistNotice extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _ChecklistAmber.textPrimary,
+                    style: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
                       height: 1.1,
@@ -3393,8 +3455,8 @@ class _OfflineChecklistNotice extends StatelessWidget {
                     message,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _ChecklistAmber.textSecondary,
+                    style: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       height: 1.28,
@@ -3425,10 +3487,10 @@ class _ChecklistNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.amber.withValues(alpha: 0.12),
+        color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.12),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
+          color: _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
@@ -3436,7 +3498,7 @@ class _ChecklistNotice extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: _ChecklistAmber.amberSoft, size: 20),
+            Icon(icon, color: _ChecklistAmber.of(context).amberSoft, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -3446,8 +3508,8 @@ class _ChecklistNotice extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _ChecklistAmber.textPrimary,
+                    style: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
                       height: 1.1,
@@ -3459,8 +3521,8 @@ class _ChecklistNotice extends StatelessWidget {
                     message,
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _ChecklistAmber.textSecondary,
+                    style: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       height: 1.28,
@@ -3501,8 +3563,8 @@ class _ReadinessPanel extends StatelessWidget {
             children: [
               Text(
                 l10n.travelChecklistSystemReadiness,
-                style: const AppTextStyle(
-                  color: _ChecklistAmber.textSecondary,
+                style: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0,
@@ -3517,8 +3579,8 @@ class _ReadinessPanel extends StatelessWidget {
             children: [
               Text(
                 '$score%',
-                style: const AppTextStyle(
-                  color: _ChecklistAmber.textPrimary,
+                style: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textPrimary,
                   fontSize: 42,
                   height: 0.95,
                   fontWeight: FontWeight.w900,
@@ -3532,9 +3594,11 @@ class _ReadinessPanel extends StatelessWidget {
                   child: LinearProgressIndicator(
                     minHeight: 9,
                     value: score / 100,
-                    backgroundColor: AppPalette.white.withValues(alpha: 0.1),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      _ChecklistAmber.amber,
+                    backgroundColor: _ChecklistAmber.of(
+                      context,
+                    ).white.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _ChecklistAmber.of(context).amber,
                     ),
                   ),
                 ),
@@ -3548,8 +3612,8 @@ class _ReadinessPanel extends StatelessWidget {
                 personalProgress.done,
                 personalProgress.total,
               ),
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textSecondary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textSecondary,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -3564,9 +3628,11 @@ class _ReadinessPanel extends StatelessWidget {
                     child: LinearProgressIndicator(
                       minHeight: 7,
                       value: personalPercent / 100,
-                      backgroundColor: AppPalette.white.withValues(alpha: 0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        _ChecklistAmber.amberSoft,
+                      backgroundColor: _ChecklistAmber.of(
+                        context,
+                      ).white.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _ChecklistAmber.of(context).amberSoft,
                       ),
                     ),
                   ),
@@ -3574,8 +3640,8 @@ class _ReadinessPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   '$personalPercent%',
-                  style: const AppTextStyle(
-                    color: _ChecklistAmber.textPrimary,
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
@@ -3601,18 +3667,18 @@ class _StatusPill extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.amber.withValues(alpha: 0.18),
+        color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.18),
         borderRadius: AppBorderRadius.circular(999),
         border: Border.all(
-          color: _ChecklistAmber.amberSoft.withValues(alpha: 0.44),
+          color: _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.44),
         ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           _readinessStatusLabel(status, l10n),
-          style: const AppTextStyle(
-            color: _ChecklistAmber.amberSoft,
+          style: AppTextStyle(
+            color: _ChecklistAmber.of(context).amberSoft,
             fontSize: 12,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -3634,9 +3700,9 @@ class _TrustNoticePanel extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.verified_user_rounded,
-            color: _ChecklistAmber.amberSoft,
+            color: _ChecklistAmber.of(context).amberSoft,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -3645,8 +3711,8 @@ class _TrustNoticePanel extends StatelessWidget {
               children: [
                 Text(
                   notice.title,
-                  style: const AppTextStyle(
-                    color: _ChecklistAmber.textPrimary,
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -3655,8 +3721,8 @@ class _TrustNoticePanel extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   notice.message,
-                  style: const AppTextStyle(
-                    color: _ChecklistAmber.textSecondary,
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textSecondary,
                     fontSize: 13,
                     height: 1.35,
                     letterSpacing: 0,
@@ -3757,33 +3823,41 @@ class _CarrySearchPanel extends StatelessWidget {
                   controller: controller,
                   textInputAction: TextInputAction.search,
                   onSubmitted: (_) => onSearch(),
-                  style: const AppTextStyle(color: _ChecklistAmber.textPrimary),
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textPrimary,
+                  ),
                   decoration: AppInputDecoration(
                     hintText: l10n.travelChecklistCarrySearchHint,
-                    hintStyle: const AppTextStyle(
-                      color: _ChecklistAmber.textMuted,
+                    hintStyle: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textMuted,
                     ),
                     filled: true,
-                    fillColor: _ChecklistAmber.surfacePressed.withValues(
-                      alpha: 0.82,
-                    ),
+                    fillColor: _ChecklistAmber.of(
+                      context,
+                    ).surfacePressed.withValues(alpha: 0.82),
                     border: OutlineInputBorder(
                       borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: _ChecklistAmber.border.withValues(alpha: 0.42),
+                        color: _ChecklistAmber.of(
+                          context,
+                        ).border.withValues(alpha: 0.42),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: _ChecklistAmber.border.withValues(alpha: 0.42),
+                        color: _ChecklistAmber.of(
+                          context,
+                        ).border.withValues(alpha: 0.42),
                       ),
                     ),
-                    focusedBorder: const OutlineInputBorder(
+                    focusedBorder: OutlineInputBorder(
                       borderRadius: AppBorderRadius.all(
                         AppRadiusValue.circular(8),
                       ),
-                      borderSide: BorderSide(color: _ChecklistAmber.amber),
+                      borderSide: BorderSide(
+                        color: _ChecklistAmber.of(context).amber,
+                      ),
                     ),
                   ),
                 ),
@@ -3794,25 +3868,33 @@ class _CarrySearchPanel extends StatelessWidget {
                 onPressed: isSearching ? null : onSearch,
                 tooltip: l10n.travelChecklistSearch,
                 icon: isSearching
-                    ? const SizedBox.square(
+                    ? SizedBox.square(
                         dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: _ChecklistAmber.of(context).textPrimary,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Icon(Icons.search_rounded),
+                    : Icon(Icons.search_rounded),
                 style: IconButton.styleFrom(
-                  backgroundColor: _ChecklistAmber.amber,
-                  foregroundColor: AppPalette.textPrimary,
-                  disabledBackgroundColor: _ChecklistAmber.amber.withValues(
-                    alpha: 0.28,
-                  ),
-                  disabledForegroundColor: _ChecklistAmber.textMuted,
+                  backgroundColor: _ChecklistAmber.of(context).amber,
+                  foregroundColor: _ChecklistAmber.of(context).textPrimary,
+                  disabledBackgroundColor: _ChecklistAmber.of(
+                    context,
+                  ).amber.withValues(alpha: 0.28),
+                  disabledForegroundColor: _ChecklistAmber.of(
+                    context,
+                  ).textMuted,
                 ),
               ),
             ],
           ),
           if ((error ?? '').isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(error!, style: const AppTextStyle(color: AppPalette.danger)),
+            Text(
+              error!,
+              style: AppTextStyle(color: _ChecklistAmber.of(context).danger),
+            ),
           ],
           if (results.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -3836,10 +3918,10 @@ class _CarryResultTile extends StatelessWidget {
       padding: const AppEdgeInsets.only(bottom: 10),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: _ChecklistAmber.itemSurface,
+          color: _ChecklistAmber.of(context).itemSurface,
           borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
-            color: _ChecklistAmber.border.withValues(alpha: 0.36),
+            color: _ChecklistAmber.of(context).border.withValues(alpha: 0.36),
           ),
         ),
         child: Padding(
@@ -3849,8 +3931,8 @@ class _CarryResultTile extends StatelessWidget {
             children: [
               Text(
                 _carryItemLabel(result.itemSlug, l10n),
-                style: const AppTextStyle(
-                  color: _ChecklistAmber.textPrimary,
+                style: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textPrimary,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
                 ),
@@ -3876,8 +3958,8 @@ class _CarryResultTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   result.conditionSummary,
-                  style: const AppTextStyle(
-                    color: _ChecklistAmber.textSecondary,
+                  style: AppTextStyle(
+                    color: _ChecklistAmber.of(context).textSecondary,
                     fontSize: 13,
                     height: 1.35,
                     letterSpacing: 0,
@@ -3960,18 +4042,20 @@ class _ChecklistItemsPanel extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             textInputAction: TextInputAction.search,
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textPrimary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
             ),
             decoration: AppInputDecoration(
               hintText: l10n.travelChecklistItemsSearchHint,
-              hintStyle: const AppTextStyle(color: _ChecklistAmber.textMuted),
-              prefixIcon: const Icon(
+              hintStyle: AppTextStyle(
+                color: _ChecklistAmber.of(context).textMuted,
+              ),
+              prefixIcon: Icon(
                 Icons.search_rounded,
-                color: _ChecklistAmber.amberSoft,
+                color: _ChecklistAmber.of(context).amberSoft,
               ),
               suffixIcon: searchQuery.trim().isEmpty
                   ? null
@@ -3983,11 +4067,13 @@ class _ChecklistItemsPanel extends StatelessWidget {
                         searchController.clear();
                         onSearchChanged('');
                       },
-                      icon: const Icon(Icons.close_rounded),
-                      color: _ChecklistAmber.textMuted,
+                      icon: Icon(Icons.close_rounded),
+                      color: _ChecklistAmber.of(context).textMuted,
                     ),
               filled: true,
-              fillColor: _ChecklistAmber.surfacePressed.withValues(alpha: 0.82),
+              fillColor: _ChecklistAmber.of(
+                context,
+              ).surfacePressed.withValues(alpha: 0.82),
               contentPadding: const AppEdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 14,
@@ -3995,18 +4081,24 @@ class _ChecklistItemsPanel extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: AppBorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: _ChecklistAmber.border.withValues(alpha: 0.42),
+                  color: _ChecklistAmber.of(
+                    context,
+                  ).border.withValues(alpha: 0.42),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: AppBorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: _ChecklistAmber.border.withValues(alpha: 0.42),
+                  color: _ChecklistAmber.of(
+                    context,
+                  ).border.withValues(alpha: 0.42),
                 ),
               ),
-              focusedBorder: const OutlineInputBorder(
+              focusedBorder: OutlineInputBorder(
                 borderRadius: AppBorderRadius.all(AppRadiusValue.circular(8)),
-                borderSide: BorderSide(color: _ChecklistAmber.amber),
+                borderSide: BorderSide(
+                  color: _ChecklistAmber.of(context).amber,
+                ),
               ),
             ),
           ),
@@ -4018,19 +4110,22 @@ class _ChecklistItemsPanel extends StatelessWidget {
                 key: const ValueKey('travel-checklist-add-custom-item'),
                 onPressed: isSavingCustomItem ? null : onAddCustomItem,
                 icon: isSavingCustomItem
-                    ? const SizedBox.square(
+                    ? SizedBox.square(
                         dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: _ChecklistAmber.of(context).textPrimary,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Icon(Icons.add_task_rounded),
+                    : Icon(Icons.add_task_rounded),
                 label: Text(
                   l10n.travelChecklistAddItem,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _ChecklistAmber.amber,
-                  foregroundColor: AppPalette.textPrimary,
+                  backgroundColor: _ChecklistAmber.of(context).amber,
+                  foregroundColor: _ChecklistAmber.of(context).textPrimary,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(8),
@@ -4045,8 +4140,8 @@ class _ChecklistItemsPanel extends StatelessWidget {
               padding: const AppEdgeInsets.symmetric(vertical: 14),
               child: Text(
                 l10n.travelChecklistItemsSearchEmpty,
-                style: const AppTextStyle(
-                  color: _ChecklistAmber.textSecondary,
+                style: AppTextStyle(
+                  color: _ChecklistAmber.of(context).textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   height: 1.35,
@@ -4112,10 +4207,10 @@ class _ChecklistItemTile extends StatelessWidget {
       padding: const AppEdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: _ChecklistAmber.itemSurface,
+          color: _ChecklistAmber.of(context).itemSurface,
           borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
-            color: _ChecklistAmber.border.withValues(alpha: 0.32),
+            color: _ChecklistAmber.of(context).border.withValues(alpha: 0.32),
           ),
         ),
         child: Padding(
@@ -4135,12 +4230,12 @@ class _ChecklistItemTile extends StatelessWidget {
                         key: ValueKey('checklist-item-toggle-${item.id}'),
                         value: item.isDone,
                         onChanged: isReadOnly ? null : (_) => onToggle(),
-                        activeColor: _ChecklistAmber.amber,
-                        checkColor: AppPalette.textPrimary,
+                        activeColor: _ChecklistAmber.of(context).amber,
+                        checkColor: _ChecklistAmber.of(context).textPrimary,
                         side: BorderSide(
                           color: item.isCritical
-                              ? _ChecklistAmber.amber
-                              : _ChecklistAmber.textMuted,
+                              ? _ChecklistAmber.of(context).amber
+                              : _ChecklistAmber.of(context).textMuted,
                           width: 1.6,
                         ),
                         shape: RoundedRectangleBorder(
@@ -4149,11 +4244,11 @@ class _ChecklistItemTile extends StatelessWidget {
                       ),
                     ),
                     if (isUpdating)
-                      const SizedBox(
+                      SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: _ChecklistAmber.amberSoft,
+                          color: _ChecklistAmber.of(context).amberSoft,
                           strokeWidth: 2,
                         ),
                       ),
@@ -4180,8 +4275,10 @@ class _ChecklistItemTile extends StatelessWidget {
                                 item.title,
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: const AppTextStyle(
-                                  color: _ChecklistAmber.textPrimary,
+                                style: AppTextStyle(
+                                  color: _ChecklistAmber.of(
+                                    context,
+                                  ).textPrimary,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,
                                   letterSpacing: 0,
@@ -4197,8 +4294,8 @@ class _ChecklistItemTile extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             item.reason,
-                            style: const AppTextStyle(
-                              color: _ChecklistAmber.textSecondary,
+                            style: AppTextStyle(
+                              color: _ChecklistAmber.of(context).textSecondary,
                               fontSize: 13,
                               height: 1.35,
                               letterSpacing: 0,
@@ -4254,10 +4351,14 @@ class _CustomChecklistItemTile extends StatelessWidget {
       padding: const AppEdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: _ChecklistAmber.itemSurface.withValues(alpha: 0.92),
+          color: _ChecklistAmber.of(
+            context,
+          ).itemSurface.withValues(alpha: 0.92),
           borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
-            color: _ChecklistAmber.amberSoft.withValues(alpha: 0.30),
+            color: _ChecklistAmber.of(
+              context,
+            ).amberSoft.withValues(alpha: 0.30),
           ),
         ),
         child: Padding(
@@ -4279,10 +4380,10 @@ class _CustomChecklistItemTile extends StatelessWidget {
                         ),
                         value: item.isDone,
                         onChanged: isReadOnly ? null : (_) => onToggle(),
-                        activeColor: _ChecklistAmber.amber,
-                        checkColor: AppPalette.textPrimary,
-                        side: const BorderSide(
-                          color: _ChecklistAmber.amberSoft,
+                        activeColor: _ChecklistAmber.of(context).amber,
+                        checkColor: _ChecklistAmber.of(context).textPrimary,
+                        side: BorderSide(
+                          color: _ChecklistAmber.of(context).amberSoft,
                           width: 1.6,
                         ),
                         shape: RoundedRectangleBorder(
@@ -4291,10 +4392,10 @@ class _CustomChecklistItemTile extends StatelessWidget {
                       ),
                     ),
                     if (isUpdating || isDeleting)
-                      const SizedBox.square(
+                      SizedBox.square(
                         dimension: 20,
                         child: CircularProgressIndicator(
-                          color: _ChecklistAmber.amberSoft,
+                          color: _ChecklistAmber.of(context).amberSoft,
                           strokeWidth: 2,
                         ),
                       ),
@@ -4315,8 +4416,8 @@ class _CustomChecklistItemTile extends StatelessWidget {
                           item.title,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: _ChecklistAmber.textPrimary,
+                          style: AppTextStyle(
+                            color: _ChecklistAmber.of(context).textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
@@ -4332,8 +4433,8 @@ class _CustomChecklistItemTile extends StatelessWidget {
                         item.note,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: _ChecklistAmber.textSecondary,
+                        style: AppTextStyle(
+                          color: _ChecklistAmber.of(context).textSecondary,
                           fontSize: 13,
                           height: 1.35,
                           letterSpacing: 0,
@@ -4351,9 +4452,9 @@ class _CustomChecklistItemTile extends StatelessWidget {
                               'custom-checklist-item-edit-${item.id}',
                             ),
                             onPressed: isUpdating || isDeleting ? null : onEdit,
-                            icon: const Icon(Icons.edit_rounded, size: 16),
+                            icon: Icon(Icons.edit_rounded, size: 16),
                             label: Text(l10n.travelChecklistCustomItemEdit),
-                            style: _smallAmberOutlinedButtonStyle(),
+                            style: _smallAmberOutlinedButtonStyle(context),
                           ),
                           OutlinedButton.icon(
                             key: ValueKey(
@@ -4362,13 +4463,13 @@ class _CustomChecklistItemTile extends StatelessWidget {
                             onPressed: isUpdating || isDeleting
                                 ? null
                                 : onDelete,
-                            icon: const Icon(
-                              Icons.delete_outline_rounded,
-                              size: 16,
-                            ),
+                            icon: Icon(Icons.delete_outline_rounded, size: 16),
                             label: Text(l10n.travelChecklistCustomItemDelete),
                             style: _smallAmberOutlinedButtonStyle(
-                              foregroundColor: AppPalette.danger,
+                              context,
+                              foregroundColor: _ChecklistAmber.of(
+                                context,
+                              ).danger,
                             ),
                           ),
                         ],
@@ -4385,8 +4486,11 @@ class _CustomChecklistItemTile extends StatelessWidget {
   }
 }
 
-ButtonStyle _smallAmberOutlinedButtonStyle({Color? foregroundColor}) {
-  final color = foregroundColor ?? _ChecklistAmber.amberSoft;
+ButtonStyle _smallAmberOutlinedButtonStyle(
+  BuildContext context, {
+  Color? foregroundColor,
+}) {
+  final color = foregroundColor ?? _ChecklistAmber.of(context).amberSoft;
   return OutlinedButton.styleFrom(
     foregroundColor: color,
     minimumSize: const Size(0, 34),
@@ -4395,7 +4499,7 @@ ButtonStyle _smallAmberOutlinedButtonStyle({Color? foregroundColor}) {
     visualDensity: VisualDensity.compact,
     side: BorderSide(color: color.withValues(alpha: 0.45)),
     shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
-    textStyle: const AppTextStyle(
+    textStyle: AppTextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -4531,8 +4635,8 @@ class _CustomItemPriorityChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: AppTextStyle(
           color: selected
-              ? AppPalette.textPrimary
-              : _ChecklistAmber.textSecondary,
+              ? _ChecklistAmber.of(context).textPrimary
+              : _ChecklistAmber.of(context).textSecondary,
           fontSize: 13,
           fontWeight: FontWeight.w900,
           letterSpacing: 0,
@@ -4541,14 +4645,16 @@ class _CustomItemPriorityChip extends StatelessWidget {
       avatar: Icon(
         Icons.check_rounded,
         size: 16,
-        color: selected ? AppPalette.textPrimary : AppPalette.transparent,
+        color: selected
+            ? _ChecklistAmber.of(context).textPrimary
+            : _ChecklistAmber.of(context).transparent,
       ),
-      backgroundColor: _ChecklistAmber.surfacePressed,
-      selectedColor: _ChecklistAmber.amber,
+      backgroundColor: _ChecklistAmber.of(context).surfacePressed,
+      selectedColor: _ChecklistAmber.of(context).amber,
       side: BorderSide(
         color: selected
-            ? _ChecklistAmber.amber
-            : _ChecklistAmber.amberSoft.withValues(alpha: 0.34),
+            ? _ChecklistAmber.of(context).amber
+            : _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.34),
       ),
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -4640,7 +4746,7 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
       child: Padding(
         padding: AppEdgeInsets.only(bottom: bottomInset),
         child: Material(
-          color: _ChecklistAmber.surface,
+          color: _ChecklistAmber.of(context).surface,
           borderRadius: const AppBorderRadius.vertical(
             top: AppRadiusValue.circular(18),
           ),
@@ -4664,14 +4770,15 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                     key: const ValueKey('custom-checklist-item-title-field'),
                     controller: _titleController,
                     textInputAction: TextInputAction.done,
-                    style: const AppTextStyle(
-                      color: _ChecklistAmber.textPrimary,
+                    style: AppTextStyle(
+                      color: _ChecklistAmber.of(context).textPrimary,
                       letterSpacing: 0,
                     ),
                     validator: (value) => (value ?? '').trim().isEmpty
                         ? l10n.travelChecklistCustomItemTitleRequired
                         : null,
                     decoration: _customItemInputDecoration(
+                      context,
                       label: l10n.travelChecklistCustomItemTitle,
                       hint: l10n.travelChecklistCustomItemTitleHint,
                     ),
@@ -4679,22 +4786,22 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                   const SizedBox(height: 12),
                   Theme(
                     data: Theme.of(context).copyWith(
-                      dividerColor: AppPalette.transparent,
-                      splashColor: _ChecklistAmber.amber.withValues(
-                        alpha: 0.10,
-                      ),
+                      dividerColor: _ChecklistAmber.of(context).transparent,
+                      splashColor: _ChecklistAmber.of(
+                        context,
+                      ).amber.withValues(alpha: 0.10),
                     ),
                     child: ExpansionTile(
                       key: const ValueKey(
                         'custom-checklist-item-additional-toggle',
                       ),
                       tilePadding: AppEdgeInsets.zero,
-                      collapsedIconColor: _ChecklistAmber.amberSoft,
-                      iconColor: _ChecklistAmber.amberSoft,
+                      collapsedIconColor: _ChecklistAmber.of(context).amberSoft,
+                      iconColor: _ChecklistAmber.of(context).amberSoft,
                       title: Text(
                         l10n.travelChecklistCustomItemAdditional,
-                        style: const AppTextStyle(
-                          color: _ChecklistAmber.textPrimary,
+                        style: AppTextStyle(
+                          color: _ChecklistAmber.of(context).textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0,
@@ -4708,11 +4815,12 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                           controller: _noteController,
                           minLines: 1,
                           maxLines: 3,
-                          style: const AppTextStyle(
-                            color: _ChecklistAmber.textPrimary,
+                          style: AppTextStyle(
+                            color: _ChecklistAmber.of(context).textPrimary,
                             letterSpacing: 0,
                           ),
                           decoration: _customItemInputDecoration(
+                            context,
                             label: l10n.travelChecklistCustomItemNote,
                             multiline: true,
                           ),
@@ -4749,12 +4857,12 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                               _reuseInFuture = value;
                             });
                           },
-                          activeThumbColor: _ChecklistAmber.amber,
+                          activeThumbColor: _ChecklistAmber.of(context).amber,
                           contentPadding: AppEdgeInsets.zero,
                           title: Text(
                             l10n.travelChecklistCustomItemReuse,
-                            style: const AppTextStyle(
-                              color: _ChecklistAmber.textPrimary,
+                            style: AppTextStyle(
+                              color: _ChecklistAmber.of(context).textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0,
@@ -4770,11 +4878,13 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                     child: FilledButton.icon(
                       key: const ValueKey('custom-checklist-item-save'),
                       onPressed: _submit,
-                      icon: const Icon(Icons.check_rounded),
+                      icon: Icon(Icons.check_rounded),
                       label: Text(l10n.travelChecklistCustomItemSave),
                       style: FilledButton.styleFrom(
-                        backgroundColor: _ChecklistAmber.amber,
-                        foregroundColor: AppPalette.textPrimary,
+                        backgroundColor: _ChecklistAmber.of(context).amber,
+                        foregroundColor: _ChecklistAmber.of(
+                          context,
+                        ).textPrimary,
                         minimumSize: const Size(0, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(8),
@@ -4792,7 +4902,8 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
   }
 }
 
-InputDecoration _customItemInputDecoration({
+InputDecoration _customItemInputDecoration(
+  BuildContext context, {
   required String label,
   String? hint,
   bool multiline = false,
@@ -4800,14 +4911,14 @@ InputDecoration _customItemInputDecoration({
   return AppInputDecoration(
     labelText: label,
     hintText: hint,
-    labelStyle: const AppTextStyle(color: _ChecklistAmber.textSecondary),
-    floatingLabelStyle: const AppTextStyle(
-      color: _ChecklistAmber.amberSoft,
+    labelStyle: AppTextStyle(color: _ChecklistAmber.of(context).textSecondary),
+    floatingLabelStyle: AppTextStyle(
+      color: _ChecklistAmber.of(context).amberSoft,
       fontSize: 13,
       fontWeight: FontWeight.w800,
       letterSpacing: 0,
     ),
-    hintStyle: const AppTextStyle(color: _ChecklistAmber.textMuted),
+    hintStyle: AppTextStyle(color: _ChecklistAmber.of(context).textMuted),
     floatingLabelBehavior: multiline
         ? FloatingLabelBehavior.always
         : FloatingLabelBehavior.auto,
@@ -4817,22 +4928,24 @@ InputDecoration _customItemInputDecoration({
         : const AppEdgeInsets.symmetric(horizontal: 14, vertical: 18),
     errorMaxLines: 3,
     filled: true,
-    fillColor: _ChecklistAmber.surfacePressed.withValues(alpha: 0.82),
+    fillColor: _ChecklistAmber.of(
+      context,
+    ).surfacePressed.withValues(alpha: 0.82),
     border: OutlineInputBorder(
       borderRadius: AppBorderRadius.circular(8),
       borderSide: BorderSide(
-        color: _ChecklistAmber.border.withValues(alpha: 0.42),
+        color: _ChecklistAmber.of(context).border.withValues(alpha: 0.42),
       ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: AppBorderRadius.circular(8),
       borderSide: BorderSide(
-        color: _ChecklistAmber.border.withValues(alpha: 0.42),
+        color: _ChecklistAmber.of(context).border.withValues(alpha: 0.42),
       ),
     ),
-    focusedBorder: const OutlineInputBorder(
+    focusedBorder: OutlineInputBorder(
       borderRadius: AppBorderRadius.all(AppRadiusValue.circular(8)),
-      borderSide: BorderSide(color: _ChecklistAmber.amber),
+      borderSide: BorderSide(color: _ChecklistAmber.of(context).amber),
     ),
   );
 }
@@ -4863,7 +4976,7 @@ class _ChecklistFeedbackActions extends StatelessWidget {
           icon: Icons.thumb_up_alt_outlined,
           label: l10n.travelChecklistFeedbackHelpful,
           tooltip: l10n.travelChecklistFeedbackHelpful,
-          color: AppPalette.success,
+          color: _ChecklistAmber.of(context).success,
           isSubmitting: isSubmitting,
           isSelected: selectedFeedback == ChecklistItemFeedbackType.helpful,
           onPressed: () => onSubmit(ChecklistItemFeedbackType.helpful),
@@ -4873,7 +4986,7 @@ class _ChecklistFeedbackActions extends StatelessWidget {
           icon: Icons.thumb_down_alt_outlined,
           label: l10n.travelChecklistFeedbackNotHelpful,
           tooltip: l10n.travelChecklistFeedbackNotHelpful,
-          color: AppPalette.danger,
+          color: _ChecklistAmber.of(context).danger,
           isSubmitting: isSubmitting,
           isSelected: selectedFeedback == ChecklistItemFeedbackType.notHelpful,
           onPressed: () => onSubmit(ChecklistItemFeedbackType.notHelpful),
@@ -4883,7 +4996,7 @@ class _ChecklistFeedbackActions extends StatelessWidget {
           icon: Icons.playlist_add_check_rounded,
           label: l10n.travelChecklistFeedbackAddNextTime,
           tooltip: l10n.travelChecklistFeedbackAddNextTime,
-          color: _ChecklistAmber.amberSoft,
+          color: _ChecklistAmber.of(context).amberSoft,
           isSubmitting: isSubmitting,
           isSelected: selectedFeedback == ChecklistItemFeedbackType.addNextTime,
           onPressed: () => onSubmit(ChecklistItemFeedbackType.addNextTime),
@@ -4927,7 +5040,7 @@ class _FeedbackButton extends StatelessWidget {
                   height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: color,
+                    color: _ChecklistAmber.of(context).textPrimary,
                   ),
                 )
               : Icon(isSelected ? Icons.check_circle_rounded : icon, size: 16),
@@ -4936,13 +5049,13 @@ class _FeedbackButton extends StatelessWidget {
             foregroundColor: color,
             disabledForegroundColor: isSelected
                 ? color
-                : _ChecklistAmber.textMuted,
+                : _ChecklistAmber.of(context).textMuted,
             backgroundColor: isSelected
                 ? color.withValues(alpha: 0.18)
                 : color.withValues(alpha: 0.08),
             disabledBackgroundColor: isSelected
                 ? color.withValues(alpha: 0.18)
-                : _ChecklistAmber.surfacePressed,
+                : _ChecklistAmber.of(context).surfacePressed,
             side: BorderSide(
               color: color.withValues(alpha: isSelected ? 0.78 : 0.45),
               width: isSelected ? 1.4 : 1,
@@ -4954,7 +5067,7 @@ class _FeedbackButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
             ),
-            textStyle: const AppTextStyle(
+            textStyle: AppTextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
@@ -4979,23 +5092,29 @@ class _SectionTitle extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: AppBoxDecoration(
-            color: _ChecklistAmber.amber.withValues(alpha: 0.16),
+            color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.16),
             borderRadius: AppBorderRadius.circular(8),
             border: Border.all(
-              color: _ChecklistAmber.amberSoft.withValues(alpha: 0.24),
+              color: _ChecklistAmber.of(
+                context,
+              ).amberSoft.withValues(alpha: 0.24),
             ),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(7),
-            child: Icon(icon, color: _ChecklistAmber.amberSoft, size: 18),
+            child: Icon(
+              icon,
+              color: _ChecklistAmber.of(context).amberSoft,
+              size: 18,
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             title,
-            style: const AppTextStyle(
-              color: _ChecklistAmber.textPrimary,
+            style: AppTextStyle(
+              color: _ChecklistAmber.of(context).textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
               letterSpacing: 0,
@@ -5019,13 +5138,13 @@ class _InlineBullet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: AppEdgeInsets.only(top: 7),
             child: SizedBox.square(
               dimension: 5,
               child: DecoratedBox(
                 decoration: AppBoxDecoration(
-                  color: _ChecklistAmber.amber,
+                  color: _ChecklistAmber.of(context).amber,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -5035,8 +5154,8 @@ class _InlineBullet extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const AppTextStyle(
-                color: _ChecklistAmber.textSecondary,
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textSecondary,
                 fontSize: 13,
                 height: 1.35,
                 letterSpacing: 0,
@@ -5058,10 +5177,10 @@ class _ChipLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.amber.withValues(alpha: 0.14),
+        color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.14),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
+          color: _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
@@ -5070,8 +5189,8 @@ class _ChipLabel extends StatelessWidget {
           label,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(
-            color: _ChecklistAmber.textPrimary,
+          style: AppTextStyle(
+            color: _ChecklistAmber.of(context).textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -5096,14 +5215,20 @@ class _SurfacePanel extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: prominent
-              ? const [_ChecklistAmber.surfaceElevated, _ChecklistAmber.surface]
-              : const [_ChecklistAmber.surface, _ChecklistAmber.surfacePressed],
+              ? [
+                  _ChecklistAmber.of(context).surfaceElevated,
+                  _ChecklistAmber.of(context).surface,
+                ]
+              : [
+                  _ChecklistAmber.of(context).surface,
+                  _ChecklistAmber.of(context).surfacePressed,
+                ],
         ),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.border.withValues(
-            alpha: prominent ? 0.62 : 0.42,
-          ),
+          color: _ChecklistAmber.of(
+            context,
+          ).border.withValues(alpha: prominent ? 0.62 : 0.42),
         ),
       ),
       child: Padding(
@@ -5121,7 +5246,7 @@ class _ChecklistLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    return Center(child: CircularProgressIndicator());
   }
 }
 
@@ -5144,21 +5269,23 @@ class _ChecklistErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
-              color: AppPalette.danger,
+              color: _ChecklistAmber.of(context).danger,
               size: 42,
             ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(color: _ChecklistAmber.textPrimary),
+              style: AppTextStyle(
+                color: _ChecklistAmber.of(context).textPrimary,
+              ),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: Icon(Icons.refresh_rounded),
               label: Text(retryLabel),
             ),
           ],
@@ -5171,63 +5298,62 @@ class _ChecklistErrorView extends StatelessWidget {
 ThemeData _quickPrepDatePickerTheme(BuildContext context) {
   final base = Theme.of(context);
   final colorScheme = ColorScheme.dark(
-    primary: _ChecklistAmber.amber,
-    onPrimary: AppPalette.textPrimary,
-    surface: _ChecklistAmber.surface,
-    onSurface: _ChecklistAmber.textPrimary,
-    secondary: _ChecklistAmber.amberSoft,
-    onSecondary: AppPalette.textPrimary,
+    primary: _ChecklistAmber.of(context).amber,
+    onPrimary: _ChecklistAmber.of(context).textPrimary,
+    surface: _ChecklistAmber.of(context).surface,
+    onSurface: _ChecklistAmber.of(context).textPrimary,
+    secondary: _ChecklistAmber.of(context).amberSoft,
+    onSecondary: _ChecklistAmber.of(context).textPrimary,
   );
 
   return base.copyWith(
     colorScheme: colorScheme,
     dialogTheme: DialogThemeData(
-      backgroundColor: _ChecklistAmber.surface,
+      backgroundColor: _ChecklistAmber.of(context).surface,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(12)),
     ),
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: _ChecklistAmber.surface,
-      headerBackgroundColor: _ChecklistAmber.amber,
-      headerForegroundColor: AppPalette.textPrimary,
-      dividerColor: _ChecklistAmber.border.withValues(alpha: 0.55),
+      backgroundColor: _ChecklistAmber.of(context).surface,
+      headerBackgroundColor: _ChecklistAmber.of(context).amber,
+      headerForegroundColor: _ChecklistAmber.of(context).textPrimary,
+      dividerColor: _ChecklistAmber.of(context).border.withValues(alpha: 0.55),
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(12)),
       dayForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppPalette.textPrimary;
+          return _ChecklistAmber.of(context).textPrimary;
         }
         if (states.contains(WidgetState.disabled)) {
-          return _ChecklistAmber.textMuted.withValues(alpha: 0.52);
+          return _ChecklistAmber.of(context).textMuted.withValues(alpha: 0.52);
         }
-        return _ChecklistAmber.textPrimary;
+        return _ChecklistAmber.of(context).textPrimary;
       }),
       dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return _ChecklistAmber.amber;
+          return _ChecklistAmber.of(context).amber;
         }
         return null;
       }),
-      todayForegroundColor: WidgetStateProperty.all(_ChecklistAmber.amberSoft),
-      todayBorder: BorderSide(color: _ChecklistAmber.amberSoft),
+      todayForegroundColor: WidgetStateProperty.all(
+        _ChecklistAmber.of(context).amberSoft,
+      ),
+      todayBorder: BorderSide(color: _ChecklistAmber.of(context).amberSoft),
       yearForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppPalette.textPrimary;
+          return _ChecklistAmber.of(context).textPrimary;
         }
-        return _ChecklistAmber.textPrimary;
+        return _ChecklistAmber.of(context).textPrimary;
       }),
       yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return _ChecklistAmber.amber;
+          return _ChecklistAmber.of(context).amber;
         }
         return null;
       }),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: _ChecklistAmber.amberSoft,
-        textStyle: const AppTextStyle(
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
+        foregroundColor: _ChecklistAmber.of(context).amberSoft,
+        textStyle: AppTextStyle(fontWeight: FontWeight.w900, letterSpacing: 0),
       ),
     ),
   );

@@ -38,6 +38,108 @@ import '../common/app_side_drawer.dart';
 import '../map/map_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+final class _ActivitiesColors {
+  const _ActivitiesColors._(this.colors, {required this.isLight});
+
+  final AppColors colors;
+  final bool isLight;
+
+  static _ActivitiesColors of(BuildContext context) {
+    return _ActivitiesColors._(
+      AppDesignSystem.colorsFor(context),
+      isLight: Theme.of(context).brightness == Brightness.light,
+    );
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryText => isLight ? const Color(0xFFB45309) : colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get onPrimary => colors.onPrimary;
+  Color get secondary => colors.secondary;
+  Color get secondaryPressed => colors.secondaryPressed;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get secondaryText =>
+      isLight ? colors.secondaryPressed : colors.secondary;
+  Color get secondarySurface =>
+      isLight ? colors.secondaryContainer : colors.surfaceTeal;
+  Color get secondaryBorder =>
+      colors.secondary.withValues(alpha: isLight ? 0.22 : 0.30);
+  Color get onSecondary => colors.onSecondary;
+  Color get background => colors.background;
+  Color get backgroundDeep => colors.backgroundDeep;
+  Color get backgroundWarm => colors.backgroundWarm;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get activityCardSurface => colors.surfaceRaised;
+  Color get activityCardBorder => colors.border;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+  Color get scrim => colors.scrim;
+
+  Color get amberLight03 => colors.primarySoft;
+  Color get amberSoft04 => colors.primarySoft;
+  Color get amberSoft16 => colors.primarySoft;
+  Color get amberSoft23 => colors.primarySoft;
+  Color get amberWash09 => colors.primaryContainer;
+  Color get blueSurface10 => colors.secondaryContainer;
+  Color get clearOrangeSoft01 => colors.primarySoft;
+  Color get clearOrangeSoft02 => colors.primarySoft;
+  Color get clearOrangeSoft03 => colors.primarySoft;
+  Color get greenOverlayMuted01 =>
+      colors.secondary.withValues(alpha: isLight ? 0.14 : 0.16);
+  Color get greenSurface09 => colors.surfaceTeal;
+  Color get orangeOverlayLight03 => colors.primary.withValues(alpha: 0.20);
+  Color get orangeOverlaySoft01 => colors.primary.withValues(alpha: 0.14);
+  Color get orangeOverlaySoft03 => colors.primary.withValues(alpha: 0.18);
+  Color get orangeOverlaySoft05 => colors.primary.withValues(alpha: 0.22);
+  Color get orangeOverlayWash01 => colors.primary.withValues(alpha: 0.10);
+  Color get orangeOverlayWash04 => colors.primary.withValues(alpha: 0.16);
+  Color get orangeOverlayWash06 => colors.primary.withValues(alpha: 0.20);
+  Color get orangeOverlayWash07 => colors.primary.withValues(alpha: 0.22);
+  Color get orangeOverlayWash08 => colors.primary.withValues(alpha: 0.24);
+  Color get orangeOverlayWash09 => colors.primary.withValues(alpha: 0.26);
+  Color get orangeOverlayWash10 => colors.primary.withValues(alpha: 0.28);
+  Color get orangeOverlayWash11 => colors.primary.withValues(alpha: 0.30);
+  Color get orangeWash15 => colors.textPrimary;
+  Color get orangeWash29 => colors.primary;
+  Color get redSoft04 => colors.danger;
+  Color get surfaceCool => colors.surfaceHigh;
+  Color get textCoolSecondary => colors.textSecondary;
+  Color get warmInk100 => colors.backgroundDeep;
+  Color get warmInk16 => colors.backgroundDeep;
+  Color get warmInk35 => colors.background;
+  Color get warmInk51 => colors.background;
+  Color get warmInk63 => colors.backgroundDeep;
+  Color get warmOverlayInk01 => colors.surface;
+  Color get warmOverlaySurface10 => colors.surfaceRaised;
+  Color get warmSurface06 => colors.surface;
+  Color get warmSurface21 => colors.surface;
+  Color get warmSurface53 => colors.surfaceRaised;
+  Color get warmSurfaceHigh09 => colors.surfaceHigh;
+}
+
+extension _ActivitiesColorContext on BuildContext {
+  _ActivitiesColors get activitiesColors => _ActivitiesColors.of(this);
+}
+
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
 
@@ -235,24 +337,23 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     final confirmed = await showAppModalDialog<bool>(
       context: context,
-      barrierDismissible: true,
       builder: (dialogContext) {
         return AppModalDialogCard(
-          backgroundColor: AppPalette.surfaceCool,
+          backgroundColor: context.activitiesColors.surfaceCool,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.logoutDialogTitle,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.activitiesColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             l10n.logoutDialogMessage,
-            style: const AppTextStyle(
-              color: AppPalette.textCoolSecondary,
+            style: AppTextStyle(
+              color: context.activitiesColors.textCoolSecondary,
               fontSize: 16,
             ),
           ),
@@ -261,14 +362,16 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+                style: AppTextStyle(
+                  color: context.activitiesColors.textCoolSecondary,
+                ),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.backgroundWarm,
+                backgroundColor: context.activitiesColors.primary,
+                foregroundColor: context.activitiesColors.textPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: AppBorderRadius.circular(12),
                 ),
@@ -393,7 +496,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activitiesColors.transparent,
       builder: (sheetContext) {
         return _DiscoverFiltersSheet(
           l10n: AppLocalizations.of(sheetContext)!,
@@ -444,10 +547,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppPalette.warmInk35,
+      backgroundColor: context.activitiesColors.warmInk35,
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
-      drawerScrimColor: AppPalette.black.withValues(alpha: 0.42),
+      drawerScrimColor: context.activitiesColors.black.withValues(alpha: 0.42),
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
@@ -491,6 +594,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   context,
                 ).languageCode.toLowerCase();
                 final categoryOptions = _buildCategoryOptions(
+                  context,
                   provider.categoryItems,
                   discoverItems,
                   languageCode,
@@ -513,6 +617,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                 );
                 final activityMapTargets = _buildActivityMapTargets(
                   filteredItems,
+                  context: context,
                   categories: provider.categoryItems,
                   categoryOptions: categoryOptions,
                   l10n: l10n,
@@ -529,8 +634,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 460),
                     child: RefreshIndicator(
-                      color: AppPalette.primary,
-                      backgroundColor: AppPalette.warmInk63,
+                      color: context.activitiesColors.primary,
+                      backgroundColor: context.activitiesColors.warmInk63,
                       onRefresh: () => _refreshActivities(currentUserId),
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -615,14 +720,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     decoration: AppBoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          AppPalette.transparent,
-                                          AppPalette.primary.withValues(
-                                            alpha: 0.16,
-                                          ),
-                                          AppPalette.primary.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                          AppPalette.transparent,
+                                          context.activitiesColors.transparent,
+                                          context.activitiesColors.primary
+                                              .withValues(alpha: 0.16),
+                                          context.activitiesColors.primary
+                                              .withValues(alpha: 0.12),
+                                          context.activitiesColors.transparent,
                                         ],
                                       ),
                                     ),
@@ -638,10 +741,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                         max: 20,
                                       ),
                                     ),
-                                    const LinearProgressIndicator(
+                                    LinearProgressIndicator(
                                       minHeight: 2,
-                                      color: AppPalette.primary,
-                                      backgroundColor: AppPalette.transparent,
+                                      color: context.activitiesColors.primary,
+                                      backgroundColor:
+                                          context.activitiesColors.transparent,
                                     ),
                                   ],
                                 ],
@@ -650,11 +754,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                           ),
                           if (provider.state == ActivitiesState.loading &&
                               discoverItems.isEmpty)
-                            const SliverFillRemaining(
+                            SliverFillRemaining(
                               hasScrollBody: false,
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  color: AppPalette.primary,
+                                  color: context.activitiesColors.primary,
                                 ),
                               ),
                             )
@@ -856,6 +960,29 @@ double _activitiesScaled(
   return scaled.clamp(min ?? scaled, max ?? scaled);
 }
 
+bool _isLightActivitiesTheme(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.light;
+}
+
+List<BoxShadow>? _activitiesDarkThemeShadow(
+  BuildContext context, {
+  required double alpha,
+  required double blurRadius,
+  required Offset offset,
+}) {
+  if (_isLightActivitiesTheme(context)) {
+    return null;
+  }
+
+  return [
+    BoxShadow(
+      color: context.activitiesColors.black.withValues(alpha: alpha),
+      blurRadius: blurRadius,
+      offset: offset,
+    ),
+  ];
+}
+
 class _DiscoverScreenBackdrop extends StatelessWidget {
   const _DiscoverScreenBackdrop({required this.child});
 
@@ -863,119 +990,8 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topGlowHeight = _activitiesScaled(context, 344, min: 260, max: 360);
-    final topGlowInset = _activitiesScaled(context, 44, min: 24, max: 52);
-    final sideGlowSize = _activitiesScaled(context, 256, min: 180, max: 272);
-    final bottomGlowHeight = _activitiesScaled(
-      context,
-      284,
-      min: 220,
-      max: 300,
-    );
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const DecoratedBox(
-          decoration: AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppPalette.warmSurface06,
-                AppPalette.warmInk51,
-                AppPalette.warmInk16,
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          top: -_activitiesScaled(context, 144, min: 100, max: 150),
-          left: -topGlowInset,
-          right: -topGlowInset,
-          child: IgnorePointer(
-            child: SizedBox(
-              height: topGlowHeight,
-              child: DecoratedBox(
-                decoration: AppBoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment(0, -0.72),
-                    radius: 0.94,
-                    colors: [
-                      AppPalette.orangeOverlaySoft05,
-                      AppPalette.clearOrangeSoft02,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: _activitiesScaled(context, 92, min: 64, max: 100),
-          right: -_activitiesScaled(context, 92, min: 60, max: 98),
-          child: IgnorePointer(
-            child: SizedBox(
-              width: sideGlowSize,
-              height: sideGlowSize,
-              child: DecoratedBox(
-                decoration: AppBoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.topRight,
-                    radius: 1.08,
-                    colors: [
-                      AppPalette.orangeOverlaySoft03,
-                      AppPalette.clearOrangeSoft01,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: -_activitiesScaled(context, 68, min: 42, max: 76),
-          right: -_activitiesScaled(context, 68, min: 42, max: 76),
-          bottom: -_activitiesScaled(context, 124, min: 92, max: 132),
-          child: IgnorePointer(
-            child: SizedBox(
-              height: bottomGlowHeight,
-              child: DecoratedBox(
-                decoration: AppBoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment(0, 1.08),
-                    radius: 1.04,
-                    colors: [
-                      AppPalette.orangeOverlaySoft01,
-                      AppPalette.clearOrangeSoft03,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: AppBoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0, 0.58, 1],
-                  colors: [
-                    AppPalette.transparent,
-                    AppPalette.black.withValues(alpha: 0.06),
-                    AppPalette.black.withValues(alpha: 0.16),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        child,
-      ],
-    );
+    final colors = context.activitiesColors;
+    return ColoredBox(color: colors.background, child: child);
   }
 }
 
@@ -1045,6 +1061,7 @@ class _DiscoverSortBar extends StatelessWidget {
       optionGap: _activitiesScaled(context, 22, min: 16, max: 22),
       iconGap: _activitiesScaled(context, 5, min: 4, max: 5),
       verticalPadding: _activitiesScaled(context, 8, min: 6, max: 10),
+      activeColor: context.activitiesColors.primary,
     );
   }
 }
@@ -1072,17 +1089,40 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: AppTextStyle(
-            color: AppPalette.textPrimary,
-            fontSize: _activitiesScaled(context, 18, min: 16, max: 19),
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          children: [
+            Container(
+              width: _activitiesScaled(context, 30, min: 28, max: 32),
+              height: _activitiesScaled(context, 30, min: 28, max: 32),
+              decoration: AppBoxDecoration(
+                shape: BoxShape.circle,
+                color: context.activitiesColors.secondarySurface,
+                border: Border.all(
+                  color: context.activitiesColors.secondaryBorder,
+                ),
+              ),
+              child: Icon(
+                Icons.near_me_rounded,
+                color: context.activitiesColors.secondaryText,
+                size: _activitiesScaled(context, 17, min: 15, max: 18),
+              ),
+            ),
+            SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 10)),
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyle(
+                  color: context.activitiesColors.textPrimary,
+                  fontSize: _activitiesScaled(context, 18, min: 16, max: 19),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 10)),
         Material(
-          color: AppPalette.transparent,
+          color: context.activitiesColors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: AppBorderRadius.circular(radius),
@@ -1091,15 +1131,14 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
               decoration: AppBoxDecoration(
                 borderRadius: AppBorderRadius.circular(radius),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  color: context.activitiesColors.secondaryBorder,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppPalette.black.withValues(alpha: 0.24),
-                    blurRadius: 30,
-                    offset: const Offset(0, 14),
-                  ),
-                ],
+                boxShadow: _activitiesDarkThemeShadow(
+                  context,
+                  alpha: 0.24,
+                  blurRadius: 30,
+                  offset: const Offset(0, 14),
+                ),
               ),
               child: ClipRRect(
                 borderRadius: AppBorderRadius.circular(radius),
@@ -1114,7 +1153,9 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         CustomPaint(
-                          painter: _ActivitiesNearbyMapPainter(),
+                          painter: _ActivitiesNearbyMapPainter(
+                            colors: context.activitiesColors,
+                          ),
                           size: size,
                         ),
                         for (var i = 0; i < previewMarkers.length; i++)
@@ -1141,22 +1182,6 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                               marker: previewMarkers[i],
                             ),
                           ),
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: AppBoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppPalette.transparent,
-                                    AppPalette.black.withValues(alpha: 0.34),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                         Positioned(
                           left: _activitiesScaled(
                             context,
@@ -1190,7 +1215,7 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle(
-                                    color: AppPalette.textPrimary,
+                                    color: context.activitiesColors.textPrimary,
                                     fontSize: _activitiesScaled(
                                       context,
                                       13,
@@ -1218,7 +1243,7 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                                     min: 16,
                                     max: 19,
                                   ),
-                                  color: AppPalette.primary,
+                                  color: context.activitiesColors.secondaryText,
                                 ),
                               ],
                             ],
@@ -1248,10 +1273,10 @@ class _ActivityPreviewMarker extends StatelessWidget {
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         color: marker.accentColor,
-        border: Border.all(color: AppPalette.white, width: 1.6),
+        border: Border.all(color: context.activitiesColors.white, width: 1.6),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.22),
+            color: context.activitiesColors.black.withValues(alpha: 0.22),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1263,7 +1288,7 @@ class _ActivityPreviewMarker extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.clip,
           style: AppTextStyle(
-            color: AppPalette.white,
+            color: context.activitiesColors.white,
             fontSize: _activitiesScaled(context, 11, min: 9, max: 12),
             fontWeight: FontWeight.w900,
           ),
@@ -1274,21 +1299,39 @@ class _ActivityPreviewMarker extends StatelessWidget {
 }
 
 class _ActivitiesNearbyMapPainter extends CustomPainter {
+  const _ActivitiesNearbyMapPainter({required this.colors});
+
+  final _ActivitiesColors colors;
+
   @override
   void paint(Canvas canvas, Size size) {
+    final isLight = colors.isLight;
+    final backgroundColors = isLight
+        ? [colors.surface, colors.surfaceHigh, colors.secondaryContainer]
+        : [
+            colors.greenSurface09,
+            colors.warmSurfaceHigh09,
+            colors.blueSurface10,
+          ];
+    final parkColor = isLight
+        ? colors.secondaryContainer.withValues(alpha: 0.74)
+        : colors.secondary.withValues(alpha: 0.16);
+    final roadColor = isLight
+        ? colors.primaryContainer.withValues(alpha: 0.74)
+        : colors.amberLight03.withValues(alpha: 0.46);
+    final sideRoadColor = isLight
+        ? colors.primaryContainer.withValues(alpha: 0.56)
+        : colors.amberSoft04.withValues(alpha: 0.28);
+
     final backgroundPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          AppPalette.greenSurface09,
-          AppPalette.warmSurfaceHigh09,
-          AppPalette.blueSurface10,
-        ],
+        colors: backgroundColors,
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, backgroundPaint);
 
-    final parkPaint = Paint()..color = AppPalette.greenOverlayMuted01;
+    final parkPaint = Paint()..color = parkColor;
     canvas.drawOval(
       Rect.fromLTWH(size.width * 0.62, -size.height * 0.18, 150, 120),
       parkPaint,
@@ -1299,7 +1342,7 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
     );
 
     final roadPaint = Paint()
-      ..color = AppPalette.amberLight03.withValues(alpha: 0.46)
+      ..color = roadColor
       ..strokeWidth = math.max(5, size.shortestSide * 0.07)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1324,7 +1367,7 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
     canvas.drawPath(road, roadPaint);
 
     final sideRoadPaint = Paint()
-      ..color = AppPalette.amberSoft04.withValues(alpha: 0.28)
+      ..color = sideRoadColor
       ..strokeWidth = math.max(3, size.shortestSide * 0.035)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1341,7 +1384,9 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ActivitiesNearbyMapPainter oldDelegate) {
+    return oldDelegate.colors.colors != colors.colors;
+  }
 }
 
 class _DiscoverActivityCard extends StatelessWidget {
@@ -1368,7 +1413,11 @@ class _DiscoverActivityCard extends StatelessWidget {
         MediaQuery.sizeOf(context).width < 360 || textScale > 1.04;
     final artSpec = activityCardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
-    final visibilityBadge = _visibilityBadge(item.visibility, l10n);
+    final visibilityBadge = _visibilityBadge(
+      context.activitiesColors,
+      item.visibility,
+      l10n,
+    );
     final dateText = formatEventDateTime(
       item.startAt,
       timezoneId: item.timezone,
@@ -1411,31 +1460,23 @@ class _DiscoverActivityCard extends StatelessWidget {
     final categoryFont = _activitiesScaled(context, 11, min: 10, max: 11);
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activitiesColors.transparent,
       child: InkWell(
         onTap: onOpenDetails,
         borderRadius: AppBorderRadius.circular(layout.cardRadius),
         child: Ink(
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(layout.cardRadius),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppPalette.warmSurface53.withValues(alpha: 0.98),
-                AppPalette.warmInk100.withValues(alpha: 0.99),
-              ],
-            ),
+            color: context.activitiesColors.activityCardSurface,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.08),
+              color: context.activitiesColors.activityCardBorder,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.26),
-                blurRadius: 44,
-                offset: const Offset(0, 20),
-              ),
-            ],
+            boxShadow: _activitiesDarkThemeShadow(
+              context,
+              alpha: 0.26,
+              blurRadius: 44,
+              offset: const Offset(0, 20),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1451,20 +1492,6 @@ class _DiscoverActivityCard extends StatelessWidget {
                       child: ActivityDecorativeCover(
                         spec: artSpec,
                         imageUrl: resolveActivityCoverUrl(item),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: AppBoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppPalette.transparent,
-                              AppPalette.black.withValues(alpha: 0.20),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                     Positioned(
@@ -1518,15 +1545,22 @@ class _DiscoverActivityCard extends StatelessWidget {
                           vertical: badgeVertical,
                         ),
                         decoration: AppBoxDecoration(
-                          color: AppPalette.warmOverlaySurface10,
+                          color: item.isFree
+                              ? context.activitiesColors.secondarySurface
+                              : context.activitiesColors.warmOverlaySurface10,
                           borderRadius: AppBorderRadius.circular(999),
+                          border: Border.all(
+                            color: item.isFree
+                                ? context.activitiesColors.secondaryBorder
+                                : context.activitiesColors.transparent,
+                          ),
                         ),
                         child: Text(
                           badgeText,
                           style: AppTextStyle(
                             color: item.isFree
-                                ? AppPalette.success
-                                : AppPalette.primary,
+                                ? context.activitiesColors.secondaryText
+                                : context.activitiesColors.primary,
                             fontSize: priceFont,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.1,
@@ -1554,14 +1588,20 @@ class _DiscoverActivityCard extends StatelessWidget {
                           height: avatarSize,
                           decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(colors: artSpec.colors),
+                            gradient: LinearGradient(
+                              colors: artSpec.colorsFor(context),
+                            ),
                             border: Border.all(
-                              color: AppPalette.white.withValues(alpha: 0.10),
+                              color: context.activitiesColors.white.withValues(
+                                alpha: 0.10,
+                              ),
                             ),
                           ),
                           child: Icon(
                             artSpec.icon,
-                            color: AppPalette.white.withValues(alpha: 0.92),
+                            color: context.activitiesColors.white.withValues(
+                              alpha: 0.92,
+                            ),
                             size: avatarIcon,
                           ),
                         ),
@@ -1582,7 +1622,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTextStyle(
-                                  color: AppPalette.amberSoft16,
+                                  color: context.activitiesColors.amberSoft16,
                                   fontSize: categoryFont,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.4,
@@ -1601,7 +1641,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.orangeWash29,
+                        color: context.activitiesColors.orangeWash29,
                         fontSize: layout.titleSize,
                         height: 1.16,
                         letterSpacing: -0.4,
@@ -1699,14 +1739,18 @@ class _CardMetaItem extends StatelessWidget {
     final gap = _activitiesScaled(context, 8, min: 6, max: 8);
     final fontSize = _activitiesScaled(context, 13, min: 12, max: 13);
     final labelStyle = AppTextStyle(
-      color: AppPalette.orangeOverlayWash07,
+      color: context.activitiesColors.secondaryText,
       fontSize: fontSize,
       height: 1.25,
     );
 
     return Row(
       children: [
-        Icon(data.icon, size: iconSize, color: AppPalette.orangeOverlayWash08),
+        Icon(
+          data.icon,
+          size: iconSize,
+          color: context.activitiesColors.secondaryText,
+        ),
         SizedBox(width: gap),
         Expanded(
           child:
@@ -1754,19 +1798,25 @@ class _ActivitiesEmptyView extends StatelessWidget {
               height: iconWrap,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppPalette.primary.withValues(alpha: 0.10),
+                color: context.activitiesColors.primary.withValues(alpha: 0.10),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.22),
+                  color: context.activitiesColors.primary.withValues(
+                    alpha: 0.22,
+                  ),
                 ),
               ),
-              child: Icon(icon, size: iconSize, color: AppPalette.primary),
+              child: Icon(
+                icon,
+                size: iconSize,
+                color: context.activitiesColors.primary,
+              ),
             ),
             SizedBox(height: _activitiesScaled(context, 24, min: 18, max: 26)),
             Text(
               title,
               textAlign: TextAlign.center,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: context.activitiesColors.textPrimary,
                 fontSize: titleSize,
                 fontWeight: FontWeight.w800,
               ),
@@ -1776,7 +1826,7 @@ class _ActivitiesEmptyView extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: AppTextStyle(
-                color: AppPalette.orangeOverlayWash09,
+                color: context.activitiesColors.textSecondary,
                 fontSize: bodySize,
                 height: 1.45,
               ),
@@ -1921,7 +1971,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         child: Text(
           widget.l10n.activitiesAllCategories,
           style: AppTextStyle(
-            color: AppPalette.orangeOverlayWash09,
+            color: context.activitiesColors.textSecondary,
             fontSize: _activitiesScaled(context, 14, min: 13, max: 15),
           ),
         ),
@@ -2290,12 +2340,21 @@ class _CategoryFilterPill extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
-    final foreground = selected
-        ? AppPalette.orangeWash29
-        : AppPalette.orangeOverlayWash11;
+    final cardBackground = selected
+        ? context.activitiesColors.primaryContainer
+        : context.activitiesColors.surfaceRaised;
+    final cardBorder = selected
+        ? context.activitiesColors.primary
+        : context.activitiesColors.border;
+    final iconBackground = selected
+        ? context.activitiesColors.primary.withValues(alpha: 0.16)
+        : context.activitiesColors.secondarySurface;
+    final iconColor = selected
+        ? context.activitiesColors.primary
+        : context.activitiesColors.secondaryText;
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activitiesColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(18),
@@ -2310,25 +2369,8 @@ class _CategoryFilterPill extends StatelessWidget {
             ),
             decoration: AppBoxDecoration(
               borderRadius: AppBorderRadius.circular(18),
-              border: Border.all(
-                color: selected
-                    ? AppPalette.primary
-                    : AppPalette.white.withValues(alpha: 0.08),
-                width: selected ? 1.5 : 1.0,
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: selected
-                    ? [
-                        option.colors.first.withValues(alpha: 0.42),
-                        option.colors.last.withValues(alpha: 0.24),
-                      ]
-                    : [
-                        AppPalette.white.withValues(alpha: 0.03),
-                        AppPalette.white.withValues(alpha: 0.015),
-                      ],
-              ),
+              color: cardBackground,
+              border: Border.all(color: cardBorder, width: selected ? 1.5 : 1),
             ),
             child: Row(
               children: [
@@ -2337,14 +2379,19 @@ class _CategoryFilterPill extends StatelessWidget {
                   height: iconWrap,
                   decoration: AppBoxDecoration(
                     borderRadius: AppBorderRadius.circular(12),
-                    color: selected
-                        ? AppPalette.primary.withValues(alpha: 0.16)
-                        : AppPalette.white.withValues(alpha: 0.04),
+                    color: iconBackground,
+                    border: Border.all(
+                      color: selected
+                          ? context.activitiesColors.primary.withValues(
+                              alpha: 0.28,
+                            )
+                          : context.activitiesColors.secondaryBorder,
+                    ),
                   ),
                   child: Icon(
                     option.icon,
                     size: _activitiesScaled(context, 17, min: 15, max: 17),
-                    color: selected ? AppPalette.primary : foreground,
+                    color: iconColor,
                   ),
                 ),
                 SizedBox(
@@ -2360,7 +2407,7 @@ class _CategoryFilterPill extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: foreground,
+                          color: context.activitiesColors.textPrimary,
                           fontSize: titleSize,
                           height: 1.1,
                           fontWeight: FontWeight.w800,
@@ -2375,8 +2422,8 @@ class _CategoryFilterPill extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
                           color: selected
-                              ? AppPalette.amberSoft23
-                              : AppPalette.orangeOverlayWash04,
+                              ? context.activitiesColors.primarySoft
+                              : context.activitiesColors.textSecondary,
                           fontSize: countSize,
                           height: 1.1,
                           fontWeight: FontWeight.w600,
@@ -2414,9 +2461,21 @@ class _VisibilityOptionCard extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 36, min: 32, max: 36);
     final titleSize = _activitiesScaled(context, 14, min: 13, max: 15);
     final bodySize = _activitiesScaled(context, 12, min: 11, max: 12);
+    final cardBackground = selected
+        ? context.activitiesColors.primaryContainer
+        : context.activitiesColors.surfaceRaised;
+    final cardBorder = selected
+        ? context.activitiesColors.primary
+        : context.activitiesColors.border;
+    final iconBackground = selected
+        ? context.activitiesColors.primary.withValues(alpha: 0.16)
+        : context.activitiesColors.secondarySurface;
+    final iconColor = selected
+        ? context.activitiesColors.primary
+        : context.activitiesColors.secondaryText;
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activitiesColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(18),
@@ -2431,29 +2490,8 @@ class _VisibilityOptionCard extends StatelessWidget {
             ),
             decoration: AppBoxDecoration(
               borderRadius: AppBorderRadius.circular(18),
-              gradient: selected
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppPalette.primary.withValues(alpha: 0.26),
-                        AppPalette.primary.withValues(alpha: 0.12),
-                      ],
-                    )
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppPalette.white.withValues(alpha: 0.03),
-                        AppPalette.white.withValues(alpha: 0.015),
-                      ],
-                    ),
-              border: Border.all(
-                color: selected
-                    ? AppPalette.primary
-                    : AppPalette.primary.withValues(alpha: 0.18),
-                width: selected ? 1.5 : 1,
-              ),
+              color: cardBackground,
+              border: Border.all(color: cardBorder, width: selected ? 1.5 : 1),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -2463,14 +2501,19 @@ class _VisibilityOptionCard extends StatelessWidget {
                   height: iconWrap,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected
-                        ? AppPalette.white.withValues(alpha: 0.14)
-                        : AppPalette.primary.withValues(alpha: 0.08),
+                    color: iconBackground,
+                    border: Border.all(
+                      color: selected
+                          ? context.activitiesColors.primary.withValues(
+                              alpha: 0.28,
+                            )
+                          : context.activitiesColors.secondaryBorder,
+                    ),
                   ),
                   child: Icon(
                     icon,
                     size: _activitiesScaled(context, 18, min: 16, max: 18),
-                    color: selected ? AppPalette.white : AppPalette.primary,
+                    color: iconColor,
                   ),
                 ),
                 SizedBox(
@@ -2486,9 +2529,7 @@ class _VisibilityOptionCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: selected
-                              ? AppPalette.amberWash09
-                              : AppPalette.orangeOverlayLight03,
+                          color: context.activitiesColors.textPrimary,
                           fontSize: titleSize,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2501,9 +2542,7 @@ class _VisibilityOptionCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: selected
-                              ? AppPalette.white.withValues(alpha: 0.78)
-                              : AppPalette.orangeOverlayWash07,
+                          color: context.activitiesColors.textSecondary,
                           fontSize: bodySize,
                           height: 1.25,
                         ),
@@ -2546,14 +2585,16 @@ class _FilterSection extends StatelessWidget {
               height: iconWrap,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppPalette.primary.withValues(alpha: 0.10),
+                color: context.activitiesColors.primary.withValues(alpha: 0.10),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.18),
+                  color: context.activitiesColors.primary.withValues(
+                    alpha: 0.18,
+                  ),
                 ),
               ),
               child: Icon(
                 icon,
-                color: AppPalette.primary,
+                color: context.activitiesColors.primary,
                 size: _activitiesScaled(context, 15, min: 14, max: 16),
               ),
             ),
@@ -2564,7 +2605,7 @@ class _FilterSection extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: AppPalette.textPrimary,
+                  color: context.activitiesColors.textPrimary,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2591,7 +2632,7 @@ class _FilterSectionDivider extends StatelessWidget {
       child: Divider(
         height: 1,
         thickness: 1,
-        color: AppPalette.white.withValues(alpha: 0.08),
+        color: context.activitiesColors.white.withValues(alpha: 0.08),
       ),
     );
   }
@@ -2656,7 +2697,9 @@ class _RangeSheetScaffold extends StatelessWidget {
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(color: AppPalette.transparent),
+          decoration: AppBoxDecoration(
+            color: context.activitiesColors.transparent,
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeight),
             child: Container(
@@ -2665,8 +2708,10 @@ class _RangeSheetScaffold extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppPalette.warmSurface21.withValues(alpha: 0.99),
-                    AppPalette.warmInk63,
+                    context.activitiesColors.warmSurface21.withValues(
+                      alpha: 0.99,
+                    ),
+                    context.activitiesColors.warmInk63,
                   ],
                 ),
                 borderRadius: AppBorderRadius.vertical(
@@ -2675,7 +2720,7 @@ class _RangeSheetScaffold extends StatelessWidget {
                   ),
                 ),
                 border: Border.all(
-                  color: AppPalette.white.withValues(alpha: 0.04),
+                  color: context.activitiesColors.white.withValues(alpha: 0.04),
                 ),
               ),
               child: SafeArea(
@@ -2713,10 +2758,14 @@ class _RangeSheetScaffold extends StatelessWidget {
                       decoration: AppBoxDecoration(
                         border: Border(
                           top: BorderSide(
-                            color: AppPalette.primary.withValues(alpha: 0.09),
+                            color: context.activitiesColors.primary.withValues(
+                              alpha: 0.09,
+                            ),
                           ),
                         ),
-                        color: AppPalette.black.withValues(alpha: 0.06),
+                        color: context.activitiesColors.black.withValues(
+                          alpha: 0.06,
+                        ),
                       ),
                       child: AppFilterApplyButton(
                         label: applyLabel ?? l10n.myActivitiesFilterApply,
@@ -2779,7 +2828,7 @@ class _RangeTextField extends StatelessWidget {
         Text(
           label,
           style: AppTextStyle(
-            color: AppPalette.orangeOverlayWash06,
+            color: context.activitiesColors.textSecondary,
             fontSize: labelSize,
             fontWeight: FontWeight.w700,
           ),
@@ -2790,9 +2839,9 @@ class _RangeTextField extends StatelessWidget {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
-          cursorColor: AppPalette.primary,
+          cursorColor: context.activitiesColors.primary,
           style: AppTextStyle(
-            color: AppPalette.orangeOverlayWash10,
+            color: context.activitiesColors.textPrimary,
             fontSize: fieldFontSize,
             fontWeight: FontWeight.w600,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -2801,14 +2850,14 @@ class _RangeTextField extends StatelessWidget {
             isDense: true,
             hintText: hintText,
             hintStyle: AppTextStyle(
-              color: AppPalette.orangeOverlayWash01,
+              color: context.activitiesColors.textMuted,
               fontSize: fieldFontSize,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
             errorText: errorText,
             errorMaxLines: 2,
             filled: true,
-            fillColor: AppPalette.white.withValues(alpha: 0.015),
+            fillColor: context.activitiesColors.surfaceRaised,
             contentPadding: AppEdgeInsets.symmetric(
               horizontal: horizontalPadding,
               vertical: verticalPadding,
@@ -2824,7 +2873,7 @@ class _RangeTextField extends StatelessWidget {
                       child: Text(
                         prefix,
                         style: AppTextStyle(
-                          color: AppPalette.primary,
+                          color: context.activitiesColors.primary,
                           fontSize: fieldFontSize,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2835,27 +2884,32 @@ class _RangeTextField extends StatelessWidget {
             prefixIconConstraints: const BoxConstraints(minWidth: 0),
             border: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppPalette.primary.withValues(alpha: 0.22),
-              ),
+              borderSide: BorderSide(color: context.activitiesColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
+              borderSide: BorderSide(color: context.activitiesColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
               borderSide: BorderSide(
-                color: AppPalette.primary.withValues(alpha: 0.22),
+                color: context.activitiesColors.primary,
+                width: 1.4,
               ),
             ),
-            focusedBorder: const OutlineInputBorder(
+            errorBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
-              borderSide: BorderSide(color: AppPalette.primary, width: 1.4),
+              borderSide: BorderSide(
+                color: context.activitiesColors.redSoft04,
+                width: 1.2,
+              ),
             ),
-            errorBorder: const OutlineInputBorder(
+            focusedErrorBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
-              borderSide: BorderSide(color: AppPalette.redSoft04, width: 1.2),
-            ),
-            focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
-              borderSide: BorderSide(color: AppPalette.redSoft04, width: 1.4),
+              borderSide: BorderSide(
+                color: context.activitiesColors.redSoft04,
+                width: 1.4,
+              ),
             ),
           ),
         ),
@@ -2877,7 +2931,7 @@ class _PresetChip extends StatelessWidget {
     final fontSize = _activitiesScaled(context, 12, min: 11, max: 13);
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activitiesColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(999),
@@ -2888,15 +2942,15 @@ class _PresetChip extends StatelessWidget {
           ),
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(999),
-            color: AppPalette.white.withValues(alpha: 0.02),
+            color: context.activitiesColors.surfaceRaised,
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.18),
+              color: context.activitiesColors.primary.withValues(alpha: 0.34),
             ),
           ),
           child: Text(
             label,
             style: AppTextStyle(
-              color: AppPalette.orangeOverlayLight03,
+              color: context.activitiesColors.textPrimary,
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
             ),
@@ -2928,8 +2982,8 @@ class _PrimaryPillButton extends StatelessWidget {
     return FilledButton(
       onPressed: onTap,
       style: FilledButton.styleFrom(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: AppPalette.textPrimary,
+        backgroundColor: context.activitiesColors.primary,
+        foregroundColor: context.activitiesColors.textPrimary,
         minimumSize: Size(0, minHeight),
         padding: AppEdgeInsets.symmetric(
           horizontal: _activitiesScaled(context, 22, min: 16, max: 22),
@@ -3234,6 +3288,7 @@ List<ActivityListItemVm> _mergePublishedActivities({
 
 List<MapActivityTarget> _buildActivityMapTargets(
   List<ActivityListItemVm> items, {
+  required BuildContext context,
   required List<ActivityCategoryVm> categories,
   required List<_DiscoverCategoryOption> categoryOptions,
   required AppLocalizations l10n,
@@ -3274,7 +3329,7 @@ List<MapActivityTarget> _buildActivityMapTargets(
         priceLabel: priceLabel,
         avatarLabel: _activityAvatarLabel(item.title),
         icon: artSpec.icon,
-        accentColor: artSpec.colors.last,
+        accentColor: artSpec.colorsFor(context).last,
       ),
     );
 
@@ -3392,25 +3447,33 @@ Set<String> _normalizeVisibilitySelection(Set<String> values) {
 }
 
 _VisibilityBadgeStyle _visibilityBadge(
+  _ActivitiesColors colors,
   String visibility,
   AppLocalizations l10n,
 ) {
+  final readableBackground = colors.isLight
+      ? colors.white.withValues(alpha: 0.92)
+      : colors.surfaceRaised.withValues(alpha: 0.88);
+  final readableBorder = colors.isLight
+      ? colors.borderSoft
+      : colors.white.withValues(alpha: 0.14);
+
   switch (visibility.toUpperCase()) {
     case 'PRIVATE':
       return _VisibilityBadgeStyle(
         label: l10n.createVisibilityPrivate,
         icon: Icons.lock_rounded,
-        background: AppPalette.warmOverlayInk01,
-        border: AppPalette.primary.withValues(alpha: 0.26),
-        foreground: AppPalette.amberSoft16,
+        background: readableBackground,
+        border: colors.primary.withValues(alpha: 0.26),
+        foreground: colors.textPrimary,
       );
     default:
       return _VisibilityBadgeStyle(
         label: l10n.createVisibilityPublic,
         icon: Icons.public_rounded,
-        background: AppPalette.white.withValues(alpha: 0.08),
-        border: AppPalette.white.withValues(alpha: 0.12),
-        foreground: AppPalette.orangeWash15,
+        background: readableBackground,
+        border: readableBorder,
+        foreground: colors.textPrimary,
       );
   }
 }
@@ -3432,6 +3495,7 @@ bool _isDiscoverRegistrationOpen(ActivityListItemVm item) {
 }
 
 List<_DiscoverCategoryOption> _buildCategoryOptions(
+  BuildContext context,
   List<ActivityCategoryVm> categories,
   List<ActivityListItemVm> items,
   String languageCode,
@@ -3482,7 +3546,7 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
         icon: visual.icon,
-        colors: visual.colors,
+        colors: visual.colorsFor(context),
         count: counts[slug] ?? 0,
       ),
     );

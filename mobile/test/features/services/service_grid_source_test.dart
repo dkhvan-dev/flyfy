@@ -48,12 +48,44 @@ void main() {
         tileSource,
         contains('service.isAvailable && service.route.trim().isNotEmpty'),
       );
-      expect(tileSource, contains('_unavailableForegroundColor'));
-      expect(tileSource, contains('_unavailableTextColor'));
-      expect(tileSource, contains('_unavailableBackgroundColor'));
-      expect(tileSource, contains('_unavailableBorderColor'));
+      expect(tileSource, contains('style.unavailableForegroundColor'));
+      expect(tileSource, contains('style.unavailableTextColor'));
+      expect(tileSource, contains('style.unavailableBackgroundColor'));
+      expect(tileSource, contains('style.unavailableBorderColor'));
       expect(tileSource, contains('enabled: isEnabled'));
       expect(tileSource, contains('onTap: isEnabled'));
+    },
+  );
+
+  test('available services use a dedicated visible border color', () async {
+    final source = await File(
+      'lib/features/services/widgets/service_grid.dart',
+    ).readAsString();
+
+    expect(source, contains('required this.availableBorderColor'));
+    expect(source, contains('final Color availableBorderColor'));
+    expect(source, contains('style.availableBorderColor'));
+    expect(source, isNot(contains('? style.highlightColor')));
+  });
+
+  test(
+    'service grid defaults to adaptive v2 colors without legacy palette',
+    () async {
+      final source = await File(
+        'lib/features/services/widgets/service_grid.dart',
+      ).readAsString();
+
+      expect(source, contains('this.style,'));
+      expect(source, contains('final ServiceGridStyle? style;'));
+      expect(
+        source,
+        contains(
+          'final resolvedStyle = style ?? ServiceGridStyle.v2(context);',
+        ),
+      );
+      expect(source, contains('style: resolvedStyle'));
+      expect(source, isNot(contains('ServiceGridStyle.legacy')));
+      expect(source, isNot(contains('AppPalette.')));
     },
   );
 }

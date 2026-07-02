@@ -238,68 +238,93 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 375;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: AppPalette.backgroundWarm,
-      body: AuthResponsiveTextScope(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding = authScaled(
-                context,
-                isCompact ? 18 : 24,
-                min: 16,
-                max: 28,
-              );
-              final verticalPadding = authScaled(context, 22, min: 18, max: 28);
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        backgroundColor: colors.background,
+        body: AuthResponsiveTextScope(
+          child: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
+              ),
+            ),
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final horizontalPadding = authScaled(
+                    context,
+                    isCompact ? 18 : 24,
+                    min: 16,
+                    max: 28,
+                  );
+                  final verticalPadding = authScaled(
+                    context,
+                    22,
+                    min: 18,
+                    max: 28,
+                  );
 
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: AppEdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  verticalPadding,
-                  horizontalPadding,
-                  verticalPadding,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Align(
-                    alignment: Alignment.topCenter,
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: AppEdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      verticalPadding,
+                      horizontalPadding,
+                      verticalPadding,
+                    ),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _PasswordResetHeader(
-                            title: l10n.passwordResetTitle,
-                            onBack: () => context.go('/login'),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _PasswordResetHeader(
+                                title: l10n.passwordResetTitle,
+                                onBack: () => context.go('/login'),
+                              ),
+                              SizedBox(
+                                height: authScaled(
+                                  context,
+                                  22,
+                                  min: 18,
+                                  max: 24,
+                                ),
+                              ),
+                              _PasswordResetPanel(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 180),
+                                  switchInCurve: Curves.easeOut,
+                                  switchOutCurve: Curves.easeIn,
+                                  child: _step == _PasswordResetStep.request
+                                      ? _buildRequestStep(context, l10n)
+                                      : _buildVerifyStep(context, l10n),
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(
-                            height: authScaled(context, 22, min: 18, max: 24),
-                          ),
-                          _PasswordResetPanel(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 180),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              child: _step == _PasswordResetStep.request
-                                  ? _buildRequestStep(context, l10n)
-                                  : _buildVerifyStep(context, l10n),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
@@ -475,7 +500,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 label: Text(resendLabel),
                 style: TextButton.styleFrom(
                   foregroundColor: AppPalette.primary,
-                  disabledForegroundColor: AppPalette.textCaption,
+                  disabledForegroundColor: context.appColors.textDisabled,
                 ),
               );
             },
@@ -500,7 +525,7 @@ class _PasswordResetHeader extends StatelessWidget {
         IconButton(
           onPressed: onBack,
           icon: const Icon(Icons.arrow_back_rounded),
-          color: AppPalette.textPrimary,
+          color: AppPalette.primary,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
         ),
         SizedBox(width: authScaled(context, 8, min: 6, max: 8)),
@@ -510,7 +535,7 @@ class _PasswordResetHeader extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.appColors.textPrimary,
               fontSize: authScaled(context, 26, min: 22, max: 28),
               fontWeight: FontWeight.w800,
               height: 1.1,
@@ -532,8 +557,8 @@ class _PasswordResetPanel extends StatelessWidget {
     return Container(
       padding: AppEdgeInsets.all(authScaled(context, 24, min: 18, max: 28)),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.07),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
+        color: context.appColors.surface.withValues(alpha: 0.9),
+        border: Border.all(color: context.appColors.borderPrimary),
         borderRadius: AppBorderRadius.circular(
           authScaled(context, 24, min: 18, max: 24),
         ),
@@ -589,7 +614,7 @@ class _StepTitle extends StatelessWidget {
         Text(
           title,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.appColors.textPrimary,
             fontSize: authScaled(context, 20, min: 18, max: 22),
             fontWeight: FontWeight.w800,
             height: 1.15,
@@ -599,7 +624,7 @@ class _StepTitle extends StatelessWidget {
         Text(
           description,
           style: AppTextStyle(
-            color: AppPalette.textCoolSecondary,
+            color: context.appColors.textSecondary,
             fontSize: authScaled(context, 14, min: 13, max: 15),
             fontWeight: FontWeight.w500,
             height: 1.4,
@@ -631,7 +656,7 @@ class _NoticeText extends StatelessWidget {
       child: Text(
         text,
         style: AppTextStyle(
-          color: AppPalette.textPrimary,
+          color: context.appColors.textPrimary,
           fontSize: authScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w600,
           height: 1.35,
@@ -683,18 +708,18 @@ class _ResetTextField extends StatelessWidget {
       autofillHints: autofillHints,
       onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      style: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      style: AppTextStyle(
+        color: context.appColors.textPrimary,
         fontWeight: FontWeight.w600,
       ),
       decoration: AppInputDecoration(
         labelText: label,
-        labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+        labelStyle: AppTextStyle(color: context.appColors.textSecondary),
         hintText: hint,
-        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
+        hintStyle: AppTextStyle(color: context.appColors.textMuted),
         errorText: errorText,
         filled: true,
-        fillColor: AppPalette.white.withValues(alpha: 0.05),
+        fillColor: context.appColors.surfaceRaised,
         prefixIcon: Icon(icon, color: AppPalette.primary),
         suffixIcon: suffixIcon,
         contentPadding: AppEdgeInsets.symmetric(
@@ -705,23 +730,19 @@ class _ResetTextField extends StatelessWidget {
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.1),
-          ),
+          borderSide: BorderSide(color: context.appColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.1),
-          ),
+          borderSide: BorderSide(color: context.appColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
+          borderSide: BorderSide(color: AppPalette.primary, width: 1.4),
         ),
       ),
     );
@@ -752,42 +773,46 @@ class _ResetPrimaryButton extends StatelessWidget {
           borderRadius: AppBorderRadius.circular(999),
         ),
         alignment: Alignment.center,
-        child: const SizedBox(
+        child: SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
-            color: AppPalette.backgroundWarm,
+            color: context.appColors.textPrimary,
             strokeWidth: 2.5,
           ),
         ),
       );
     }
 
-    return ElevatedButton.icon(
+    final contentColor = onPressed == null
+        ? context.appColors.textDisabled
+        : context.appColors.textPrimary;
+
+    return FilledButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20, color: AppPalette.textPrimary),
+      icon: Icon(icon, size: 20, color: contentColor),
       label: Text(
         label,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
         style: AppTextStyle(
-          color: AppPalette.textPrimary,
+          color: contentColor,
           fontSize: authScaled(context, 16, min: 14, max: 16),
           fontWeight: FontWeight.bold,
         ),
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: AppPalette.backgroundWarm,
-        disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.45),
-        minimumSize: Size(double.infinity, buttonHeight),
-        padding: AppEdgeInsets.symmetric(
-          horizontal: authScaled(context, 16, min: 12, max: 18),
+      style: AppButtonStyles.primary(context.appColors).copyWith(
+        minimumSize: WidgetStateProperty.all(
+          Size(double.infinity, buttonHeight),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppBorderRadius.circular(999),
+        padding: WidgetStateProperty.all(
+          AppEdgeInsets.symmetric(
+            horizontal: authScaled(context, 16, min: 12, max: 18),
+          ),
         ),
-        elevation: 0,
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(999)),
+        ),
       ),
     );
   }
@@ -805,7 +830,7 @@ class _BackToLoginButton extends StatelessWidget {
       icon: const Icon(Icons.login_rounded),
       label: Text(label, overflow: TextOverflow.ellipsis),
       style: TextButton.styleFrom(
-        foregroundColor: AppPalette.textCoolSecondary,
+        foregroundColor: context.appColors.textSecondary,
       ),
     );
   }

@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 import '../../core/ui/filter_sheet_chrome.dart';
-import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
+import '../../features/places/place_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 /// Result handed back to the discover screen when the user taps "Show N spots".
 class PlaceFilterResult {
@@ -375,96 +375,88 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return PlaceTextScale(
-      child: Builder(
-        builder: (context) {
-          final l10n = AppLocalizations.of(context)!;
-          final adaptive = PlaceAdaptive.of(context);
-          final size = MediaQuery.sizeOf(context);
-          final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
-          final padX = adaptive.scale(22, minFactor: 0.82, maxFactor: 1.05);
-          final availableHeight = size.height - viewInsets;
-          final reservedTopGap = adaptive.scale(70, minFactor: 0.7);
-          final minSheetHeight = adaptive.scale(260, minFactor: 0.75);
-          final desiredHeight = availableHeight - reservedTopGap;
-          final sheetHeight = desiredHeight
-              .clamp(
-                availableHeight < minSheetHeight
-                    ? availableHeight
-                    : minSheetHeight,
-                availableHeight,
-              )
-              .toDouble();
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: PlaceTextScale(
+        child: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            final colors = AppDesignSystem.colorsFor(context);
+            final adaptive = PlaceAdaptive.of(context);
+            final size = MediaQuery.sizeOf(context);
+            final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
+            final padX = adaptive.scale(22, minFactor: 0.82, maxFactor: 1.05);
+            final availableHeight = size.height - viewInsets;
+            final reservedTopGap = adaptive.scale(70, minFactor: 0.7);
+            final minSheetHeight = adaptive.scale(260, minFactor: 0.75);
+            final desiredHeight = availableHeight - reservedTopGap;
+            final sheetHeight = desiredHeight
+                .clamp(
+                  availableHeight < minSheetHeight
+                      ? availableHeight
+                      : minSheetHeight,
+                  availableHeight,
+                )
+                .toDouble();
 
-          return AppModalSheetFrame(
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: AppEdgeInsets.only(bottom: viewInsets),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: SizedBox(
-                  height: sheetHeight,
-                  child: Container(
-                    decoration: const AppBoxDecoration(
-                      color: AppPalette.warmInk76,
-                      borderRadius: AppBorderRadius.vertical(
-                        top: AppRadiusValue.circular(16),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppPalette.neutralOverlayInk07,
-                          blurRadius: 70,
-                          offset: Offset(0, 42),
-                        ),
-                      ],
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: Column(
-                        children: [
-                          _buildHeader(l10n, adaptive, padX),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              padding: AppEdgeInsets.fromLTRB(
-                                padX,
-                                adaptive.scale(32),
-                                padX,
-                                adaptive.scale(20),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildCountrySection(l10n, adaptive),
-                                  if (_country != null) ...[
+            return AppModalSheetFrame(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: AppEdgeInsets.only(bottom: viewInsets),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: SizedBox(
+                    height: sheetHeight,
+                    child: Container(
+                      decoration: _placesFilterSheetDecoration(context, colors),
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          children: [
+                            _buildHeader(l10n, adaptive, padX),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: AppEdgeInsets.fromLTRB(
+                                  padX,
+                                  adaptive.scale(32),
+                                  padX,
+                                  adaptive.scale(20),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildCountrySection(l10n, adaptive),
+                                    if (_country != null) ...[
+                                      SizedBox(height: adaptive.scale(38)),
+                                      _buildCitySection(l10n, adaptive),
+                                    ],
                                     SizedBox(height: adaptive.scale(38)),
-                                    _buildCitySection(l10n, adaptive),
+                                    _buildCategoriesSection(l10n, adaptive),
+                                    SizedBox(height: adaptive.scale(38)),
+                                    _buildRatingSection(l10n, adaptive),
+                                    SizedBox(height: adaptive.scale(38)),
+                                    _buildDurationSection(l10n, adaptive),
+                                    SizedBox(height: adaptive.scale(38)),
+                                    _buildRangeSection(l10n, adaptive),
+                                    SizedBox(height: adaptive.scale(38)),
+                                    _buildPriceSection(l10n, adaptive),
                                   ],
-                                  SizedBox(height: adaptive.scale(38)),
-                                  _buildCategoriesSection(l10n, adaptive),
-                                  SizedBox(height: adaptive.scale(38)),
-                                  _buildRatingSection(l10n, adaptive),
-                                  SizedBox(height: adaptive.scale(38)),
-                                  _buildDurationSection(l10n, adaptive),
-                                  SizedBox(height: adaptive.scale(38)),
-                                  _buildRangeSection(l10n, adaptive),
-                                  SizedBox(height: adaptive.scale(38)),
-                                  _buildPriceSection(l10n, adaptive),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                          _buildFooter(l10n, adaptive, padX),
-                        ],
+                            _buildFooter(l10n, adaptive, padX),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -567,8 +559,10 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
         height: adaptive.scale(50),
         padding: AppEdgeInsets.symmetric(horizontal: adaptive.scale(8)),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface34,
-          border: Border.all(color: AppPalette.warmSurface79),
+          color: AppDesignSystem.colorsFor(context).surfaceRaised,
+          border: Border.all(
+            color: AppDesignSystem.colorsFor(context).borderSoft,
+          ),
           borderRadius: AppBorderRadius.circular(999),
         ),
         child: Row(
@@ -630,7 +624,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
       trailing: Text(
         value,
         style: AppTextStyle(
-          color: AppPalette.primary,
+          color: AppDesignSystem.colorsFor(context).primary,
           fontSize: adaptive.scale(17),
           fontWeight: FontWeight.w900,
         ),
@@ -643,10 +637,12 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: adaptive.scale(4),
-                activeTrackColor: AppPalette.primary,
-                inactiveTrackColor: AppPalette.warmSurfaceHigh08,
-                thumbColor: AppPalette.primary,
-                overlayColor: AppPalette.primary.withValues(alpha: 0.18),
+                activeTrackColor: AppDesignSystem.colorsFor(context).primary,
+                inactiveTrackColor: AppDesignSystem.colorsFor(
+                  context,
+                ).borderSoft,
+                thumbColor: AppDesignSystem.colorsFor(context).primary,
+                overlayColor: AppDesignSystem.colorsFor(context).primarySoft,
                 rangeThumbShape: RoundRangeSliderThumbShape(
                   enabledThumbRadius: adaptive.scale(11),
                 ),
@@ -668,7 +664,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
                   Text(
                     l10n.placeFilterRangeMinTick.toUpperCase(),
                     style: AppTextStyle(
-                      color: AppPalette.warmMuted09,
+                      color: AppDesignSystem.colorsFor(context).textSecondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,
@@ -677,7 +673,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
                   Text(
                     l10n.placeFilterRangeMaxTick.toUpperCase(),
                     style: AppTextStyle(
-                      color: AppPalette.warmMuted09,
+                      color: AppDesignSystem.colorsFor(context).textSecondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,
@@ -725,6 +721,8 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
     PlaceAdaptive adaptive,
     double padX,
   ) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: AppEdgeInsets.fromLTRB(
         padX,
@@ -733,19 +731,8 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
         adaptive.scale(22),
       ),
       decoration: AppBoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppPalette.warmOverlayInk12, AppPalette.warmSurface15],
-        ),
-        border: const Border(top: BorderSide(color: AppPalette.warmSurface66)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.primary.withValues(alpha: 0.18),
-            blurRadius: 28,
-            offset: const Offset(0, 17),
-          ),
-        ],
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.borderSoft)),
       ),
       child: AppFilterApplyButton(
         label: l10n.placeFilterShowSpots(_previewCount),
@@ -786,6 +773,8 @@ class _SectionContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -795,7 +784,7 @@ class _SectionContainer extends StatelessWidget {
               child: Text(
                 header.toUpperCase(),
                 style: AppTextStyle(
-                  color: AppPalette.orangeLight04,
+                  color: colors.primary,
                   fontSize: adaptive.scale(12),
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2.2,
@@ -829,9 +818,10 @@ class _PillChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final hPad = adaptive.scale(wide ? 19 : 18);
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(999),
@@ -841,10 +831,10 @@ class _PillChip extends StatelessWidget {
             vertical: adaptive.scale(9),
           ),
           decoration: AppBoxDecoration(
-            color: selected ? AppPalette.primary : AppPalette.warmSurface34,
-            border: selected
-                ? null
-                : Border.all(color: AppPalette.warmSurface79),
+            color: selected ? colors.primary : colors.surfaceRaised,
+            border: Border.all(
+              color: selected ? colors.borderPrimary : colors.borderSoft,
+            ),
             borderRadius: AppBorderRadius.circular(999),
           ),
           child: ConstrainedBox(
@@ -854,7 +844,7 @@ class _PillChip extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyle(
-                  color: selected ? AppPalette.white : AppPalette.orangeLight04,
+                  color: selected ? colors.textPrimary : colors.textSecondary,
                   fontSize: adaptive.scale(14),
                   fontWeight: FontWeight.w800,
                 ),
@@ -882,20 +872,22 @@ class _RatingPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: AppBorderRadius.circular(999),
       child: Container(
         height: adaptive.scale(40),
         decoration: AppBoxDecoration(
-          color: selected ? AppPalette.primary : AppPalette.transparent,
+          color: selected ? colors.primary : colors.transparent,
           borderRadius: AppBorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: AppTextStyle(
-            color: selected ? AppPalette.textPrimary : AppPalette.orangeLight04,
+            color: selected ? colors.textPrimary : colors.textSecondary,
             fontSize: adaptive.scale(14),
             fontWeight: FontWeight.w900,
           ),
@@ -920,13 +912,15 @@ class _UnderlineNumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return TextField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
       onChanged: onChanged,
       style: AppTextStyle(
-        color: AppPalette.textPrimary,
+        color: colors.textPrimary,
         fontSize: adaptive.scale(13),
         fontWeight: FontWeight.w900,
         letterSpacing: 1.6,
@@ -934,19 +928,19 @@ class _UnderlineNumberField extends StatelessWidget {
       decoration: AppInputDecoration(
         hintText: hint.toUpperCase(),
         hintStyle: AppTextStyle(
-          color: AppPalette.warmMuted09,
+          color: colors.textSecondary,
           fontSize: adaptive.scale(13),
           fontWeight: FontWeight.w900,
           letterSpacing: 1.6,
         ),
-        border: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppPalette.warmSurface66),
+        border: UnderlineInputBorder(
+          borderSide: BorderSide(color: colors.borderSoft),
         ),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppPalette.warmSurface66),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: colors.borderSoft),
         ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppPalette.primary),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: colors.primary),
         ),
         contentPadding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(4),
@@ -955,6 +949,30 @@ class _UnderlineNumberField extends StatelessWidget {
       ),
     );
   }
+}
+
+BoxDecoration _placesFilterSheetDecoration(
+  BuildContext context,
+  AppColors colors,
+) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return AppBoxDecoration(
+    color: colors.surface,
+    borderRadius: const AppBorderRadius.vertical(
+      top: AppRadiusValue.circular(16),
+    ),
+    border: Border.all(color: colors.border),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.24),
+              blurRadius: 70,
+              offset: const Offset(0, 42),
+            ),
+          ]
+        : const [],
+  );
 }
 
 String _formatInitial(double? v) {

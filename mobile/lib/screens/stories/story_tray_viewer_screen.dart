@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/chat_api.dart';
@@ -347,6 +347,7 @@ class _StoryTrayViewerScreenState extends State<StoryTrayViewerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final story = _currentStory;
     final currentUserId = _currentUserId(context);
     final canReply =
@@ -368,31 +369,34 @@ class _StoryTrayViewerScreenState extends State<StoryTrayViewerScreen>
           _close();
         }
       },
-      child: Scaffold(
-        key: const ValueKey('story-sequence-viewer'),
-        backgroundColor: AppPalette.black,
-        body: SafeArea(
-          child: story == null
-              ? _EmptyViewer(onClose: _close)
-              : _ViewerBody(
-                  stories: _stories,
-                  currentIndex: _index,
-                  currentProgress: _progressController.view,
-                  story: story,
-                  onClose: _close,
-                  onNext: _goNext,
-                  onPrevious: _goPrevious,
-                  onPause: _pauseProgress,
-                  onResume: _resumeProgress,
-                  replyController: _replyController,
-                  replyFocusNode: _replyFocusNode,
-                  canReply: canReply,
-                  isSendingReply: _isSendingReply,
-                  isLiked: isCurrentStoryLiked,
-                  isLiking: isCurrentStoryLiking,
-                  onSendReply: _sendReplyToCurrentStory,
-                  onLike: _likeCurrentStory,
-                ),
+      child: Theme(
+        data: AppDesignSystem.themeFor(context),
+        child: Scaffold(
+          key: const ValueKey('story-sequence-viewer'),
+          backgroundColor: colors.black,
+          body: SafeArea(
+            child: story == null
+                ? _EmptyViewer(onClose: _close)
+                : _ViewerBody(
+                    stories: _stories,
+                    currentIndex: _index,
+                    currentProgress: _progressController.view,
+                    story: story,
+                    onClose: _close,
+                    onNext: _goNext,
+                    onPrevious: _goPrevious,
+                    onPause: _pauseProgress,
+                    onResume: _resumeProgress,
+                    replyController: _replyController,
+                    replyFocusNode: _replyFocusNode,
+                    canReply: canReply,
+                    isSendingReply: _isSendingReply,
+                    isLiked: isCurrentStoryLiked,
+                    isLiking: isCurrentStoryLiking,
+                    onSendReply: _sendReplyToCurrentStory,
+                    onLike: _likeCurrentStory,
+                  ),
+          ),
         ),
       ),
     );
@@ -440,6 +444,7 @@ class _ViewerBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final textTheme = Theme.of(context).textTheme;
 
     void closeOnDownSwipe(DragEndDetails details) {
@@ -462,16 +467,7 @@ class _ViewerBody extends StatelessWidget {
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: AppBoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppPalette.black.withValues(alpha: 0.64),
-                        AppPalette.black.withValues(alpha: 0.08),
-                        AppPalette.black.withValues(alpha: 0.78),
-                      ],
-                      stops: const [0, 0.42, 1],
-                    ),
+                    gradient: _storyViewerOverlayGradient(colors),
                   ),
                 ),
               ),
@@ -524,7 +520,7 @@ class _ViewerBody extends StatelessWidget {
                           label: story.author.initials,
                           imageUrl: story.author.avatarUrl,
                           size: 36,
-                          borderColor: AppPalette.white.withValues(alpha: 0.72),
+                          borderColor: colors.white.withValues(alpha: 0.72),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -533,7 +529,7 @@ class _ViewerBody extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.bodyMedium?.copyWith(
-                              color: AppPalette.white,
+                              color: colors.white,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -545,7 +541,7 @@ class _ViewerBody extends StatelessWidget {
                           ).closeButtonTooltip,
                           onPressed: onClose,
                           icon: const Icon(Icons.close_rounded),
-                          color: AppPalette.white,
+                          color: colors.white,
                         ),
                       ],
                     ),
@@ -596,7 +592,7 @@ class _ViewerBody extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style: textTheme.headlineSmall
                                             ?.copyWith(
-                                              color: AppPalette.white,
+                                              color: colors.white,
                                               fontWeight: FontWeight.w900,
                                             ),
                                       ),
@@ -607,7 +603,7 @@ class _ViewerBody extends StatelessWidget {
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                           style: textTheme.bodyMedium?.copyWith(
-                                            color: AppPalette.white.withValues(
+                                            color: colors.white.withValues(
                                               alpha: 0.82,
                                             ),
                                           ),
@@ -700,13 +696,10 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
-      decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.14),
-        borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.24)),
-      ),
+      decoration: _storyViewerPillDecoration(colors),
       child: Row(
         children: [
           Expanded(
@@ -722,14 +715,14 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
                   widget.onSend();
                 }
               },
-              style: const AppTextStyle(
-                color: AppPalette.white,
+              style: AppTextStyle(
+                color: colors.white,
                 fontWeight: FontWeight.w700,
               ),
               decoration: AppInputDecoration(
                 hintText: l10n.storyReplyInputHint,
                 hintStyle: AppTextStyle(
-                  color: AppPalette.white.withValues(alpha: 0.68),
+                  color: colors.white.withValues(alpha: 0.68),
                 ),
                 isDense: true,
                 border: InputBorder.none,
@@ -745,17 +738,17 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
             tooltip: l10n.storyLikeAction,
             onPressed: widget.isLiked || widget.isLiking ? null : widget.onLike,
             color: widget.isLiked
-                ? AppPalette.danger
-                : AppPalette.white.withValues(alpha: 0.92),
+                ? colors.danger
+                : colors.white.withValues(alpha: 0.92),
             disabledColor: widget.isLiked
-                ? AppPalette.danger
-                : AppPalette.white.withValues(alpha: 0.44),
+                ? colors.danger
+                : colors.white.withValues(alpha: 0.44),
             icon: widget.isLiking
-                ? const SizedBox.square(
+                ? SizedBox.square(
                     dimension: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppPalette.white,
+                      color: colors.textPrimary,
                     ),
                   )
                 : Icon(
@@ -772,20 +765,21 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
               tooltip: l10n.storyReplySendAction,
               onPressed: _hasText && !widget.isSending ? widget.onSend : null,
               style: IconButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                disabledBackgroundColor: AppPalette.white.withValues(
-                  alpha: 0.16,
-                ),
-                foregroundColor: AppPalette.warmInk93,
-                disabledForegroundColor: AppPalette.white.withValues(
+                backgroundColor: colors.primary,
+                disabledBackgroundColor: colors.white.withValues(alpha: 0.16),
+                foregroundColor: colors.textPrimary,
+                disabledForegroundColor: colors.textSecondary.withValues(
                   alpha: 0.38,
                 ),
                 minimumSize: const Size.square(38),
               ),
               icon: widget.isSending
-                  ? const SizedBox.square(
+                  ? SizedBox.square(
                       dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.textPrimary,
+                      ),
                     )
                   : const Icon(Icons.send_rounded, size: 19),
             ),
@@ -809,6 +803,8 @@ class _StoryProgressStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return AnimatedBuilder(
       animation: currentProgress,
       builder: (context, _) {
@@ -833,11 +829,11 @@ class _StoryProgressStrip extends StatelessWidget {
                         : index == currentIndex
                         ? currentProgress.value
                         : 0,
-                    backgroundColor: AppPalette.white.withValues(alpha: 0.28),
+                    backgroundColor: colors.white.withValues(alpha: 0.28),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       index == currentIndex
-                          ? AppPalette.primary
-                          : AppPalette.white.withValues(alpha: 0.9),
+                          ? colors.primary
+                          : colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -900,6 +896,7 @@ class _EmptyViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Stack(
       children: [
@@ -910,7 +907,7 @@ class _EmptyViewer extends StatelessWidget {
               l10n.storyEmptyTitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppPalette.white,
+                color: colors.white,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -924,12 +921,33 @@ class _EmptyViewer extends StatelessWidget {
             tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
             onPressed: onClose,
             icon: const Icon(Icons.close_rounded),
-            color: AppPalette.white,
+            color: colors.white,
           ),
         ),
       ],
     );
   }
+}
+
+LinearGradient _storyViewerOverlayGradient(AppColors colors) {
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      colors.black.withValues(alpha: 0.64),
+      colors.black.withValues(alpha: 0.08),
+      colors.black.withValues(alpha: 0.78),
+    ],
+    stops: const [0, 0.42, 1],
+  );
+}
+
+BoxDecoration _storyViewerPillDecoration(AppColors colors) {
+  return AppBoxDecoration(
+    color: colors.white.withValues(alpha: 0.14),
+    borderRadius: AppBorderRadius.circular(999),
+    border: Border.all(color: colors.white.withValues(alpha: 0.24)),
+  );
 }
 
 bool _isStoryViewable(StoryVm story, {bool allowExpired = false}) {

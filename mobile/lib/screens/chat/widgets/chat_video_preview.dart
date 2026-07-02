@@ -193,6 +193,8 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: widget.enablePlayback ? () => unawaited(_openFullscreen()) : null,
       behavior: HitTestBehavior.opaque,
@@ -201,11 +203,11 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
         child: AspectRatio(
           aspectRatio: widget.aspectRatio,
           child: DecoratedBox(
-            decoration: const AppBoxDecoration(
+            decoration: AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppPalette.warmSurface65, AppPalette.warmInk05],
+                colors: [colors.surfaceWarm, colors.backgroundDeep],
               ),
             ),
             child: Stack(
@@ -231,10 +233,10 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
                       return const _VideoFallback(icon: Icons.movie_outlined);
                     }
 
-                    return const _VideoFallback(
+                    return _VideoFallback(
                       progress: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                       ),
                     );
                   },
@@ -245,8 +247,8 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.transparent,
-                        AppPalette.black.withValues(alpha: 0.18),
+                        colors.transparent,
+                        colors.scrim.withValues(alpha: 0.18),
                       ],
                     ),
                   ),
@@ -274,12 +276,14 @@ class _VideoFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Center(
       child:
           progress ??
           Icon(
             icon ?? Icons.movie_rounded,
-            color: AppPalette.white.withValues(alpha: 0.52),
+            color: colors.white.withValues(alpha: 0.52),
             size: 28,
           ),
     );
@@ -299,6 +303,7 @@ class _VideoPlayBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final isPlaying = controller?.value.isPlaying ?? false;
 
     return Center(
@@ -307,23 +312,23 @@ class _VideoPlayBadge extends StatelessWidget {
         height: size,
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.black.withValues(alpha: 0.42),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.32)),
+          color: colors.scrim.withValues(alpha: 0.42),
+          border: Border.all(color: colors.white.withValues(alpha: 0.32)),
         ),
         child: busy
             ? Center(
                 child: SizedBox(
                   width: size * 0.38,
                   height: size * 0.38,
-                  child: const CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppPalette.white,
+                    color: colors.white,
                   ),
                 ),
               )
             : Icon(
                 isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: AppPalette.white,
+                color: colors.white,
                 size: size * 0.62,
               ),
       ),

@@ -74,6 +74,63 @@ enum _FooterAction {
   complete,
 }
 
+final class _ActivityDetailsColors {
+  const _ActivityDetailsColors._(this.colors);
+
+  final AppColors colors;
+
+  static _ActivityDetailsColors of(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return _ActivityDetailsColors._(colors);
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get base => colors.background;
+  Color get sheet => colors.surfaceRaised;
+  Color get surface => colors.surface;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get detailCardSurface => colors.surfaceRaised;
+  Color get detailCardBorder => colors.border;
+  Color get text => colors.textPrimary;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get muted => colors.textSecondary;
+  Color get subtle => colors.textMuted;
+  Color get disabled => colors.textDisabled;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get mutedPill => colors.surfaceHigh;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+
+  List<Color> get primaryGradient => [primarySoft, primary, primaryContainer];
+  List<Color> get secondaryGradient => [
+    secondarySoft,
+    secondary,
+    surfaceTeal,
+    background,
+  ];
+  Color get background => colors.background;
+}
+
+extension _ActivityDetailsColorContext on BuildContext {
+  _ActivityDetailsColors get activityDetailsColors =>
+      _ActivityDetailsColors.of(this);
+}
+
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   static const double _backSwipeMinDistance = 56;
   static const double _backSwipeMinVelocity = 700;
@@ -406,9 +463,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Future<bool?> _showPrivateJoinDialog(AppLocalizations l10n) {
     return showAppModalDialog<bool>(
       context: context,
-      barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: AppPalette.transparent,
+      barrierColor: context.activityDetailsColors.transparent,
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (dialogContext, _, _) {
         return _PrivateActivityPasswordDialog(
@@ -738,7 +794,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activityDetailsColors.transparent,
       builder: (sheetContext) => _CancelActivitySheet(l10n: l10n),
     );
   }
@@ -748,7 +804,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activityDetailsColors.transparent,
       builder: (sheetContext) => _CompleteActivitySheet(l10n: l10n),
     );
   }
@@ -758,7 +814,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activityDetailsColors.transparent,
       builder: (sheetContext) => _CancelInsteadSheet(l10n: l10n),
     );
   }
@@ -1157,7 +1213,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activityDetailsColors.transparent,
       builder: (sheetContext) {
         final locale = Localizations.localeOf(sheetContext).toString();
         final dateFormat = DateFormat.MMMd(locale).add_Hm();
@@ -1168,18 +1224,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
             top: false,
             bottom: false,
             child: Padding(
-              padding: const AppEdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const AppEdgeInsets.fromLTRB(0, 12, 0, 0),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
                 ),
                 decoration: AppBoxDecoration(
-                  color: _DetailsColors.sheet,
+                  color: context.activityDetailsColors.sheet,
                   borderRadius: const AppBorderRadius.vertical(
                     top: AppRadiusValue.circular(30),
                   ),
                   border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.08),
+                    color: context.activityDetailsColors.white.withValues(
+                      alpha: 0.08,
+                    ),
                   ),
                 ),
                 child: Column(
@@ -1189,7 +1247,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       width: 48,
                       height: 5,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: context.activityDetailsColors.white.withValues(
+                          alpha: 0.18,
+                        ),
                         borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
@@ -1203,8 +1263,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               Expanded(
                                 child: Text(
                                   l10n.activityGoingTitle(participants.length),
-                                  style: const AppTextStyle(
-                                    color: _DetailsColors.text,
+                                  style: AppTextStyle(
+                                    color: context.activityDetailsColors.text,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0,
@@ -1214,9 +1274,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               IconButton(
                                 onPressed: () =>
                                     Navigator.of(sheetContext).pop(),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.close_rounded,
-                                  color: _DetailsColors.text,
+                                  color: context.activityDetailsColors.text,
                                 ),
                               ),
                             ],
@@ -1229,12 +1289,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 unawaited(_showInviteFriendsSheet(l10n));
                               },
                               style: TextButton.styleFrom(
-                                foregroundColor: AppPalette.primary,
+                                foregroundColor:
+                                    context.activityDetailsColors.primary,
                                 padding: AppEdgeInsets.zero,
                                 minimumSize: const Size(0, 40),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.person_add_alt_1_rounded,
                                 size: 19,
                               ),
@@ -1242,7 +1303,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 l10n.activityInviteFriendsButton,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const AppTextStyle(
+                                style: AppTextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0,
@@ -1253,7 +1314,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         ],
                       ),
                     ),
-                    const Divider(height: 1, color: AppPalette.outlineOverlay),
+                    Divider(
+                      height: 1,
+                      color: context.activityDetailsColors.border,
+                    ),
                     Expanded(
                       child: ListView.separated(
                         padding: AppEdgeInsets.fromLTRB(
@@ -1281,7 +1345,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       .profile,
                                 ),
                                 radius: 21,
-                                borderColor: _DetailsColors.sheet,
+                                borderColor:
+                                    context.activityDetailsColors.sheet,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -1294,8 +1359,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                         l10n,
                                         resolvedProfiles: _resolvedProfiles,
                                       ),
-                                      style: const AppTextStyle(
-                                        color: _DetailsColors.text,
+                                      style: AppTextStyle(
+                                        color:
+                                            context.activityDetailsColors.text,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -1305,8 +1371,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       dateFormat.format(
                                         participant.joinedAt.toLocal(),
                                       ),
-                                      style: const AppTextStyle(
-                                        color: _DetailsColors.muted,
+                                      style: AppTextStyle(
+                                        color:
+                                            context.activityDetailsColors.muted,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1320,9 +1387,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                   l10n,
                                 ),
                                 backgroundColor: _statusPillColor(
+                                  context,
                                   displayStatus,
                                 ),
-                                textColor: _statusTextColor(displayStatus),
+                                textColor: _statusTextColor(
+                                  context,
+                                  displayStatus,
+                                ),
                                 maxWidth: 136,
                               ),
                             ],
@@ -1362,7 +1433,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.activityDetailsColors.transparent,
       builder: (sheetContext) {
         return _DetailsResponsiveTextScope(
           child: _InviteFriendsSheet(
@@ -1494,14 +1565,16 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
     if ((_isInitialLoadPending || provider.state == ActivitiesState.loading) &&
         activity == null) {
-      return const _DetailsResponsiveTextScope(
+      return _DetailsResponsiveTextScope(
         child: Scaffold(
-          backgroundColor: _DetailsColors.base,
+          backgroundColor: context.activityDetailsColors.base,
           body: Stack(
             children: [
               Positioned.fill(child: _DetailsBackdrop()),
               Center(
-                child: CircularProgressIndicator(color: AppPalette.primary),
+                child: CircularProgressIndicator(
+                  color: context.activityDetailsColors.primary,
+                ),
               ),
             ],
           ),
@@ -1512,7 +1585,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     if (provider.state == ActivitiesState.error && activity == null) {
       return _DetailsResponsiveTextScope(
         child: Scaffold(
-          backgroundColor: _DetailsColors.base,
+          backgroundColor: context.activityDetailsColors.base,
           body: Stack(
             children: [
               const Positioned.fill(child: _DetailsBackdrop()),
@@ -1532,7 +1605,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     if (activity == null) {
       return _DetailsResponsiveTextScope(
         child: Scaffold(
-          backgroundColor: _DetailsColors.base,
+          backgroundColor: context.activityDetailsColors.base,
           body: Stack(
             children: [
               const Positioned.fill(child: _DetailsBackdrop()),
@@ -1616,8 +1689,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         ? Icons.task_alt_rounded
         : Icons.event_busy_rounded;
     final lifecycleReasonColor = activity.isCompletedEarly
-        ? _DetailsColors.success
-        : AppPalette.primary;
+        ? context.activityDetailsColors.success
+        : context.activityDetailsColors.primary;
     final baseCategoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -1647,7 +1720,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
     return _DetailsResponsiveTextScope(
       child: Scaffold(
-        backgroundColor: _DetailsColors.base,
+        backgroundColor: context.activityDetailsColors.base,
         extendBody: true,
         bottomNavigationBar: _DetailsActionBar(
           activity: activity,
@@ -1691,8 +1764,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
                   return RefreshIndicator(
                     onRefresh: _refreshScreen,
-                    color: AppPalette.primary,
-                    backgroundColor: _DetailsColors.sheet,
+                    color: context.activityDetailsColors.primary,
+                    backgroundColor: context.activityDetailsColors.sheet,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
@@ -1707,7 +1780,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         _DetailsTopBar(
                           title: l10n.activityDetailsTitle,
                           status: formatActivityDisplayStatus(activity, l10n),
-                          statusColor: _activityStatusColor(activity.status),
+                          statusColor: _activityStatusColor(
+                            context,
+                            activity.status,
+                          ),
                           compact: compact,
                           onBack: () => context.pop(),
                           onShare: () => _copyValue(
@@ -2007,16 +2083,6 @@ double _detailsScaled(
   return scaled.clamp(lower, upper);
 }
 
-abstract final class _DetailsColors {
-  static const base = AppPalette.warmInk13;
-  static const sheet = AppPalette.warmInk33;
-  static const text = AppPalette.amberWash02;
-  static const muted = AppPalette.neutralSoft04;
-  static const subtle = AppPalette.neutralSoft01;
-  static const success = AppPalette.greenMuted01;
-  static const mutedPill = AppPalette.neutralOverlaySoft01;
-}
-
 class _DetailsBackdrop extends StatelessWidget {
   const _DetailsBackdrop();
 
@@ -2030,7 +2096,10 @@ class _DetailsBackdrop extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppPalette.warmInk39, _DetailsColors.base],
+          colors: [
+            context.activityDetailsColors.background,
+            context.activityDetailsColors.base,
+          ],
         ),
       ),
       child: Stack(
@@ -2046,8 +2115,10 @@ class _DetailsBackdrop extends StatelessWidget {
                   center: Alignment.topCenter,
                   radius: 0.8,
                   colors: [
-                    AppPalette.primary.withValues(alpha: 0.14),
-                    AppPalette.transparent,
+                    context.activityDetailsColors.primary.withValues(
+                      alpha: 0.14,
+                    ),
+                    context.activityDetailsColors.transparent,
                   ],
                 ),
               ),
@@ -2064,8 +2135,10 @@ class _DetailsBackdrop extends StatelessWidget {
                   center: Alignment.bottomCenter,
                   radius: 0.9,
                   colors: [
-                    AppPalette.primary.withValues(alpha: 0.08),
-                    AppPalette.transparent,
+                    context.activityDetailsColors.primary.withValues(
+                      alpha: 0.08,
+                    ),
+                    context.activityDetailsColors.transparent,
                   ],
                 ),
               ),
@@ -2169,7 +2242,7 @@ class _PrivateActivityPasswordDialogState
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusScope.of(context).unfocus(),
         child: Material(
-          color: AppPalette.transparent,
+          color: context.activityDetailsColors.transparent,
           child: Stack(
             children: [
               Positioned.fill(
@@ -2179,16 +2252,18 @@ class _PrivateActivityPasswordDialogState
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.blueOverlayInk01,
-                        AppPalette.blueOverlayInk02,
-                        AppPalette.blueOverlayInk03,
+                        context.activityDetailsColors.secondary,
+                        context.activityDetailsColors.secondary,
+                        context.activityDetailsColors.secondary,
                       ],
                     ),
                   ),
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                     child: ColoredBox(
-                      color: AppPalette.black.withValues(alpha: 0.12),
+                      color: context.activityDetailsColors.black.withValues(
+                        alpha: 0.12,
+                      ),
                     ),
                   ),
                 ),
@@ -2213,19 +2288,19 @@ class _PrivateActivityPasswordDialogState
                             top: AppRadiusValue.circular(34),
                           ),
                           border: Border.all(
-                            color: AppPalette.orangeOverlaySoft04,
+                            color: context.activityDetailsColors.primary,
                           ),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              AppPalette.warmOverlaySurface18,
-                              AppPalette.warmOverlayInk15,
+                              context.activityDetailsColors.surfaceWarm,
+                              context.activityDetailsColors.background,
                             ],
                           ),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: AppPalette.neutralOverlayInk05,
+                              color: context.activityDetailsColors.textMuted,
                               blurRadius: 60,
                               offset: Offset(0, -28),
                             ),
@@ -2245,13 +2320,13 @@ class _PrivateActivityPasswordDialogState
                                 width: 58,
                                 height: 8,
                                 decoration: AppBoxDecoration(
-                                  color: AppPalette.primary.withValues(
-                                    alpha: 0.42,
-                                  ),
+                                  color: context.activityDetailsColors.primary
+                                      .withValues(alpha: 0.42),
                                   borderRadius: AppBorderRadius.circular(999),
-                                  boxShadow: const [
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: AppPalette.outlineOverlay,
+                                      color:
+                                          context.activityDetailsColors.border,
                                       blurRadius: 1,
                                       offset: Offset(0, 1),
                                       spreadRadius: -0.4,
@@ -2265,21 +2340,22 @@ class _PrivateActivityPasswordDialogState
                                 height: compact ? 64 : 70,
                                 decoration: AppBoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppPalette.primary.withValues(
-                                    alpha: 0.14,
-                                  ),
-                                  boxShadow: const [
+                                  color: context.activityDetailsColors.primary
+                                      .withValues(alpha: 0.14),
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: AppPalette.neutralOverlayInk03,
+                                      color: context
+                                          .activityDetailsColors
+                                          .textMuted,
                                       blurRadius: 16,
                                       offset: Offset(0, 6),
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.lock_outline_rounded,
                                   size: 28,
-                                  color: AppPalette.primary,
+                                  color: context.activityDetailsColors.primary,
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -2287,7 +2363,7 @@ class _PrivateActivityPasswordDialogState
                                 widget.l10n.activityPrivateJoinTitle,
                                 textAlign: TextAlign.center,
                                 style: AppTextStyle(
-                                  color: _DetailsColors.text,
+                                  color: context.activityDetailsColors.text,
                                   fontSize: compact ? 23 : 26,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0,
@@ -2302,7 +2378,9 @@ class _PrivateActivityPasswordDialogState
                                   widget.l10n.activityPrivateJoinDescription,
                                   textAlign: TextAlign.center,
                                   style: AppTextStyle(
-                                    color: AppPalette.neutralSoft03,
+                                    color: context
+                                        .activityDetailsColors
+                                        .textSecondary,
                                     fontSize: compact ? 14 : 15,
                                     height: 1.4,
                                     letterSpacing: 0,
@@ -2314,8 +2392,8 @@ class _PrivateActivityPasswordDialogState
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   widget.l10n.activityPrivateJoinPasswordLabel,
-                                  style: const AppTextStyle(
-                                    color: _DetailsColors.text,
+                                  style: AppTextStyle(
+                                    color: context.activityDetailsColors.text,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                     letterSpacing: 0,
@@ -2325,18 +2403,25 @@ class _PrivateActivityPasswordDialogState
                               const SizedBox(height: 10),
                               DecoratedBox(
                                 decoration: AppBoxDecoration(
-                                  color: AppPalette.warmOverlayInk06,
+                                  color:
+                                      context.activityDetailsColors.background,
                                   borderRadius: AppBorderRadius.circular(30),
                                   border: Border.all(
                                     color: _errorText == null
-                                        ? AppPalette.warmOverlayMuted09
-                                        : AppPalette.redOverlaySoft03,
+                                        ? context
+                                              .activityDetailsColors
+                                              .primarySoft
+                                        : context.activityDetailsColors.danger,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: _errorText == null
-                                          ? AppPalette.amberOverlaySoft01
-                                          : AppPalette.redOverlaySoft01,
+                                          ? context
+                                                .activityDetailsColors
+                                                .primary
+                                          : context
+                                                .activityDetailsColors
+                                                .danger,
                                       blurRadius: 0,
                                       spreadRadius: 1,
                                     ),
@@ -2354,7 +2439,7 @@ class _PrivateActivityPasswordDialogState
                                   autocorrect: false,
                                   enableSuggestions: false,
                                   style: AppTextStyle(
-                                    color: AppPalette.white,
+                                    color: context.activityDetailsColors.white,
                                     fontSize: compact ? 16 : 17,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.2,
@@ -2364,9 +2449,8 @@ class _PrivateActivityPasswordDialogState
                                         .l10n
                                         .activityPrivateJoinPasswordPlaceholder,
                                     hintStyle: AppTextStyle(
-                                      color: AppPalette.white.withValues(
-                                        alpha: 0.72,
-                                      ),
+                                      color: context.activityDetailsColors.white
+                                          .withValues(alpha: 0.72),
                                       fontSize: compact ? 15 : 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -2386,7 +2470,9 @@ class _PrivateActivityPasswordDialogState
                                         _obscureText
                                             ? Icons.visibility_outlined
                                             : Icons.visibility_off_outlined,
-                                        color: AppPalette.primary,
+                                        color: context
+                                            .activityDetailsColors
+                                            .primary,
                                       ),
                                     ),
                                   ),
@@ -2413,8 +2499,10 @@ class _PrivateActivityPasswordDialogState
                                     ),
                                     child: Text(
                                       _errorText!,
-                                      style: const AppTextStyle(
-                                        color: AppPalette.redSoft11,
+                                      style: AppTextStyle(
+                                        color: context
+                                            .activityDetailsColors
+                                            .danger,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -2426,26 +2514,28 @@ class _PrivateActivityPasswordDialogState
                               DecoratedBox(
                                 decoration: AppBoxDecoration(
                                   borderRadius: AppBorderRadius.circular(999),
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      AppPalette.warmMuted46,
-                                      AppPalette.warmMuted44,
+                                      context.activityDetailsColors.primarySoft,
+                                      context.activityDetailsColors.primarySoft,
                                     ],
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppPalette.primary.withValues(
-                                        alpha: 0.28,
-                                      ),
+                                      color: context
+                                          .activityDetailsColors
+                                          .primary
+                                          .withValues(alpha: 0.28),
                                       blurRadius: 28,
                                       offset: const Offset(0, 12),
                                     ),
                                   ],
                                 ),
                                 child: Material(
-                                  color: AppPalette.transparent,
+                                  color:
+                                      context.activityDetailsColors.transparent,
                                   child: InkWell(
                                     borderRadius: AppBorderRadius.circular(999),
                                     onTap: _isSubmitting ? null : _submit,
@@ -2454,14 +2544,16 @@ class _PrivateActivityPasswordDialogState
                                       height: compact ? 54 : 58,
                                       child: Center(
                                         child: _isSubmitting
-                                            ? const SizedBox(
+                                            ? SizedBox(
                                                 width: 24,
                                                 height: 24,
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2.6,
                                                   valueColor:
                                                       AlwaysStoppedAnimation(
-                                                        AppPalette.white,
+                                                        context
+                                                            .activityDetailsColors
+                                                            .white,
                                                       ),
                                                 ),
                                               )
@@ -2470,7 +2562,9 @@ class _PrivateActivityPasswordDialogState
                                                     .l10n
                                                     .activityPrivateJoinSubmit,
                                                 style: AppTextStyle(
-                                                  color: AppPalette.white,
+                                                  color: context
+                                                      .activityDetailsColors
+                                                      .white,
                                                   fontSize: compact ? 16 : 17,
                                                   fontWeight: FontWeight.w700,
                                                   letterSpacing: 0,
@@ -2626,19 +2720,23 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                     top: AppRadiusValue.circular(32),
                   ),
                   border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.08),
+                    color: context.activityDetailsColors.white.withValues(
+                      alpha: 0.08,
+                    ),
                   ),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppPalette.warmOverlaySurface20,
-                      AppPalette.warmOverlayInk16,
+                      context.activityDetailsColors.surfaceWarm,
+                      context.activityDetailsColors.background,
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.34),
+                      color: context.activityDetailsColors.black.withValues(
+                        alpha: 0.34,
+                      ),
                       blurRadius: 36,
                       offset: const Offset(0, -18),
                     ),
@@ -2660,7 +2758,8 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           width: 52,
                           height: 5,
                           decoration: AppBoxDecoration(
-                            color: AppPalette.white.withValues(alpha: 0.18),
+                            color: context.activityDetailsColors.white
+                                .withValues(alpha: 0.18),
                             borderRadius: AppBorderRadius.circular(999),
                           ),
                         ),
@@ -2672,14 +2771,16 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           height: compact ? 58 : 62,
                           decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppPalette.primary.withValues(alpha: 0.12),
+                            color: context.activityDetailsColors.primary
+                                .withValues(alpha: 0.12),
                             border: Border.all(
-                              color: AppPalette.primary.withValues(alpha: 0.26),
+                              color: context.activityDetailsColors.primary
+                                  .withValues(alpha: 0.26),
                             ),
                           ),
                           child: Icon(
                             widget.confirmIcon,
-                            color: AppPalette.primary,
+                            color: context.activityDetailsColors.primary,
                             size: 26,
                           ),
                         ),
@@ -2690,7 +2791,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           widget.title,
                           textAlign: TextAlign.center,
                           style: AppTextStyle(
-                            color: _DetailsColors.text,
+                            color: context.activityDetailsColors.text,
                             fontSize: compact ? 21 : 23,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
@@ -2705,7 +2806,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                             widget.description,
                             textAlign: TextAlign.center,
                             style: AppTextStyle(
-                              color: _DetailsColors.muted,
+                              color: context.activityDetailsColors.muted,
                               fontSize: compact ? 13.5 : 14,
                               height: 1.42,
                             ),
@@ -2715,8 +2816,8 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                       const SizedBox(height: 22),
                       Text(
                         widget.reasonLabel,
-                        style: const AppTextStyle(
-                          color: _DetailsColors.text,
+                        style: AppTextStyle(
+                          color: context.activityDetailsColors.text,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2724,12 +2825,15 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                       const SizedBox(height: 10),
                       DecoratedBox(
                         decoration: AppBoxDecoration(
-                          color: AppPalette.white.withValues(alpha: 0.05),
+                          color: context.activityDetailsColors.white.withValues(
+                            alpha: 0.05,
+                          ),
                           borderRadius: AppBorderRadius.circular(22),
                           border: Border.all(
                             color: _errorText == null
-                                ? AppPalette.white.withValues(alpha: 0.08)
-                                : AppPalette.redOverlaySoft02,
+                                ? context.activityDetailsColors.white
+                                      .withValues(alpha: 0.08)
+                                : context.activityDetailsColors.danger,
                           ),
                         ),
                         child: TextField(
@@ -2739,8 +2843,8 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           minLines: 3,
                           maxLength: 160,
                           textCapitalization: TextCapitalization.sentences,
-                          style: const AppTextStyle(
-                            color: _DetailsColors.text,
+                          style: AppTextStyle(
+                            color: context.activityDetailsColors.text,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -2748,15 +2852,14 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           decoration: AppInputDecoration(
                             hintText: widget.reasonPlaceholder,
                             hintStyle: AppTextStyle(
-                              color: _DetailsColors.muted.withValues(
-                                alpha: 0.72,
-                              ),
+                              color: context.activityDetailsColors.muted
+                                  .withValues(alpha: 0.72),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
                             border: InputBorder.none,
-                            counterStyle: const AppTextStyle(
-                              color: _DetailsColors.subtle,
+                            counterStyle: AppTextStyle(
+                              color: context.activityDetailsColors.subtle,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2784,8 +2887,8 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           padding: const AppEdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             _errorText!,
-                            style: const AppTextStyle(
-                              color: AppPalette.redSoft11,
+                            style: AppTextStyle(
+                              color: context.activityDetailsColors.danger,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2865,12 +2968,14 @@ class _SheetActionButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
     final backgroundColor = isPrimary
-        ? AppPalette.primary
-        : AppPalette.white.withValues(alpha: 0.06);
-    final foregroundColor = isPrimary ? AppPalette.white : _DetailsColors.text;
+        ? context.activityDetailsColors.primary
+        : context.activityDetailsColors.white.withValues(alpha: 0.06);
+    final foregroundColor = isPrimary
+        ? context.activityDetailsColors.white
+        : context.activityDetailsColors.text;
     final borderColor = isPrimary
-        ? AppPalette.primary
-        : AppPalette.white.withValues(alpha: 0.1);
+        ? context.activityDetailsColors.primary
+        : context.activityDetailsColors.white.withValues(alpha: 0.1);
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -2895,7 +3000,7 @@ class _SheetActionButton extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
+                style: AppTextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -2950,7 +3055,7 @@ class _DetailsTopBar extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: _DetailsColors.text,
+                  color: context.activityDetailsColors.text,
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0,
@@ -2982,7 +3087,7 @@ class _DetailsTopBar extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: _DetailsColors.subtle,
+                        color: context.activityDetailsColors.subtle,
                         fontSize: statusFontSize,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,
@@ -3013,15 +3118,19 @@ class _CircleIconButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 20, min: 18, max: 22);
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Ink(
           width: side,
           height: side,
-          decoration: const AppBoxDecoration(shape: BoxShape.circle),
-          child: Icon(icon, color: _DetailsColors.text, size: iconSize),
+          decoration: AppBoxDecoration(shape: BoxShape.circle),
+          child: Icon(
+            icon,
+            color: context.activityDetailsColors.text,
+            size: iconSize,
+          ),
         ),
       ),
     );
@@ -3045,7 +3154,8 @@ class _DetailsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visual = _detailsHeroVisual(categorySlug);
+    final visual = _detailsHeroVisual(context, categorySlug);
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Container(
       height: height,
@@ -3053,7 +3163,7 @@ class _DetailsHero extends StatelessWidget {
         borderRadius: AppBorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.36),
+            color: context.activityDetailsColors.black.withValues(alpha: 0.36),
             blurRadius: 34,
             offset: const Offset(0, 18),
           ),
@@ -3089,58 +3199,74 @@ class _DetailsHero extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppPalette.black.withValues(alpha: 0.08),
-                      AppPalette.black.withValues(alpha: 0.16),
-                      AppPalette.black.withValues(alpha: 0.48),
-                      AppPalette.black.withValues(alpha: 0.72),
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.08,
+                      ),
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.16,
+                      ),
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.48,
+                      ),
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.72,
+                      ),
                     ],
                     stops: const [0, 0.28, 0.68, 1],
                   ),
                 ),
               ),
             ),
-            Positioned(
-              left: -18,
-              right: -18,
-              bottom: -10,
-              height: height * 0.42,
-              child: DecoratedBox(
-                decoration: AppBoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppPalette.white.withValues(alpha: 0.06),
-                      AppPalette.white.withValues(alpha: 0.01),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: -24,
-              right: -24,
-              bottom: 24,
-              height: height * 0.22,
-              child: Transform(
-                alignment: Alignment.bottomCenter,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.002)
-                  ..rotateX(1.18),
+            if (!isLight)
+              Positioned(
+                left: -18,
+                right: -18,
+                bottom: -10,
+                height: height * 0.42,
                 child: DecoratedBox(
                   decoration: AppBoxDecoration(
                     gradient: LinearGradient(
-                      colors: List.generate(
-                        10,
-                        (index) => index.isEven
-                            ? AppPalette.white.withValues(alpha: 0.08)
-                            : AppPalette.transparent,
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        context.activityDetailsColors.white.withValues(
+                          alpha: 0.06,
+                        ),
+                        context.activityDetailsColors.white.withValues(
+                          alpha: 0.01,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (!isLight)
+              Positioned(
+                left: -24,
+                right: -24,
+                bottom: 24,
+                height: height * 0.22,
+                child: Transform(
+                  alignment: Alignment.bottomCenter,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.002)
+                    ..rotateX(1.18),
+                  child: DecoratedBox(
+                    decoration: AppBoxDecoration(
+                      gradient: LinearGradient(
+                        colors: List.generate(
+                          10,
+                          (index) => index.isEven
+                              ? context.activityDetailsColors.white.withValues(
+                                  alpha: 0.08,
+                                )
+                              : context.activityDetailsColors.transparent,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             Positioned(
               left: 0,
               right: 0,
@@ -3152,9 +3278,13 @@ class _DetailsHero extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppPalette.transparent,
-                      AppPalette.black.withValues(alpha: 0.15),
-                      AppPalette.black.withValues(alpha: 0.34),
+                      context.activityDetailsColors.transparent,
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.15,
+                      ),
+                      context.activityDetailsColors.black.withValues(
+                        alpha: 0.34,
+                      ),
                     ],
                   ),
                 ),
@@ -3170,13 +3300,13 @@ class _DetailsHero extends StatelessWidget {
                 children: [
                   _StatusPill(
                     label: categoryLabel,
-                    backgroundColor: AppPalette.primary,
-                    textColor: AppPalette.white,
+                    backgroundColor: context.activityDetailsColors.primary,
+                    textColor: context.activityDetailsColors.white,
                   ),
                   _StatusPill(
                     label: contextLabel,
-                    backgroundColor: _DetailsColors.mutedPill,
-                    textColor: _DetailsColors.text,
+                    backgroundColor: context.activityDetailsColors.mutedPill,
+                    textColor: context.activityDetailsColors.text,
                   ),
                 ],
               ),
@@ -3231,8 +3361,8 @@ class _DetailsHeroArtwork extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppPalette.white.withValues(alpha: 0.18),
-                  AppPalette.white.withValues(alpha: 0.0),
+                  context.activityDetailsColors.white.withValues(alpha: 0.18),
+                  context.activityDetailsColors.white.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -3250,12 +3380,14 @@ class _DetailsHeroArtwork extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppPalette.white.withValues(alpha: 0.12),
-                  AppPalette.white.withValues(alpha: 0.02),
+                  context.activityDetailsColors.white.withValues(alpha: 0.12),
+                  context.activityDetailsColors.white.withValues(alpha: 0.02),
                 ],
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.08),
+                color: context.activityDetailsColors.white.withValues(
+                  alpha: 0.08,
+                ),
               ),
             ),
             child: Stack(
@@ -3272,7 +3404,7 @@ class _DetailsHeroArtwork extends StatelessWidget {
                         width: 30 + (index * 10),
                         height: 4,
                         decoration: AppBoxDecoration(
-                          color: AppPalette.white.withValues(
+                          color: context.activityDetailsColors.white.withValues(
                             alpha: index.isEven ? 0.14 : 0.08,
                           ),
                           borderRadius: AppBorderRadius.circular(999),
@@ -3289,16 +3421,26 @@ class _DetailsHeroArtwork extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          AppPalette.white.withValues(alpha: 0.28),
-                          AppPalette.white.withValues(alpha: 0.08),
+                          context.activityDetailsColors.white.withValues(
+                            alpha: 0.28,
+                          ),
+                          context.activityDetailsColors.white.withValues(
+                            alpha: 0.08,
+                          ),
                         ],
                       ),
                       border: Border.all(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: context.activityDetailsColors.white.withValues(
+                          alpha: 0.18,
+                        ),
                         width: 1.4,
                       ),
                     ),
-                    child: Icon(visual.icon, color: AppPalette.white, size: 48),
+                    child: Icon(
+                      visual.icon,
+                      color: context.activityDetailsColors.white,
+                      size: 48,
+                    ),
                   ),
                 ),
               ],
@@ -3366,7 +3508,7 @@ class _HeadingSection extends StatelessWidget {
         Text(
           title,
           style: AppTextStyle(
-            color: _DetailsColors.text,
+            color: context.activityDetailsColors.text,
             fontSize: compact ? 24 : 27,
             fontWeight: FontWeight.w800,
             height: 1.08,
@@ -3377,7 +3519,7 @@ class _HeadingSection extends StatelessWidget {
         Text(
           description,
           style: AppTextStyle(
-            color: _DetailsColors.muted,
+            color: context.activityDetailsColors.muted,
             fontSize: compact ? 14 : 15,
             height: 1.48,
             letterSpacing: 0,
@@ -3415,12 +3557,14 @@ class _LifecycleReasonCard extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppPalette.white.withValues(alpha: 0.05),
-            AppPalette.white.withValues(alpha: 0.04),
+            context.activityDetailsColors.white.withValues(alpha: 0.05),
+            context.activityDetailsColors.white.withValues(alpha: 0.04),
           ],
         ),
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.activityDetailsColors.white.withValues(alpha: 0.06),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3452,8 +3596,8 @@ class _LifecycleReasonCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   reason,
-                  style: const AppTextStyle(
-                    color: _DetailsColors.text,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     height: 1.42,
@@ -3503,16 +3647,18 @@ class _HostCard extends StatelessWidget {
               height: avatarSize,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppPalette.tealMuted07,
-                    AppPalette.tealSurfaceHigh08,
+                    context.activityDetailsColors.secondary,
+                    context.activityDetailsColors.secondary,
                   ],
                 ),
                 border: Border.all(
-                  color: AppPalette.white.withValues(alpha: 0.05),
+                  color: context.activityDetailsColors.white.withValues(
+                    alpha: 0.05,
+                  ),
                   width: 3,
                 ),
               ),
@@ -3522,7 +3668,7 @@ class _HostCard extends StatelessWidget {
                         child: Text(
                           avatarFallbackText,
                           style: AppTextStyle(
-                            color: AppPalette.white,
+                            color: context.activityDetailsColors.white,
                             fontSize: avatarIcon * 0.72,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
@@ -3536,7 +3682,7 @@ class _HostCard extends StatelessWidget {
                           child: Text(
                             avatarFallbackText,
                             style: AppTextStyle(
-                              color: AppPalette.white,
+                              color: context.activityDetailsColors.white,
                               fontSize: avatarIcon * 0.72,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0,
@@ -3552,13 +3698,13 @@ class _HostCard extends StatelessWidget {
               child: Container(
                 width: badgeSize,
                 height: badgeSize,
-                decoration: const AppBoxDecoration(
-                  color: AppPalette.primary,
+                decoration: AppBoxDecoration(
+                  color: context.activityDetailsColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.star_rounded,
-                  color: AppPalette.white,
+                  color: context.activityDetailsColors.white,
                   size: _detailsScaled(context, 13, min: 11, max: 14),
                 ),
               ),
@@ -3575,8 +3721,8 @@ class _HostCard extends StatelessWidget {
                     hostName,
                     maxLines: compact ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: _DetailsColors.text,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.text,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -3593,8 +3739,8 @@ class _HostCard extends StatelessWidget {
                 subtitle,
                 maxLines: compact ? 3 : 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.primary,
+                style: AppTextStyle(
+                  color: context.activityDetailsColors.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.35,
@@ -3605,24 +3751,17 @@ class _HostCard extends StatelessWidget {
         );
 
         return Material(
-          color: AppPalette.transparent,
+          color: context.activityDetailsColors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: AppBorderRadius.circular(24),
             child: Ink(
               padding: const AppEdgeInsets.all(16),
               decoration: AppBoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppPalette.white.withValues(alpha: 0.05),
-                    AppPalette.white.withValues(alpha: 0.04),
-                  ],
-                ),
+                color: context.activityDetailsColors.detailCardSurface,
                 borderRadius: AppBorderRadius.circular(24),
                 border: Border.all(
-                  color: AppPalette.white.withValues(alpha: 0.06),
+                  color: context.activityDetailsColors.detailCardBorder,
                 ),
               ),
               child: Row(
@@ -3633,7 +3772,9 @@ class _HostCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: AppPalette.primary.withValues(alpha: 0.76),
+                    color: context.activityDetailsColors.primary.withValues(
+                      alpha: 0.76,
+                    ),
                     size: _detailsScaled(context, 22, min: 20, max: 24),
                   ),
                 ],
@@ -3657,16 +3798,18 @@ class _HostRatingPill extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 26),
       padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.18),
+        color: context.activityDetailsColors.primary.withValues(alpha: 0.18),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(
+          color: context.activityDetailsColors.primary.withValues(alpha: 0.16),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.star_rounded,
-            color: AppPalette.primary,
+            color: context.activityDetailsColors.primary,
             size: _detailsScaled(context, 14, min: 12, max: 15),
           ),
           const SizedBox(width: 3),
@@ -3674,8 +3817,8 @@ class _HostRatingPill extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.primary,
+            style: AppTextStyle(
+              color: context.activityDetailsColors.primary,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
@@ -3753,12 +3896,14 @@ class _ActivityScheduleCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppPalette.primary.withValues(alpha: 0.12),
-            AppPalette.white.withValues(alpha: 0.04),
+            context.activityDetailsColors.primary.withValues(alpha: 0.12),
+            context.activityDetailsColors.white.withValues(alpha: 0.04),
           ],
         ),
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(
+          color: context.activityDetailsColors.primary.withValues(alpha: 0.16),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3770,15 +3915,19 @@ class _ActivityScheduleCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.16),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.16,
+                  ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.18),
+                    color: context.activityDetailsColors.primary.withValues(
+                      alpha: 0.18,
+                    ),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.schedule_rounded,
-                  color: AppPalette.primary,
+                  color: context.activityDetailsColors.primary,
                   size: 21,
                 ),
               ),
@@ -3786,8 +3935,8 @@ class _ActivityScheduleCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.activityDateAndTime,
-                  style: const AppTextStyle(
-                    color: _DetailsColors.text,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.text,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     height: 1.2,
@@ -3811,7 +3960,9 @@ class _ActivityScheduleCard extends StatelessWidget {
             padding: AppEdgeInsets.symmetric(vertical: dense ? 10 : 12),
             child: Divider(
               height: 1,
-              color: AppPalette.white.withValues(alpha: 0.08),
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.08,
+              ),
             ),
           ),
           _ScheduleTimeRow(
@@ -3855,11 +4006,19 @@ class _ScheduleTimeRow extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.06),
+            color: context.activityDetailsColors.white.withValues(alpha: 0.06),
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.08,
+              ),
+            ),
           ),
-          child: Icon(icon, color: AppPalette.primary, size: 17),
+          child: Icon(
+            icon,
+            color: context.activityDetailsColors.primary,
+            size: 17,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -3869,8 +4028,8 @@ class _ScheduleTimeRow extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: const AppTextStyle(
-                  color: _DetailsColors.subtle,
+                style: AppTextStyle(
+                  color: context.activityDetailsColors.subtle,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   height: 1.2,
@@ -3881,7 +4040,7 @@ class _ScheduleTimeRow extends StatelessWidget {
               Text(
                 timeText,
                 style: AppTextStyle(
-                  color: _DetailsColors.text,
+                  color: context.activityDetailsColors.text,
                   fontSize: dense ? 14 : 15,
                   fontWeight: FontWeight.w800,
                   height: 1.28,
@@ -3898,16 +4057,20 @@ class _ScheduleTimeRow extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.white.withValues(alpha: 0.06),
+                      color: context.activityDetailsColors.white.withValues(
+                        alpha: 0.06,
+                      ),
                       borderRadius: AppBorderRadius.circular(999),
                       border: Border.all(
-                        color: AppPalette.white.withValues(alpha: 0.07),
+                        color: context.activityDetailsColors.white.withValues(
+                          alpha: 0.07,
+                        ),
                       ),
                     ),
                     child: Text(
                       userTime,
-                      style: const AppTextStyle(
-                        color: _DetailsColors.muted,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.muted,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
@@ -4039,27 +4202,26 @@ class _DetailsStatCard extends StatelessWidget {
     return Container(
       padding: AppEdgeInsets.fromLTRB(14, dense ? 13 : 15, 14, dense ? 12 : 14),
       decoration: AppBoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.white.withValues(alpha: 0.045),
-            AppPalette.white.withValues(alpha: 0.035),
-          ],
-        ),
+        color: context.activityDetailsColors.detailCardSurface,
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.activityDetailsColors.detailCardBorder,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.icon, color: AppPalette.primary, size: 21),
+          Icon(
+            item.icon,
+            color: context.activityDetailsColors.primary,
+            size: 21,
+          ),
           SizedBox(height: dense ? 12 : 15),
           Text(
             item.label.toUpperCase(),
-            style: const AppTextStyle(
-              color: _DetailsColors.subtle,
+            style: AppTextStyle(
+              color: context.activityDetailsColors.subtle,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -4067,8 +4229,8 @@ class _DetailsStatCard extends StatelessWidget {
           SizedBox(height: dense ? 5 : 6),
           Text(
             item.value,
-            style: const AppTextStyle(
-              color: _DetailsColors.text,
+            style: AppTextStyle(
+              color: context.activityDetailsColors.text,
               fontSize: 13,
               fontWeight: FontWeight.w700,
               height: 1.32,
@@ -4133,6 +4295,7 @@ class _MeetingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mapHeight = _detailsScaled(context, 220, min: 190, max: 236);
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
     final hasLocation =
@@ -4163,8 +4326,8 @@ class _MeetingSection extends StatelessWidget {
                 children: [
                   Text(
                     l10n.activityMeetingPoint,
-                    style: const AppTextStyle(
-                      color: _DetailsColors.text,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -4179,18 +4342,18 @@ class _MeetingSection extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: isBuildingRoute
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppPalette.primary,
+                              color: context.activityDetailsColors.textPrimary,
                             ),
                           )
                         : Text(
                             actionLabel,
-                            style: const AppTextStyle(
-                              color: AppPalette.primary,
+                            style: AppTextStyle(
+                              color: context.activityDetailsColors.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
@@ -4205,8 +4368,8 @@ class _MeetingSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.activityMeetingPoint,
-                    style: const AppTextStyle(
-                      color: _DetailsColors.text,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -4216,18 +4379,18 @@ class _MeetingSection extends StatelessWidget {
                 TextButton(
                   onPressed: isBuildingRoute ? null : onActionTap,
                   child: isBuildingRoute
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppPalette.primary,
+                            color: context.activityDetailsColors.textPrimary,
                           ),
                         )
                       : Text(
                           actionLabel,
-                          style: const AppTextStyle(
-                            color: AppPalette.primary,
+                          style: AppTextStyle(
+                            color: context.activityDetailsColors.primary,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -4242,13 +4405,17 @@ class _MeetingSection extends StatelessWidget {
           height: mapHeight,
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.24),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: isLight
+                ? null
+                : [
+                    BoxShadow(
+                      color: context.activityDetailsColors.black.withValues(
+                        alpha: 0.24,
+                      ),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: AppBorderRadius.circular(24),
@@ -4271,10 +4438,13 @@ class _MeetingSection extends StatelessWidget {
                   top: 16,
                   child: DecoratedBox(
                     decoration: AppBoxDecoration(
-                      color: AppPalette.warmInk33.withValues(alpha: 0.86),
+                      color: context.activityDetailsColors.background
+                          .withValues(alpha: 0.86),
                       borderRadius: AppBorderRadius.circular(999),
                       border: Border.all(
-                        color: AppPalette.white.withValues(alpha: 0.10),
+                        color: context.activityDetailsColors.white.withValues(
+                          alpha: 0.10,
+                        ),
                       ),
                     ),
                     child: Padding(
@@ -4285,16 +4455,16 @@ class _MeetingSection extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.place_rounded,
                             size: 15,
-                            color: AppPalette.primary,
+                            color: context.activityDetailsColors.primary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             l10n.activityMeetingPoint,
-                            style: const AppTextStyle(
-                              color: AppPalette.white,
+                            style: AppTextStyle(
+                              color: context.activityDetailsColors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -4312,11 +4482,11 @@ class _MeetingSection extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
+            Padding(
               padding: AppEdgeInsets.only(top: 2),
               child: Icon(
                 Icons.place_outlined,
-                color: _DetailsColors.subtle,
+                color: context.activityDetailsColors.subtle,
                 size: 18,
               ),
             ),
@@ -4325,8 +4495,8 @@ class _MeetingSection extends StatelessWidget {
               child: showProtectedNotice
                   ? Text(
                       l10n.activitySensitiveDetailsHint,
-                      style: const AppTextStyle(
-                        color: _DetailsColors.muted,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.muted,
                         fontSize: 14,
                         height: 1.4,
                       ),
@@ -4341,8 +4511,8 @@ class _MeetingSection extends StatelessWidget {
                           : l10n.notSpecified,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _DetailsColors.muted,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.muted,
                         fontSize: 14,
                         height: 1.4,
                       ),
@@ -4413,7 +4583,7 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppPalette.black.withValues(alpha: 0.26),
+      color: context.activityDetailsColors.black.withValues(alpha: 0.26),
       padding: const AppEdgeInsets.all(20),
       child: ClipRRect(
         borderRadius: AppBorderRadius.circular(24),
@@ -4438,12 +4608,13 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
                           width: 54,
                           height: 54,
                           decoration: AppBoxDecoration(
-                            color: AppPalette.white.withValues(alpha: 0.12),
+                            color: context.activityDetailsColors.white
+                                .withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.lock_outline_rounded,
-                            color: AppPalette.white,
+                            color: context.activityDetailsColors.white,
                             size: 26,
                           ),
                         ),
@@ -4451,8 +4622,8 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
                         Text(
                           l10n.activitySensitiveDetailsProtected,
                           textAlign: TextAlign.center,
-                          style: const AppTextStyle(
-                            color: AppPalette.white,
+                          style: AppTextStyle(
+                            color: context.activityDetailsColors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             height: 1.45,
@@ -4509,11 +4680,14 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
     final iconSize = _detailsScaled(context, 32, min: 26, max: 34);
 
     return DecoratedBox(
-      decoration: const AppBoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppPalette.warmSurface32, AppPalette.warmInk50],
+          colors: [
+            context.activityDetailsColors.surfaceWarm,
+            context.activityDetailsColors.background,
+          ],
         ),
       ),
       child: Center(
@@ -4526,15 +4700,19 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
                 width: iconWrap,
                 height: iconWrap,
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.14,
+                  ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.34),
+                    color: context.activityDetailsColors.primary.withValues(
+                      alpha: 0.34,
+                    ),
                   ),
                 ),
                 child: Icon(
                   Icons.place_rounded,
-                  color: AppPalette.primary,
+                  color: context.activityDetailsColors.primary,
                   size: iconSize,
                 ),
               ),
@@ -4548,8 +4726,8 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const AppTextStyle(
-                  color: AppPalette.white,
+                style: AppTextStyle(
+                  color: context.activityDetailsColors.white,
                   fontSize: 15,
                   height: 1.45,
                   fontWeight: FontWeight.w600,
@@ -4577,7 +4755,7 @@ class _MeetingLeaveAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
@@ -4587,25 +4765,29 @@ class _MeetingLeaveAction extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isBusy)
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.1,
-                    color: AppPalette.primary,
+                    color: context.activityDetailsColors.primary,
                   ),
                 )
               else
                 Icon(
                   Icons.logout_rounded,
                   size: 16,
-                  color: AppPalette.primary.withValues(alpha: 0.9),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.9,
+                  ),
                 ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: AppTextStyle(
-                  color: AppPalette.primary.withValues(alpha: 0.94),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.94,
+                  ),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
@@ -4633,16 +4815,18 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
         child: Ink(
           decoration: AppBoxDecoration(
-            color: AppPalette.primary.withValues(alpha: 0.1),
+            color: context.activityDetailsColors.primary.withValues(alpha: 0.1),
             borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.24),
+              color: context.activityDetailsColors.primary.withValues(
+                alpha: 0.24,
+              ),
             ),
           ),
           child: Padding(
@@ -4651,25 +4835,29 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isBusy)
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.1,
-                      color: AppPalette.primary,
+                      color: context.activityDetailsColors.primary,
                     ),
                   )
                 else
                   Icon(
                     Icons.event_busy_rounded,
                     size: 16,
-                    color: AppPalette.primary.withValues(alpha: 0.94),
+                    color: context.activityDetailsColors.primary.withValues(
+                      alpha: 0.94,
+                    ),
                   ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: AppTextStyle(
-                    color: AppPalette.primary.withValues(alpha: 0.96),
+                    color: context.activityDetailsColors.primary.withValues(
+                      alpha: 0.96,
+                    ),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -4774,35 +4962,41 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
         onTap: isBusy ? null : onTap,
         child: Ink(
           padding: const AppEdgeInsets.symmetric(horizontal: 11, vertical: 10),
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.04),
+            color: context.activityDetailsColors.white.withValues(alpha: 0.04),
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.08,
+              ),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isBusy)
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.1,
-                    color: AppPalette.primary,
+                    color: context.activityDetailsColors.primary,
                   ),
                 )
               else
                 Icon(
                   icon,
                   size: 16,
-                  color: AppPalette.primary.withValues(alpha: 0.96),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.96,
+                  ),
                 ),
               const SizedBox(width: 8),
               Flexible(
@@ -4810,7 +5004,9 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: AppTextStyle(
-                    color: _DetailsColors.text.withValues(alpha: 0.96),
+                    color: context.activityDetailsColors.text.withValues(
+                      alpha: 0.96,
+                    ),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -4839,7 +5035,7 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
@@ -4849,14 +5045,16 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppPalette.primary,
-                AppPalette.primary.withValues(alpha: 0.84),
+                context.activityDetailsColors.primary,
+                context.activityDetailsColors.primary.withValues(alpha: 0.84),
               ],
             ),
             borderRadius: AppBorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.primary.withValues(alpha: 0.2),
+                color: context.activityDetailsColors.primary.withValues(
+                  alpha: 0.2,
+                ),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -4871,25 +5069,25 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isBusy)
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.1,
-                      color: AppPalette.textPrimary,
+                      color: context.activityDetailsColors.textPrimary,
                     ),
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.task_alt_rounded,
                     size: 16,
-                    color: AppPalette.textPrimary,
+                    color: context.activityDetailsColors.textPrimary,
                   ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -4913,7 +5111,7 @@ class _MeetingOwnerQrAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
@@ -4923,14 +5121,16 @@ class _MeetingOwnerQrAction extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppPalette.primary,
-                AppPalette.primary.withValues(alpha: 0.84),
+                context.activityDetailsColors.primary,
+                context.activityDetailsColors.primary.withValues(alpha: 0.84),
               ],
             ),
             borderRadius: AppBorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.primary.withValues(alpha: 0.2),
+                color: context.activityDetailsColors.primary.withValues(
+                  alpha: 0.2,
+                ),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -4944,16 +5144,16 @@ class _MeetingOwnerQrAction extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.qr_code_2_rounded,
                   size: 16,
-                  color: AppPalette.textPrimary,
+                  color: context.activityDetailsColors.textPrimary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -5170,12 +5370,14 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
               maxHeight: MediaQuery.sizeOf(context).height * 0.82,
             ),
             decoration: AppBoxDecoration(
-              color: _DetailsColors.sheet,
+              color: context.activityDetailsColors.sheet,
               borderRadius: const AppBorderRadius.vertical(
                 top: AppRadiusValue.circular(30),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.08),
+                color: context.activityDetailsColors.white.withValues(
+                  alpha: 0.08,
+                ),
               ),
             ),
             child: Column(
@@ -5185,7 +5387,9 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
                   width: 48,
                   height: 5,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.white.withValues(alpha: 0.18),
+                    color: context.activityDetailsColors.white.withValues(
+                      alpha: 0.18,
+                    ),
                     borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
@@ -5196,8 +5400,8 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
                       Expanded(
                         child: Text(
                           l10n.activityInviteFriendsTitle,
-                          style: const AppTextStyle(
-                            color: _DetailsColors.text,
+                          style: AppTextStyle(
+                            color: context.activityDetailsColors.text,
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
@@ -5206,9 +5410,9 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(false),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
-                          color: _DetailsColors.text,
+                          color: context.activityDetailsColors.text,
                         ),
                       ),
                     ],
@@ -5221,7 +5425,7 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
                     hintText: l10n.activityInviteFriendsSearchHint,
                   ),
                 ),
-                const Divider(height: 1, color: AppPalette.outlineOverlay),
+                Divider(height: 1, color: context.activityDetailsColors.border),
                 Expanded(child: _buildBody(l10n)),
                 Padding(
                   padding: AppEdgeInsets.fromLTRB(
@@ -5253,8 +5457,10 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_loading && _friends.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppPalette.primary),
+      return Center(
+        child: CircularProgressIndicator(
+          color: context.activityDetailsColors.primary,
+        ),
       );
     }
 
@@ -5283,15 +5489,15 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         if (index >= _friends.length) {
-          return const Padding(
-            padding: AppEdgeInsets.symmetric(vertical: 10),
+          return Padding(
+            padding: const AppEdgeInsets.symmetric(vertical: 10),
             child: Center(
               child: SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  color: AppPalette.primary,
+                  color: context.activityDetailsColors.primary,
                 ),
               ),
             ),
@@ -5324,28 +5530,34 @@ class _InviteFriendSearchField extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 54),
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceRaised,
+        color: context.activityDetailsColors.sheet,
         borderRadius: AppBorderRadius.circular(20),
       ),
       padding: const AppEdgeInsetsDirectional.fromSTEB(15, 0, 14, 0),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: AppPalette.primary, size: 24),
+          Icon(
+            Icons.search_rounded,
+            color: context.activityDetailsColors.primary,
+            size: 24,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               textInputAction: TextInputAction.search,
-              cursorColor: AppPalette.primary,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              cursorColor: context.activityDetailsColors.primary,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
               decoration: AppInputDecoration(
                 border: InputBorder.none,
                 hintText: hintText,
-                hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
+                hintStyle: AppTextStyle(
+                  color: context.activityDetailsColors.primary,
+                ),
               ),
             ),
           ),
@@ -5372,7 +5584,7 @@ class _InviteFriendRow extends StatelessWidget {
     final title = friend.nicknameOrFallback('user_${friend.userId}');
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.activityDetailsColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
@@ -5380,13 +5592,13 @@ class _InviteFriendRow extends StatelessWidget {
           padding: const AppEdgeInsets.all(12),
           decoration: AppBoxDecoration(
             color: selected
-                ? AppPalette.primary.withValues(alpha: 0.14)
-                : AppPalette.white.withValues(alpha: 0.05),
+                ? context.activityDetailsColors.primary.withValues(alpha: 0.14)
+                : context.activityDetailsColors.white.withValues(alpha: 0.05),
             borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? AppPalette.primary.withValues(alpha: 0.5)
-                  : AppPalette.white.withValues(alpha: 0.06),
+                  ? context.activityDetailsColors.primary.withValues(alpha: 0.5)
+                  : context.activityDetailsColors.white.withValues(alpha: 0.06),
             ),
           ),
           child: Row(
@@ -5401,8 +5613,8 @@ class _InviteFriendRow extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
@@ -5414,8 +5626,8 @@ class _InviteFriendRow extends StatelessWidget {
                         l10n.chatPresenceOnline,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.primary,
+                        style: AppTextStyle(
+                          color: context.activityDetailsColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -5428,10 +5640,12 @@ class _InviteFriendRow extends StatelessWidget {
               Checkbox(
                 value: selected,
                 onChanged: (_) => onTap(),
-                activeColor: AppPalette.primary,
-                checkColor: AppPalette.textPrimary,
+                activeColor: context.activityDetailsColors.primary,
+                checkColor: context.activityDetailsColors.textPrimary,
                 side: BorderSide(
-                  color: AppPalette.white.withValues(alpha: 0.32),
+                  color: context.activityDetailsColors.white.withValues(
+                    alpha: 0.32,
+                  ),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: AppBorderRadius.circular(6),
@@ -5458,17 +5672,19 @@ class _InviteFriendAvatar extends StatelessWidget {
       height: 48,
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: context.activityDetailsColors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: ClipOval(
         child: ColoredBox(
-          color: AppPalette.warmInk27,
+          color: context.activityDetailsColors.background,
           child: imageUrl == null
               ? Center(
                   child: Text(
                     friend.initials,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.textPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -5480,8 +5696,8 @@ class _InviteFriendAvatar extends StatelessWidget {
                   errorBuilder: (_, _, _) => Center(
                     child: Text(
                       friend.initials,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
@@ -5515,13 +5731,13 @@ class _InviteFriendsMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.primary, size: 34),
+            Icon(icon, color: context.activityDetailsColors.primary, size: 34),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -5531,8 +5747,8 @@ class _InviteFriendsMessage extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: _DetailsColors.muted,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.muted,
                 fontSize: 13,
                 height: 1.35,
               ),
@@ -5545,8 +5761,8 @@ class _InviteFriendsMessage extends StatelessWidget {
                   MaterialLocalizations.of(
                     context,
                   ).refreshIndicatorSemanticLabel,
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -5597,8 +5813,8 @@ class _ParticipantsSection extends StatelessWidget {
                 children: [
                   Text(
                     l10n.activityGoingTitle(participants.length),
-                    style: const AppTextStyle(
-                      color: _DetailsColors.text,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -5614,8 +5830,8 @@ class _ParticipantsSection extends StatelessWidget {
                     ),
                     child: Text(
                       l10n.activityDetailsViewAll,
-                      style: const AppTextStyle(
-                        color: AppPalette.primary,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -5630,8 +5846,8 @@ class _ParticipantsSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.activityGoingTitle(participants.length),
-                    style: const AppTextStyle(
-                      color: _DetailsColors.text,
+                    style: AppTextStyle(
+                      color: context.activityDetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -5643,8 +5859,8 @@ class _ParticipantsSection extends StatelessWidget {
                     onPressed: onViewAll,
                     child: Text(
                       l10n.activityDetailsViewAll,
-                      style: const AppTextStyle(
-                        color: AppPalette.primary,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -5675,7 +5891,7 @@ class _ParticipantsSection extends StatelessWidget {
                               currentProfile: currentProfile,
                             ),
                             radius: 19,
-                            borderColor: _DetailsColors.base,
+                            borderColor: context.activityDetailsColors.base,
                           ),
                         ),
                     ],
@@ -5685,8 +5901,8 @@ class _ParticipantsSection extends StatelessWidget {
               if (participants.length > 6)
                 Text(
                   '+${participants.length - 6}',
-                  style: const AppTextStyle(
-                    color: _DetailsColors.muted,
+                  style: AppTextStyle(
+                    color: context.activityDetailsColors.muted,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -5697,19 +5913,23 @@ class _ParticipantsSection extends StatelessWidget {
           Container(
             padding: const AppEdgeInsets.all(18),
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.05),
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.05,
+              ),
               borderRadius: AppBorderRadius.circular(20),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.06),
+                color: context.activityDetailsColors.white.withValues(
+                  alpha: 0.06,
+                ),
               ),
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 26,
                 height: 26,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: AppPalette.primary,
+                  color: context.activityDetailsColors.primary,
                 ),
               ),
             ),
@@ -5719,18 +5939,22 @@ class _ParticipantsSection extends StatelessWidget {
             width: double.infinity,
             padding: AppEdgeInsets.all(compact ? 16 : 18),
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.05),
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.05,
+              ),
               borderRadius: AppBorderRadius.circular(20),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.06),
+                color: context.activityDetailsColors.white.withValues(
+                  alpha: 0.06,
+                ),
               ),
             ),
             child: Text(
               loadFailed
                   ? l10n.activityParticipantsLoadFailed
                   : l10n.activityParticipantsEmpty,
-              style: const AppTextStyle(
-                color: _DetailsColors.muted,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.muted,
                 fontSize: 14,
                 height: 1.45,
               ),
@@ -5757,7 +5981,7 @@ class _ParticipantAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderWidth = _detailsScaled(context, 3, min: 2.2, max: 3.2);
-    final colors = _seedGradient(seed);
+    final colors = _seedGradient(context, seed);
     final initials = _seedInitials(seed);
 
     return Container(
@@ -5778,7 +6002,7 @@ class _ParticipantAvatar extends StatelessWidget {
                 child: Text(
                   initials,
                   style: AppTextStyle(
-                    color: AppPalette.white,
+                    color: context.activityDetailsColors.white,
                     fontSize: radius * 0.62,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -5792,7 +6016,7 @@ class _ParticipantAvatar extends StatelessWidget {
                   child: Text(
                     initials,
                     style: AppTextStyle(
-                      color: AppPalette.white,
+                      color: context.activityDetailsColors.white,
                       fontSize: radius * 0.62,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -5841,8 +6065,8 @@ class _ActivityReviewsSection extends StatelessWidget {
             Expanded(
               child: Text(
                 l10n.activityReviewsSectionTitle,
-                style: const AppTextStyle(
-                  color: _DetailsColors.text,
+                style: AppTextStyle(
+                  color: context.activityDetailsColors.text,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -5854,19 +6078,22 @@ class _ActivityReviewsSection extends StatelessWidget {
               TextButton.icon(
                 onPressed: isSavingReview ? null : onWriteReviewTap,
                 icon: isSavingReview
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: context.activityDetailsColors.textPrimary,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Icon(Icons.rate_review_rounded, size: 18),
+                    : Icon(Icons.rate_review_rounded, size: 18),
                 label: Text(
                   hasMyReview
                       ? l10n.activityReviewEditButton
                       : l10n.activityReviewWriteButton,
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppPalette.primary,
+                  foregroundColor: context.activityDetailsColors.primary,
                   padding: AppEdgeInsets.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -5929,8 +6156,8 @@ class _ActivityReviewGroupTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const AppTextStyle(
-        color: _DetailsColors.muted,
+      style: AppTextStyle(
+        color: context.activityDetailsColors.muted,
         fontSize: 13,
         fontWeight: FontWeight.w900,
         letterSpacing: 0,
@@ -5970,9 +6197,11 @@ class _ActivityReviewCard extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk101,
+        color: context.activityDetailsColors.background,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.activityDetailsColors.white.withValues(alpha: 0.06),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5982,15 +6211,16 @@ class _ActivityReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppPalette.primary.withValues(alpha: 0.15),
+                backgroundColor: context.activityDetailsColors.primary
+                    .withValues(alpha: 0.15),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _displayInitials(authorName, fallback: 'F'),
-                        style: const AppTextStyle(
-                          color: AppPalette.primary,
+                        style: AppTextStyle(
+                          color: context.activityDetailsColors.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -6005,8 +6235,8 @@ class _ActivityReviewCard extends StatelessWidget {
                       authorName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _DetailsColors.text,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.text,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -6017,8 +6247,8 @@ class _ActivityReviewCard extends StatelessWidget {
                       '$subtitle · $dateText',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: _DetailsColors.muted,
+                      style: AppTextStyle(
+                        color: context.activityDetailsColors.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0,
@@ -6037,8 +6267,8 @@ class _ActivityReviewCard extends StatelessWidget {
               comment.trim(),
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: AppPalette.orangeLight07,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.primary,
                 fontSize: 14,
                 height: 1.48,
                 fontWeight: FontWeight.w600,
@@ -6061,7 +6291,7 @@ class _ActivityReviewRating extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.13),
+        color: context.activityDetailsColors.primary.withValues(alpha: 0.13),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -6069,12 +6299,16 @@ class _ActivityReviewRating extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star_rounded, color: AppPalette.primary, size: 15),
+            Icon(
+              Icons.star_rounded,
+              color: context.activityDetailsColors.primary,
+              size: 15,
+            ),
             const SizedBox(width: 3),
             Text(
               value.toStringAsFixed(1),
-              style: const AppTextStyle(
-                color: AppPalette.primary,
+              style: AppTextStyle(
+                color: context.activityDetailsColors.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -6097,15 +6331,17 @@ class _ActivityReviewInfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.045),
+        color: context.activityDetailsColors.white.withValues(alpha: 0.045),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.activityDetailsColors.white.withValues(alpha: 0.06),
+        ),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: const AppTextStyle(
-          color: _DetailsColors.muted,
+        style: AppTextStyle(
+          color: context.activityDetailsColors.muted,
           fontSize: 13,
           height: 1.42,
           fontWeight: FontWeight.w700,
@@ -6139,9 +6375,11 @@ class _ActivityReviewSkeletonCard extends StatelessWidget {
     return Container(
       padding: const AppEdgeInsets.all(14),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.045),
+        color: context.activityDetailsColors.white.withValues(alpha: 0.045),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: context.activityDetailsColors.white.withValues(alpha: 0.06),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -6183,7 +6421,7 @@ class _ActivityReviewSkeletonDot extends StatelessWidget {
       child: DecoratedBox(
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.white.withValues(alpha: 0.07),
+          color: context.activityDetailsColors.white.withValues(alpha: 0.07),
         ),
       ),
     );
@@ -6202,7 +6440,7 @@ class _ActivityReviewSkeletonLine extends StatelessWidget {
       widthFactor: widthFactor,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.white.withValues(alpha: 0.07),
+          color: context.activityDetailsColors.white.withValues(alpha: 0.07),
           borderRadius: AppBorderRadius.circular(999),
         ),
         child: const SizedBox(width: double.infinity, height: 10),
@@ -6330,11 +6568,11 @@ class _DetailsActionBar extends StatelessWidget {
         : l10n.activityDetailsTotalLabel;
     final priceBlockValue = isPaid ? l10n.activityPaymentPaidValue : priceLabel;
     final priceBlockLabelColor = isPaid
-        ? _DetailsColors.success.withValues(alpha: 0.72)
-        : AppPalette.neutralSoft02;
+        ? context.activityDetailsColors.success.withValues(alpha: 0.72)
+        : context.activityDetailsColors.textSecondary;
     final priceBlockValueColor = isPaid
-        ? _DetailsColors.success
-        : AppPalette.white;
+        ? context.activityDetailsColors.success
+        : context.activityDetailsColors.white;
 
     return SafeArea(
       top: false,
@@ -6345,12 +6583,16 @@ class _DetailsActionBar extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppPalette.warmOverlaySurface15,
-              AppPalette.warmOverlayInk13,
+              context.activityDetailsColors.surfaceWarm,
+              context.activityDetailsColors.background,
             ],
           ),
           border: Border(
-            top: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
+            top: BorderSide(
+              color: context.activityDetailsColors.white.withValues(
+                alpha: 0.08,
+              ),
+            ),
           ),
         ),
         child: LayoutBuilder(
@@ -6448,17 +6690,22 @@ class _FooterPriceBlock extends StatelessWidget {
   const _FooterPriceBlock({
     required this.label,
     required this.value,
-    this.labelColor = AppPalette.neutralSoft02,
-    this.valueColor = AppPalette.white,
+    this.labelColor,
+    this.valueColor,
   });
 
   final String label;
   final String value;
-  final Color labelColor;
-  final Color valueColor;
+  final Color? labelColor;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedLabelColor =
+        labelColor ?? context.activityDetailsColors.textSecondary;
+    final resolvedValueColor =
+        valueColor ?? context.activityDetailsColors.white;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 84),
       child: Column(
@@ -6468,7 +6715,7 @@ class _FooterPriceBlock extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: AppTextStyle(
-              color: labelColor,
+              color: resolvedLabelColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -6481,7 +6728,7 @@ class _FooterPriceBlock extends StatelessWidget {
               value,
               maxLines: 1,
               style: AppTextStyle(
-                color: valueColor,
+                color: resolvedValueColor,
                 fontSize: 20,
                 height: 1,
                 fontWeight: FontWeight.w900,
@@ -6526,12 +6773,14 @@ class _FooterButton extends StatelessWidget {
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
     final backgroundColor = isPrimary
-        ? AppPalette.primary
-        : AppPalette.white.withValues(alpha: 0.08);
+        ? context.activityDetailsColors.primary
+        : context.activityDetailsColors.white.withValues(alpha: 0.08);
     final borderColor = isPrimary
-        ? AppPalette.primary
-        : AppPalette.white.withValues(alpha: 0.1);
-    final foreground = isPrimary ? AppPalette.white : _DetailsColors.text;
+        ? context.activityDetailsColors.primary
+        : context.activityDetailsColors.white.withValues(alpha: 0.1);
+    final foreground = isPrimary
+        ? context.activityDetailsColors.white
+        : context.activityDetailsColors.text;
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -6550,12 +6799,12 @@ class _FooterButton extends StatelessWidget {
           ),
         ),
         child: isBusy
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: AppPalette.white,
+                  color: context.activityDetailsColors.textPrimary,
                 ),
               )
             : Row(
@@ -6567,7 +6816,7 @@ class _FooterButton extends StatelessWidget {
                       spec.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
+                      style: AppTextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
@@ -6610,10 +6859,12 @@ class _StatusPill extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: backgroundColor,
         borderRadius: AppBorderRadius.circular(999),
-        boxShadow: backgroundColor == AppPalette.primary
+        boxShadow: backgroundColor == context.activityDetailsColors.primary
             ? [
                 BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.35),
+                  color: context.activityDetailsColors.primary.withValues(
+                    alpha: 0.35,
+                  ),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -6677,133 +6928,136 @@ String _resolveHeroContextLabel({
   return l10n.activityUnlimitedSpots;
 }
 
-_DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
+_DetailsHeroVisualSpec _detailsHeroVisual(
+  BuildContext context,
+  String rawSlug,
+) {
   final slug = rawSlug.trim().toLowerCase();
 
   if (slug.contains('wellness') || slug.contains('health')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.spa_rounded,
       backgroundColors: [
-        AppPalette.tealLight01,
-        AppPalette.tealSoft03,
-        AppPalette.tealSurfaceHigh11,
-        AppPalette.tealSurface08,
-        AppPalette.tealInk04,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
       ],
-      glowColor: AppPalette.tealLight02,
-      ridgeColor: AppPalette.tealSurfaceHigh03,
-      baseColor: AppPalette.tealInk02,
+      glowColor: context.activityDetailsColors.secondary,
+      ridgeColor: context.activityDetailsColors.secondary,
+      baseColor: context.activityDetailsColors.secondary,
     );
   }
   if (slug.contains('nature') ||
       slug.contains('outdoor') ||
       slug.contains('hiking')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.forest_rounded,
       backgroundColors: [
-        AppPalette.greenSoft09,
-        AppPalette.greenSoft04,
-        AppPalette.greenSurfaceHigh18,
-        AppPalette.greenSurface08,
-        AppPalette.greenInk04,
+        context.activityDetailsColors.success,
+        context.activityDetailsColors.success,
+        context.activityDetailsColors.success,
+        context.activityDetailsColors.success,
+        context.activityDetailsColors.success,
       ],
-      glowColor: AppPalette.greenLight03,
-      ridgeColor: AppPalette.greenSurfaceHigh14,
-      baseColor: AppPalette.greenInk05,
+      glowColor: context.activityDetailsColors.success,
+      ridgeColor: context.activityDetailsColors.success,
+      baseColor: context.activityDetailsColors.success,
     );
   }
   if (slug.contains('food')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.restaurant_rounded,
       backgroundColors: [
-        AppPalette.orangeLight43,
-        AppPalette.orangeSoft45,
-        AppPalette.warmMuted23,
-        AppPalette.warmSurface94,
-        AppPalette.warmInk87,
+        context.activityDetailsColors.primary,
+        context.activityDetailsColors.primary,
+        context.activityDetailsColors.primarySoft,
+        context.activityDetailsColors.surfaceWarm,
+        context.activityDetailsColors.background,
       ],
-      glowColor: AppPalette.orangeLight47,
-      ridgeColor: AppPalette.warmSurfaceHigh24,
-      baseColor: AppPalette.warmInk69,
+      glowColor: context.activityDetailsColors.primary,
+      ridgeColor: context.activityDetailsColors.surfaceWarm,
+      baseColor: context.activityDetailsColors.background,
     );
   }
   if (slug.contains('culture') ||
       slug.contains('art') ||
       slug.contains('history')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.palette_outlined,
       backgroundColors: [
-        AppPalette.violetLight03,
-        AppPalette.violetSoft02,
-        AppPalette.violetMuted03,
-        AppPalette.violetSurfaceHigh01,
-        AppPalette.violetInk02,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
       ],
-      glowColor: AppPalette.violetWash01,
-      ridgeColor: AppPalette.violetSurfaceHigh02,
-      baseColor: AppPalette.violetInk01,
+      glowColor: context.activityDetailsColors.secondary,
+      ridgeColor: context.activityDetailsColors.secondary,
+      baseColor: context.activityDetailsColors.secondary,
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.kayaking_rounded,
       backgroundColors: [
-        AppPalette.orangeSoft39,
-        AppPalette.orangeSoft33,
-        AppPalette.warmSurfaceHigh36,
-        AppPalette.warmSurface88,
-        AppPalette.warmInk53,
+        context.activityDetailsColors.primary,
+        context.activityDetailsColors.primary,
+        context.activityDetailsColors.surfaceWarm,
+        context.activityDetailsColors.surfaceWarm,
+        context.activityDetailsColors.background,
       ],
-      glowColor: AppPalette.orangeLight42,
-      ridgeColor: AppPalette.warmSurfaceHigh17,
-      baseColor: AppPalette.warmInk49,
+      glowColor: context.activityDetailsColors.primary,
+      ridgeColor: context.activityDetailsColors.surfaceWarm,
+      baseColor: context.activityDetailsColors.background,
     );
   }
   if (slug.contains('workshop') ||
       slug.contains('learning') ||
       slug.contains('education')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.auto_stories_rounded,
       backgroundColors: [
-        AppPalette.blueWash02,
-        AppPalette.blueLight04,
-        AppPalette.blueMuted25,
-        AppPalette.blueSurfaceHigh26,
-        AppPalette.blueSurface07,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
       ],
-      glowColor: AppPalette.blueWash03,
-      ridgeColor: AppPalette.blueMuted16,
-      baseColor: AppPalette.blueSurface09,
+      glowColor: context.activityDetailsColors.secondary,
+      ridgeColor: context.activityDetailsColors.secondary,
+      baseColor: context.activityDetailsColors.secondary,
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
-    return const _DetailsHeroVisualSpec(
+    return _DetailsHeroVisualSpec(
       icon: Icons.celebration_rounded,
       backgroundColors: [
-        AppPalette.pinkLight01,
-        AppPalette.pinkSoft06,
-        AppPalette.pinkMuted01,
-        AppPalette.pinkSurface01,
-        AppPalette.pinkInk02,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
+        context.activityDetailsColors.secondary,
       ],
-      glowColor: AppPalette.pinkWash01,
-      ridgeColor: AppPalette.pinkSurfaceHigh03,
-      baseColor: AppPalette.pinkInk01,
+      glowColor: context.activityDetailsColors.secondary,
+      ridgeColor: context.activityDetailsColors.secondary,
+      baseColor: context.activityDetailsColors.secondary,
     );
   }
 
-  return const _DetailsHeroVisualSpec(
+  return _DetailsHeroVisualSpec(
     icon: Icons.travel_explore_rounded,
     backgroundColors: [
-      AppPalette.blueLight06,
-      AppPalette.blueSoft11,
-      AppPalette.blueMuted13,
-      AppPalette.blueSurfaceHigh22,
-      AppPalette.blueSurface06,
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
     ],
-    glowColor: AppPalette.blueWash01,
-    ridgeColor: AppPalette.blueSurfaceHigh25,
-    baseColor: AppPalette.blueSurface05,
+    glowColor: context.activityDetailsColors.secondary,
+    ridgeColor: context.activityDetailsColors.secondary,
+    baseColor: context.activityDetailsColors.secondary,
   );
 }
 
@@ -6920,68 +7174,86 @@ String _displayInitials(String value, {String fallback = 'F'}) {
   return fallback;
 }
 
-Color _activityStatusColor(String status) {
+Color _activityStatusColor(BuildContext context, String status) {
   switch (status.toUpperCase()) {
     case 'PUBLISHED':
     case 'ENROLLMENT_OPEN':
-      return _DetailsColors.success;
+      return context.activityDetailsColors.success;
     case 'FULL':
-      return AppPalette.amberSoft10;
+      return context.activityDetailsColors.primary;
     case 'DRAFT':
-      return AppPalette.neutralMuted02;
+      return context.activityDetailsColors.textMuted;
     case 'COMPLETED':
-      return AppPalette.blueLight01;
+      return context.activityDetailsColors.secondary;
     case 'CANCELLED':
-      return AppPalette.danger;
+      return context.activityDetailsColors.danger;
     case 'ARCHIVED':
-      return AppPalette.amberSoft02;
+      return context.activityDetailsColors.primary;
     default:
-      return AppPalette.neutralMuted02;
+      return context.activityDetailsColors.textMuted;
   }
 }
 
-Color _statusPillColor(String status) {
+Color _statusPillColor(BuildContext context, String status) {
   switch (status.toUpperCase()) {
     case 'INVITED':
-      return AppPalette.blueOverlayLight01;
+      return context.activityDetailsColors.secondary;
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':
-      return _DetailsColors.success.withValues(alpha: 0.18);
+      return context.activityDetailsColors.success.withValues(alpha: 0.18);
     case 'WAITLISTED':
-      return AppPalette.primary.withValues(alpha: 0.18);
+      return context.activityDetailsColors.primary.withValues(alpha: 0.18);
     case 'REQUESTED':
-      return AppPalette.blueOverlayLight01;
+      return context.activityDetailsColors.secondary;
     default:
-      return AppPalette.white.withValues(alpha: 0.08);
+      return context.activityDetailsColors.white.withValues(alpha: 0.08);
   }
 }
 
-Color _statusTextColor(String status) {
+Color _statusTextColor(BuildContext context, String status) {
   switch (status.toUpperCase()) {
     case 'INVITED':
-      return AppPalette.blueLight01;
+      return context.activityDetailsColors.secondary;
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':
-      return _DetailsColors.success;
+      return context.activityDetailsColors.success;
     case 'WAITLISTED':
-      return AppPalette.primary;
+      return context.activityDetailsColors.primary;
     case 'REQUESTED':
-      return AppPalette.blueLight01;
+      return context.activityDetailsColors.secondary;
     default:
-      return _DetailsColors.text;
+      return context.activityDetailsColors.text;
   }
 }
 
-List<Color> _seedGradient(String seed) {
-  const palettes = <List<Color>>[
-    [AppPalette.tealSurfaceHigh07, AppPalette.tealSoft05],
-    [AppPalette.greenLight02, AppPalette.amberWash01],
-    [AppPalette.greenSoft06, AppPalette.greenMuted13],
-    [AppPalette.warmSurface64, AppPalette.orangeSoft26],
-    [AppPalette.tealSoft02, AppPalette.tealMuted10],
-    [AppPalette.blueMuted26, AppPalette.blueLight03],
+List<Color> _seedGradient(BuildContext context, String seed) {
+  final palettes = <List<Color>>[
+    [
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+    ],
+    [
+      context.activityDetailsColors.success,
+      context.activityDetailsColors.primary,
+    ],
+    [
+      context.activityDetailsColors.success,
+      context.activityDetailsColors.success,
+    ],
+    [
+      context.activityDetailsColors.surfaceWarm,
+      context.activityDetailsColors.primary,
+    ],
+    [
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+    ],
+    [
+      context.activityDetailsColors.secondary,
+      context.activityDetailsColors.secondary,
+    ],
   ];
 
   final hash = seed.codeUnits.fold<int>(0, (sum, unit) => sum + unit);

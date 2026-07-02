@@ -1,22 +1,23 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/file_api.dart';
+import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../core/ui/app_modal_templates.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
 import 'widgets/chat_video_preview.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 const _videoPreviewDownloadLimitBytes = 25 * 1024 * 1024;
 
@@ -50,96 +51,142 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final currentUserId = context.select<SessionProvider, String>(
       (session) => session.profile?.userId ?? '',
     );
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk05,
-      appBar: _buildAppBar(context),
-      body: Consumer<ChatProvider>(
-        builder: (context, chat, _) {
-          if (chat.conversationsLoading && chat.conversations.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppPalette.primary),
-            );
-          }
-
-          if (chat.conversationsError != null && chat.conversations.isEmpty) {
-            return _buildError(chat);
-          }
-
-          if (chat.conversations.isEmpty) {
-            return _buildEmpty(context);
-          }
-
-          final conversations = _filterConversations(
-            chat.conversations,
-            currentUserId,
-          );
-
-          return DefaultTabController(
-            length: _ConversationListTab.values.length,
-            initialIndex: _selectedTab.index,
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        key: const ValueKey('conversations-screen'),
+        backgroundColor: colors.background,
+        bottomNavigationBar: CommonBottomNavigationBar(
+          activeItem: AppBottomNavItem.chats,
+          style: AppBottomNavigationBarStyle.v2(context),
+          onHomeTap: () => context.go('/'),
+          onQrTap: () => context.push('/qr'),
+          onMapTap: () => context.push('/map'),
+          onServicesTap: () => context.push('/services'),
+          onChatsTap: () {},
+        ),
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
             child: Column(
               children: [
-                _buildSearchField(context),
-                _buildTabs(context),
+                _buildHeader(context),
                 Expanded(
-                  child: RefreshIndicator(
-                    color: AppPalette.primary,
-                    backgroundColor: AppPalette.warmInk32,
-                    onRefresh: () => chat.loadConversations(forceRefresh: true),
-                    child: conversations.isEmpty
-                        ? _buildFilteredEmptyList(context)
-                        : ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const AppEdgeInsets.symmetric(vertical: 8),
-                            itemCount: conversations.length,
-                            separatorBuilder: (_, _) => Divider(
-                              height: 1,
-                              indent: 86,
-                              color: AppPalette.white.withValues(alpha: 0.06),
-                            ),
-                            itemBuilder: (context, index) {
-                              final conversation = conversations[index];
-                              return _ConversationTile(
-                                conversation: conversation,
-                                currentUserId: currentUserId,
-                                onTap: () => _openChat(conversation),
-                                onLongPress: () =>
-                                    _showConversationActions(conversation),
-                              );
-                            },
-                          ),
+                  child: Consumer<ChatProvider>(
+                    builder: (context, chat, _) =>
+                        _buildConversationBody(context, chat, currentUserId),
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildConversationBody(
+    BuildContext context,
+    ChatProvider chat,
+    String currentUserId,
+  ) {
+    if (chat.conversationsLoading && chat.conversations.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppPalette.primary),
+      );
+    }
 
-    return AppBar(
-      backgroundColor: AppPalette.warmInk32,
-      surfaceTintColor: AppPalette.transparent,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-        color: AppPalette.textPrimary,
-        onPressed: () => _handleBack(context),
+    if (chat.conversationsError != null && chat.conversations.isEmpty) {
+      return _buildError(chat);
+    }
+
+    if (chat.conversations.isEmpty) {
+      return _buildEmpty(context);
+    }
+
+    final conversations = _filterConversations(
+      chat.conversations,
+      currentUserId,
+    );
+
+    return DefaultTabController(
+      length: _ConversationListTab.values.length,
+      initialIndex: _selectedTab.index,
+      child: Column(
+        children: [
+          _buildSearchField(context),
+          _buildTabs(context),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppPalette.primary,
+              backgroundColor: context.appColors.surfaceRaised,
+              onRefresh: () => chat.loadConversations(forceRefresh: true),
+              child: conversations.isEmpty
+                  ? _buildFilteredEmptyList(context)
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const AppEdgeInsets.fromLTRB(16, 8, 16, 18),
+                      itemCount: conversations.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final conversation = conversations[index];
+                        return _ConversationTile(
+                          conversation: conversation,
+                          currentUserId: currentUserId,
+                          onTap: () => _openChat(conversation),
+                          onLongPress: () =>
+                              _showConversationActions(conversation),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
-      title: Text(
-        l10n.chatListTitle,
-        style: const AppTextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.03 * 24,
-          color: AppPalette.textPrimary,
-        ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isCompact = MediaQuery.sizeOf(context).width < 375;
+
+    return Padding(
+      padding: AppEdgeInsets.fromLTRB(16, isCompact ? 16 : 22, 16, 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+            style: AppButtonStyles.icon(context.appColors),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            onPressed: () => _handleBack(context),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.chatListTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyle(
+                fontSize: isCompact ? 28 : 32,
+                height: 1.1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+                color: context.appColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
-      centerTitle: true,
     );
   }
 
@@ -158,39 +205,35 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         textInputAction: TextInputAction.search,
-        style: const AppTextStyle(color: AppPalette.textPrimary, fontSize: 16),
+        style: AppTextStyle(color: context.appColors.textPrimary, fontSize: 16),
         cursorColor: AppPalette.primary,
         onChanged: (value) => setState(() {
           _searchQuery = value;
         }),
         decoration: AppInputDecoration(
           hintText: l10n.chatListSearchHint,
-          hintStyle: AppTextStyle(
-            color: AppPalette.white.withValues(alpha: 0.38),
-          ),
-          prefixIcon: Icon(
+          hintStyle: AppTextStyle(color: context.appColors.textMuted),
+          prefixIcon: const Icon(
             Icons.search_rounded,
-            color: AppPalette.white.withValues(alpha: 0.42),
+            color: AppPalette.primary,
           ),
           filled: true,
-          fillColor: AppPalette.white.withValues(alpha: 0.07),
+          fillColor: context.appColors.surfaceRaised,
           contentPadding: const AppEdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),
           border: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(16),
-            borderSide: BorderSide.none,
+            borderSide: AppBorders.soft,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: AppPalette.white.withValues(alpha: 0.06),
-            ),
+            borderSide: AppBorders.soft,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: AppBorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppPalette.primary, width: 1.2),
+            borderSide: AppBorders.focus,
           ),
         ),
       ),
@@ -208,13 +251,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         dividerColor: AppPalette.transparent,
         indicatorColor: AppPalette.primary,
         indicatorWeight: 3,
-        labelColor: AppPalette.textPrimary,
-        unselectedLabelColor: AppPalette.white.withValues(alpha: 0.48),
-        labelStyle: const AppTextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-        ),
-        unselectedLabelStyle: const AppTextStyle(
+        labelColor: context.appColors.textPrimary,
+        unselectedLabelColor: context.appColors.textMuted,
+        labelStyle: AppTextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: AppTextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
@@ -257,25 +297,26 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.wifi_off_rounded,
               size: 48,
-              color: AppPalette.textCoolSecondary,
+              color: context.appColors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
               l10n.chatListLoadFailed,
-              style: const AppTextStyle(
-                color: AppPalette.textCoolSecondary,
+              style: AppTextStyle(
+                color: context.appColors.textSecondary,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 16),
             TextButton(
+              style: AppButtonStyles.ghost(context.appColors),
               onPressed: () => chat.loadConversations(),
               child: Text(
                 l10n.retryButton,
-                style: const AppTextStyle(color: AppPalette.primary),
+                style: AppTextStyle(color: AppPalette.primary),
               ),
             ),
           ],
@@ -294,14 +335,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           Icon(
             Icons.chat_bubble_outline_rounded,
             size: 56,
-            color: AppPalette.white.withValues(alpha: 0.2),
+            color: AppPalette.primary,
           ),
           const SizedBox(height: 16),
           Text(
             message ?? l10n.chatListEmpty,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: AppPalette.white.withValues(alpha: 0.4),
+              color: context.appColors.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -359,7 +400,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final action = await showAppModalBottomSheet<_ConversationAction>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.warmInk55,
+      backgroundColor: context.appColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: AppBorderRadius.vertical(
           top: AppRadiusValue.circular(24),
@@ -380,8 +421,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 isMuted
                     ? l10n.chatUnmuteNotificationsAction
                     : l10n.chatMuteNotificationsAction,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -425,30 +466,58 @@ class _ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final hasUnread = conversation.unreadCount > 0;
+    final borderRadius = AppBorderRadius.circular(18);
 
-    return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Padding(
-        padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            _buildAvatar(l10n),
-            const SizedBox(width: 14),
-            Expanded(child: _buildContent(context, l10n)),
-            if (conversation.unreadCount > 0) ...[
-              const SizedBox(width: 10),
-              _buildUnreadBadge(),
-            ],
-          ],
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: hasUnread
+            ? context.appColors.surfaceWarm
+            : context.appColors.surfaceRaised,
+        borderRadius: borderRadius,
+        border: Border.all(
+          color: hasUnread
+              ? context.appColors.borderPrimary
+              : context.appColors.borderSoft,
+        ),
+      ),
+      child: Material(
+        color: AppPalette.transparent,
+        child: InkWell(
+          borderRadius: borderRadius,
+          splashColor: context.appColors.borderPrimary,
+          highlightColor: AppPalette.transparent,
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            child: Row(
+              children: [
+                _buildAvatar(context, l10n),
+                const SizedBox(width: 14),
+                Expanded(child: _buildContent(context, l10n)),
+                if (hasUnread) ...[
+                  const SizedBox(width: 10),
+                  _buildUnreadBadge(context),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAvatar(AppLocalizations l10n) {
+  Widget _buildAvatar(BuildContext context, AppLocalizations l10n) {
     final title = _displayTitle(l10n);
     final imageUrl = _avatarUrl;
+    final isContextChat = conversation.isActivity || conversation.isExcursion;
+    final gradientColors = isContextChat
+        ? [context.appColors.secondaryContainer, context.appColors.surfaceTeal]
+        : [context.appColors.primaryContainer, context.appColors.surfaceWarm];
 
     return Container(
       width: 56,
@@ -458,29 +527,49 @@ class _ConversationTile extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: conversation.isGroup
-              ? [AppPalette.warmSurface84, AppPalette.warmInk112]
-              : [AppPalette.orangeLight34, AppPalette.warmSurfaceHigh18],
+          colors: gradientColors,
         ),
       ),
       foregroundDecoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppPalette.white.withValues(alpha: 0.12),
-          width: 2,
+          color: isContextChat
+              ? context.appColors.borderSecondary
+              : context.appColors.borderPrimary,
+          width: 1.4,
         ),
       ),
       child: ClipOval(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Center(child: _fallbackInitial(title)),
+            Center(child: _fallbackInitial(context, title)),
             if (imageUrl != null)
               Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) =>
-                    Center(child: _fallbackInitial(title)),
+                    Center(child: _fallbackInitial(context, title)),
+              ),
+            if (isContextChat)
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  margin: const AppEdgeInsets.all(2),
+                  decoration: AppBoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppPalette.secondary,
+                  ),
+                  child: Icon(
+                    conversation.isExcursion
+                        ? Icons.tour_rounded
+                        : Icons.hiking_rounded,
+                    size: 12,
+                    color: context.appColors.textPrimary,
+                  ),
+                ),
               ),
           ],
         ),
@@ -502,13 +591,13 @@ class _ConversationTile extends StatelessWidget {
     );
   }
 
-  Widget _fallbackInitial(String name) {
+  Widget _fallbackInitial(BuildContext context, String name) {
     return Text(
       _initials(name),
       style: AppTextStyle(
         fontSize: conversation.isActivity ? 22 : 18,
         fontWeight: FontWeight.w900,
-        color: AppPalette.textPrimary,
+        color: context.appColors.textPrimary,
       ),
     );
   }
@@ -540,11 +629,11 @@ class _ConversationTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
+                style: AppTextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.02 * 17,
-                  color: AppPalette.textPrimary,
+                  letterSpacing: 0,
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -553,7 +642,7 @@ class _ConversationTile extends StatelessWidget {
               Icon(
                 Icons.notifications_off_rounded,
                 size: 16,
-                color: AppPalette.white.withValues(alpha: 0.32),
+                color: context.appColors.textMuted,
               ),
               const SizedBox(width: 6),
             ],
@@ -561,7 +650,7 @@ class _ConversationTile extends StatelessWidget {
               _formatTime(conversation.lastActivityAt, l10n),
               style: AppTextStyle(
                 fontSize: 13,
-                color: AppPalette.white.withValues(alpha: 0.35),
+                color: context.appColors.textMuted,
               ),
             ),
           ],
@@ -572,8 +661,8 @@ class _ConversationTile extends StatelessWidget {
             message: lastMessage,
             textStyle: AppTextStyle(
               fontSize: 14,
-              color: AppPalette.white.withValues(alpha: 0.46),
-              letterSpacing: -0.02 * 14,
+              color: context.appColors.textSecondary,
+              letterSpacing: 0,
             ),
           ),
         ],
@@ -592,7 +681,7 @@ class _ConversationTile extends StatelessWidget {
     return title.isEmpty ? l10n.chatFallbackTitle : title;
   }
 
-  Widget _buildUnreadBadge() {
+  Widget _buildUnreadBadge(BuildContext context) {
     return Container(
       padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: AppBoxDecoration(
@@ -601,10 +690,10 @@ class _ConversationTile extends StatelessWidget {
       ),
       child: Text(
         conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
-        style: const AppTextStyle(
+        style: AppTextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: AppPalette.white,
+          color: context.appColors.textPrimary,
         ),
       ),
     );

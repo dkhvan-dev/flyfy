@@ -66,6 +66,28 @@ extension _PlaceSortFieldX on _PlaceSortField {
   }
 }
 
+LinearGradient? _placesCoverOverlayGradient(
+  BuildContext context, {
+  required double topAlpha,
+  required double bottomAlpha,
+  required double firstStop,
+}) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return null;
+  }
+
+  final colors = AppDesignSystem.colorsFor(context);
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      colors.black.withValues(alpha: topAlpha),
+      colors.black.withValues(alpha: bottomAlpha),
+    ],
+    stops: [firstStop, 1.0],
+  );
+}
+
 class PlacesScreen extends StatefulWidget {
   const PlacesScreen({super.key});
 
@@ -240,7 +262,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.appColors.transparent,
       builder: (_) => PlacesFilterSheet(
         initial: _filters,
         api: _api,
@@ -330,27 +352,42 @@ class _PlacesScreenState extends State<PlacesScreen> {
       child: Builder(
         builder: (context) {
           final adaptive = PlaceAdaptive.of(context);
+          final colors = AppDesignSystem.colorsFor(context);
           final l10n = AppLocalizations.of(context)!;
 
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
-            child: Scaffold(
-              backgroundColor: AppPalette.warmInk64,
-              bottomNavigationBar: CommonBottomNavigationBar(
-                onHomeTap: () => context.go('/'),
-                onQrTap: () => context.push('/qr'),
-                onMapTap: () => context.push('/map'),
-                onServicesTap: () => context.push('/services'),
-                onChatsTap: () => context.push('/chats'),
-              ),
-              body: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    _buildHeader(l10n),
-                    _buildSearchBar(adaptive, l10n),
-                    Expanded(child: _buildBody(adaptive, l10n)),
-                  ],
+          return Theme(
+            data: AppDesignSystem.themeFor(context),
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: Theme.of(context).brightness == Brightness.dark
+                  ? SystemUiOverlayStyle.light
+                  : SystemUiOverlayStyle.dark,
+              child: Scaffold(
+                backgroundColor: colors.background,
+                bottomNavigationBar: CommonBottomNavigationBar(
+                  onHomeTap: () => context.go('/'),
+                  onQrTap: () => context.push('/qr'),
+                  onMapTap: () => context.push('/map'),
+                  onServicesTap: () => context.push('/services'),
+                  onChatsTap: () => context.push('/chats'),
+                ),
+                body: DecoratedBox(
+                  decoration: AppBoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: colors.screenGradientColors,
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        _buildHeader(l10n),
+                        _buildSearchBar(adaptive, l10n),
+                        Expanded(child: _buildBody(adaptive, l10n)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -394,10 +431,10 @@ class _PlacesScreenState extends State<PlacesScreen> {
   }
 
   Widget _buildBody(PlaceAdaptive a, AppLocalizations l10n) {
+    final colors = context.appColors;
+
     if (_loading && _places.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppPalette.primary),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.primary));
     }
 
     if (_error != null && _places.isEmpty) {
@@ -407,7 +444,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
           children: [
             Text(
               l10n.placesLoadFailed,
-              style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+              style: AppTextStyle(color: colors.textSecondary),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: a.scale(12)),
@@ -415,7 +452,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
               onPressed: () => _loadPlaces(page: _currentPage),
               child: Text(
                 l10n.retryButton,
-                style: const AppTextStyle(color: AppPalette.primary),
+                style: AppTextStyle(color: colors.primary),
               ),
             ),
           ],
@@ -439,8 +476,8 @@ class _PlacesScreenState extends State<PlacesScreen> {
         mustVisitPlaces.isNotEmpty;
 
     return RefreshIndicator(
-      color: AppPalette.primary,
-      backgroundColor: AppPalette.warmInk109,
+      color: colors.primary,
+      backgroundColor: colors.surfaceRaised,
       onRefresh: _refreshPlaces,
       child: CustomScrollView(
         controller: _scrollController,
@@ -508,8 +545,8 @@ class _PlacesScreenState extends State<PlacesScreen> {
                         Text(
                           l10n.placesNoResults,
                           textAlign: TextAlign.center,
-                          style: const AppTextStyle(
-                            color: AppPalette.textCoolSecondary,
+                          style: AppTextStyle(
+                            color: colors.textSecondary,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -518,8 +555,8 @@ class _PlacesScreenState extends State<PlacesScreen> {
                         Text(
                           l10n.placesNoResultsSubtitle,
                           textAlign: TextAlign.center,
-                          style: const AppTextStyle(
-                            color: AppPalette.textCaption,
+                          style: AppTextStyle(
+                            color: colors.textMuted,
                             fontSize: 13,
                             height: 1.35,
                           ),
@@ -611,6 +648,7 @@ class _MustVisitSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (places.isEmpty) return const SizedBox.shrink();
+    final colors = context.appColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,12 +659,12 @@ class _MustVisitSection extends StatelessWidget {
               width: adaptive.scale(32, minFactor: 0.86),
               height: adaptive.scale(32, minFactor: 0.86),
               decoration: AppBoxDecoration(
-                color: AppPalette.primary.withValues(alpha: 0.14),
+                color: colors.primary.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.auto_awesome_rounded,
-                color: AppPalette.primary,
+                color: colors.primary,
                 size: adaptive.scale(17, minFactor: 0.86),
               ),
             ),
@@ -640,7 +678,7 @@ class _MustVisitSection extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: colors.textPrimary,
                         fontSize: adaptive.scale(18, minFactor: 0.84),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -652,8 +690,8 @@ class _MustVisitSection extends StatelessWidget {
                   Container(
                     width: adaptive.scale(4, minFactor: 0.72),
                     height: adaptive.scale(4, minFactor: 0.72),
-                    decoration: const AppBoxDecoration(
-                      color: AppPalette.textCaption,
+                    decoration: AppBoxDecoration(
+                      color: colors.textMuted,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -667,7 +705,7 @@ class _MustVisitSection extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textCoolSecondary,
+                        color: colors.textSecondary,
                         fontSize: adaptive.scale(18, minFactor: 0.84),
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
@@ -736,6 +774,7 @@ class _MustVisitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final coverMedia = place.coverMedia;
     final imageTargetWidth = placeImageTargetWidth(
       context,
@@ -746,6 +785,13 @@ class _MustVisitCard extends StatelessWidget {
     final coverUrls = coverMedia == null
         ? const <String>[]
         : resolvePlaceMediaUrls(coverMedia, targetWidth: imageTargetWidth);
+    final coverOverlayGradient = _placesCoverOverlayGradient(
+      context,
+      topAlpha: 0.02,
+      bottomAlpha: 0.48,
+      firstStop: 0.4,
+    );
+    final coverRadius = AppBorderRadius.circular(adaptive.radius(16));
 
     return GestureDetector(
       onTap: () => onTap(place),
@@ -756,39 +802,39 @@ class _MustVisitCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: AppBorderRadius.circular(adaptive.radius(16)),
-              child: AspectRatio(
-                aspectRatio: 1.42,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _RetryingPlaceCoverImage(
-                      imageUrls: coverUrls,
-                      cacheWidth: imageTargetWidth,
-                      placeholder: _placeholder,
-                    ),
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: AppBoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppPalette.black.withValues(alpha: 0.02),
-                              AppPalette.black.withValues(alpha: 0.48),
-                            ],
-                            stops: const [0.4, 1.0],
+            DecoratedBox(
+              position: DecorationPosition.foreground,
+              decoration: AppBoxDecoration(
+                borderRadius: coverRadius,
+                border: Border.all(color: colors.border),
+              ),
+              child: ClipRRect(
+                borderRadius: coverRadius,
+                child: AspectRatio(
+                  aspectRatio: 1.42,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _RetryingPlaceCoverImage(
+                        imageUrls: coverUrls,
+                        cacheWidth: imageTargetWidth,
+                        placeholder: () => _placeholder(context),
+                      ),
+                      if (coverOverlayGradient != null)
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: AppBoxDecoration(
+                              gradient: coverOverlayGradient,
+                            ),
                           ),
                         ),
+                      Positioned(
+                        top: adaptive.scale(8, minFactor: 0.78),
+                        right: adaptive.scale(8, minFactor: 0.78),
+                        child: _ratingBadge(context),
                       ),
-                    ),
-                    Positioned(
-                      top: adaptive.scale(8, minFactor: 0.78),
-                      right: adaptive.scale(8, minFactor: 0.78),
-                      child: _ratingBadge(),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -798,7 +844,7 @@ class _MustVisitCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: adaptive.scale(15, minFactor: 0.86),
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -811,7 +857,7 @@ class _MustVisitCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textCaption,
+                color: colors.textMuted,
                 fontSize: adaptive.scale(12, minFactor: 0.86),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -834,12 +880,14 @@ class _MustVisitCard extends StatelessWidget {
     );
   }
 
-  Widget _ratingBadge() {
+  Widget _ratingBadge(BuildContext context) {
+    final colors = context.appColors;
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.tealOverlaySurface02,
+        color: colors.surfaceTeal,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(
@@ -851,14 +899,14 @@ class _MustVisitCard extends StatelessWidget {
           children: [
             Icon(
               Icons.star_rounded,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: adaptive.scale(13, minFactor: 0.82),
             ),
             SizedBox(width: adaptive.scale(2, minFactor: 0.72)),
             Text(
               place.rating.toStringAsFixed(1),
               style: AppTextStyle(
-                color: AppPalette.primary,
+                color: colors.primary,
                 fontSize: adaptive.scale(12, minFactor: 0.82),
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -871,16 +919,16 @@ class _MustVisitCard extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
-    color: AppPalette.white.withValues(alpha: 0.05),
-    child: const Center(
-      child: Icon(
-        Icons.landscape_rounded,
-        color: AppPalette.textCaption,
-        size: 34,
+  Widget _placeholder(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      color: colors.surfaceHigh,
+      child: Center(
+        child: Icon(Icons.landscape_rounded, color: colors.textMuted, size: 34),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _RetryingPlaceCoverImage extends StatefulWidget {
@@ -1012,6 +1060,7 @@ class _DiscoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final coverMedia = place.coverMedia;
 
     return GestureDetector(
@@ -1032,49 +1081,56 @@ class _DiscoverCard extends StatelessWidget {
                   coverMedia,
                   targetWidth: imageTargetWidth,
                 );
+          final coverOverlayGradient = _placesCoverOverlayGradient(
+            context,
+            topAlpha: 0,
+            bottomAlpha: 0.42,
+            firstStop: 0.55,
+          );
+          final coverRadius = AppBorderRadius.circular(adaptive.radius(18));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRRect(
-                borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-                child: SizedBox(
-                  height: imageHeight,
-                  width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _RetryingPlaceCoverImage(
-                        imageUrls: coverUrls,
-                        cacheWidth: imageTargetWidth,
-                        placeholder: _placeholder,
-                      ),
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: AppBoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppPalette.transparent,
-                                AppPalette.black.withValues(alpha: 0.42),
-                              ],
-                              stops: const [0.55, 1.0],
+              DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: AppBoxDecoration(
+                  borderRadius: coverRadius,
+                  border: Border.all(color: colors.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: coverRadius,
+                  child: SizedBox(
+                    height: imageHeight,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _RetryingPlaceCoverImage(
+                          imageUrls: coverUrls,
+                          cacheWidth: imageTargetWidth,
+                          placeholder: () => _placeholder(context),
+                        ),
+                        if (coverOverlayGradient != null)
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: AppBoxDecoration(
+                                gradient: coverOverlayGradient,
+                              ),
                             ),
                           ),
+                        Positioned(
+                          top: adaptive.scale(8),
+                          right: adaptive.scale(8),
+                          child: _saveButton(context),
                         ),
-                      ),
-                      Positioned(
-                        top: adaptive.scale(8),
-                        right: adaptive.scale(8),
-                        child: _saveButton(),
-                      ),
-                      Positioned(
-                        left: adaptive.scale(32, minFactor: 0.48),
-                        bottom: adaptive.scale(28, minFactor: 0.5),
-                        child: _categoryTag(),
-                      ),
-                    ],
+                        Positioned(
+                          left: adaptive.scale(32, minFactor: 0.48),
+                          bottom: adaptive.scale(28, minFactor: 0.5),
+                          child: _categoryTag(context),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1082,7 +1138,7 @@ class _DiscoverCard extends StatelessWidget {
               Text(
                 place.title,
                 style: AppTextStyle(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: adaptive.scale(21, minFactor: 0.86),
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
@@ -1107,7 +1163,7 @@ class _DiscoverCard extends StatelessWidget {
                         currencyRates: context.watch<CurrencyRateProvider>(),
                       ),
                       style: AppTextStyle(
-                        color: AppPalette.orangeSoft23,
+                        color: colors.secondary,
                         fontSize: adaptive.scale(17, minFactor: 0.82),
                       ),
                       maxLines: 1,
@@ -1116,14 +1172,14 @@ class _DiscoverCard extends StatelessWidget {
                   ),
                   Icon(
                     Icons.star_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: adaptive.scale(18),
                   ),
                   SizedBox(width: adaptive.scale(2)),
                   Text(
                     place.rating.toStringAsFixed(1),
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: colors.primary,
                       fontSize: adaptive.scale(17, minFactor: 0.82),
                       fontWeight: FontWeight.w900,
                     ),
@@ -1137,44 +1193,50 @@ class _DiscoverCard extends StatelessWidget {
     );
   }
 
-  Widget _saveButton() {
+  Widget _saveButton(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = adaptive.scale(42, minFactor: 0.86);
     return Container(
       width: size,
       height: size,
       decoration: AppBoxDecoration(
-        color: AppPalette.tealOverlaySurface01,
+        color: colors.surfaceTeal,
         shape: BoxShape.circle,
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.14)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(color: colors.borderSecondary),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.18),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : const [],
       ),
       child: Icon(
         Icons.bookmark_border_rounded,
-        color: AppPalette.white,
+        color: colors.secondary,
         size: adaptive.scale(19, minFactor: 0.86),
       ),
     );
   }
 
-  Widget _categoryTag() {
+  Widget _categoryTag(BuildContext context) {
+    final colors = context.appColors;
+
     return Container(
       height: adaptive.scale(23, minFactor: 0.84),
       padding: AppEdgeInsets.symmetric(horizontal: adaptive.scale(12)),
       alignment: Alignment.center,
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlaySurfaceHigh01,
+        color: colors.primaryContainer,
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Text(
         _categoryLabel(place.category).toUpperCase(),
         style: AppTextStyle(
-          color: AppPalette.primary,
+          color: colors.primary,
           fontSize: adaptive.scale(12, minFactor: 0.84),
           fontWeight: FontWeight.w900,
         ),
@@ -1186,14 +1248,14 @@ class _DiscoverCard extends StatelessWidget {
     return localizedPlaceCategoryLabel(l10n, category);
   }
 
-  Widget _placeholder() => Container(
-    color: AppPalette.white.withValues(alpha: 0.05),
-    child: const Center(
-      child: Icon(
-        Icons.landscape_rounded,
-        color: AppPalette.textCaption,
-        size: 48,
+  Widget _placeholder(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      color: colors.surfaceHigh,
+      child: Center(
+        child: Icon(Icons.landscape_rounded, color: colors.textMuted, size: 48),
       ),
-    ),
-  );
+    );
+  }
 }

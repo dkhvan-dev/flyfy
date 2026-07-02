@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/time/app_time.dart';
@@ -72,7 +72,7 @@ class _NotificationsOverviewScreenState
             final categories = snapshot.data ?? const [];
             return RefreshIndicator(
               color: AppPalette.primary,
-              backgroundColor: AppPalette.surfaceCool,
+              backgroundColor: context.appColors.surfaceRaised,
               onRefresh: _refresh,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
@@ -418,7 +418,7 @@ class _NotificationCategoryScreenState
             );
             return RefreshIndicator(
               color: AppPalette.primary,
-              backgroundColor: AppPalette.surfaceCool,
+              backgroundColor: context.appColors.surfaceRaised,
               onRefresh: _refresh,
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
@@ -442,28 +442,28 @@ class _NotificationCategoryScreenState
                                 ? _markAllRead
                                 : null,
                             icon: _markingRead
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: AppPalette.backgroundWarm,
+                                      color: context.appColors.textPrimary,
                                     ),
                                   )
                                 : const Icon(Icons.done_all_rounded),
                             label: Text(l10n.notificationsReadAll),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppPalette.primary,
-                              disabledBackgroundColor: AppPalette.white
-                                  .withValues(alpha: 0.08),
-                              foregroundColor: AppPalette.textPrimary,
-                              disabledForegroundColor: AppPalette.textCaption,
-                              minimumSize: const Size(0, 44),
-                              padding: const AppEdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
+                            style: AppButtonStyles.primary(context.appColors)
+                                .copyWith(
+                                  minimumSize: WidgetStateProperty.all(
+                                    const Size(0, 44),
+                                  ),
+                                  padding: WidgetStateProperty.all(
+                                    const AppEdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
                           ),
                         ),
                       ),
@@ -545,21 +545,22 @@ class _NotificationsBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppPalette.warmSurface05,
-              AppPalette.warmInk19,
-              AppPalette.warmInk02,
-            ],
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
           ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }
@@ -632,8 +633,8 @@ class _NotificationsHeader extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: context.appColors.textPrimary,
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       height: 1.04,
@@ -642,8 +643,8 @@ class _NotificationsHeader extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     subtitle,
-                    style: const AppTextStyle(
-                      color: AppPalette.textCoolSecondary,
+                    style: AppTextStyle(
+                      color: context.appColors.textSecondary,
                       fontSize: 14,
                       height: 1.35,
                     ),
@@ -701,8 +702,8 @@ class _NotificationCategoryTile extends StatelessWidget {
                   children: [
                     Text(
                       meta.label,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         height: 1.15,
@@ -725,8 +726,8 @@ class _NotificationCategoryTile extends StatelessWidget {
                   latestText.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -737,8 +738,8 @@ class _NotificationCategoryTile extends StatelessWidget {
                     latestText.body,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textCoolSecondary,
+                    style: AppTextStyle(
+                      color: context.appColors.textSecondary,
                       fontSize: 13,
                       height: 1.35,
                     ),
@@ -750,8 +751,8 @@ class _NotificationCategoryTile extends StatelessWidget {
                     eventTimeLabel,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textCoolSecondary,
+                    style: AppTextStyle(
+                      color: context.appColors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
@@ -761,8 +762,8 @@ class _NotificationCategoryTile extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   _formatRelativeTime(context, latest.createdAt),
-                  style: const AppTextStyle(
-                    color: AppPalette.textCaption,
+                  style: AppTextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -771,9 +772,9 @@ class _NotificationCategoryTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
-            color: AppPalette.textCaption,
+            color: context.appColors.textMuted,
             size: 24,
           ),
         ],
@@ -824,8 +825,8 @@ class _NotificationTile extends StatelessWidget {
                             localized.title,
                             style: AppTextStyle(
                               color: notification.isRead
-                                  ? AppPalette.textCoolSecondary
-                                  : AppPalette.textPrimary,
+                                  ? context.appColors.textSecondary
+                                  : context.appColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
                               height: 1.18,
@@ -886,11 +887,9 @@ class _NotificationTile extends StatelessWidget {
             const SizedBox(height: 14),
             DecoratedBox(
               decoration: AppBoxDecoration(
-                color: AppPalette.surfaceCool.withValues(alpha: 0.48),
+                color: context.appColors.surface.withValues(alpha: 0.72),
                 borderRadius: AppBorderRadius.circular(16),
-                border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.10),
-                ),
+                border: Border.all(color: context.appColors.borderPrimary),
               ),
               child: Padding(
                 padding: const AppEdgeInsets.symmetric(
@@ -899,8 +898,8 @@ class _NotificationTile extends StatelessWidget {
                 ),
                 child: Text(
                   localized.body,
-                  style: const AppTextStyle(
-                    color: AppPalette.textCoolSecondary,
+                  style: AppTextStyle(
+                    color: context.appColors.textSecondary,
                     fontSize: 14,
                     height: 1.42,
                   ),
@@ -1293,7 +1292,7 @@ class _NotificationInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isAccent ? AppPalette.primary : AppPalette.textCaption;
+    final color = isAccent ? AppPalette.primary : context.appColors.textMuted;
     return DecoratedBox(
       decoration: AppBoxDecoration(
         color: color.withValues(alpha: isAccent ? 0.14 : 0.08),
@@ -1334,9 +1333,9 @@ class _NotificationEventTimeBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.08),
+        color: AppPalette.primary.withValues(alpha: 0.10),
         borderRadius: AppBorderRadius.circular(14),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: context.appColors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1352,8 +1351,8 @@ class _NotificationEventTimeBlock extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const AppTextStyle(
-                  color: AppPalette.textCoolSecondary,
+                style: AppTextStyle(
+                  color: context.appColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   height: 1.35,
@@ -1381,9 +1380,10 @@ class _InteractivePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isHighlighted
-        ? AppPalette.primary.withValues(alpha: 0.34)
-        : AppPalette.white.withValues(alpha: 0.08);
+        ? context.appColors.borderPrimary
+        : context.appColors.borderSoft;
     return Material(
       color: AppPalette.transparent,
       child: InkWell(
@@ -1397,24 +1397,32 @@ class _InteractivePanel extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isHighlighted
-                  ? const [AppPalette.warmSurface51, AppPalette.warmInk102]
-                  : const [AppPalette.warmSurface04, AppPalette.warmInk45],
+                  ? [
+                      context.appColors.surfaceWarm,
+                      context.appColors.surfaceRaised,
+                    ]
+                  : [
+                      context.appColors.surfaceRaised,
+                      context.appColors.surface,
+                    ],
             ),
             borderRadius: AppBorderRadius.circular(22),
             border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.26),
-                blurRadius: 28,
-                offset: const Offset(0, 16),
-              ),
-              if (isHighlighted)
-                BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.10),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-            ],
+            boxShadow: isDarkV2
+                ? [
+                    BoxShadow(
+                      color: AppPalette.black.withValues(alpha: 0.22),
+                      blurRadius: 28,
+                      offset: const Offset(0, 16),
+                    ),
+                    if (isHighlighted)
+                      BoxShadow(
+                        color: AppPalette.primary.withValues(alpha: 0.10),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                  ]
+                : null,
           ),
           child: child,
         ),
@@ -1470,17 +1478,15 @@ class _UnreadBadge extends StatelessWidget {
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.primary.withValues(alpha: 0.14),
+            color: AppPalette.primary.withValues(alpha: 0.16),
             borderRadius: AppBorderRadius.circular(999),
-            border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.28),
-            ),
+            border: Border.all(color: context.appColors.borderPrimary),
           ),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 4),
             child: Text(
               label,
-              style: const AppTextStyle(
+              style: AppTextStyle(
                 color: AppPalette.primary,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -1501,22 +1507,12 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppPalette.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Ink(
-          width: 44,
-          height: 44,
-          decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: 0.055),
-            shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
-          ),
-          child: Icon(icon, color: AppPalette.textPrimary, size: 18),
-        ),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      style: AppButtonStyles.icon(context.appColors),
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
     );
   }
 }
@@ -1550,9 +1546,7 @@ class _StateMessage extends StatelessWidget {
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
                 color: AppPalette.primary.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.24),
-                ),
+                border: Border.all(color: context.appColors.borderPrimary),
               ),
               child: Icon(icon, color: AppPalette.primary, size: 36),
             ),
@@ -1560,8 +1554,8 @@ class _StateMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.appColors.textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 height: 1.1,
@@ -1571,8 +1565,8 @@ class _StateMessage extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: AppPalette.textCoolSecondary,
+              style: AppTextStyle(
+                color: context.appColors.textSecondary,
                 fontSize: 14,
                 height: 1.45,
               ),
@@ -1581,11 +1575,11 @@ class _StateMessage extends StatelessWidget {
               const SizedBox(height: 22),
               FilledButton(
                 onPressed: onAction,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.backgroundWarm,
-                  minimumSize: const Size(0, 46),
-                  padding: const AppEdgeInsets.symmetric(horizontal: 18),
+                style: AppButtonStyles.primary(context.appColors).copyWith(
+                  minimumSize: WidgetStateProperty.all(const Size(0, 46)),
+                  padding: WidgetStateProperty.all(
+                    const AppEdgeInsets.symmetric(horizontal: 18),
+                  ),
                 ),
                 child: Text(actionLabel!),
               ),
@@ -1625,9 +1619,11 @@ class _SkeletonPanel extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: alpha.clamp(0.055, 0.09)),
+        color: context.appColors.surfaceRaised.withValues(
+          alpha: alpha.clamp(0.55, 0.82),
+        ),
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: context.appColors.borderSoft),
       ),
       child: Row(
         children: [
@@ -1635,7 +1631,7 @@ class _SkeletonPanel extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.08),
+              color: AppPalette.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
           ),
@@ -1677,7 +1673,7 @@ class _SkeletonLine extends StatelessWidget {
     return Container(
       height: height,
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.10),
+        color: context.appColors.border.withValues(alpha: 0.50),
         borderRadius: AppBorderRadius.circular(999),
       ),
     );
@@ -1717,14 +1713,14 @@ _NotificationCategoryMeta _categoryMeta(
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryExcursion,
         icon: Icons.explore_rounded,
-        color: AppPalette.primaryLight,
+        color: AppPalette.secondary,
       );
     case 'booking':
     case 'bookings':
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryBooking,
         icon: Icons.confirmation_number_rounded,
-        color: AppPalette.greenSoft08,
+        color: AppPalette.secondary,
       );
     case 'checklist':
     case 'checklists':
@@ -1739,7 +1735,7 @@ _NotificationCategoryMeta _categoryMeta(
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryChat,
         icon: Icons.chat_bubble_rounded,
-        color: AppPalette.amberSoft25,
+        color: AppPalette.secondary,
       );
     case 'content':
     case 'story':
@@ -1749,14 +1745,14 @@ _NotificationCategoryMeta _categoryMeta(
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryContent,
         icon: Icons.auto_stories_rounded,
-        color: AppPalette.amberSoft17,
+        color: AppPalette.primary,
       );
     case 'system':
     case 'security':
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategorySystem,
         icon: Icons.verified_user_rounded,
-        color: AppPalette.violetLight01,
+        color: AppPalette.secondary,
       );
     case 'support':
     case 'help':

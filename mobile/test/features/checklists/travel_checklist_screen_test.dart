@@ -921,7 +921,10 @@ void main() {
           matching: find.text('Самолет'),
         ),
       );
-      expect(selectedFlightLabel.style?.color, AppPalette.textPrimary);
+      expect(
+        selectedFlightLabel.style?.color,
+        AppColorSchemes.light.textPrimary,
+      );
 
       await tester.enterText(
         find.byKey(const ValueKey('quick-prep-country-code-field')),
@@ -1178,12 +1181,18 @@ void main() {
       find.byKey(const ValueKey('quick-prep-date-picker-amber-theme')),
     );
     final datePickerTheme = theme.data.datePickerTheme;
-    expect(datePickerTheme.backgroundColor, const Color(0xFF2B1D0F));
-    expect(datePickerTheme.headerBackgroundColor, const Color(0xFFF98C06));
-    expect(datePickerTheme.headerForegroundColor, AppPalette.textPrimary);
+    expect(datePickerTheme.backgroundColor, AppColorSchemes.light.surface);
+    expect(
+      datePickerTheme.headerBackgroundColor,
+      AppColorSchemes.light.primary,
+    );
+    expect(
+      datePickerTheme.headerForegroundColor,
+      AppColorSchemes.light.textPrimary,
+    );
     expect(
       datePickerTheme.dayForegroundColor?.resolve({WidgetState.selected}),
-      AppPalette.textPrimary,
+      AppColorSchemes.light.textPrimary,
     );
   });
 
@@ -1251,7 +1260,7 @@ void main() {
     );
     expect(
       carrySearchButton.style?.foregroundColor?.resolve({}),
-      AppPalette.textPrimary,
+      AppColorSchemes.light.textPrimary,
     );
     await tester.enterText(
       find.byKey(const ValueKey('carry-search-field')),
@@ -1802,7 +1811,7 @@ void main() {
       findsNothing,
     );
     final initialCheckbox = tester.widget<Checkbox>(toggleFinder);
-    expect(initialCheckbox.checkColor, AppPalette.textPrimary);
+    expect(initialCheckbox.checkColor, AppColorSchemes.light.textPrimary);
 
     await tester.tap(toggleFinder);
     await tester.pumpAndSettle();
@@ -2105,7 +2114,7 @@ void main() {
 
     final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
     expect(snackBar.behavior, SnackBarBehavior.floating);
-    expect(snackBar.backgroundColor, const Color(0xFF3A2814));
+    expect(snackBar.backgroundColor, AppColorSchemes.light.surfaceRaised);
     expect(snackBar.shape, isA<RoundedRectangleBorder>());
   });
 

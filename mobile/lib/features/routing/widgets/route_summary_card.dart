@@ -12,26 +12,30 @@ class RouteSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     final duration = _formatDuration(route.durationSeconds, l10n);
     final distance = _formatDistance(route.distanceMeters, l10n);
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppPalette.warmSurface48, AppPalette.warmInk94],
+          colors: [colors.surfaceRaised, colors.surfaceWarm],
         ),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.46)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: colors.borderPrimary),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.22),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : const [],
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(14),
@@ -46,15 +50,13 @@ class RouteSummaryCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.16),
+                    color: colors.primary.withValues(alpha: 0.16),
                     borderRadius: AppBorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppPalette.primary.withValues(alpha: 0.36),
-                    ),
+                    border: Border.all(color: colors.borderPrimary),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.route_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: 21,
                   ),
                 ),
@@ -68,7 +70,7 @@ class RouteSummaryCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppPalette.amberWash07,
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -78,7 +80,7 @@ class RouteSummaryCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight07,
+                          color: colors.textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -132,7 +134,7 @@ class RouteSummaryCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppPalette.amberLight10,
+                  color: colors.warning,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -194,18 +196,19 @@ class _RouteMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.12),
+        color: colors.primaryContainer.withValues(alpha: 0.72),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 9),
         child: Row(
           children: [
-            Icon(metric.icon, color: AppPalette.primary, size: 18),
+            Icon(metric.icon, color: colors.primary, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -217,7 +220,7 @@ class _RouteMetricTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppPalette.amberLight07,
+                      color: colors.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -227,7 +230,7 @@ class _RouteMetricTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppPalette.amberWash07,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

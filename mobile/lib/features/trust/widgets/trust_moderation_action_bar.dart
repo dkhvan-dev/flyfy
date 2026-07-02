@@ -176,14 +176,16 @@ class _TrustModerationActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final iconSize = dense ? 16.0 : 18.0;
     final verticalPadding = dense ? 6.0 : 8.0;
 
     return OutlinedButton(
       onPressed: isEnabled ? onPressed : null,
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppPalette.textPrimary,
-        side: BorderSide(color: AppPalette.outlineOverlay),
+        foregroundColor: colors.textPrimary,
+        disabledForegroundColor: colors.textDisabled,
+        side: BorderSide(color: colors.borderSoft),
         padding: AppEdgeInsets.symmetric(
           horizontal: 10,
           vertical: verticalPadding,
@@ -197,7 +199,10 @@ class _TrustModerationActionButton extends StatelessWidget {
           if (isBusy)
             SizedBox.square(
               dimension: iconSize,
-              child: const CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: colors.textPrimary,
+                strokeWidth: 2,
+              ),
             )
           else
             Icon(entry.icon, size: iconSize),

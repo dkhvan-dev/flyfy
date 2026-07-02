@@ -395,10 +395,11 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
 
   Future<void> _showGallerySourceSheet() async {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final selected = await showAppModalBottomSheet<_StoryCaptureMediaKind>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.warmInk40,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: AppBorderRadius.vertical(
           top: AppRadiusValue.circular(18),
@@ -415,7 +416,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                   width: 44,
                   height: 4,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.white.withValues(alpha: 0.24),
+                    color: colors.textMuted.withValues(alpha: 0.42),
                     borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
@@ -550,19 +551,28 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
 
   @override
   Widget build(BuildContext context) {
-    final file = _selectedFile;
-    final kind = _selectedKind;
-    return Scaffold(
-      key: const ValueKey('story-capture-screen'),
-      backgroundColor: AppPalette.black,
-      body: file == null || kind == null
-          ? _buildCameraBody(context)
-          : _buildPreviewBody(context, file, kind),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Builder(
+        builder: (context) {
+          final colors = AppDesignSystem.colorsFor(context);
+          final file = _selectedFile;
+          final kind = _selectedKind;
+          return Scaffold(
+            key: const ValueKey('story-capture-screen'),
+            backgroundColor: colors.black,
+            body: file == null || kind == null
+                ? _buildCameraBody(context)
+                : _buildPreviewBody(context, file, kind),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildCameraBody(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final controller = _cameraController;
     final initialized =
         controller != null && controller.value.isInitialized && !_loadingCamera;
@@ -572,9 +582,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
         Positioned.fill(
           child: initialized
               ? _StoryCameraPreview(controller: controller)
-              : const Center(
-                  child: CircularProgressIndicator(color: AppPalette.primary),
-                ),
+              : Center(child: CircularProgressIndicator(color: colors.primary)),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -584,9 +592,9 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppPalette.black.withValues(alpha: 0.66),
-                    AppPalette.transparent,
-                    AppPalette.black.withValues(alpha: 0.76),
+                    colors.scrim.withValues(alpha: 0.66),
+                    colors.transparent,
+                    colors.scrim.withValues(alpha: 0.76),
                   ],
                   stops: const [0, 0.48, 1],
                 ),
@@ -614,7 +622,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: AppPalette.white,
+                              color: colors.white,
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -695,6 +703,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
     _StoryCaptureMediaKind kind,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return Stack(
       children: [
         Positioned.fill(
@@ -708,9 +717,9 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppPalette.black.withValues(alpha: 0.62),
-                    AppPalette.transparent,
-                    AppPalette.black.withValues(alpha: 0.78),
+                    colors.scrim.withValues(alpha: 0.62),
+                    colors.transparent,
+                    colors.scrim.withValues(alpha: 0.78),
                   ],
                   stops: const [0, 0.5, 1],
                 ),
@@ -738,7 +747,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: AppPalette.white,
+                              color: colors.white,
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -755,29 +764,29 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                   controller: _captionController,
                   minLines: 1,
                   maxLines: 3,
-                  style: const AppTextStyle(color: AppPalette.white),
+                  style: AppTextStyle(color: colors.white),
                   decoration: AppInputDecoration(
                     hintText: l10n.storyCaptureCaptionHint,
                     hintStyle: AppTextStyle(
-                      color: AppPalette.white.withValues(alpha: 0.56),
+                      color: colors.white.withValues(alpha: 0.56),
                     ),
                     filled: true,
-                    fillColor: AppPalette.black.withValues(alpha: 0.36),
+                    fillColor: colors.black.withValues(alpha: 0.36),
                     border: OutlineInputBorder(
                       borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: colors.white.withValues(alpha: 0.18),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: AppPalette.white.withValues(alpha: 0.18),
+                        color: colors.white.withValues(alpha: 0.18),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: AppBorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppPalette.primary),
+                      borderSide: BorderSide(color: colors.primary),
                     ),
                   ),
                 ),
@@ -796,9 +805,9 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppPalette.white,
+                        foregroundColor: colors.white,
                         side: BorderSide(
-                          color: AppPalette.white.withValues(alpha: 0.24),
+                          color: colors.white.withValues(alpha: 0.24),
                         ),
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
@@ -811,11 +820,11 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                           ? null
                           : () => unawaited(_publish()),
                       icon: _publishing
-                          ? const SizedBox.square(
+                          ? SizedBox.square(
                               dimension: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppPalette.warmInk73,
+                                color: colors.textPrimary,
                               ),
                             )
                           : const Icon(Icons.send_rounded),
@@ -827,8 +836,8 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppPalette.primary,
-                        foregroundColor: AppPalette.textPrimary,
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.textPrimary,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(8),
@@ -978,9 +987,9 @@ class _StoryCapturePreviewState extends State<_StoryCapturePreview> {
       );
     }
 
-    return const Center(
-      child: CircularProgressIndicator(color: AppPalette.primary),
-    );
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return Center(child: CircularProgressIndicator(color: colors.primary));
   }
 }
 
@@ -997,15 +1006,17 @@ class _CaptureIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Tooltip(
       message: label,
       child: IconButton.filled(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor: AppPalette.black.withValues(alpha: 0.32),
-          disabledBackgroundColor: AppPalette.black.withValues(alpha: 0.18),
-          foregroundColor: AppPalette.white,
-          disabledForegroundColor: AppPalette.white.withValues(alpha: 0.36),
+          backgroundColor: colors.black.withValues(alpha: 0.32),
+          disabledBackgroundColor: colors.black.withValues(alpha: 0.18),
+          foregroundColor: colors.white,
+          disabledForegroundColor: colors.white.withValues(alpha: 0.36),
         ),
         icon: Icon(icon),
       ),
@@ -1026,6 +1037,8 @@ class _CaptureModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: AppBorderRadius.circular(999),
@@ -1034,13 +1047,13 @@ class _CaptureModeButton extends StatelessWidget {
         padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: AppBoxDecoration(
           color: selected
-              ? AppPalette.white.withValues(alpha: 0.18)
-              : AppPalette.black.withValues(alpha: 0.20),
+              ? colors.white.withValues(alpha: 0.18)
+              : colors.black.withValues(alpha: 0.20),
           borderRadius: AppBorderRadius.circular(999),
           border: Border.all(
             color: selected
-                ? AppPalette.primary
-                : AppPalette.white.withValues(alpha: 0.16),
+                ? colors.primary
+                : colors.white.withValues(alpha: 0.16),
           ),
         ),
         child: Text(
@@ -1048,7 +1061,9 @@ class _CaptureModeButton extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
-            color: selected ? AppPalette.white : AppPalette.white70,
+            color: selected
+                ? colors.white
+                : colors.white.withValues(alpha: 0.7),
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1078,6 +1093,7 @@ class _CaptureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final label = videoMode
         ? (recording ? stopLabel : recordLabel)
         : photoLabel;
@@ -1092,16 +1108,16 @@ class _CaptureButton extends StatelessWidget {
           padding: const AppEdgeInsets.all(5),
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white, width: 4),
+            border: Border.all(color: colors.white, width: 4),
           ),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: AppBoxDecoration(
               color: videoMode
                   ? (recording
-                        ? AppPalette.danger
-                        : AppPalette.materialDangerAccent)
-                  : AppPalette.white,
+                        ? colors.danger
+                        : colors.danger.withValues(alpha: 0.78))
+                  : colors.white,
               shape: recording ? BoxShape.rectangle : BoxShape.circle,
               borderRadius: recording ? AppBorderRadius.circular(8) : null,
             ),
@@ -1120,13 +1136,15 @@ class _GalleryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Tooltip(
       message: label,
       child: IconButton.filled(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor: AppPalette.black.withValues(alpha: 0.36),
-          foregroundColor: AppPalette.white,
+          backgroundColor: colors.black.withValues(alpha: 0.36),
+          foregroundColor: colors.white,
           minimumSize: const Size.square(52),
         ),
         icon: const Icon(Icons.photo_library_rounded),
@@ -1142,21 +1160,19 @@ class _RecordingPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.materialDangerAccent.withValues(alpha: 0.88),
+        color: colors.danger.withValues(alpha: 0.88),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Text(
           '$minutes:$seconds',
-          style: const AppTextStyle(
-            color: AppPalette.white,
-            fontWeight: FontWeight.w900,
-          ),
+          style: AppTextStyle(color: colors.white, fontWeight: FontWeight.w900),
         ),
       ),
     );
@@ -1170,21 +1186,20 @@ class _CaptureErrorPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: AppBoxDecoration(
-        color: AppPalette.redSurface02.withValues(alpha: 0.92),
+        color: colors.danger.withValues(alpha: 0.92),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.danger.withValues(alpha: 0.34)),
+        border: Border.all(color: colors.danger.withValues(alpha: 0.34)),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: const AppTextStyle(
-          color: AppPalette.white,
-          fontWeight: FontWeight.w700,
-        ),
+        style: AppTextStyle(color: colors.white, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -1203,17 +1218,16 @@ class _StoryCaptureSheetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ListTile(
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
-      tileColor: AppPalette.white.withValues(alpha: 0.08),
-      leading: Icon(icon, color: AppPalette.primary),
+      tileColor: colors.white.withValues(alpha: 0.08),
+      leading: Icon(icon, color: colors.primary),
       title: Text(
         label,
-        style: const AppTextStyle(
-          color: AppPalette.white,
-          fontWeight: FontWeight.w800,
-        ),
+        style: AppTextStyle(color: colors.white, fontWeight: FontWeight.w800),
       ),
     );
   }

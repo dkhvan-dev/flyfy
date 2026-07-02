@@ -88,11 +88,12 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface03,
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Padding(
         padding: const AppEdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -105,12 +106,12 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                   width: 36,
                   height: 36,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.16),
+                    color: colors.primary.withValues(alpha: 0.16),
                     borderRadius: AppBorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.help_outline_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: 20,
                   ),
                 ),
@@ -120,8 +121,8 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                     l10n.contextualHelpTitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
@@ -130,6 +131,7 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                 ),
                 TextButton(
                   onPressed: () => context.push('/help'),
+                  style: TextButton.styleFrom(foregroundColor: colors.primary),
                   child: Text(l10n.contextualHelpOpenAll),
                 ),
               ],
@@ -219,6 +221,8 @@ class _ContextualHelpSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       children: List.generate(
         3,
@@ -226,7 +230,7 @@ class _ContextualHelpSkeleton extends StatelessWidget {
           padding: const AppEdgeInsets.only(bottom: 10),
           child: DecoratedBox(
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.05),
+              color: colors.surfaceHigh,
               borderRadius: AppBorderRadius.circular(14),
             ),
             child: const SizedBox(height: 72, width: double.infinity),
@@ -245,6 +249,8 @@ class _ContextualHelpError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
         Expanded(
@@ -252,8 +258,8 @@ class _ContextualHelpError extends StatelessWidget {
             l10n.contextualHelpLoadFailed,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.textCoolSecondary,
+            style: AppTextStyle(
+              color: colors.textSecondary,
               fontSize: 14,
               letterSpacing: 0,
             ),
@@ -262,6 +268,7 @@ class _ContextualHelpError extends StatelessWidget {
         const SizedBox(width: 10),
         TextButton(
           onPressed: onRetry,
+          style: TextButton.styleFrom(foregroundColor: colors.primary),
           child: Text(l10n.contextualHelpTryAgain),
         ),
       ],

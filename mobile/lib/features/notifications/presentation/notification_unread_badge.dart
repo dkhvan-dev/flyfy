@@ -83,26 +83,38 @@ class _NavBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final minWidth = label.length > 2 ? 30.0 : 22.0;
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-      child: DecoratedBox(
+      constraints: BoxConstraints(minWidth: minWidth),
+      child: Container(
+        height: 22,
+        alignment: Alignment.center,
+        padding: const AppEdgeInsets.symmetric(horizontal: 5),
         decoration: AppBoxDecoration(
-          color: AppPalette.primary,
+          color: colors.primary,
           borderRadius: AppBorderRadius.circular(999),
-          border: Border.all(color: AppPalette.warmInk81, width: 1.5),
+          border: Border.all(color: colors.surface, width: 1.5),
         ),
-        child: Padding(
-          padding: const AppEdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-              height: 1,
-            ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+          strutStyle: const StrutStyle(
+            fontSize: 10,
+            height: 1,
+            forceStrutHeight: true,
+          ),
+          style: AppTextStyle(
+            color: colors.textPrimary,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            height: 1,
           ),
         ),
       ),

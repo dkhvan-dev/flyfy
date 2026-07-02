@@ -98,6 +98,7 @@ Iterable<File> _uiSourceFiles(Directory libDir) sync* {
 bool _isExcluded(File file) {
   final path = file.path;
   return path.endsWith('/core/ui/app_design_system.dart') ||
+      path.endsWith('/core/ui/app_design_system.dart') ||
       path.endsWith('/core/ui/app_colors.dart') ||
       path.contains('/l10n/generated/');
 }

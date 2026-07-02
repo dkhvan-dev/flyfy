@@ -17,7 +17,7 @@ class TermsAgreementRichText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const baseStyle = AppTextStyle(
-      color: AppPalette.textCaption,
+      color: AppPalette.textMuted,
       fontSize: 12,
       fontWeight: FontWeight.w400,
       height: 1.5,

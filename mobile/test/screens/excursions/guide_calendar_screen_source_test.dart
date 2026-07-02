@@ -33,8 +33,8 @@ void main() {
     expect(source, contains('SafeArea'));
     expect(source, contains('RefreshIndicator'));
     expect(source, contains('CustomScrollView'));
-    expect(source, contains('backgroundColor: AppPalette.primary'));
-    expect(source, contains('foregroundColor: AppPalette.textPrimary'));
+    expect(source, contains('backgroundColor: colors.primary'));
+    expect(source, contains('foregroundColor: colors.textPrimary'));
     expect(source, contains('const GuideCalendarScreen({'));
     expect(source, contains('this.guideUserId'));
     expect(source, contains('this.readOnly = false'));
@@ -45,6 +45,20 @@ void main() {
     expect(source, contains('onSlotTap: widget.readOnly'));
     expect(source, contains('_openSlotSheet(selectedDate, slot)'));
     expect(source, isNot(contains('height: 700')));
+  });
+
+  test('guide calendar screen uses V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_calendar_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
   });
 
   test(
@@ -71,14 +85,14 @@ void main() {
       expect(source, contains('_DateInputFormatter'));
       expect(source, contains('_TimeInputFormatter'));
       expect(source, contains('_chipTheme'));
-      expect(source, contains('_slotSheetFieldIconColor'));
-      expect(source, contains('iconEnabledColor: _slotSheetFieldIconColor'));
-      expect(source, contains('Icon(icon, color: _slotSheetFieldIconColor'));
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, contains('iconEnabledColor: colors.primary'));
+      expect(source, contains('Icon(icon, color: colors.primary'));
       expect(
         source,
         contains('_repeatWeekly && _weekdays.contains(day.value)'),
       );
-      expect(source, contains('AppPalette.warmSurface47'));
+      expect(source, contains('colors.surfaceRaised'));
       expect(source, contains('_fallbackOptionFromExcursion'));
       expect(source, contains('menuMaxHeight:'));
       expect(source, contains('guideCalendarOfferRequired'));
@@ -116,7 +130,7 @@ void main() {
 
     expect(
       RegExp(
-        r'selected\s*\?\s*AppPalette\.textPrimary\s*:\s*AppPalette\.textCoolSecondary',
+        r'selected\s*\?\s*colors\.textPrimary\s*:\s*colors\.textMuted',
       ).hasMatch(source),
       isTrue,
     );

@@ -2482,6 +2482,54 @@ abstract class AppLocalizations {
   /// **'App language'**
   String get appLanguageTitle;
 
+  /// No description provided for @appThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App theme'**
+  String get appThemeTitle;
+
+  /// No description provided for @appThemeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Light, dark, or system default'**
+  String get appThemeSubtitle;
+
+  /// No description provided for @appThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get appThemeSystem;
+
+  /// No description provided for @appThemeSystemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow device settings'**
+  String get appThemeSystemDescription;
+
+  /// No description provided for @appThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get appThemeLight;
+
+  /// No description provided for @appThemeLightDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a light interface'**
+  String get appThemeLightDescription;
+
+  /// No description provided for @appThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get appThemeDark;
+
+  /// No description provided for @appThemeDarkDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a dark interface'**
+  String get appThemeDarkDescription;
+
   /// No description provided for @saveProfileButton.
   ///
   /// In en, this message translates to:
@@ -10921,7 +10969,7 @@ abstract class AppLocalizations {
   /// No description provided for @createMaxParticipantsValidation.
   ///
   /// In en, this message translates to:
-  /// **'Please enter a maximum between 1 and 100 participants'**
+  /// **'Please enter a maximum between 2 and 100 participants'**
   String get createMaxParticipantsValidation;
 
   /// No description provided for @createMinParticipantsValidation.

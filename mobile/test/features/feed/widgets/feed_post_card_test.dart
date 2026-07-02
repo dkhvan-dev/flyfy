@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/feed/widgets/feed_post_card.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
 
@@ -46,6 +49,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(openedPost?.id, 'quick-1');
+  });
+
+  testWidgets(
+    'adaptive v2 feed cards disable external shadows in light theme',
+    (tester) async {
+      late FeedPostCardStyle lightStyle;
+      late FeedPostCardStyle darkStyle;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppDesignSystem.lightTheme(),
+          home: Builder(
+            builder: (context) {
+              lightStyle = FeedPostCardStyle.v2(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        Theme(
+          data: AppDesignSystem.darkTheme(),
+          child: Builder(
+            builder: (context) {
+              darkStyle = FeedPostCardStyle.v2(context);
+              return const Directionality(
+                textDirection: TextDirection.ltr,
+                child: SizedBox.shrink(),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(lightStyle.shadowColor, Colors.transparent);
+      expect(lightStyle.glowColor, Colors.transparent);
+      expect(lightStyle.coverScrimGradient, isNull);
+      expect(lightStyle.hasShadow, isFalse);
+      expect(darkStyle.shadowColor, isNot(Colors.transparent));
+      expect(darkStyle.glowColor, isNot(Colors.transparent));
+      expect(darkStyle.coverScrimGradient, isNotNull);
+      expect(darkStyle.hasShadow, isTrue);
+    },
+  );
+
+  test(
+    'feed post card only paints external shadows and image scrims when style allows it',
+    () async {
+      final source = await File(
+        'lib/features/feed/widgets/feed_post_card.dart',
+      ).readAsString();
+
+      expect(source, contains('required this.hasShadow'));
+      expect(source, contains('final bool hasShadow'));
+      expect(source, contains('required this.coverScrimGradient'));
+      expect(source, contains('final Gradient? coverScrimGradient'));
+      expect(source, contains('boxShadow: style.hasShadow'));
+      expect(source, contains('if (style.coverScrimGradient != null)'));
+    },
+  );
+
+  test('feed post card defaults to adaptive V2 colors', () async {
+    final source = await File(
+      'lib/features/feed/widgets/feed_post_card.dart',
+    ).readAsString();
+
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('widget.style ?? FeedPostCardStyle.v2(context)'));
+    expect(source, contains('color: foreground'));
+    expect(source, isNot(contains('FeedPostCardStyle.legacy')));
+    expect(source, isNot(contains('AppPalette.')));
   });
 }
 

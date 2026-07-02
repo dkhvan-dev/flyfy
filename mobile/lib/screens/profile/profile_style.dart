@@ -1,17 +1,15 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
-const Color profileBgTop = AppPalette.warmInk47;
-const Color profileBgBottom = AppPalette.warmInk24;
-const Color profileSurface = AppPalette.warmSurface09;
-const Color profileSurfaceSoft = AppPalette.warmSurface41;
-const Color profileSurfaceMuted = AppPalette.warmSurface76;
-const Color profileBorder = AppPalette.borderStrong;
+const Color profileBgTop = AppPalette.backgroundDeep;
+const Color profileBgBottom = AppPalette.background;
+const Color profileSurface = AppPalette.surface;
+const Color profileSurfaceSoft = AppPalette.surfaceRaised;
+const Color profileSurfaceMuted = AppPalette.surfaceHigh;
+const Color profileBorder = AppPalette.border;
 const Color profileBorderSoft = AppPalette.borderSoft;
-const Color profileTextSoft = AppPalette.orangeLight16;
-const Color profileTextMuted = AppPalette.orangeSoft01;
+const Color profileTextSoft = AppPalette.primary;
+const Color profileTextMuted = AppPalette.textSecondary;
 const Color profileDisabled = AppPalette.textDisabled;
 
 class ProfileResponsiveScope extends StatelessWidget {
@@ -68,9 +66,11 @@ BoxDecoration profileCardDecoration(
   bool disabled = false,
   double? radius,
 }) {
+  final colors = AppDesignSystem.colorsFor(context);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final glowColor = disabled
-      ? AppPalette.transparent
-      : AppPalette.primary.withValues(alpha: highlighted ? 0.18 : 0.1);
+      ? colors.transparent
+      : colors.primary.withValues(alpha: highlighted ? 0.18 : 0.1);
 
   return AppBoxDecoration(
     gradient: LinearGradient(
@@ -78,17 +78,17 @@ BoxDecoration profileCardDecoration(
       end: Alignment.bottomRight,
       colors: disabled
           ? [
-              profileSurfaceMuted.withValues(alpha: 0.66),
-              profileSurface.withValues(alpha: 0.78),
+              colors.surfaceHigh.withValues(alpha: 0.66),
+              colors.surface.withValues(alpha: 0.78),
             ]
           : highlighted
           ? [
-              profileSurfaceSoft.withValues(alpha: 0.98),
-              profileSurface.withValues(alpha: 0.96),
+              colors.surfaceRaised.withValues(alpha: 0.98),
+              colors.surface.withValues(alpha: 0.96),
             ]
           : [
-              AppPalette.white.withValues(alpha: 0.03),
-              AppPalette.white.withValues(alpha: 0.015),
+              colors.surface.withValues(alpha: 0.98),
+              colors.surfaceHigh.withValues(alpha: 0.72),
             ],
     ),
     borderRadius: AppBorderRadius.circular(
@@ -96,18 +96,19 @@ BoxDecoration profileCardDecoration(
     ),
     border: Border.all(
       color: disabled
-          ? profileBorderSoft
+          ? colors.borderSoft
           : highlighted
-          ? profileBorder
-          : AppPalette.white.withValues(alpha: 0.04),
+          ? colors.border
+          : colors.borderSoft,
     ),
     boxShadow: [
-      BoxShadow(
-        color: AppPalette.black.withValues(alpha: 0.22),
-        blurRadius: profileScaled(context, 24, min: 16, max: 28),
-        offset: Offset(0, profileScaled(context, 10, min: 6, max: 12)),
-      ),
-      if (!disabled)
+      if (isDark)
+        BoxShadow(
+          color: colors.black.withValues(alpha: 0.22),
+          blurRadius: profileScaled(context, 24, min: 16, max: 28),
+          offset: Offset(0, profileScaled(context, 10, min: 6, max: 12)),
+        ),
+      if (isDark && !disabled)
         BoxShadow(
           color: glowColor,
           blurRadius: profileScaled(context, 20, min: 12, max: 24),
@@ -131,11 +132,12 @@ class ProfileTopIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final size = profileScaled(context, 38, min: 34, max: 40);
     final iconSize = profileScaled(context, 20, min: 18, max: 20);
 
     return Material(
-      color: AppPalette.white.withValues(alpha: 0.04),
+      color: colors.surfaceHigh.withValues(alpha: 0.82),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: disabled ? null : onTap,
@@ -146,7 +148,7 @@ class ProfileTopIconButton extends StatelessWidget {
           child: Icon(
             icon,
             size: iconSize,
-            color: disabled ? profileDisabled : AppPalette.textPrimary,
+            color: disabled ? colors.textDisabled : colors.textPrimary,
           ),
         ),
       ),
@@ -168,6 +170,8 @@ class ProfileSectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -183,7 +187,7 @@ class ProfileSectionHeading extends StatelessWidget {
                   child: Text(
                     kicker!,
                     style: AppTextStyle(
-                      color: profileTextSoft,
+                      color: colors.primary,
                       fontSize: profileScaled(context, 11, min: 10, max: 11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.6,
@@ -193,7 +197,7 @@ class ProfileSectionHeading extends StatelessWidget {
               Text(
                 title,
                 style: AppTextStyle(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: profileScaled(context, 18, min: 16, max: 22),
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
@@ -215,55 +219,17 @@ class ProfileGlassBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const AppBoxDecoration(
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [profileBgTop, profileBgBottom],
+          colors: colors.screenGradientColors,
         ),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            top: -120,
-            right: -80,
-            child: _GlowOrb(
-              size: profileScaled(context, 280, min: 200, max: 320),
-              color: AppPalette.primary.withValues(alpha: 0.12),
-            ),
-          ),
-          Positioned(
-            top: 220,
-            left: -100,
-            child: _GlowOrb(
-              size: profileScaled(context, 240, min: 160, max: 260),
-              color: AppPalette.primary.withValues(alpha: 0.06),
-            ),
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: AppBoxDecoration(color: color, shape: BoxShape.circle),
-      ),
+      child: child,
     );
   }
 }

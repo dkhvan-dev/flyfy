@@ -132,14 +132,15 @@ void main() {
 
     final actionSource = source.substring(actionStart);
 
-    expect(actionSource, contains('AppPalette.warmSurface28'));
-    expect(actionSource, contains('AppPalette.warmSurface66'));
-    expect(actionSource, contains('AppPalette.primary'));
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, isNot(contains('AppPalette.')));
+    expect(actionSource, contains('color: colors.primary'));
+    expect(actionSource, contains('colors.textPrimary'));
     expect(actionSource, contains('isAccent'));
-    expect(actionSource, contains('? AppPalette.warmSurface28'));
     expect(
       actionSource,
-      isNot(contains('colors: [AppPalette.amberSoft14, AppPalette.primary]')),
+      isNot(contains('colors: [colors.primarySoft, colors.primary]')),
     );
   });
 

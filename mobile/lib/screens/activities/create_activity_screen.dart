@@ -40,7 +40,148 @@ import '../../shared/widgets/app_map_card.dart';
 import '../map/map_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
-const _inlineValidationColor = AppPalette.redSoft11;
+Color _inlineValidationColor(BuildContext context) =>
+    context.createActivityColors.danger;
+
+final class _CreateActivityColors {
+  const _CreateActivityColors._(this.colors);
+
+  final AppColors colors;
+
+  static _CreateActivityColors of(BuildContext context) {
+    return _CreateActivityColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryPressed => colors.primaryPressed;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get onPrimary => colors.onPrimary;
+  Color get secondary => colors.secondary;
+  Color get secondaryPressed => colors.secondaryPressed;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get onSecondary => colors.onSecondary;
+  Color get background => colors.background;
+  Color get backgroundDeep => colors.backgroundDeep;
+  Color get backgroundWarm => colors.background;
+  List<Color> get screenGradientColors => colors.screenGradientColors;
+  Color get surface => colors.surface;
+  Color get inputSurface => colors.surfaceRaised;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get textDisabled => colors.textDisabled;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
+  Color get success => colors.success;
+  Color get warning => colors.warning;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+  Color get scrim => colors.scrim;
+
+  Color get amberMuted03 => colors.primarySoft;
+  Color get amberSoft24 => colors.warning;
+  Color get blueMuted24 => colors.secondary;
+  Color get neutralOverlayInk01 => colors.black.withValues(alpha: 0.08);
+  Color get orangeLight02 => colors.textSecondary;
+  Color get orangeLight13 => colors.primary;
+  Color get orangeLight29 => colors.primary;
+  Color get orangeLight37 => colors.primary;
+  Color get orangeSoft11 => colors.textMuted;
+  Color get orangeWash01 => colors.textPrimary;
+  Color get orangeWash05 => colors.textPrimary;
+  Color get orangeWash23 => colors.primary;
+  Color get outlineOverlayLight => colors.border;
+  Color get redLight06 => colors.danger;
+  Color get redSoft10 => colors.danger;
+  Color get redSoft11 => colors.danger;
+  Color get surfaceCoolLight => colors.surfaceHigh;
+  Color get textCaption => colors.textMuted;
+  Color get textCoolSecondary => colors.textSecondary;
+  Color get textOnInverse => colors.backgroundDeep;
+  Color get warmInk104 => colors.surfaceRaised;
+  Color get warmInk30 => colors.backgroundDeep;
+  Color get warmInk48 => colors.backgroundDeep;
+  Color get warmInk54 => colors.backgroundDeep;
+  Color get warmMuted19 => colors.textMuted;
+  Color get warmOverlayInk04 => colors.surface;
+  Color get warmSurface18 => colors.surface;
+  Color get warmSurface19 => colors.surfaceWarm;
+  Color get warmSurface37 => colors.surface;
+  Color get warmSurface47 => colors.surfaceRaised;
+  Color get warmSurface48 => colors.surfaceRaised;
+  Color get warmSurface55 => colors.surfaceWarm;
+  Color get warmSurface69 => colors.surfaceWarm;
+  Color get warmSurface81 => colors.surfaceWarm;
+  Color get warmSurface96 => colors.surfaceHigh;
+  Color get warmSurfaceHigh15 => colors.surfaceHigh;
+}
+
+Color _createActivityInputBorderColor(
+  BuildContext context, {
+  required bool hasFocus,
+  required bool hasError,
+}) {
+  final colors = _CreateActivityColors.of(context);
+  if (hasError) {
+    return colors.danger;
+  }
+  if (hasFocus) {
+    return colors.primary;
+  }
+  return colors.border;
+}
+
+double _createActivityInputBorderWidth({
+  required bool hasFocus,
+  required bool hasError,
+}) {
+  if (hasError) {
+    return 1.6;
+  }
+  if (hasFocus) {
+    return 1.3;
+  }
+  return 1;
+}
+
+BoxDecoration _createActivityInputDecoration(
+  BuildContext context, {
+  required BorderRadiusGeometry borderRadius,
+  required bool hasFocus,
+  required bool hasError,
+}) {
+  return AppBoxDecoration(
+    color: context.createActivityColors.inputSurface,
+    borderRadius: borderRadius,
+    border: Border.all(
+      color: _createActivityInputBorderColor(
+        context,
+        hasFocus: hasFocus,
+        hasError: hasError,
+      ),
+      width: _createActivityInputBorderWidth(
+        hasFocus: hasFocus,
+        hasError: hasError,
+      ),
+    ),
+  );
+}
+
+extension _CreateActivityColorContext on BuildContext {
+  _CreateActivityColors get createActivityColors =>
+      _CreateActivityColors.of(this);
+}
+
 final _activityPasswordInputFormatter = FilteringTextInputFormatter.allow(
   RegExp(r'[\x20-\x7E]'),
 );
@@ -782,7 +923,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           _minParticipants = _minActivityParticipants;
           _minParticipantsCtrl.text = '$_minActivityParticipants';
         }
-        if (_maxParticipants <= 0) {
+        if (_maxParticipants < _minActivityParticipants) {
           _maxParticipants = 15;
           _maxParticipantsCtrl.text = '15';
         }
@@ -1252,7 +1393,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }) async {
     final result = await showAppModalDialog<bool>(
       context: context,
-      barrierDismissible: true,
       builder: (dialogContext) {
         return _ActivityAmberConfirmDialog(
           title: title,
@@ -1357,7 +1497,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           if (_minParticipants < _minActivityParticipants) {
             minParticipantsError = l10n.createMinParticipantsValidation;
           }
-          if (_maxParticipants <= 0 ||
+          if (_maxParticipants < _minActivityParticipants ||
               _maxParticipants > _maxLimitedParticipants) {
             maxParticipantsError = l10n.createMaxParticipantsValidation;
           } else if (minParticipantsError == null &&
@@ -1785,7 +1925,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.createActivityColors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1816,7 +1956,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.createActivityColors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1839,7 +1979,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.createActivityColors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -2173,15 +2313,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppPalette.backgroundWarm,
+        backgroundColor: context.createActivityColors.background,
         body: DecoratedBox(
-          decoration: const AppBoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                AppPalette.backgroundWarm,
-                AppPalette.warmSurface19,
-                AppPalette.backgroundWarm,
-              ],
+              colors: context.createActivityColors.screenGradientColors,
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -2370,12 +2506,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   items.isEmpty) {
                 return _CategoryCatalogState(
                   message: l10n.createCategoryLoading,
-                  trailing: const SizedBox(
+                  trailing: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      color: AppPalette.primary,
+                      color: context.createActivityColors.primary,
                     ),
                   ),
                 );
@@ -2540,8 +2676,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 6),
           Text(
             l10n.editFormatLocked,
-            style: const AppTextStyle(
-              color: AppPalette.textCaption,
+            style: AppTextStyle(
+              color: context.createActivityColors.textCaption,
               fontSize: 12,
             ),
           ),
@@ -2588,8 +2724,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 18),
           Text(
             l10n.createMapEarlyStageNotice,
-            style: const AppTextStyle(
-              color: AppPalette.orangeLight02,
+            style: AppTextStyle(
+              color: context.createActivityColors.orangeLight02,
               fontSize: 12,
               height: 1.35,
             ),
@@ -2615,8 +2751,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 : (_isResolvingMapSelection
                       ? l10n.createMapResolvingHint
                       : l10n.createMapTapHint),
-            style: const AppTextStyle(
-              color: AppPalette.orangeLight02,
+            style: AppTextStyle(
+              color: context.createActivityColors.orangeLight02,
               fontSize: 12,
             ),
           ),
@@ -2714,8 +2850,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               'UNLISTED' => l10n.createVisibilityUnlistedDescription,
               _ => l10n.createVisibilityPublicDescription,
             },
-            style: const AppTextStyle(
-              color: AppPalette.textCaption,
+            style: AppTextStyle(
+              color: context.createActivityColors.textCaption,
               fontSize: 12,
               height: 1.35,
             ),
@@ -2736,8 +2872,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.createVisibilityPasswordEditHint,
-              style: const AppTextStyle(
-                color: AppPalette.textCaption,
+              style: AppTextStyle(
+                color: context.createActivityColors.textCaption,
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -2791,7 +2927,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     AppCurrencyPickerField(
                       label: l10n.createCurrencyLabel,
                       selectedCode: _selectedCurrencyCode,
-                      surfaceColor: AppPalette.warmSurface48,
+                      surfaceColor: context.createActivityColors.warmSurface48,
                       onChanged: _setSelectedCurrencyCode,
                     ),
                   ],
@@ -2801,8 +2937,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 const SizedBox(height: 8),
                 Text(
                   l10n.editPriceRestrictionHint,
-                  style: const AppTextStyle(
-                    color: AppPalette.textCaption,
+                  style: AppTextStyle(
+                    color: context.createActivityColors.textCaption,
                     fontSize: 12,
                   ),
                 ),
@@ -2831,8 +2967,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               const SizedBox(height: 8),
               Text(
                 l10n.createAllowParticipantInvitesHint,
-                style: const AppTextStyle(
-                  color: AppPalette.textCaption,
+                style: AppTextStyle(
+                  color: context.createActivityColors.textCaption,
                   fontSize: 12,
                   height: 1.35,
                 ),
@@ -2843,6 +2979,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                       children: [
                         _Step3LimitField(
                           label: l10n.createParticipantsMinShort,
+                          icon: Icons.person_add_alt_1_outlined,
                           controller: isUnlimited ? null : _minParticipantsCtrl,
                           placeholder: '$_minActivityParticipants',
                           readOnly: isUnlimited,
@@ -2853,6 +2990,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         const SizedBox(height: 12),
                         _Step3LimitField(
                           label: l10n.createParticipantsMaxShort,
+                          icon: Icons.groups_2_outlined,
                           controller: isUnlimited ? null : _maxParticipantsCtrl,
                           placeholder: l10n.createNoLimitPlaceholder,
                           readOnly: isUnlimited,
@@ -2863,10 +3001,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                       ],
                     )
                   : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMinShort,
+                            icon: Icons.person_add_alt_1_outlined,
                             controller: isUnlimited
                                 ? null
                                 : _minParticipantsCtrl,
@@ -2881,6 +3021,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMaxShort,
+                            icon: Icons.groups_2_outlined,
                             controller: isUnlimited
                                 ? null
                                 : _maxParticipantsCtrl,
@@ -2927,24 +3068,31 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
     return Dialog(
       elevation: 0,
       insetPadding: const AppEdgeInsets.symmetric(horizontal: 22, vertical: 24),
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: context.createActivityColors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(30),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppPalette.warmSurface81, AppPalette.textOnInverse],
+              colors: [
+                context.createActivityColors.warmSurface81,
+                context.createActivityColors.textOnInverse,
+              ],
             ),
             border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.58),
+              color: context.createActivityColors.primary.withValues(
+                alpha: 0.58,
+              ),
               width: 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.42),
+                color: context.createActivityColors.black.withValues(
+                  alpha: 0.42,
+                ),
                 blurRadius: 30,
                 offset: const Offset(0, 18),
               ),
@@ -2963,15 +3111,18 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                       width: 54,
                       height: 54,
                       decoration: AppBoxDecoration(
-                        color: AppPalette.primary.withValues(alpha: 0.18),
+                        color: context.createActivityColors.primary.withValues(
+                          alpha: 0.18,
+                        ),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppPalette.primary.withValues(alpha: 0.72),
+                          color: context.createActivityColors.primary
+                              .withValues(alpha: 0.72),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.warning_amber_rounded,
-                        color: AppPalette.primary,
+                        color: context.createActivityColors.primary,
                         size: 30,
                       ),
                     ),
@@ -2982,8 +3133,8 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: const AppTextStyle(
-                              color: AppPalette.orangeWash23,
+                            style: AppTextStyle(
+                              color: context.createActivityColors.orangeWash23,
                               fontSize: 21,
                               fontWeight: FontWeight.w900,
                               height: 1.1,
@@ -2992,8 +3143,8 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                           const SizedBox(height: 9),
                           Text(
                             description,
-                            style: const AppTextStyle(
-                              color: AppPalette.orangeLight13,
+                            style: AppTextStyle(
+                              color: context.createActivityColors.orangeLight13,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               height: 1.38,
@@ -3010,13 +3161,13 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onConfirm,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppPalette.primary,
-                      foregroundColor: AppPalette.white,
+                      backgroundColor: context.createActivityColors.primary,
+                      foregroundColor: context.createActivityColors.textPrimary,
                       padding: const AppEdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(18),
                       ),
-                      textStyle: const AppTextStyle(
+                      textStyle: AppTextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3034,7 +3185,8 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                   child: TextButton(
                     onPressed: onCancel,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppPalette.orangeLight29,
+                      foregroundColor:
+                          context.createActivityColors.orangeLight29,
                       padding: const AppEdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(16),
@@ -3044,7 +3196,7 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                       cancelLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(fontWeight: FontWeight.w800),
+                      style: AppTextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -3075,7 +3227,7 @@ class _MapExpandButton extends StatelessWidget {
         child: Tooltip(
           message: l10n.createMapTapHint,
           child: Material(
-            color: AppPalette.transparent,
+            color: context.createActivityColors.transparent,
             child: InkWell(
               onTap: onTap,
               borderRadius: AppBorderRadius.circular(999),
@@ -3084,21 +3236,27 @@ class _MapExpandButton extends StatelessWidget {
                 height: 46,
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppPalette.warmInk104.withValues(alpha: 0.88),
+                  color: context.createActivityColors.warmInk104.withValues(
+                    alpha: 0.88,
+                  ),
                   border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.34),
+                    color: context.createActivityColors.primary.withValues(
+                      alpha: 0.34,
+                    ),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.18),
+                      color: context.createActivityColors.black.withValues(
+                        alpha: 0.18,
+                      ),
                       blurRadius: 14,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.open_in_full_rounded,
-                  color: AppPalette.primary,
+                  color: context.createActivityColors.primary,
                   size: 20,
                 ),
               ),
@@ -3137,9 +3295,9 @@ class _CreateTopBar extends StatelessWidget {
                   : IconButton(
                       onPressed: onBack,
                       splashRadius: 20,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: AppPalette.textPrimary,
+                        color: context.createActivityColors.textPrimary,
                         size: 18,
                       ),
                     ),
@@ -3152,7 +3310,7 @@ class _CreateTopBar extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: context.createActivityColors.textPrimary,
                     fontSize: titleSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -3214,8 +3372,10 @@ class _StepIndicator extends StatelessWidget {
                   margin: const AppEdgeInsets.symmetric(horizontal: 10),
                   decoration: AppBoxDecoration(
                     color: isDone
-                        ? AppPalette.success
-                        : AppPalette.primary.withValues(alpha: 0.32),
+                        ? context.createActivityColors.success
+                        : context.createActivityColors.primary.withValues(
+                            alpha: 0.32,
+                          ),
                     borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
@@ -3227,21 +3387,29 @@ class _StepIndicator extends StatelessWidget {
             final isDone = stepIndex < currentStep;
             final isStepTappable = onStepTap != null && stepIndex < currentStep;
             final stepSize = isActive ? 48.0 : (isDone ? 40.0 : 34.0);
+            final stepBorderColor = isDone
+                ? context.createActivityColors.success.withValues(alpha: 0.72)
+                : isActive
+                ? context.createActivityColors.primary
+                : context.createActivityColors.border;
             final stepChild = isDone
-                ? const Icon(Icons.check_rounded, color: AppPalette.white)
+                ? Icon(
+                    Icons.check_rounded,
+                    color: context.createActivityColors.white,
+                  )
                 : Text(
                     '${stepIndex + 1}',
                     style: AppTextStyle(
                       color: isActive
-                          ? AppPalette.white
-                          : AppPalette.orangeLight37,
+                          ? context.createActivityColors.white
+                          : context.createActivityColors.orangeLight37,
                       fontSize: isActive ? 20 : 15,
                       fontWeight: FontWeight.w900,
                     ),
                   );
 
             return Material(
-              color: AppPalette.transparent,
+              color: context.createActivityColors.transparent,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: isStepTappable ? () => onStepTap!(stepIndex) : null,
@@ -3253,14 +3421,15 @@ class _StepIndicator extends StatelessWidget {
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
                     color: isDone
-                        ? AppPalette.success
+                        ? context.createActivityColors.success
                         : isActive
-                        ? AppPalette.primary
-                        : AppPalette.warmSurface96,
+                        ? context.createActivityColors.primary
+                        : context.createActivityColors.warmSurface96,
                     boxShadow: isDone
                         ? [
                             BoxShadow(
-                              color: AppPalette.success.withValues(alpha: 0.22),
+                              color: context.createActivityColors.success
+                                  .withValues(alpha: 0.22),
                               blurRadius: 22,
                               offset: const Offset(0, 12),
                             ),
@@ -3268,14 +3437,16 @@ class _StepIndicator extends StatelessWidget {
                         : isActive
                         ? [
                             BoxShadow(
-                              color: AppPalette.primary.withValues(alpha: 0.24),
+                              color: context.createActivityColors.primary
+                                  .withValues(alpha: 0.24),
                               blurRadius: 22,
                               offset: const Offset(0, 10),
                             ),
                           ]
                         : null,
                     border: Border.all(
-                      color: AppPalette.white.withValues(alpha: 0.08),
+                      color: stepBorderColor,
+                      width: isActive ? 1.3 : 1,
                     ),
                   ),
                   child: Center(child: stepChild),
@@ -3297,8 +3468,8 @@ class _StepIndicator extends StatelessWidget {
               Expanded(
                 child: Text(
                   titles[currentStep],
-                  style: const AppTextStyle(
-                    color: AppPalette.primary,
+                  style: AppTextStyle(
+                    color: context.createActivityColors.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
@@ -3307,8 +3478,8 @@ class _StepIndicator extends StatelessWidget {
               ),
               Text(
                 counterLabel,
-                style: const AppTextStyle(
-                  color: AppPalette.textCaption,
+                style: AppTextStyle(
+                  color: context.createActivityColors.textCaption,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -3321,17 +3492,19 @@ class _StepIndicator extends StatelessWidget {
             child: LinearProgressIndicator(
               value: (currentStep + 1) / totalSteps,
               minHeight: 5,
-              backgroundColor: AppPalette.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppPalette.primary,
+              backgroundColor: context.createActivityColors.white.withValues(
+                alpha: 0.08,
+              ),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                context.createActivityColors.primary,
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             titles[currentStep],
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.createActivityColors.textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
@@ -3381,22 +3554,24 @@ class _BottomNavBar extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppPalette.warmInk54.withValues(alpha: 0),
-                AppPalette.warmInk54.withValues(alpha: 0.9),
-                AppPalette.warmInk54,
+                context.createActivityColors.warmInk54.withValues(alpha: 0),
+                context.createActivityColors.warmInk54.withValues(alpha: 0.9),
+                context.createActivityColors.warmInk54,
               ],
             ),
             border: Border(
               top: BorderSide(
-                color: AppPalette.primary.withValues(alpha: 0.18),
+                color: context.createActivityColors.primary.withValues(
+                  alpha: 0.18,
+                ),
               ),
             ),
           ),
           child: ElevatedButton(
             onPressed: isSubmitting ? null : onNext,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.white,
+              backgroundColor: context.createActivityColors.primary,
+              foregroundColor: context.createActivityColors.textPrimary,
               minimumSize: Size.fromHeight(buttonHeight),
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(999),
@@ -3404,12 +3579,12 @@ class _BottomNavBar extends StatelessWidget {
               elevation: 0,
             ),
             child: isSubmitting
-                ? const SizedBox(
+                ? SizedBox(
                     height: 22,
                     width: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: AppPalette.white,
+                      color: context.createActivityColors.textPrimary,
                     ),
                   )
                 : FittedBox(
@@ -3427,7 +3602,7 @@ class _BottomNavBar extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Icon(Icons.arrow_forward_rounded, size: 22),
+                        Icon(Icons.arrow_forward_rounded, size: 22),
                       ],
                     ),
                   ),
@@ -3441,33 +3616,35 @@ class _BottomNavBar extends StatelessWidget {
       child: Container(
         padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 20),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmOverlayInk04,
+          color: context.createActivityColors.warmOverlayInk04,
           border: Border(
-            top: BorderSide(color: AppPalette.outlineOverlayLight),
+            top: BorderSide(
+              color: context.createActivityColors.outlineOverlayLight,
+            ),
           ),
         ),
         child: ElevatedButton(
           onPressed: isSubmitting ? null : onNext,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppPalette.primary,
-            foregroundColor: AppPalette.backgroundWarm,
+            backgroundColor: context.createActivityColors.primary,
+            foregroundColor: context.createActivityColors.textPrimary,
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(18),
             ),
           ),
           child: isSubmitting
-              ? const SizedBox(
+              ? SizedBox(
                   height: 22,
                   width: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: AppPalette.backgroundWarm,
+                    color: context.createActivityColors.textPrimary,
                   ),
                 )
               : Text(
                   nextLabel,
-                  style: const AppTextStyle(
+                  style: AppTextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -3499,20 +3676,20 @@ class _Step2NavBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onNext,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(60),
-        foregroundColor: AppPalette.white,
-        backgroundColor: AppPalette.primary,
+        foregroundColor: context.createActivityColors.textPrimary,
+        backgroundColor: context.createActivityColors.primary,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(999),
         ),
       ),
       child: isSubmitting
-          ? const SizedBox(
+          ? SizedBox(
               height: 22,
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppPalette.white,
+                color: context.createActivityColors.textPrimary,
               ),
             )
           : FittedBox(
@@ -3523,14 +3700,14 @@ class _Step2NavBar extends StatelessWidget {
                 children: [
                   Text(
                     nextLabel,
-                    style: const AppTextStyle(
+                    style: AppTextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.4,
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Icon(Icons.arrow_forward_rounded, size: 22),
+                  Icon(Icons.arrow_forward_rounded, size: 22),
                 ],
               ),
             ),
@@ -3550,14 +3727,16 @@ class _Step2NavBar extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppPalette.warmInk54.withValues(alpha: 0),
-              AppPalette.warmInk54.withValues(alpha: 0.88),
-              AppPalette.warmInk54,
+              context.createActivityColors.warmInk54.withValues(alpha: 0),
+              context.createActivityColors.warmInk54.withValues(alpha: 0.88),
+              context.createActivityColors.warmInk54,
             ],
           ),
           border: Border(
             top: BorderSide(
-              color: AppPalette.blueMuted24.withValues(alpha: 0.16),
+              color: context.createActivityColors.blueMuted24.withValues(
+                alpha: 0.16,
+              ),
             ),
           ),
         ),
@@ -3584,7 +3763,7 @@ class _Step1FieldSection extends StatelessWidget {
         Text(
           label,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: context.createActivityColors.textPrimary,
             fontSize: labelSize,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.8,
@@ -3610,8 +3789,8 @@ class _Step2FieldSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash01,
+          style: AppTextStyle(
+            color: context.createActivityColors.orangeWash01,
             fontSize: 17,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -3635,26 +3814,28 @@ class _Step2LocationMismatchNotice extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface69,
+        color: context.createActivityColors.warmSurface69,
         borderRadius: AppBorderRadius.circular(18),
         border: Border.all(
-          color: AppPalette.amberSoft24.withValues(alpha: 0.28),
+          color: context.createActivityColors.amberSoft24.withValues(
+            alpha: 0.28,
+          ),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
-            color: AppPalette.amberSoft24,
+            color: context.createActivityColors.amberSoft24,
             size: 20,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const AppTextStyle(
-                color: AppPalette.textPrimary,
+              style: AppTextStyle(
+                color: context.createActivityColors.textPrimary,
                 fontSize: 12.5,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -3689,31 +3870,49 @@ class _Step2FormatSegmented extends StatelessWidget {
     final iconSize = width <= 360 ? 16.0 : 18.0;
     final fontSize = width <= 360 || textScale > 1.05 ? 13.0 : 15.0;
     final spacing = width <= 360 ? 6.0 : 8.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const AppEdgeInsets.all(6),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface37,
+        color: context.createActivityColors.surface,
         borderRadius: AppBorderRadius.circular(999),
-        boxShadow: const [
-          BoxShadow(color: AppPalette.neutralOverlayInk01, blurRadius: 1),
-        ],
+        border: Border.all(color: context.createActivityColors.border),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: context.createActivityColors.neutralOverlayInk01,
+                  blurRadius: 1,
+                ),
+              ]
+            : null,
       ),
       child: Row(
         children: entries.map((entry) {
           final isActive = entry.key == value;
+          final labelColor = isActive
+              ? context.createActivityColors.textPrimary
+              : context.createActivityColors.primary;
           return Expanded(
             child: GestureDetector(
               onTap: () => onChanged(entry.key),
               child: Container(
                 constraints: BoxConstraints(minHeight: segmentHeight),
                 decoration: AppBoxDecoration(
-                  color: isActive ? AppPalette.primary : AppPalette.transparent,
+                  color: isActive
+                      ? context.createActivityColors.primary
+                      : context.createActivityColors.surfaceRaised,
                   borderRadius: AppBorderRadius.circular(999),
-                  boxShadow: isActive
+                  border: Border.all(
+                    color: isActive
+                        ? context.createActivityColors.primary
+                        : context.createActivityColors.border,
+                  ),
+                  boxShadow: isActive && isDark
                       ? [
                           BoxShadow(
-                            color: AppPalette.primary.withValues(alpha: 0.22),
+                            color: context.createActivityColors.primary
+                                .withValues(alpha: 0.22),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -3728,11 +3927,7 @@ class _Step2FormatSegmented extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        icons[entry.key],
-                        size: iconSize,
-                        color: AppPalette.white,
-                      ),
+                      Icon(icons[entry.key], size: iconSize, color: labelColor),
                       SizedBox(width: spacing),
                       Flexible(
                         child: Text(
@@ -3740,7 +3935,7 @@ class _Step2FormatSegmented extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.white,
+                            color: labelColor,
                             fontSize: fontSize,
                             fontWeight: FontWeight.w700,
                           ),
@@ -3787,12 +3982,12 @@ class _Step2PillTextField extends StatelessWidget {
         Container(
           constraints: const BoxConstraints(minHeight: fieldHeight),
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface47,
+            color: context.createActivityColors.warmSurface47,
             borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? AppPalette.white.withValues(alpha: 0.03)
-                  : _inlineValidationColor,
+                  ? context.createActivityColors.border
+                  : _inlineValidationColor(context),
             ),
           ),
           child: TextField(
@@ -3803,16 +3998,16 @@ class _Step2PillTextField extends StatelessWidget {
             maxLines: 1,
             scrollPhysics: const BouncingScrollPhysics(),
             textAlignVertical: TextAlignVertical.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.createActivityColors.textPrimary,
               fontSize: 16,
               height: 1.2,
               letterSpacing: -0.2,
             ),
             decoration: AppInputDecoration(
               hintText: hint,
-              hintStyle: const AppTextStyle(
-                color: AppPalette.orangeSoft11,
+              hintStyle: AppTextStyle(
+                color: context.createActivityColors.orangeSoft11,
                 fontSize: 16,
                 height: 1.2,
                 letterSpacing: -0.2,
@@ -3826,7 +4021,11 @@ class _Step2PillTextField extends StatelessWidget {
                 child: Center(
                   child: Padding(
                     padding: const AppEdgeInsets.only(left: 18, right: 12),
-                    child: Icon(icon, color: AppPalette.primary, size: 22),
+                    child: Icon(
+                      icon,
+                      color: context.createActivityColors.primary,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -3875,8 +4074,8 @@ class _Step2PickerField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash01,
+          style: AppTextStyle(
+            color: context.createActivityColors.orangeWash01,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.4,
@@ -3886,12 +4085,12 @@ class _Step2PickerField extends StatelessWidget {
         Container(
           constraints: const BoxConstraints(minHeight: 64),
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface47,
+            color: context.createActivityColors.warmSurface47,
             borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? AppPalette.white.withValues(alpha: 0.03)
-                  : _inlineValidationColor,
+                  ? context.createActivityColors.border
+                  : _inlineValidationColor(context),
             ),
           ),
           child: TextField(
@@ -3900,16 +4099,16 @@ class _Step2PickerField extends StatelessWidget {
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
             textAlignVertical: TextAlignVertical.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.createActivityColors.textPrimary,
               fontSize: 16,
               height: 1.2,
               letterSpacing: -0.2,
             ),
             decoration: AppInputDecoration(
               hintText: hint,
-              hintStyle: const AppTextStyle(
-                color: AppPalette.orangeSoft11,
+              hintStyle: AppTextStyle(
+                color: context.createActivityColors.orangeSoft11,
                 fontSize: 16,
                 height: 1.2,
                 letterSpacing: -0.2,
@@ -3917,7 +4116,11 @@ class _Step2PickerField extends StatelessWidget {
               isDense: true,
               border: InputBorder.none,
               contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 8, 17),
-              suffixIcon: Icon(icon, color: AppPalette.orangeSoft11, size: 20),
+              suffixIcon: Icon(
+                icon,
+                color: context.createActivityColors.orangeSoft11,
+                size: 20,
+              ),
               suffixIconConstraints: const BoxConstraints(
                 minWidth: 44,
                 minHeight: 64,
@@ -4054,13 +4257,13 @@ class _Step3Section extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: AppPalette.primary, size: 22),
+            Icon(icon, color: context.createActivityColors.primary, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 title,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.createActivityColors.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.8,
@@ -4093,9 +4296,12 @@ class _Step3ChoiceChip extends StatelessWidget {
     final textScale = MediaQuery.of(context).textScaler.scale(1);
     final horizontalPadding = width <= 360 ? 8.0 : 12.0;
     final fontSize = width <= 360 || textScale > 1.05 ? 12.0 : 15.0;
+    final labelColor = isSelected
+        ? context.createActivityColors.textPrimary
+        : context.createActivityColors.textPrimary;
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.createActivityColors.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
@@ -4107,8 +4313,15 @@ class _Step3ChoiceChip extends StatelessWidget {
             vertical: 10,
           ),
           decoration: AppBoxDecoration(
-            color: isSelected ? AppPalette.primary : AppPalette.warmSurface48,
+            color: isSelected
+                ? context.createActivityColors.primary
+                : context.createActivityColors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: isSelected
+                  ? context.createActivityColors.primary
+                  : context.createActivityColors.border,
+            ),
           ),
           alignment: Alignment.center,
           child: FittedBox(
@@ -4117,7 +4330,7 @@ class _Step3ChoiceChip extends StatelessWidget {
               label,
               maxLines: 1,
               style: AppTextStyle(
-                color: AppPalette.white,
+                color: labelColor,
                 fontSize: fontSize,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.4,
@@ -4156,8 +4369,8 @@ class _Step3PriceField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash05,
+          style: AppTextStyle(
+            color: context.createActivityColors.orangeWash05,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
@@ -4166,14 +4379,11 @@ class _Step3PriceField extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           constraints: const BoxConstraints(minHeight: 68),
-          decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface48,
+          decoration: _createActivityInputDecoration(
+            context,
             borderRadius: AppBorderRadius.circular(999),
-            border: Border.all(
-              color: errorText == null
-                  ? AppPalette.white.withValues(alpha: 0.03)
-                  : _inlineValidationColor,
-            ),
+            hasFocus: false,
+            hasError: errorText != null,
           ),
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
@@ -4188,8 +4398,10 @@ class _Step3PriceField extends StatelessWidget {
                 ),
                 style: AppTextStyle(
                   color: enabled
-                      ? AppPalette.textPrimary
-                      : AppPalette.textPrimary.withValues(alpha: 0.72),
+                      ? context.createActivityColors.textPrimary
+                      : context.createActivityColors.textPrimary.withValues(
+                          alpha: 0.72,
+                        ),
                   fontSize: 20,
                   height: 1.2,
                   letterSpacing: -0.6,
@@ -4198,21 +4410,29 @@ class _Step3PriceField extends StatelessWidget {
                   suffixText: suffixText,
                   suffixStyle: AppTextStyle(
                     color: enabled
-                        ? AppPalette.textPrimary
-                        : AppPalette.textPrimary.withValues(alpha: 0.7),
+                        ? context.createActivityColors.textPrimary
+                        : context.createActivityColors.textPrimary.withValues(
+                            alpha: 0.7,
+                          ),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
                   ),
                   hintText: placeholder,
-                  hintStyle: const AppTextStyle(
-                    color: AppPalette.warmMuted19,
+                  hintStyle: AppTextStyle(
+                    color: context.createActivityColors.textMuted,
                     fontSize: 20,
                     height: 1.2,
                     letterSpacing: -0.6,
                   ),
                   isDense: true,
+                  filled: false,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
                   contentPadding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
                 ),
               );
@@ -4255,8 +4475,8 @@ class _Step3TextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash05,
+          style: AppTextStyle(
+            color: context.createActivityColors.orangeWash05,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
@@ -4266,12 +4486,12 @@ class _Step3TextField extends StatelessWidget {
         Container(
           constraints: const BoxConstraints(minHeight: 68),
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface48,
+            color: context.createActivityColors.warmSurface48,
             borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? AppPalette.white.withValues(alpha: 0.03)
-                  : _inlineValidationColor,
+                  ? context.createActivityColors.border
+                  : _inlineValidationColor(context),
             ),
           ),
           child: TextField(
@@ -4280,16 +4500,16 @@ class _Step3TextField extends StatelessWidget {
             obscureText: obscureText,
             inputFormatters: inputFormatters,
             textAlignVertical: TextAlignVertical.center,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: context.createActivityColors.textPrimary,
               fontSize: 18,
               height: 1.2,
               letterSpacing: -0.4,
             ),
             decoration: AppInputDecoration(
               hintText: placeholder,
-              hintStyle: const AppTextStyle(
-                color: AppPalette.warmMuted19,
+              hintStyle: AppTextStyle(
+                color: context.createActivityColors.warmMuted19,
                 fontSize: 18,
                 height: 1.2,
                 letterSpacing: -0.4,
@@ -4330,8 +4550,9 @@ class _Step3ToggleRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 74),
         padding: const AppEdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface48,
+          color: context.createActivityColors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(color: context.createActivityColors.border),
         ),
         child: Row(
           children: [
@@ -4340,8 +4561,8 @@ class _Step3ToggleRow extends StatelessWidget {
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.textPrimary,
+                style: AppTextStyle(
+                  color: context.createActivityColors.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w500,
                   letterSpacing: -0.4,
@@ -4355,17 +4576,22 @@ class _Step3ToggleRow extends StatelessWidget {
               padding: const AppEdgeInsets.all(4),
               decoration: AppBoxDecoration(
                 color: value
-                    ? AppPalette.primary
-                    : AppPalette.warmSurfaceHigh15,
+                    ? context.createActivityColors.primary
+                    : context.createActivityColors.surfaceHigh,
                 borderRadius: AppBorderRadius.circular(999),
+                border: Border.all(
+                  color: value
+                      ? context.createActivityColors.primary
+                      : context.createActivityColors.border,
+                ),
               ),
               child: Align(
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 26,
                   height: 26,
-                  decoration: const AppBoxDecoration(
-                    color: AppPalette.white,
+                  decoration: AppBoxDecoration(
+                    color: context.createActivityColors.white,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -4381,6 +4607,7 @@ class _Step3ToggleRow extends StatelessWidget {
 class _Step3LimitField extends StatelessWidget {
   const _Step3LimitField({
     required this.label,
+    required this.icon,
     required this.placeholder,
     required this.readOnly,
     required this.readOnlyValue,
@@ -4390,6 +4617,7 @@ class _Step3LimitField extends StatelessWidget {
   });
 
   final String label;
+  final IconData icon;
   final String placeholder;
   final bool readOnly;
   final String readOnlyValue;
@@ -4399,14 +4627,21 @@ class _Step3LimitField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final decoration = AppBoxDecoration(
-      color: AppPalette.warmSurface48,
-      borderRadius: AppBorderRadius.circular(999),
-      border: Border.all(
-        color: errorText == null
-            ? AppPalette.white.withValues(alpha: 0.03)
-            : _inlineValidationColor,
-      ),
+    final colors = context.createActivityColors;
+    final hasError = errorText != null;
+    final valueStyle = AppTextStyle(
+      color: readOnly && readOnlyValue == placeholder
+          ? colors.textMuted
+          : colors.textPrimary,
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.3,
+    );
+    final hintStyle = AppTextStyle(
+      color: colors.textMuted,
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.3,
     );
 
     return Column(
@@ -4414,8 +4649,8 @@ class _Step3LimitField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash05,
+          style: AppTextStyle(
+            color: colors.textSecondary,
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.2,
@@ -4423,43 +4658,61 @@ class _Step3LimitField extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Container(
-          constraints: const BoxConstraints(minHeight: 60),
-          decoration: decoration,
+          constraints: const BoxConstraints(minHeight: 68),
+          padding: const AppEdgeInsets.fromLTRB(14, 12, 16, 12),
+          decoration: AppBoxDecoration(
+            color: context.createActivityColors.surfaceRaised,
+            borderRadius: AppBorderRadius.circular(26),
+            border: Border.all(
+              color: hasError ? _inlineValidationColor(context) : colors.border,
+            ),
+          ),
           alignment: Alignment.centerLeft,
-          padding: const AppEdgeInsets.symmetric(horizontal: 20),
-          child: readOnly
-              ? Text(
-                  readOnlyValue,
-                  style: AppTextStyle(
-                    color: readOnlyValue == placeholder
-                        ? AppPalette.warmMuted19
-                        : AppPalette.textPrimary,
-                    fontSize: 18,
-                    letterSpacing: -0.4,
-                  ),
-                )
-              : TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  textAlignVertical: TextAlignVertical.center,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  onChanged: onChanged,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
-                    fontSize: 18,
-                    letterSpacing: -0.4,
-                  ),
-                  decoration: AppInputDecoration(
-                    hintText: placeholder,
-                    hintStyle: const AppTextStyle(
-                      color: AppPalette.warmMuted19,
-                      fontSize: 18,
-                      letterSpacing: -0.4,
-                    ),
-                    isDense: true,
-                    border: InputBorder.none,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: AppBoxDecoration(
+                  color: context.createActivityColors.surfaceWarm,
+                  borderRadius: AppBorderRadius.circular(18),
+                  border: Border.all(color: colors.borderPrimary),
                 ),
+                child: Icon(icon, color: colors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: readOnly
+                    ? Text(
+                        readOnlyValue,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: valueStyle,
+                      )
+                    : TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        textAlignVertical: TextAlignVertical.center,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        onChanged: onChanged,
+                        style: valueStyle,
+                        decoration: AppInputDecoration(
+                          hintText: placeholder,
+                          hintStyle: hintStyle,
+                          isDense: true,
+                          filled: false,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
         if (errorText != null)
           AppInlineFieldError(
@@ -4494,20 +4747,20 @@ class _Step3ActionBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onPrimaryAction,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(62),
-        foregroundColor: AppPalette.white,
-        backgroundColor: AppPalette.primary,
+        foregroundColor: context.createActivityColors.textPrimary,
+        backgroundColor: context.createActivityColors.primary,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(999),
         ),
       ),
       child: isSubmitting
-          ? const SizedBox(
+          ? SizedBox(
               height: 22,
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppPalette.white,
+                color: context.createActivityColors.textPrimary,
               ),
             )
           : FittedBox(
@@ -4518,7 +4771,7 @@ class _Step3ActionBar extends StatelessWidget {
                 children: [
                   Text(
                     primaryLabel,
-                    style: const AppTextStyle(
+                    style: AppTextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
@@ -4526,7 +4779,7 @@ class _Step3ActionBar extends StatelessWidget {
                   ),
                   if (showPrimaryIcon) ...[
                     const SizedBox(width: 8),
-                    const Icon(Icons.arrow_outward_rounded, size: 22),
+                    Icon(Icons.arrow_outward_rounded, size: 22),
                   ],
                 ],
               ),
@@ -4547,14 +4800,16 @@ class _Step3ActionBar extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppPalette.warmInk48.withValues(alpha: 0),
-              AppPalette.warmInk48.withValues(alpha: 0.9),
-              AppPalette.warmInk48,
+              context.createActivityColors.warmInk48.withValues(alpha: 0),
+              context.createActivityColors.warmInk48.withValues(alpha: 0.9),
+              context.createActivityColors.warmInk48,
             ],
           ),
           border: Border(
             top: BorderSide(
-              color: AppPalette.blueMuted24.withValues(alpha: 0.2),
+              color: context.createActivityColors.blueMuted24.withValues(
+                alpha: 0.2,
+              ),
             ),
           ),
         ),
@@ -4624,6 +4879,7 @@ class _Step1TextFieldState extends State<_Step1TextField> {
     final fieldFontSize = isCompact ? 16.0 : (isWide ? 20.0 : 18.0);
     final multilineTop = isCompact ? 18.0 : 20.0;
     final singleLineVerticalPadding = isCompact ? 16.0 : (isWide ? 20.0 : 18.0);
+    final hasError = widget.errorText != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4631,19 +4887,11 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           constraints: BoxConstraints(minHeight: fieldHeight),
-          decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface47,
+          decoration: _createActivityInputDecoration(
+            context,
             borderRadius: radius,
-            border: Border.all(
-              color: widget.errorText != null
-                  ? _inlineValidationColor
-                  : (_focusNode.hasFocus
-                        ? AppPalette.primary
-                        : AppPalette.white.withValues(alpha: 0.02)),
-              width: widget.errorText != null
-                  ? 1.3
-                  : (_focusNode.hasFocus ? 1.5 : 1),
-            ),
+            hasFocus: _focusNode.hasFocus,
+            hasError: hasError,
           ),
           child: TextField(
             controller: widget.controller,
@@ -4669,7 +4917,7 @@ class _Step1TextFieldState extends State<_Step1TextField> {
                 ? TextAlignVertical.top
                 : TextAlignVertical.center,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.createActivityColors.textPrimary,
               fontSize: fieldFontSize,
               fontWeight: FontWeight.w400,
               letterSpacing: -0.8,
@@ -4678,13 +4926,19 @@ class _Step1TextFieldState extends State<_Step1TextField> {
             decoration: AppInputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyle(
-                color: AppPalette.white.withValues(alpha: 0.58),
+                color: context.createActivityColors.textMuted,
                 fontSize: fieldFontSize,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.8,
               ),
               isDense: true,
+              filled: false,
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
               contentPadding: AppEdgeInsets.fromLTRB(
                 horizontalPadding,
                 widget.isMultiline ? multilineTop : singleLineVerticalPadding,
@@ -4725,6 +4979,8 @@ class _CategorySelectorField extends StatelessWidget {
     final height = isCompact ? 66.0 : (isWide ? 78.0 : 72.0);
     final fontSize = isCompact ? 16.0 : (isWide ? 20.0 : 18.0);
     final horizontalPadding = isCompact ? 18.0 : 22.0;
+    final hasError = errorText != null;
+    final radius = AppBorderRadius.circular(32);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4736,24 +4992,20 @@ class _CategorySelectorField extends StatelessWidget {
           onTap: onTap,
           child: ExcludeSemantics(
             child: InkWell(
-              borderRadius: AppBorderRadius.circular(32),
+              borderRadius: radius,
               onTap: onTap,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
                 constraints: BoxConstraints(minHeight: height),
                 padding: AppEdgeInsets.symmetric(
                   horizontal: horizontalPadding,
                   vertical: 10,
                 ),
-                decoration: AppBoxDecoration(
-                  color: AppPalette.warmSurface47,
-                  borderRadius: AppBorderRadius.circular(32),
-                  border: Border.all(
-                    color: errorText != null
-                        ? _inlineValidationColor
-                        : (isPlaceholder
-                              ? AppPalette.white.withValues(alpha: 0.02)
-                              : AppPalette.primary.withValues(alpha: 0.3)),
-                  ),
+                decoration: _createActivityInputDecoration(
+                  context,
+                  borderRadius: radius,
+                  hasFocus: false,
+                  hasError: hasError,
                 ),
                 child: Row(
                   children: [
@@ -4764,8 +5016,8 @@ class _CategorySelectorField extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
                           color: isPlaceholder
-                              ? AppPalette.white.withValues(alpha: 0.58)
-                              : AppPalette.textPrimary,
+                              ? context.createActivityColors.textMuted
+                              : context.createActivityColors.textPrimary,
                           fontSize: fontSize,
                           fontWeight: FontWeight.w400,
                           letterSpacing: -0.8,
@@ -4774,7 +5026,7 @@ class _CategorySelectorField extends StatelessWidget {
                     ),
                     Icon(
                       Icons.expand_more_rounded,
-                      color: AppPalette.white.withValues(alpha: 0.78),
+                      color: context.createActivityColors.primary,
                       size: 22,
                     ),
                   ],
@@ -4791,6 +5043,30 @@ class _CategorySelectorField extends StatelessWidget {
       ],
     );
   }
+}
+
+LinearGradient? _coverUploadOverlayGradient(
+  BuildContext context, {
+  required bool hasPreview,
+}) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return null;
+  }
+
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      context.createActivityColors.black.withValues(
+        alpha: hasPreview ? 0.08 : 0.12,
+      ),
+      context.createActivityColors.black.withValues(
+        alpha: hasPreview ? 0.44 : 0.18,
+      ),
+      context.createActivityColors.black.withValues(alpha: 0.68),
+    ],
+    stops: const [0, 0.52, 1],
+  );
 }
 
 class _CoverUploadCard extends StatelessWidget {
@@ -4821,9 +5097,13 @@ class _CoverUploadCard extends StatelessWidget {
     final height = isCompact ? 190.0 : (isWide ? 230.0 : 210.0);
 
     final hasPreview = (previewBytes?.isNotEmpty ?? false) || _hasImageUrl;
+    final overlayGradient = _coverUploadOverlayGradient(
+      context,
+      hasPreview: hasPreview,
+    );
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.createActivityColors.transparent,
       child: InkWell(
         onTap: isUploading ? null : onTap,
         borderRadius: AppBorderRadius.circular(radius),
@@ -4836,26 +5116,12 @@ class _CoverUploadCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 _buildBackground(hasPreview),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppPalette.black.withValues(
-                            alpha: hasPreview ? 0.08 : 0.12,
-                          ),
-                          AppPalette.black.withValues(
-                            alpha: hasPreview ? 0.44 : 0.18,
-                          ),
-                          AppPalette.black.withValues(alpha: 0.68),
-                        ],
-                        stops: const [0, 0.52, 1],
-                      ),
+                if (overlayGradient != null)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(gradient: overlayGradient),
                     ),
                   ),
-                ),
                 Positioned(
                   left: isCompact ? 18 : 22,
                   right: isCompact ? 18 : 22,
@@ -4872,16 +5138,18 @@ class _CoverUploadCard extends StatelessWidget {
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: AppBoxDecoration(
-                        color: AppPalette.black.withValues(alpha: 0.42),
+                        color: context.createActivityColors.black.withValues(
+                          alpha: 0.42,
+                        ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 28,
                           height: 28,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              AppPalette.primary,
+                              context.createActivityColors.primary,
                             ),
                           ),
                         ),
@@ -4892,8 +5160,9 @@ class _CoverUploadCard extends StatelessWidget {
                   child: CustomPaint(
                     painter: _DashedCoverBorderPainter(
                       color: hasError
-                          ? AppPalette.redSoft10.withValues(alpha: 0.74)
-                          : AppPalette.amberMuted03.withValues(alpha: 0.45),
+                          ? context.createActivityColors.redSoft10
+                          : context.createActivityColors.amberMuted03
+                                .withValues(alpha: 0.62),
                       radius: radius,
                     ),
                   ),
@@ -4931,11 +5200,14 @@ class _CoverUploadCard extends StatelessWidget {
         final actionCircleSize = baseSize * 0.27;
 
         return DecoratedBox(
-          decoration: const AppBoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppPalette.warmSurface55, AppPalette.warmInk30],
+              colors: [
+                context.createActivityColors.warmSurface55,
+                context.createActivityColors.warmInk30,
+              ],
             ),
           ),
           child: Stack(
@@ -4949,7 +5221,9 @@ class _CoverUploadCard extends StatelessWidget {
                   height: accentCircleSize,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.primary.withValues(alpha: 0.17),
+                    color: context.createActivityColors.primary.withValues(
+                      alpha: 0.17,
+                    ),
                   ),
                 ),
               ),
@@ -4961,7 +5235,9 @@ class _CoverUploadCard extends StatelessWidget {
                   height: glowCircleSize,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.white.withValues(alpha: 0.05),
+                    color: context.createActivityColors.white.withValues(
+                      alpha: 0.05,
+                    ),
                   ),
                 ),
               ),
@@ -4972,14 +5248,20 @@ class _CoverUploadCard extends StatelessWidget {
                     height: actionCircleSize,
                     decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppPalette.white.withValues(alpha: 0.08),
+                      color: context.createActivityColors.white.withValues(
+                        alpha: 0.08,
+                      ),
                       border: Border.all(
-                        color: AppPalette.white.withValues(alpha: 0.14),
+                        color: context.createActivityColors.white.withValues(
+                          alpha: 0.14,
+                        ),
                       ),
                     ),
                     child: Icon(
                       Icons.add_photo_alternate_rounded,
-                      color: AppPalette.white.withValues(alpha: 0.92),
+                      color: context.createActivityColors.white.withValues(
+                        alpha: 0.92,
+                      ),
                       size: actionCircleSize * 0.47,
                     ),
                   ),
@@ -5009,7 +5291,13 @@ class _CoverCardCopy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final hintColor = hasError
+        ? context.createActivityColors.redLight06
+        : isLight
+        ? context.createActivityColors.textSecondary
+        : context.createActivityColors.textPrimary;
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -5023,10 +5311,14 @@ class _CoverCardCopy extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.18),
+                  color: context.createActivityColors.primary.withValues(
+                    alpha: 0.18,
+                  ),
                   borderRadius: AppBorderRadius.circular(999),
                   border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.26),
+                    color: context.createActivityColors.primary.withValues(
+                      alpha: 0.26,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -5036,7 +5328,7 @@ class _CoverCardCopy extends StatelessWidget {
                       hasPreview
                           ? Icons.refresh_rounded
                           : Icons.file_upload_outlined,
-                      color: AppPalette.primary,
+                      color: context.createActivityColors.primary,
                       size: compact ? 14 : 15,
                     ),
                     const SizedBox(width: 6),
@@ -5046,7 +5338,7 @@ class _CoverCardCopy extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: AppPalette.primary,
+                          color: context.createActivityColors.primary,
                           fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -5064,15 +5356,25 @@ class _CoverCardCopy extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
-            color: hasError
-                ? AppPalette.redLight06
-                : AppPalette.white.withValues(alpha: 0.88),
+            color: hintColor,
             fontSize: compact ? 13 : 14,
             height: 1.35,
             fontWeight: FontWeight.w600,
           ),
         ),
       ],
+    );
+    if (!isLight) {
+      return content;
+    }
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: context.createActivityColors.surface,
+        borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: context.createActivityColors.border),
+      ),
+      child: Padding(padding: const AppEdgeInsets.all(12), child: content),
     );
   }
 }
@@ -5138,10 +5440,11 @@ class _CategoryCatalogState extends StatelessWidget {
         horizontal: horizontalPadding,
         vertical: 10,
       ),
-      decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface47,
+      decoration: _createActivityInputDecoration(
+        context,
         borderRadius: AppBorderRadius.circular(32),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.02)),
+        hasFocus: false,
+        hasError: false,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -5152,7 +5455,7 @@ class _CategoryCatalogState extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.white.withValues(alpha: 0.72),
+                color: context.createActivityColors.textMuted,
                 fontSize: fontSize,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.6,
@@ -5201,9 +5504,11 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
       ),
       child: Container(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface18,
+          color: context.createActivityColors.warmSurface18,
           borderRadius: AppBorderRadius.circular(28),
-          border: Border.all(color: AppPalette.outlineOverlayLight),
+          border: Border.all(
+            color: context.createActivityColors.outlineOverlayLight,
+          ),
         ),
         child: SafeArea(
           top: false,
@@ -5217,8 +5522,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     Expanded(
                       child: Text(
                         widget.title,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: context.createActivityColors.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -5226,9 +5531,9 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
-                        color: AppPalette.textCoolSecondary,
+                        color: context.createActivityColors.textCoolSecondary,
                       ),
                     ),
                   ],
@@ -5264,27 +5569,32 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                               ),
                               decoration: AppBoxDecoration(
                                 color: selected
-                                    ? AppPalette.primary.withValues(alpha: 0.18)
-                                    : AppPalette.surfaceHigh,
+                                    ? context.createActivityColors.primary
+                                          .withValues(alpha: 0.18)
+                                    : context.createActivityColors.surfaceHigh,
                                 borderRadius: AppBorderRadius.circular(18),
                                 border: Border.all(
                                   color: selected
-                                      ? AppPalette.primary
-                                      : AppPalette.outlineOverlayLight,
+                                      ? context.createActivityColors.primary
+                                      : context
+                                            .createActivityColors
+                                            .outlineOverlayLight,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     widget.iconForSlug(entry.key),
-                                    color: AppPalette.primary,
+                                    color: context.createActivityColors.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       entry.value,
                                       style: AppTextStyle(
-                                        color: AppPalette.textPrimary,
+                                        color: context
+                                            .createActivityColors
+                                            .textPrimary,
                                         fontSize: 15,
                                         fontWeight: selected
                                             ? FontWeight.w700
@@ -5297,8 +5607,10 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                                         ? Icons.check_circle_rounded
                                         : Icons.chevron_right_rounded,
                                     color: selected
-                                        ? AppPalette.primary
-                                        : AppPalette.textCaption,
+                                        ? context.createActivityColors.primary
+                                        : context
+                                              .createActivityColors
+                                              .textCaption,
                                   ),
                                 ],
                               ),
@@ -5317,9 +5629,10 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                         ? null
                         : () => Navigator.of(context).pop(_selected),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppPalette.primary,
-                      disabledBackgroundColor: AppPalette.surfaceCoolLight,
-                      foregroundColor: AppPalette.textPrimary,
+                      backgroundColor: context.createActivityColors.primary,
+                      disabledBackgroundColor:
+                          context.createActivityColors.surfaceCoolLight,
+                      foregroundColor: context.createActivityColors.textPrimary,
                       minimumSize: const Size.fromHeight(54),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(18),
@@ -5327,7 +5640,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     ),
                     child: Text(
                       widget.actionLabel,
-                      style: const AppTextStyle(fontWeight: FontWeight.w700),
+                      style: AppTextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

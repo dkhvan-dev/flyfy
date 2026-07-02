@@ -105,20 +105,24 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: _PaymentColors.base,
-        body: const DecoratedBox(
-          decoration: AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppPalette.warmInk96, AppPalette.warmInk15],
+      return Theme(
+        data: AppDesignSystem.themeFor(context),
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
+              ),
             ),
-          ),
-          child: Center(
-            child: CircularProgressIndicator(color: AppPalette.primary),
+            child: Center(
+              child: CircularProgressIndicator(color: colors.primary),
+            ),
           ),
         ),
       );
@@ -126,20 +130,23 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
 
     final activity = _activity;
     if (activity == null) {
-      return Scaffold(
-        backgroundColor: _PaymentColors.base,
-        body: DecoratedBox(
-          decoration: const AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppPalette.warmInk96, AppPalette.warmInk15],
+      return Theme(
+        data: AppDesignSystem.themeFor(context),
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: ErrorView(
-              message: _loadError ?? l10n.activityDetailsLoadFailed,
-              onRetry: _ensureActivityLoaded,
+            child: SafeArea(
+              child: ErrorView(
+                message: _loadError ?? l10n.activityDetailsLoadFailed,
+                onRetry: _ensureActivityLoaded,
+              ),
             ),
           ),
         ),
@@ -158,123 +165,119 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
       localeName: locale,
     );
 
-    return Scaffold(
-      backgroundColor: _PaymentColors.base,
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppPalette.warmInk96, AppPalette.warmInk15],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
           ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding = compact ? 16.0 : 20.0;
-              final contentWidth = constraints.maxWidth > 440
-                  ? 440.0
-                  : constraints.maxWidth;
+          child: SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final horizontalPadding = compact ? 16.0 : 20.0;
+                final contentWidth = constraints.maxWidth > 440
+                    ? 440.0
+                    : constraints.maxWidth;
 
-              return Center(
-                child: SizedBox(
-                  width: contentWidth,
-                  height: constraints.maxHeight,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: AppEdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            14,
-                            horizontalPadding,
-                            28,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _PaymentTopBar(
-                                title: l10n.activityPaymentScreenTitle,
-                              ),
-                              const SizedBox(height: 18),
-                              _PaymentModeNotice(
-                                title: l10n.activityPaymentMockNoticeTitle,
-                                body: l10n.activityPaymentMockNoticeBody,
-                              ),
-                              const SizedBox(height: 22),
-                              _PaymentSectionTitle(
-                                title: l10n.activityPaymentSummaryTitle,
-                              ),
-                              const SizedBox(height: 14),
-                              _SummaryCard(
-                                activity: activity,
-                                compact: compact,
-                                hostLabel: l10n.activityPaymentHostedBy(
-                                  hostName,
+                return Center(
+                  child: SizedBox(
+                    width: contentWidth,
+                    height: constraints.maxHeight,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: AppEdgeInsets.fromLTRB(
+                              horizontalPadding,
+                              14,
+                              horizontalPadding,
+                              28,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _PaymentTopBar(
+                                  title: l10n.activityPaymentScreenTitle,
                                 ),
-                                dateLabel: _formatPaymentDateTime(
-                                  activity.startAt,
-                                  activity.timezone,
-                                  locale,
+                                const SizedBox(height: 18),
+                                _PaymentModeNotice(
+                                  title: l10n.activityPaymentMockNoticeTitle,
+                                  body: l10n.activityPaymentMockNoticeBody,
                                 ),
-                              ),
-                              const SizedBox(height: 20),
-                              _PaymentSectionTitle(
-                                title: l10n.activityPaymentBreakdownTitle,
-                              ),
-                              const SizedBox(height: 14),
-                              _PriceBreakdownCard(
-                                admissionLabel:
-                                    l10n.activityPaymentAdmissionLabel,
-                                admissionValue: totalLabel,
-                                serviceFeeLabel:
-                                    l10n.activityPaymentServiceFeeLabel,
-                                serviceFeeValue: formatActivityMoney(
-                                  amount: 0,
-                                  currency: activity.currency,
-                                  countryCode: activity.countryCode,
-                                  localeName: locale,
+                                const SizedBox(height: 22),
+                                _PaymentSectionTitle(
+                                  title: l10n.activityPaymentSummaryTitle,
                                 ),
-                                totalLabel: l10n.activityDetailsTotalLabel,
-                                totalValue: totalLabel,
-                              ),
-                              const SizedBox(height: 20),
-                              _PaymentSectionTitle(
-                                title: l10n.activityPaymentMethodTitle,
-                              ),
-                              const SizedBox(height: 14),
-                              _SandboxPaymentMethodOption(
-                                label: l10n.activityPaymentSandboxMethodLabel,
-                              ),
-                            ],
+                                const SizedBox(height: 14),
+                                _SummaryCard(
+                                  activity: activity,
+                                  compact: compact,
+                                  hostLabel: l10n.activityPaymentHostedBy(
+                                    hostName,
+                                  ),
+                                  dateLabel: _formatPaymentDateTime(
+                                    activity.startAt,
+                                    activity.timezone,
+                                    locale,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                _PaymentSectionTitle(
+                                  title: l10n.activityPaymentBreakdownTitle,
+                                ),
+                                const SizedBox(height: 14),
+                                _PriceBreakdownCard(
+                                  admissionLabel:
+                                      l10n.activityPaymentAdmissionLabel,
+                                  admissionValue: totalLabel,
+                                  serviceFeeLabel:
+                                      l10n.activityPaymentServiceFeeLabel,
+                                  serviceFeeValue: formatActivityMoney(
+                                    amount: 0,
+                                    currency: activity.currency,
+                                    countryCode: activity.countryCode,
+                                    localeName: locale,
+                                  ),
+                                  totalLabel: l10n.activityDetailsTotalLabel,
+                                  totalValue: totalLabel,
+                                ),
+                                const SizedBox(height: 20),
+                                _PaymentSectionTitle(
+                                  title: l10n.activityPaymentMethodTitle,
+                                ),
+                                const SizedBox(height: 14),
+                                _SandboxPaymentMethodOption(
+                                  label: l10n.activityPaymentSandboxMethodLabel,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      _PaymentFooter(
-                        compact: compact,
-                        totalLabel: totalLabel,
-                        isSubmitting: _isSubmitting,
-                        onConfirm: _handleConfirm,
-                      ),
-                    ],
+                        _PaymentFooter(
+                          compact: compact,
+                          totalLabel: totalLabel,
+                          isSubmitting: _isSubmitting,
+                          onConfirm: _handleConfirm,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
-}
-
-abstract final class _PaymentColors {
-  static const base = AppPalette.warmInk15;
-  static const text = AppPalette.orangeWash12;
-  static const muted = AppPalette.blueLight05;
-  static const stroke = AppPalette.warmOverlayMuted07;
 }
 
 class _PaymentFooter extends StatelessWidget {
@@ -293,15 +296,12 @@ class _PaymentFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk15.withValues(alpha: 0.94),
-        border: Border(
-          top: BorderSide(
-            color: AppPalette.blueMuted21.withValues(alpha: 0.34),
-          ),
-        ),
+        color: colors.background.withValues(alpha: 0.94),
+        border: Border(top: BorderSide(color: colors.borderSoft)),
       ),
       child: SafeArea(
         top: false,
@@ -317,10 +317,12 @@ class _PaymentFooter extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: isSubmitting ? null : onConfirm,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppPalette.primary,
-                      foregroundColor: AppPalette.white,
-                      disabledBackgroundColor: AppPalette.primary,
-                      disabledForegroundColor: AppPalette.white,
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.textPrimary,
+                      disabledBackgroundColor: colors.primary.withValues(
+                        alpha: 0.78,
+                      ),
+                      disabledForegroundColor: colors.textPrimary,
                       elevation: 0,
                       padding: const AppEdgeInsets.symmetric(horizontal: 24),
                       shape: RoundedRectangleBorder(
@@ -328,12 +330,12 @@ class _PaymentFooter extends StatelessWidget {
                       ),
                     ),
                     child: isSubmitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 28,
                             height: 28,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.8,
-                              color: AppPalette.white,
+                              color: colors.textPrimary,
                             ),
                           )
                         : Row(
@@ -369,8 +371,8 @@ class _PaymentFooter extends StatelessWidget {
               Text(
                 l10n.activityPaymentMockSecureNote,
                 textAlign: TextAlign.center,
-                style: const AppTextStyle(
-                  color: AppPalette.blueSoft12,
+                style: AppTextStyle(
+                  color: colors.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.12,
@@ -392,12 +394,14 @@ class _PaymentModeNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Container(
       padding: const AppEdgeInsets.fromLTRB(16, 15, 16, 15),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.1),
+        color: colors.primaryContainer,
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,14 +410,10 @@ class _PaymentModeNotice extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.18),
+              color: colors.primary.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.science_rounded,
-              color: AppPalette.primary,
-              size: 19,
-            ),
+            child: Icon(Icons.science_rounded, color: colors.primary, size: 19),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -422,8 +422,8 @@ class _PaymentModeNotice extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const AppTextStyle(
-                    color: _PaymentColors.text,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     height: 1.2,
                     fontWeight: FontWeight.w800,
@@ -434,7 +434,7 @@ class _PaymentModeNotice extends StatelessWidget {
                 Text(
                   body,
                   style: AppTextStyle(
-                    color: _PaymentColors.text.withValues(alpha: 0.72),
+                    color: colors.textSecondary,
                     fontSize: 12,
                     height: 1.38,
                     fontWeight: FontWeight.w500,
@@ -457,19 +457,21 @@ class _PaymentTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Row(
       children: [
         Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: () => context.pop(),
             borderRadius: AppBorderRadius.circular(999),
-            child: const SizedBox(
+            child: SizedBox(
               width: 40,
               height: 40,
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: AppPalette.white,
+                color: colors.textPrimary,
                 size: 18,
               ),
             ),
@@ -479,8 +481,8 @@ class _PaymentTopBar extends StatelessWidget {
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.white,
+            style: AppTextStyle(
+              color: colors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.8,
@@ -500,10 +502,12 @@ class _PaymentSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Text(
       title,
-      style: const AppTextStyle(
-        color: _PaymentColors.text,
+      style: AppTextStyle(
+        color: colors.textPrimary,
         fontSize: 28,
         height: 1.08,
         fontWeight: FontWeight.w800,
@@ -528,28 +532,32 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final image = Container(
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(36),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppPalette.blueLight09,
-            AppPalette.amberLight04,
-            AppPalette.amberSoft08,
-            AppPalette.blueSurfaceHigh27,
-            AppPalette.blueSurfaceHigh19,
+            colors.secondaryContainer,
+            colors.primarySoft,
+            colors.primary,
+            colors.secondary,
+            colors.backgroundDeep,
           ],
-          stops: [0, 0.38, 0.6, 0.61, 1],
+          stops: const [0, 0.38, 0.6, 0.61, 1],
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppPalette.neutralOverlayInk05,
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.22),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : const [],
       ),
       child: Stack(
         children: [
@@ -561,20 +569,20 @@ class _SummaryCard extends StatelessWidget {
                   center: const Alignment(0.55, -0.65),
                   radius: 0.78,
                   colors: [
-                    AppPalette.white.withValues(alpha: 0.34),
-                    AppPalette.transparent,
+                    colors.white.withValues(alpha: 0.34),
+                    colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 20,
             right: 20,
             bottom: 14,
             child: Icon(
               Icons.directions_boat_filled_rounded,
-              color: AppPalette.white,
+              color: colors.white,
               size: 58,
             ),
           ),
@@ -586,22 +594,21 @@ class _SummaryCard extends StatelessWidget {
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(40),
-        border: Border.all(color: _PaymentColors.stroke, width: 1.5),
-        gradient: const LinearGradient(
+        border: Border.all(color: colors.borderSoft, width: 1.5),
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.redOverlayWash01,
-            AppPalette.warmOverlaySurface01,
-          ],
+          colors: [colors.surfaceRaised, colors.surface],
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppPalette.neutralOverlayInk05,
-            blurRadius: 30,
-            offset: Offset(0, 14),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.22),
+                  blurRadius: 30,
+                  offset: const Offset(0, 14),
+                ),
+              ]
+            : const [],
       ),
       child: compact
           ? Column(
@@ -650,13 +657,15 @@ class _SummaryTextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           hostLabel,
-          style: const AppTextStyle(
-            color: AppPalette.primary,
+          style: AppTextStyle(
+            color: colors.primary,
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.7,
@@ -667,8 +676,8 @@ class _SummaryTextContent extends StatelessWidget {
           activityTitle,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(
-            color: _PaymentColors.text,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 24,
             height: 1.06,
             fontWeight: FontWeight.w800,
@@ -679,20 +688,20 @@ class _SummaryTextContent extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
+            Padding(
               padding: AppEdgeInsets.only(top: 1),
               child: Icon(
                 Icons.calendar_today_rounded,
                 size: 16,
-                color: _PaymentColors.muted,
+                color: colors.textMuted,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 dateLabel,
-                style: const AppTextStyle(
-                  color: _PaymentColors.muted,
+                style: AppTextStyle(
+                  color: colors.textMuted,
                   fontSize: 14,
                   height: 1.25,
                   fontWeight: FontWeight.w500,
@@ -725,23 +734,28 @@ class _PriceBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 12),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(40),
-        border: Border.all(color: _PaymentColors.stroke, width: 1.5),
-        gradient: const LinearGradient(
+        border: Border.all(color: colors.borderSoft, width: 1.5),
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppPalette.warmSurface89, AppPalette.warmSurface70],
+          colors: [colors.surfaceRaised, colors.surface],
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppPalette.neutralOverlayInk05,
-            blurRadius: 30,
-            offset: Offset(0, 14),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.22),
+                  blurRadius: 30,
+                  offset: const Offset(0, 14),
+                ),
+              ]
+            : const [],
       ),
       child: Column(
         children: [
@@ -761,10 +775,12 @@ class _BreakdownDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Container(
       height: 1,
       margin: const AppEdgeInsets.only(top: 2),
-      color: AppPalette.warmOverlayMuted08,
+      color: colors.borderSoft,
     );
   }
 }
@@ -782,15 +798,16 @@ class _BreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final labelStyle = AppTextStyle(
-      color: isTotal ? _PaymentColors.text : _PaymentColors.muted,
+      color: isTotal ? colors.textPrimary : colors.textMuted,
       fontSize: isTotal ? 20 : 18,
       height: 1.2,
       fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
       letterSpacing: isTotal ? -0.4 : 0,
     );
     final valueStyle = AppTextStyle(
-      color: isTotal ? AppPalette.primary : _PaymentColors.text,
+      color: isTotal ? colors.primary : colors.textPrimary,
       fontSize: isTotal ? 23 : 18,
       height: 1.2,
       fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
@@ -820,15 +837,17 @@ class _SandboxPaymentMethodOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Container(
       padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(28),
-        border: Border.all(color: AppPalette.primary, width: 1.5),
-        gradient: const LinearGradient(
+        border: Border.all(color: colors.primary, width: 1.5),
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppPalette.warmSurface89, AppPalette.warmSurface70],
+          colors: [colors.surfaceRaised, colors.surface],
         ),
       ),
       child: Row(
@@ -837,12 +856,12 @@ class _SandboxPaymentMethodOption extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.16),
+              color: colors.primary.withValues(alpha: 0.16),
               borderRadius: AppBorderRadius.circular(16),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_rounded,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: 26,
             ),
           ),
@@ -852,8 +871,8 @@ class _SandboxPaymentMethodOption extends StatelessWidget {
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const AppTextStyle(
-                color: AppPalette.white,
+              style: AppTextStyle(
+                color: colors.textPrimary,
                 fontSize: 18,
                 height: 1.18,
                 fontWeight: FontWeight.w700,
@@ -867,14 +886,14 @@ class _SandboxPaymentMethodOption extends StatelessWidget {
             height: 34,
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppPalette.primary, width: 3),
+              border: Border.all(color: colors.primary, width: 3),
             ),
             child: Center(
               child: Container(
                 width: 14,
                 height: 14,
-                decoration: const AppBoxDecoration(
-                  color: AppPalette.primary,
+                decoration: AppBoxDecoration(
+                  color: colors.primary,
                   shape: BoxShape.circle,
                 ),
               ),

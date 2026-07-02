@@ -87,6 +87,8 @@ class AppSideDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _AppDrawerLayout.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileTitle = isLoggedIn
         ? profile?.preferredName ?? 'Inflap'
         : 'Inflap';
@@ -107,9 +109,9 @@ class AppSideDrawer extends StatelessWidget {
     );
     return Drawer(
       width: layout.drawerWidth,
-      backgroundColor: AppPalette.transparent,
-      shadowColor: AppPalette.transparent,
-      surfaceTintColor: AppPalette.transparent,
+      backgroundColor: colors.transparent,
+      shadowColor: colors.transparent,
+      surfaceTintColor: colors.transparent,
       elevation: 0,
       child: ClipRRect(
         borderRadius: AppBorderRadius.only(
@@ -118,53 +120,45 @@ class AppSideDrawer extends StatelessWidget {
         ),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppPalette.warmInk43, AppPalette.warmInk04],
+              colors: isDark
+                  ? [colors.background, colors.backgroundDeep]
+                  : [colors.backgroundDeep, colors.backgroundWarm],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.36),
-                blurRadius: 40,
-                offset: const Offset(10, 0),
-              ),
-            ],
+            border: isDark ? null : Border.all(color: colors.border),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.28),
+                      blurRadius: 32,
+                      offset: const Offset(8, 0),
+                    ),
+                  ]
+                : null,
           ),
           child: Stack(
             children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppPalette.primary.withValues(alpha: 0.13),
-                          AppPalette.transparent,
-                          AppPalette.primary.withValues(alpha: 0.05),
-                        ],
-                        stops: const [0, 0.45, 1],
+              if (isDark)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            colors.primary.withValues(alpha: 0.08),
+                            colors.transparent,
+                            colors.secondary.withValues(alpha: 0.05),
+                          ],
+                          stops: const [0, 0.45, 1],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: -80,
-                left: -70,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: AppBoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppPalette.primary.withValues(alpha: 0.08),
-                    ),
-                  ),
-                ),
-              ),
               SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +176,7 @@ class AppSideDrawer extends StatelessWidget {
                         label: headerSemanticLabel,
                         child: ExcludeSemantics(
                           child: Material(
-                            color: AppPalette.transparent,
+                            color: colors.transparent,
                             child: InkWell(
                               onTap: isLoggedIn ? onProfileTap : onLoginTap,
                               borderRadius: AppBorderRadius.circular(
@@ -198,16 +192,14 @@ class AppSideDrawer extends StatelessWidget {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      AppPalette.white.withValues(alpha: 0.05),
-                                      AppPalette.primary.withValues(
-                                        alpha: 0.10,
-                                      ),
+                                      colors.surfaceRaised,
+                                      isDark
+                                          ? colors.surfaceWarm
+                                          : colors.surfaceHigh,
                                     ],
                                   ),
                                   border: Border.all(
-                                    color: AppPalette.primary.withValues(
-                                      alpha: 0.24,
-                                    ),
+                                    color: colors.borderPrimary,
                                   ),
                                 ),
                                 child: Row(
@@ -221,26 +213,33 @@ class AppSideDrawer extends StatelessWidget {
                                           height: layout.avatarSize,
                                           decoration: AppBoxDecoration(
                                             shape: BoxShape.circle,
-                                            gradient: const LinearGradient(
+                                            gradient: LinearGradient(
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
                                               colors: [
-                                                AppPalette.orangeWash20,
-                                                AppPalette.orangeWash03,
+                                                colors.primaryContainer,
+                                                colors.surfaceWarm,
                                               ],
                                             ),
                                             border: Border.all(
-                                              color: AppPalette.primary,
+                                              color: colors.primary,
                                               width: 3,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppPalette.primary
-                                                    .withValues(alpha: 0.18),
-                                                blurRadius: 22,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
+                                            boxShadow: isDark
+                                                ? [
+                                                    BoxShadow(
+                                                      color: colors.primary
+                                                          .withValues(
+                                                            alpha: 0.16,
+                                                          ),
+                                                      blurRadius: 20,
+                                                      offset: const Offset(
+                                                        0,
+                                                        8,
+                                                      ),
+                                                    ),
+                                                  ]
+                                                : null,
                                           ),
                                           child: Center(
                                             child: ClipOval(
@@ -250,8 +249,8 @@ class AppSideDrawer extends StatelessWidget {
                                                         child: Text(
                                                           avatarText,
                                                           style: AppTextStyle(
-                                                            color: AppPalette
-                                                                .backgroundWarm,
+                                                            color: colors
+                                                                .textPrimary,
                                                             fontSize: layout
                                                                 .avatarTextSize,
                                                             fontWeight:
@@ -266,8 +265,8 @@ class AppSideDrawer extends StatelessWidget {
                                                           child: Text(
                                                             avatarText,
                                                             style: AppTextStyle(
-                                                              color: AppPalette
-                                                                  .backgroundWarm,
+                                                              color: colors
+                                                                  .textPrimary,
                                                               fontSize: layout
                                                                   .avatarTextSize,
                                                               fontWeight:
@@ -290,17 +289,16 @@ class AppSideDrawer extends StatelessWidget {
                                               height: layout.avatarBadgeSize,
                                               decoration: AppBoxDecoration(
                                                 shape: BoxShape.circle,
-                                                gradient: const LinearGradient(
+                                                gradient: LinearGradient(
                                                   begin: Alignment.topCenter,
                                                   end: Alignment.bottomCenter,
                                                   colors: [
-                                                    AppPalette.amberSoft14,
-                                                    AppPalette.primary,
+                                                    colors.primarySoft,
+                                                    colors.primary,
                                                   ],
                                                 ),
                                                 border: Border.all(
-                                                  color:
-                                                      AppPalette.warmSurface98,
+                                                  color: colors.surface,
                                                   width: 3,
                                                 ),
                                               ),
@@ -308,7 +306,7 @@ class AppSideDrawer extends StatelessWidget {
                                                 Icons.verified_rounded,
                                                 size:
                                                     layout.avatarBadgeIconSize,
-                                                color: AppPalette.white,
+                                                color: colors.textPrimary,
                                               ),
                                             ),
                                           ),
@@ -325,7 +323,7 @@ class AppSideDrawer extends StatelessWidget {
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: AppTextStyle(
-                                              color: AppPalette.textPrimary,
+                                              color: colors.textPrimary,
                                               fontSize: layout.profileTitleSize,
                                               height: 1.05,
                                               fontWeight: FontWeight.w800,
@@ -341,15 +339,14 @@ class AppSideDrawer extends StatelessWidget {
                                                   vertical: 6,
                                                 ),
                                             decoration: AppBoxDecoration(
-                                              color: AppPalette.primary
-                                                  .withValues(alpha: 0.18),
+                                              color: colors.primaryContainer,
                                               borderRadius:
                                                   AppBorderRadius.circular(999),
                                             ),
                                             child: Text(
                                               identityStatus,
                                               style: AppTextStyle(
-                                                color: AppPalette.primary,
+                                                color: colors.primary,
                                                 fontSize: layout.metaLabelSize,
                                                 fontWeight: FontWeight.w800,
                                                 letterSpacing: 0.4,
@@ -365,8 +362,7 @@ class AppSideDrawer extends StatelessWidget {
                                               maxLines: 3,
                                               overflow: TextOverflow.ellipsis,
                                               style: AppTextStyle(
-                                                color: AppPalette.white
-                                                    .withValues(alpha: 0.74),
+                                                color: colors.textSecondary,
                                                 fontSize:
                                                     layout.profileSubtitleSize,
                                                 height: 1.45,
@@ -379,7 +375,7 @@ class AppSideDrawer extends StatelessWidget {
                                     SizedBox(width: layout.trailingGap),
                                     Icon(
                                       Icons.chevron_right_rounded,
-                                      color: AppPalette.primary,
+                                      color: colors.primary,
                                       size: layout.trailingIconSize,
                                     ),
                                   ],
@@ -503,6 +499,8 @@ class _DrawerPinnedFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Padding(
       padding: AppEdgeInsets.fromLTRB(
         layout.horizontalPadding,
@@ -513,7 +511,7 @@ class _DrawerPinnedFooter extends StatelessWidget {
       child: Container(
         padding: AppEdgeInsets.only(top: layout.footerTopPadding),
         decoration: AppBoxDecoration(
-          border: Border(top: BorderSide(color: AppPalette.primary)),
+          border: Border(top: BorderSide(color: colors.borderPrimary)),
         ),
         child: Row(
           children: [
@@ -525,10 +523,9 @@ class _DrawerPinnedFooter extends StatelessWidget {
                   Text(
                     l10n.homeTitle,
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: colors.primary,
                       fontSize: layout.brandTitleSize,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -537,7 +534,7 @@ class _DrawerPinnedFooter extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.white.withValues(alpha: 0.50),
+                      color: colors.textMuted,
                       fontSize: layout.brandSubtitleSize,
                       height: 1.4,
                     ),
@@ -674,10 +671,12 @@ class _DrawerSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Text(
       title.toUpperCase(),
       style: AppTextStyle(
-        color: AppPalette.white.withValues(alpha: 0.86),
+        color: colors.textSecondary,
         fontSize: layout.sectionTitleSize,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.3,
@@ -705,10 +704,13 @@ class _DrawerMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final matchesPreferencePalette = !isActive && usePreferencePalette;
     final foregroundColor = isActive
-        ? AppPalette.amberSoft14
-        : AppPalette.white.withValues(alpha: 0.90);
+        ? colors.textPrimary
+        : matchesPreferencePalette
+        ? colors.secondary
+        : colors.textPrimary;
 
     return Semantics(
       button: true,
@@ -717,7 +719,7 @@ class _DrawerMenuItem extends StatelessWidget {
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: AppBorderRadius.circular(layout.cardRadius),
@@ -734,32 +736,26 @@ class _DrawerMenuItem extends StatelessWidget {
                       ? LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          colors: [
-                            AppPalette.primary.withValues(alpha: 0.24),
-                            AppPalette.primary.withValues(alpha: 0.10),
-                          ],
+                          colors: [colors.primarySoft, colors.primary],
                         )
                       : matchesPreferencePalette
                       ? LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            AppPalette.white.withValues(alpha: 0.03),
-                            AppPalette.primary.withValues(alpha: 0.07),
-                          ],
+                          colors: [colors.surfaceTeal, colors.surfaceHigh],
                         )
                       : null,
                   color: isActive
                       ? null
                       : matchesPreferencePalette
                       ? null
-                      : AppPalette.white.withValues(alpha: 0.02),
+                      : colors.surfaceRaised,
                   border: Border.all(
                     color: isActive
-                        ? AppPalette.primary.withValues(alpha: 0.20)
+                        ? colors.borderPrimary
                         : matchesPreferencePalette
-                        ? AppPalette.primary.withValues(alpha: 0.20)
-                        : AppPalette.transparent,
+                        ? colors.borderSecondary
+                        : colors.borderSoft,
                   ),
                 ),
                 child: Row(
@@ -770,27 +766,24 @@ class _DrawerMenuItem extends StatelessWidget {
                       decoration: AppBoxDecoration(
                         borderRadius: AppBorderRadius.circular(18),
                         gradient: isActive
-                            ? const LinearGradient(
+                            ? LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [
-                                  AppPalette.amberSoft12,
-                                  AppPalette.primary,
-                                ],
+                                colors: [colors.primarySoft, colors.primary],
                               )
                             : null,
                         color: isActive
                             ? null
                             : matchesPreferencePalette
-                            ? AppPalette.primary.withValues(alpha: 0.12)
-                            : AppPalette.white.withValues(alpha: 0.04),
+                            ? colors.secondaryContainer
+                            : colors.surfaceHigh,
                       ),
                       child: Icon(
                         icon,
                         color: isActive
-                            ? AppPalette.white
+                            ? colors.textPrimary
                             : matchesPreferencePalette
-                            ? AppPalette.primary
+                            ? colors.secondary
                             : foregroundColor,
                         size: layout.iconBoxSize * 0.48,
                       ),
@@ -841,13 +834,16 @@ class _DrawerFooterAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       button: true,
       enabled: true,
       label: semanticLabel,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: AppBorderRadius.circular(999),
@@ -856,18 +852,14 @@ class _DrawerFooterAction extends StatelessWidget {
               height: layout.footerButtonSize,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: isAccent
-                    ? AppPalette.warmSurface28
-                    : AppPalette.white.withValues(alpha: 0.04),
+                color: isAccent ? colors.primary : colors.surfaceHigh,
                 border: Border.all(
-                  color: isAccent
-                      ? AppPalette.warmSurface66
-                      : AppPalette.white.withValues(alpha: 0.06),
+                  color: isAccent ? colors.borderPrimary : colors.borderSoft,
                 ),
-                boxShadow: isAccent
+                boxShadow: isAccent && isDark
                     ? [
                         BoxShadow(
-                          color: AppPalette.primary.withValues(alpha: 0.10),
+                          color: colors.primary.withValues(alpha: 0.16),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
@@ -876,7 +868,7 @@ class _DrawerFooterAction extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: AppPalette.primary,
+                color: isAccent ? colors.textPrimary : colors.primary,
                 size: layout.footerButtonSize * 0.38,
               ),
             ),

@@ -4,10 +4,72 @@ import 'package:inflap/core/ui/app_design_system.dart';
 import 'models/activity_list_item_vm.dart';
 
 class ActivityCardArtSpec {
-  const ActivityCardArtSpec({required this.icon, required this.colors});
+  const ActivityCardArtSpec({
+    required this.icon,
+    this.tone = ActivityCardArtTone.general,
+    List<Color>? colors,
+  }) : _customColors = colors;
 
   final IconData icon;
-  final List<Color> colors;
+  final ActivityCardArtTone tone;
+  final List<Color>? _customColors;
+
+  List<Color> colorsFor(BuildContext context) {
+    final customColors = _customColors;
+    if (customColors != null && customColors.isNotEmpty) {
+      return customColors;
+    }
+    final colors = AppDesignSystem.colorsFor(context);
+    return tone.gradient(colors);
+  }
+}
+
+enum ActivityCardArtTone {
+  wellness,
+  nature,
+  food,
+  culture,
+  sport,
+  learning,
+  night,
+  online,
+  hybrid,
+  general,
+}
+
+extension ActivityCardArtToneX on ActivityCardArtTone {
+  List<Color> gradient(AppColors colors) {
+    return switch (this) {
+      ActivityCardArtTone.wellness => [
+        colors.surfaceTeal,
+        colors.secondarySoft,
+      ],
+      ActivityCardArtTone.nature => [
+        colors.secondaryContainer,
+        colors.secondary,
+      ],
+      ActivityCardArtTone.food => [colors.surfaceWarm, colors.primarySoft],
+      ActivityCardArtTone.culture => [
+        colors.primaryContainer,
+        colors.secondaryContainer,
+      ],
+      ActivityCardArtTone.sport => [colors.primaryContainer, colors.primary],
+      ActivityCardArtTone.learning => [
+        colors.surfaceRaised,
+        colors.secondaryContainer,
+      ],
+      ActivityCardArtTone.night => [
+        colors.backgroundDeep,
+        colors.primaryContainer,
+      ],
+      ActivityCardArtTone.online => [colors.surfaceTeal, colors.secondary],
+      ActivityCardArtTone.hybrid => [
+        colors.surfaceHigh,
+        colors.primaryContainer,
+      ],
+      ActivityCardArtTone.general => [colors.surfaceWarm, colors.primary],
+    };
+  }
 }
 
 class ActivityDecorativeCover extends StatelessWidget {
@@ -39,6 +101,28 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final decorativeForeground = isDark ? colors.white : colors.textPrimary;
+    final sourceColors = spec.colorsFor(context);
+    final backgroundColors = isDark
+        ? sourceColors
+        : [
+            Color.alphaBlend(
+              sourceColors.first.withValues(alpha: 0.16),
+              colors.surface,
+            ),
+            Color.alphaBlend(
+              sourceColors.last.withValues(alpha: 0.10),
+              colors.surfaceHigh,
+            ),
+          ];
+    final topCircleColor = isDark
+        ? colors.white.withValues(alpha: 0.12)
+        : colors.white.withValues(alpha: 0.64);
+    final bottomCircleColor = isDark
+        ? colors.black.withValues(alpha: 0.14)
+        : colors.primaryContainer.withValues(alpha: 0.62);
     return LayoutBuilder(
       builder: (context, constraints) {
         final fallbackSide = MediaQuery.sizeOf(context).shortestSide * 0.28;
@@ -62,7 +146,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: spec.colors,
+              colors: backgroundColors,
             ),
           ),
           child: Stack(
@@ -76,7 +160,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                   height: largeCircle,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.white.withValues(alpha: 0.12),
+                    color: topCircleColor,
                   ),
                 ),
               ),
@@ -88,7 +172,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                   height: smallCircle,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppPalette.black.withValues(alpha: 0.14),
+                    color: bottomCircleColor,
                   ),
                 ),
               ),
@@ -98,7 +182,9 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                 child: Icon(
                   spec.icon,
                   size: iconSize,
-                  color: AppPalette.white.withValues(alpha: 0.22),
+                  color: decorativeForeground.withValues(
+                    alpha: isDark ? 0.22 : 0.18,
+                  ),
                 ),
               ),
               PositionedDirectional(
@@ -109,7 +195,9 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                   child: Icon(
                     Icons.arrow_outward_rounded,
                     size: arrowSize,
-                    color: AppPalette.white.withValues(alpha: 0.18),
+                    color: decorativeForeground.withValues(
+                      alpha: isDark ? 0.18 : 0.14,
+                    ),
                   ),
                 ),
               ),
@@ -126,7 +214,7 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
   if (slug.contains('wellness') || slug.contains('health')) {
     return const ActivityCardArtSpec(
       icon: Icons.spa_rounded,
-      colors: [AppPalette.tealSurfaceHigh06, AppPalette.tealSoft04],
+      tone: ActivityCardArtTone.wellness,
     );
   }
   if (slug.contains('nature') ||
@@ -134,13 +222,13 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('hiking')) {
     return const ActivityCardArtSpec(
       icon: Icons.forest_rounded,
-      colors: [AppPalette.greenSurfaceHigh13, AppPalette.greenSoft03],
+      tone: ActivityCardArtTone.nature,
     );
   }
   if (slug.contains('food')) {
     return const ActivityCardArtSpec(
       icon: Icons.restaurant_rounded,
-      colors: [AppPalette.warmSurfaceHigh12, AppPalette.orangeSoft44],
+      tone: ActivityCardArtTone.food,
     );
   }
   if (slug.contains('culture') ||
@@ -148,13 +236,13 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('history')) {
     return const ActivityCardArtSpec(
       icon: Icons.palette_outlined,
-      colors: [AppPalette.pinkSurfaceHigh02, AppPalette.pinkSoft02],
+      tone: ActivityCardArtTone.culture,
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
     return const ActivityCardArtSpec(
       icon: Icons.kayaking_rounded,
-      colors: [AppPalette.warmSurfaceHigh11, AppPalette.orangeSoft34],
+      tone: ActivityCardArtTone.sport,
     );
   }
   if (slug.contains('workshop') ||
@@ -162,19 +250,19 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('education')) {
     return const ActivityCardArtSpec(
       icon: Icons.auto_stories_rounded,
-      colors: [AppPalette.blueSurfaceHigh30, AppPalette.blueSoft15],
+      tone: ActivityCardArtTone.learning,
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
     return const ActivityCardArtSpec(
       icon: Icons.celebration_rounded,
-      colors: [AppPalette.pinkSurfaceHigh01, AppPalette.pinkSoft04],
+      tone: ActivityCardArtTone.night,
     );
   }
 
   return const ActivityCardArtSpec(
     icon: Icons.travel_explore_rounded,
-    colors: [AppPalette.warmSurface90, AppPalette.orangeMuted05],
+    tone: ActivityCardArtTone.general,
   );
 }
 
@@ -183,13 +271,13 @@ ActivityCardArtSpec activityCardArtForItem(ActivityListItemVm item) {
   if (item.format.toUpperCase() == 'ONLINE') {
     return const ActivityCardArtSpec(
       icon: Icons.videocam_rounded,
-      colors: [AppPalette.blueSurfaceHigh18, AppPalette.blueSoft07],
+      tone: ActivityCardArtTone.online,
     );
   }
   if (item.format.toUpperCase() == 'HYBRID') {
     return const ActivityCardArtSpec(
       icon: Icons.devices_rounded,
-      colors: [AppPalette.violetMuted01, AppPalette.violetLight02],
+      tone: ActivityCardArtTone.hybrid,
     );
   }
   return fromCategory;

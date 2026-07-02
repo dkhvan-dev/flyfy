@@ -183,6 +183,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
     final query = _queryController.text.trim();
     final isSearchActive = query.length >= 2;
     final visibleCities = isSearchActive ? _results : _initialCountryCities;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
@@ -194,15 +195,15 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
+              colors: colors.screenGradientColors,
             ),
             borderRadius: const AppBorderRadius.vertical(
               top: AppRadiusValue.circular(28),
             ),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
+            border: Border.all(color: colors.borderSoft),
           ),
           child: SafeArea(
             top: false,
@@ -243,11 +244,13 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                         const SizedBox(height: 14),
                         if (_isSearching ||
                             (!isSearchActive && _isLoadingInitialCities))
-                          const Padding(
-                            padding: AppEdgeInsets.symmetric(vertical: 18),
+                          Padding(
+                            padding: const AppEdgeInsets.symmetric(
+                              vertical: 18,
+                            ),
                             child: Center(
                               child: CircularProgressIndicator(
-                                color: AppPalette.primary,
+                                color: colors.primary,
                               ),
                             ),
                           )
@@ -260,7 +263,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                           _LocationMessage(
                             icon: Icons.location_off_rounded,
                             message: l10n.homeLocationNoResults,
-                            color: AppPalette.primary,
+                            color: colors.primary,
                           )
                         else
                           for (final city in visibleCities)
@@ -297,13 +300,15 @@ class _CurrentLocationPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       width: double.infinity,
       padding: const AppEdgeInsets.all(16),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Row(
         children: [
@@ -312,12 +317,9 @@ class _CurrentLocationPreview extends StatelessWidget {
             height: 42,
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: colors.primaryContainer,
             ),
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: AppPalette.primary,
-            ),
+            child: Icon(Icons.location_on_rounded, color: colors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -329,7 +331,7 @@ class _CurrentLocationPreview extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: AppPalette.textCoolSecondary.withValues(alpha: 0.86),
+                    color: colors.textMuted,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -342,8 +344,8 @@ class _CurrentLocationPreview extends StatelessWidget {
                   fallbackText: location.fallbackLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -370,24 +372,26 @@ class _DetectLocationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onTap,
         icon: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                 ),
               )
             : const Icon(Icons.my_location_rounded),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppPalette.primary,
-          side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.28)),
+          foregroundColor: colors.primary,
+          side: BorderSide(color: colors.borderPrimary),
           minimumSize: const Size(0, 50),
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(999),
@@ -409,40 +413,36 @@ class _LocationSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return TextField(
       controller: controller,
       textInputAction: TextInputAction.search,
-      style: const AppTextStyle(
-        color: AppPalette.textPrimary,
+      style: AppTextStyle(
+        color: colors.textPrimary,
         fontWeight: FontWeight.w700,
       ),
       decoration: AppInputDecoration(
         hintText: hintText,
-        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
-        prefixIcon: const Icon(Icons.search_rounded, color: AppPalette.primary),
+        hintStyle: AppTextStyle(color: colors.textMuted),
+        prefixIcon: Icon(Icons.search_rounded, color: colors.primary),
         filled: true,
-        fillColor: AppPalette.white.withValues(alpha: 0.07),
+        fillColor: colors.surfaceRaised,
         contentPadding: const AppEdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         border: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.08),
-          ),
+          borderSide: BorderSide(color: colors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.08),
-          ),
+          borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: AppPalette.primary.withValues(alpha: 0.5),
-          ),
+          borderSide: BorderSide(color: colors.borderPrimary),
         ),
       ),
     );
@@ -457,10 +457,12 @@ class _CityResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Padding(
       padding: const AppEdgeInsets.only(bottom: 10),
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(16),
@@ -470,18 +472,13 @@ class _CityResultTile extends StatelessWidget {
               vertical: 13,
             ),
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.05),
+              color: colors.surface,
               borderRadius: AppBorderRadius.circular(16),
-              border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.06),
-              ),
+              border: Border.all(color: colors.borderSoft),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.location_city_rounded,
-                  color: AppPalette.primary,
-                ),
+                Icon(Icons.location_city_rounded, color: colors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -491,8 +488,8 @@ class _CityResultTile extends StatelessWidget {
                         city.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: colors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -505,8 +502,8 @@ class _CityResultTile extends StatelessWidget {
                         fallbackText: city.countryCode,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const AppTextStyle(
-                          color: AppPalette.textCaption,
+                        style: AppTextStyle(
+                          color: colors.textMuted,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -514,10 +511,7 @@ class _CityResultTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppPalette.textCaption,
-                ),
+                Icon(Icons.chevron_right_rounded, color: colors.textMuted),
               ],
             ),
           ),
@@ -540,7 +534,8 @@ class _LocationMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppPalette.textCoolSecondary;
+    final colors = AppDesignSystem.colorsFor(context);
+    final effectiveColor = color ?? colors.textSecondary;
 
     return Padding(
       padding: const AppEdgeInsets.symmetric(vertical: 18),

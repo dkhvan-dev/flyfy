@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,39 @@ import 'package:inflap/features/help_center/widgets/contextual_help_section.dart
 import 'package:inflap/l10n/generated/app_localizations.dart';
 
 void main() {
+  test('ContextualHelpSection uses V2 design colors only', () {
+    final source = File(
+      'lib/features/help_center/widgets/contextual_help_section.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('HelpArticleTile uses V2 design colors only', () {
+    final source = File(
+      'lib/features/help_center/widgets/help_article_tile.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('HelpCenterScreen uses V2 design colors only', () {
+    final source = File(
+      'lib/features/help_center/presentation/help_center_screen.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.primary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   testWidgets(
     'HelpCenterScreen loads popular articles and searches on submit',
     (tester) async {
@@ -333,10 +368,10 @@ void main() {
       );
       final prefixIcon = textField.decoration?.prefixIcon;
       expect(prefixIcon, isA<Icon>());
-      expect((prefixIcon! as Icon).color, AppPalette.primary);
+      expect((prefixIcon! as Icon).color, AppColorSchemes.light.primary);
       final suffixIcon = textField.decoration?.suffixIcon;
       expect(suffixIcon, isA<IconButton>());
-      expect((suffixIcon! as IconButton).color, AppPalette.primary);
+      expect((suffixIcon! as IconButton).color, AppColorSchemes.light.primary);
       expect(find.text('Chat'), findsOneWidget);
       expect(find.text('Support requests'), findsNothing);
 
@@ -346,8 +381,8 @@ void main() {
       final flightsChip = tester.widget<ChoiceChip>(
         find.byKey(const ValueKey('help-center-category-flights')),
       );
-      expect(allChip.labelStyle?.color, AppPalette.textPrimary);
-      expect(flightsChip.labelStyle?.color, AppPalette.textPrimary);
+      expect(allChip.labelStyle?.color, AppColorSchemes.light.textPrimary);
+      expect(flightsChip.labelStyle?.color, AppColorSchemes.light.textPrimary);
     },
   );
 

@@ -52,10 +52,107 @@ void main() {
       'lib/screens/currency/currency_converter_screen.dart',
     ).readAsString();
 
-    expect(source, contains('prefixIcon: const Icon('));
+    expect(
+      source,
+      contains('final colors = AppDesignSystem.colorsFor(context)'),
+    );
+    expect(source, contains('prefixIcon: Icon('));
     expect(source, contains('Icons.search_rounded'));
-    expect(source, contains('color: AppPalette.primary'));
+    expect(source, contains('color: colors.primary'));
   });
+
+  test('currency converter ui consumes v2 colors before flag painters', () async {
+    final source = await File(
+      'lib/screens/currency/currency_converter_screen.dart',
+    ).readAsString();
+    final flagStart = source.indexOf('const _compactCurrencyFlagScale');
+    expect(flagStart, isNonNegative);
+
+    final uiSource = source.substring(0, flagStart);
+
+    expect(uiSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(
+      uiSource,
+      contains("import 'package:inflap/core/ui/app_design_system.dart';"),
+    );
+    expect(
+      uiSource,
+      isNot(
+        matches(
+          RegExp(
+            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal|primary|white|black|background|surface|text)',
+          ),
+        ),
+      ),
+    );
+  });
+
+  test('currency converter shell uses V2 theme and screen gradient', () async {
+    final source = await File(
+      'lib/screens/currency/currency_converter_screen.dart',
+    ).readAsString();
+    final buildStart = source.indexOf('Widget build(BuildContext context)');
+    final exchangeStackStart = source.indexOf('class _ExchangeStack');
+
+    expect(buildStart, isNonNegative);
+    expect(exchangeStackStart, greaterThan(buildStart));
+
+    final buildSource = source.substring(buildStart, exchangeStackStart);
+
+    expect(buildSource, contains('AppDesignSystem.themeFor(context)'));
+    expect(buildSource, contains('colors.screenGradientColors'));
+    expect(buildSource, contains('DecoratedBox('));
+    expect(buildSource, contains('LinearGradient('));
+  });
+
+  test('currency converter uses the shared V2 list screen header', () async {
+    final source = await File(
+      'lib/screens/currency/currency_converter_screen.dart',
+    ).readAsString();
+    final buildStart = source.indexOf('Widget build(BuildContext context)');
+    final exchangeStackStart = source.indexOf('class _ExchangeStack');
+
+    expect(buildStart, isNonNegative);
+    expect(exchangeStackStart, greaterThan(buildStart));
+
+    final buildSource = source.substring(buildStart, exchangeStackStart);
+
+    expect(
+      source,
+      contains("import '../../core/ui/app_list_screen_header.dart';"),
+    );
+    expect(source, contains("import 'package:go_router/go_router.dart';"));
+    expect(source, contains('void _goBack()'));
+    expect(source, contains('context.pop();'));
+    expect(source, contains("context.go('/');"));
+    expect(buildSource, isNot(contains('appBar: AppBar(')));
+    expect(buildSource, contains('SafeArea('));
+    expect(buildSource, contains('bottom: false'));
+    expect(buildSource, contains('AppListScreenHeader('));
+    expect(buildSource, contains('title: l10n.currencyConverterTitle'));
+    expect(
+      buildSource,
+      contains('notificationsTooltip: l10n.profileNotificationsRowTitle'),
+    );
+    expect(buildSource, contains('onBackTap: _goBack'));
+    expect(
+      buildSource,
+      contains("onNotificationsTap: () => context.push('/notifications')"),
+    );
+    expect(buildSource, contains('Expanded('));
+  });
+
+  test(
+    'currency converter screen has no legacy AppPalette dependency',
+    () async {
+      final source = await File(
+        'lib/screens/currency/currency_converter_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, isNot(contains('AppPalette.')));
+    },
+  );
 
   test('currency flag icon uses local vector flags instead of emoji', () async {
     final source = await File(

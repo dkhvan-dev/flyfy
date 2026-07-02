@@ -30,16 +30,17 @@ class HelpArticleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final textScale = MediaQuery.textScalerOf(context);
     final titleStyle = AppTextStyle(
-      color: AppPalette.textPrimary,
+      color: colors.textPrimary,
       fontSize: compact ? 15 : 16,
       fontWeight: FontWeight.w800,
       height: 1.22,
       letterSpacing: 0,
     );
     final bodyStyle = AppTextStyle(
-      color: AppPalette.textCoolSecondary,
+      color: colors.textSecondary,
       fontSize: compact ? 13 : 14,
       height: 1.4,
       letterSpacing: 0,
@@ -47,15 +48,15 @@ class HelpArticleTile extends StatelessWidget {
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerColor: AppPalette.transparent,
-        splashColor: AppPalette.primary.withValues(alpha: 0.08),
-        highlightColor: AppPalette.primary.withValues(alpha: 0.06),
+        dividerColor: colors.transparent,
+        splashColor: colors.primary.withValues(alpha: 0.08),
+        highlightColor: colors.primary.withValues(alpha: 0.06),
       ),
       child: Material(
-        color: AppPalette.white.withValues(alpha: compact ? 0.04 : 0.055),
+        color: compact ? colors.surfaceHigh : colors.surfaceRaised,
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(14),
-          side: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
+          side: BorderSide(color: colors.borderSoft),
         ),
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
@@ -74,8 +75,8 @@ class HelpArticleTile extends StatelessWidget {
             compact ? 14 : 16,
             compact ? 14 : 16,
           ),
-          iconColor: AppPalette.primary,
-          collapsedIconColor: AppPalette.textCoolSecondary,
+          iconColor: colors.primary,
+          collapsedIconColor: colors.textSecondary,
           title: Text(
             article.title,
             maxLines: compact ? 3 : 4,
@@ -143,6 +144,7 @@ class _ArticleActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Wrap(
@@ -160,15 +162,18 @@ class _ArticleActions extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _isPrimary(action.type)
-                      ? AppPalette.primary
-                      : AppPalette.white.withValues(alpha: 0.08),
-                  foregroundColor: _isPrimary(action.type)
-                      ? AppPalette.textPrimary
-                      : AppPalette.textPrimary,
+                      ? colors.primary
+                      : colors.surfaceHigh,
+                  foregroundColor: colors.textPrimary,
                   minimumSize: const Size(44, 42),
                   padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(12),
+                    side: BorderSide(
+                      color: _isPrimary(action.type)
+                          ? colors.borderPrimary
+                          : colors.borderSoft,
+                    ),
                   ),
                 ),
               ),
@@ -219,6 +224,7 @@ class _FeedbackActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final helpfulSelected = selectedFeedback == true;
     final notHelpfulSelected = selectedFeedback == false;
     return Row(
@@ -228,8 +234,8 @@ class _FeedbackActions extends StatelessWidget {
             l10n.helpCenterWasHelpful,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.textCoolSecondary,
+            style: AppTextStyle(
+              color: colors.textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
@@ -249,7 +255,7 @@ class _FeedbackActions extends StatelessWidget {
                 : Icons.thumb_up_alt_outlined,
             size: 18,
           ),
-          style: _feedbackButtonStyle(helpfulSelected),
+          style: _feedbackButtonStyle(context, helpfulSelected),
         ),
         const SizedBox(width: 4),
         IconButton.filledTonal(
@@ -264,26 +270,21 @@ class _FeedbackActions extends StatelessWidget {
                 : Icons.thumb_down_alt_outlined,
             size: 18,
           ),
-          style: _feedbackButtonStyle(notHelpfulSelected),
+          style: _feedbackButtonStyle(context, notHelpfulSelected),
         ),
       ],
     );
   }
 
-  ButtonStyle _feedbackButtonStyle(bool selected) {
-    final background = selected
-        ? AppPalette.primary
-        : AppPalette.white.withValues(alpha: 0.08);
-    final foreground = AppPalette.textPrimary;
+  ButtonStyle _feedbackButtonStyle(BuildContext context, bool selected) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final background = selected ? colors.primary : colors.surfaceHigh;
+    final foreground = colors.textPrimary;
     return IconButton.styleFrom(
       backgroundColor: background,
       foregroundColor: foreground,
-      disabledBackgroundColor: selected
-          ? AppPalette.primary
-          : AppPalette.white.withValues(alpha: 0.05),
-      disabledForegroundColor: selected
-          ? AppPalette.textPrimary
-          : AppPalette.textCoolSecondary,
+      disabledBackgroundColor: selected ? colors.primary : colors.surface,
+      disabledForegroundColor: selected ? colors.textPrimary : colors.textMuted,
     );
   }
 }

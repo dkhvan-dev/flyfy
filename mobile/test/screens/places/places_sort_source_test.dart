@@ -118,8 +118,12 @@ void main() {
         expect(uiSource, contains("case '$category':"));
       }
 
-      final saveButtonStart = source.indexOf('Widget _saveButton()');
-      final categoryTagStart = source.indexOf('Widget _categoryTag()');
+      final saveButtonStart = source.indexOf(
+        'Widget _saveButton(BuildContext context)',
+      );
+      final categoryTagStart = source.indexOf(
+        'Widget _categoryTag(BuildContext context)',
+      );
       expect(saveButtonStart, isNonNegative);
       expect(categoryTagStart, greaterThan(saveButtonStart));
       final saveButtonSource = source.substring(

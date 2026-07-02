@@ -93,6 +93,71 @@ void main() {
   );
 
   test(
+    'own profile quick action rows use visible V2 borders without heavy card fill',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final tileStart = source.indexOf('class _ProfileQuickActionTile');
+      final tileEnd = source.indexOf('class _IncomingFriendRequestsBadge');
+
+      expect(tileStart, isNonNegative);
+      expect(tileEnd, greaterThan(tileStart));
+
+      final tileSource = source.substring(tileStart, tileEnd);
+      final inkStart = tileSource.indexOf('child: Ink(');
+      final rowStart = tileSource.indexOf('child: Row(', inkStart);
+
+      expect(inkStart, isNonNegative);
+      expect(rowStart, greaterThan(inkStart));
+
+      final rowShellSource = tileSource.substring(inkStart, rowStart);
+
+      expect(tileSource, contains('Material('));
+      expect(tileSource, contains('color: context.profileColors.transparent'));
+      expect(tileSource, contains('InkWell('));
+      expect(tileSource, contains('Ink('));
+      expect(tileSource, isNot(contains('profileCardDecoration(')));
+      expect(rowShellSource, contains('decoration: AppBoxDecoration('));
+      expect(rowShellSource, contains('color: context.profileColors.surface'));
+      expect(rowShellSource, contains('borderRadius:'));
+      expect(rowShellSource, contains('border: Border.all('));
+      expect(rowShellSource, contains('color: context.profileColors.border'));
+      expect(tileSource, contains('AppEdgeInsets.symmetric('));
+    },
+  );
+
+  test(
+    'profile hero action buttons keep visible borders on light V2 surfaces',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final actionStart = source.indexOf('class _ProfileHeroActionButton');
+      final sectionsStart = source.indexOf('class _OwnProfileSections');
+
+      expect(actionStart, isNonNegative);
+      expect(sectionsStart, greaterThan(actionStart));
+
+      final actionSource = source.substring(actionStart, sectionsStart);
+
+      expect(actionSource, contains('final isLight ='));
+      expect(actionSource, contains('context.profileColors.surface'));
+      expect(actionSource, contains('context.profileColors.border'));
+      expect(actionSource, contains('final borderColor ='));
+      expect(actionSource, contains('color: borderColor'));
+      expect(
+        actionSource,
+        isNot(
+          contains(
+            'effectiveColor.withValues(\n                        alpha: enabled ? 0.46 : 0.22',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'profile stats keep loading state instead of showing false zeroes',
     () async {
       final source = await File(

@@ -25,9 +25,9 @@ class AppInlineSortRow<T> extends StatelessWidget {
     this.minItemHeight = 40,
     this.letterSpacing = 1.4,
     this.wrap = false,
-    this.labelColor = AppPalette.orangeOverlayLight02,
-    this.activeColor = AppPalette.primary,
-    this.inactiveColor = AppPalette.orangeMuted04,
+    this.labelColor,
+    this.activeColor,
+    this.inactiveColor,
   });
 
   final String label;
@@ -44,20 +44,24 @@ class AppInlineSortRow<T> extends StatelessWidget {
   final double minItemHeight;
   final double letterSpacing;
   final bool wrap;
-  final Color labelColor;
-  final Color activeColor;
-  final Color inactiveColor;
+  final Color? labelColor;
+  final Color? activeColor;
+  final Color? inactiveColor;
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final directionIcon = isAscending
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
+    final effectiveLabelColor = labelColor ?? colors.textSecondary;
+    final effectiveActiveColor = activeColor ?? colors.primary;
+    final effectiveInactiveColor = inactiveColor ?? colors.textMuted;
 
     final labelWidget = Text(
       '$label:',
       style: AppTextStyle(
-        color: labelColor,
+        color: effectiveLabelColor,
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
         letterSpacing: letterSpacing,
@@ -76,8 +80,8 @@ class AppInlineSortRow<T> extends StatelessWidget {
           verticalPadding: verticalPadding,
           minItemHeight: minItemHeight,
           letterSpacing: letterSpacing,
-          activeColor: activeColor,
-          inactiveColor: inactiveColor,
+          activeColor: effectiveActiveColor,
+          inactiveColor: effectiveInactiveColor,
         ),
     ];
 

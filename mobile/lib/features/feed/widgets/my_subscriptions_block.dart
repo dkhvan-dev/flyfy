@@ -40,118 +40,115 @@ class MySubscriptionsBlock extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final communities = subscriptions.communities.take(8).toList();
     final people = subscriptions.people.take(8).toList();
 
-    return DecoratedBox(
-      key: const ValueKey('my-subscriptions-block'),
-      decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface13,
-        borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: DecoratedBox(
+        key: const ValueKey('my-subscriptions-block'),
+        decoration: AppBoxDecoration(
+          color: colors.surface,
+          borderRadius: AppBorderRadius.circular(8),
+          border: Border.all(color: colors.borderPrimary),
+          boxShadow: _v2DarkShadow(context, colors),
+        ),
+        child: Padding(
+          padding: const AppEdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.feedMySubscriptionsTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.feedMySubscriptionsSummary(
+                            subscriptions.communities.length,
+                            subscriptions.people.length,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton.filledTonal(
+                    key: const ValueKey('open-my-subscriptions'),
+                    tooltip: l10n.feedMySubscriptionsViewAll,
+                    onPressed: onOpenAll,
+                    style: IconButton.styleFrom(
+                      backgroundColor: colors.primary.withValues(alpha: 0.18),
+                      foregroundColor: colors.primary,
+                      minimumSize: const Size.square(40),
+                    ),
+                    icon: const Icon(Icons.chevron_right_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = (constraints.maxWidth * 0.78).clamp(
+                    220.0,
+                    300.0,
+                  );
+                  return SingleChildScrollView(
+                    key: const ValueKey('my-subscriptions-rail'),
+                    scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.hardEdge,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (communities.isNotEmpty)
+                          _SubscriptionsRow(
+                            key: const ValueKey('my-subscriptions-row-0'),
+                            itemWidth: itemWidth,
+                            items: [
+                              for (final community in communities)
+                                _SubscriptionTileData.community(community),
+                            ],
+                            onCommunityOpen: onCommunityOpen,
+                            onPersonOpen: onPersonOpen,
+                            locationLabelResolver: locationLabelResolver,
+                          ),
+                        if (communities.isNotEmpty && people.isNotEmpty)
+                          const SizedBox(height: 10),
+                        if (people.isNotEmpty)
+                          _SubscriptionsRow(
+                            key: const ValueKey('my-subscriptions-row-1'),
+                            itemWidth: itemWidth,
+                            items: [
+                              for (final person in people)
+                                _SubscriptionTileData.person(person),
+                            ],
+                            onCommunityOpen: onCommunityOpen,
+                            onPersonOpen: onPersonOpen,
+                            locationLabelResolver: locationLabelResolver,
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const AppEdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.feedMySubscriptionsTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: AppPalette.surfaceInverse,
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.feedMySubscriptionsSummary(
-                          subscriptions.communities.length,
-                          subscriptions.people.length,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton.filledTonal(
-                  key: const ValueKey('open-my-subscriptions'),
-                  tooltip: l10n.feedMySubscriptionsViewAll,
-                  onPressed: onOpenAll,
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
-                    foregroundColor: AppPalette.primary,
-                    minimumSize: const Size.square(40),
-                  ),
-                  icon: const Icon(Icons.chevron_right_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth * 0.78).clamp(
-                  220.0,
-                  300.0,
-                );
-                return SingleChildScrollView(
-                  key: const ValueKey('my-subscriptions-rail'),
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.hardEdge,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (communities.isNotEmpty)
-                        _SubscriptionsRow(
-                          key: const ValueKey('my-subscriptions-row-0'),
-                          itemWidth: itemWidth,
-                          items: [
-                            for (final community in communities)
-                              _SubscriptionTileData.community(community),
-                          ],
-                          onCommunityOpen: onCommunityOpen,
-                          onPersonOpen: onPersonOpen,
-                          locationLabelResolver: locationLabelResolver,
-                        ),
-                      if (communities.isNotEmpty && people.isNotEmpty)
-                        const SizedBox(height: 10),
-                      if (people.isNotEmpty)
-                        _SubscriptionsRow(
-                          key: const ValueKey('my-subscriptions-row-1'),
-                          itemWidth: itemWidth,
-                          items: [
-                            for (final person in people)
-                              _SubscriptionTileData.person(person),
-                          ],
-                          onCommunityOpen: onCommunityOpen,
-                          onPersonOpen: onPersonOpen,
-                          locationLabelResolver: locationLabelResolver,
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
         ),
       ),
     );
@@ -248,24 +245,28 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
 
   Future<void> _openFilters() async {
     final query = _searchController.text.trim().toLowerCase();
+    final colors = AppDesignSystem.colorsFor(context);
     final result = await showAppModalBottomSheet<_MySubscriptionsFiltersResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
-      barrierColor: AppPalette.black.withValues(alpha: 0.58),
+      backgroundColor: colors.transparent,
+      barrierColor: colors.scrim,
       builder: (context) {
-        return _MySubscriptionsFiltersSheet(
-          tabIndex: _tabIndex,
-          communityFilter: _communityFilter,
-          communityTopic: _communityTopic,
-          peopleFilter: _peopleFilter,
-          communityTopicOptions: _communityTopicOptions(query),
-          communityResultCount: (filter, topic) =>
-              _communityResultCountFor(query, filter: filter, topic: topic),
-          peopleResultCount: (filter) =>
-              _peopleResultCountFor(query, filter: filter),
+        return Theme(
+          data: AppDesignSystem.themeFor(context),
+          child: _MySubscriptionsFiltersSheet(
+            tabIndex: _tabIndex,
+            communityFilter: _communityFilter,
+            communityTopic: _communityTopic,
+            peopleFilter: _peopleFilter,
+            communityTopicOptions: _communityTopicOptions(query),
+            communityResultCount: (filter, topic) =>
+                _communityResultCountFor(query, filter: filter, topic: topic),
+            peopleResultCount: (filter) =>
+                _peopleResultCountFor(query, filter: filter),
+          ),
         );
       },
     );
@@ -371,103 +372,107 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final query = _searchController.text.trim().toLowerCase();
     final communities = _filteredCommunities(query);
     final people = _filteredPeople(query);
 
-    return DefaultTabController(
-      length: 2,
-      initialIndex: _tabIndex,
-      child: SafeArea(
-        child: DecoratedBox(
-          key: const ValueKey('my-subscriptions-sheet'),
-          decoration: const AppBoxDecoration(color: AppPalette.backgroundWarm),
-          child: Padding(
-            padding: AppEdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              12 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: AppBoxDecoration(
-                    color: AppPalette.amberLight08.withValues(alpha: 0.36),
-                    borderRadius: AppBorderRadius.circular(99),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: DefaultTabController(
+        length: 2,
+        initialIndex: _tabIndex,
+        child: SafeArea(
+          child: DecoratedBox(
+            key: const ValueKey('my-subscriptions-sheet'),
+            decoration: AppBoxDecoration(color: colors.background),
+            child: Padding(
+              padding: AppEdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: AppBoxDecoration(
+                      color: colors.textMuted.withValues(alpha: 0.36),
+                      borderRadius: AppBorderRadius.circular(99),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                _MySubscriptionsSheetSummaryCard(
-                  communitiesCount: _communities.length,
-                  peopleCount: _people.length,
-                ),
-                const SizedBox(height: 12),
-                _MySubscriptionsSegmentedTabs(
-                  selectedIndex: _tabIndex,
-                  visibleResultCount: _visibleResultCount,
-                  onSelected: (index) => setState(() => _tabIndex = index),
-                ),
-                const SizedBox(height: 12),
-                AppListSearchField(
-                  textFieldKey: const ValueKey('my-subscriptions-search'),
-                  controller: _searchController,
-                  hintText: l10n.feedMySubscriptionsSearchHint,
-                  filterTooltip: l10n.communityDiscoveryFiltersTitle,
-                  activeFilterCount: _activeFilterCount,
-                  showClearButton: true,
-                  onClear: _searchController.clear,
-                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                  onFilterTap: _openFilters,
-                ),
-                const SizedBox(height: 8),
-                KeyedSubtree(
-                  key: const ValueKey('my-subscriptions-inline-sort'),
-                  child: _MySubscriptionsInlineSortRow(
-                    tabIndex: _tabIndex,
-                    communitySort: _communitySort,
-                    peopleSort: _peopleSort,
-                    onCommunitySortSelected: (sort) =>
-                        setState(() => _communitySort = sort),
-                    onPeopleSortSelected: (sort) =>
-                        setState(() => _peopleSort = sort),
+                  const SizedBox(height: 14),
+                  _MySubscriptionsSheetSummaryCard(
+                    communitiesCount: _communities.length,
+                    peopleCount: _people.length,
                   ),
-                ),
-                if (_activeFilterCount > 0) ...[
-                  const SizedBox(height: 10),
-                  _ActiveSubscriptionFilterPill(
-                    label: _activeFilterLabel(l10n),
-                    count: _visibleResultCount,
-                    onClear: () {
-                      setState(() {
-                        if (_tabIndex == 0) {
-                          _communityFilter = _CommunityFilter.all;
-                          _communityTopic = '';
-                        } else {
-                          _peopleFilter = _PeopleFilter.all;
-                        }
-                      });
-                    },
+                  const SizedBox(height: 12),
+                  _MySubscriptionsSegmentedTabs(
+                    selectedIndex: _tabIndex,
+                    visibleResultCount: _visibleResultCount,
+                    onSelected: (index) => setState(() => _tabIndex = index),
+                  ),
+                  const SizedBox(height: 12),
+                  AppListSearchField(
+                    textFieldKey: const ValueKey('my-subscriptions-search'),
+                    controller: _searchController,
+                    hintText: l10n.feedMySubscriptionsSearchHint,
+                    filterTooltip: l10n.communityDiscoveryFiltersTitle,
+                    activeFilterCount: _activeFilterCount,
+                    showClearButton: true,
+                    onClear: _searchController.clear,
+                    onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                    onFilterTap: _openFilters,
+                  ),
+                  const SizedBox(height: 8),
+                  KeyedSubtree(
+                    key: const ValueKey('my-subscriptions-inline-sort'),
+                    child: _MySubscriptionsInlineSortRow(
+                      tabIndex: _tabIndex,
+                      communitySort: _communitySort,
+                      peopleSort: _peopleSort,
+                      onCommunitySortSelected: (sort) =>
+                          setState(() => _communitySort = sort),
+                      onPeopleSortSelected: (sort) =>
+                          setState(() => _peopleSort = sort),
+                    ),
+                  ),
+                  if (_activeFilterCount > 0) ...[
+                    const SizedBox(height: 10),
+                    _ActiveSubscriptionFilterPill(
+                      label: _activeFilterLabel(l10n),
+                      count: _visibleResultCount,
+                      onClear: () {
+                        setState(() {
+                          if (_tabIndex == 0) {
+                            _communityFilter = _CommunityFilter.all;
+                            _communityTopic = '';
+                          } else {
+                            _peopleFilter = _PeopleFilter.all;
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: _tabIndex == 0
+                        ? _CommunitySubscriptionList(
+                            communities: communities,
+                            onCommunityOpen: widget.onCommunityOpen,
+                            onCommunityToggle: _toggleCommunityFollow,
+                            updatingCommunityIds: _updatingCommunityIds,
+                            locationLabelResolver: widget.locationLabelResolver,
+                          )
+                        : _PeopleSubscriptionList(
+                            people: people,
+                            onPersonOpen: widget.onPersonOpen,
+                          ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                Expanded(
-                  child: _tabIndex == 0
-                      ? _CommunitySubscriptionList(
-                          communities: communities,
-                          onCommunityOpen: widget.onCommunityOpen,
-                          onCommunityToggle: _toggleCommunityFollow,
-                          updatingCommunityIds: _updatingCommunityIds,
-                          locationLabelResolver: widget.locationLabelResolver,
-                        )
-                      : _PeopleSubscriptionList(
-                          people: people,
-                          onPersonOpen: widget.onPersonOpen,
-                        ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -672,6 +677,7 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       key: const ValueKey('my-subscriptions-sheet-summary'),
       decoration: AppBoxDecoration(
@@ -679,19 +685,16 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppPalette.primary.withValues(alpha: 0.24),
-            AppPalette.warmSurface13,
-          ],
+          colors: [colors.primary.withValues(alpha: 0.22), colors.surface],
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        border: Border.all(color: colors.borderPrimary),
+        boxShadow: _v2DarkShadow(
+          context,
+          colors,
+          alpha: 0.18,
+          blurRadius: 24,
+          dy: 14,
+        ),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(16),
@@ -702,15 +705,12 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
               height: 48,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppPalette.primary.withValues(alpha: 0.16),
+                color: colors.primary.withValues(alpha: 0.16),
                 border: Border.all(
-                  color: AppPalette.primary.withValues(alpha: 0.28),
+                  color: colors.primary.withValues(alpha: 0.28),
                 ),
               ),
-              child: const Icon(
-                Icons.bookmarks_rounded,
-                color: AppPalette.primary,
-              ),
+              child: Icon(Icons.bookmarks_rounded, color: colors.primary),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -722,7 +722,7 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppPalette.surfaceInverse,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w900,
                       height: 1.08,
                     ),
@@ -733,7 +733,7 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppPalette.amberLight08.withValues(alpha: 0.86),
+                      color: colors.textSecondary,
                       height: 1.22,
                     ),
                   ),
@@ -777,25 +777,26 @@ class _SummaryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.18),
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppPalette.primary),
+            Icon(icon, size: 15, color: colors.primary),
             const SizedBox(width: 5),
             Text(
               '$value $label',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppPalette.amberLight08,
+                color: colors.textSecondary,
                 fontWeight: FontWeight.w800,
                 height: 1,
               ),
@@ -821,11 +822,12 @@ class _MySubscriptionsSegmentedTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.07),
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -877,8 +879,9 @@ class _SegmentedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Material(
-      color: selected ? AppPalette.primary : AppPalette.transparent,
+      color: selected ? colors.primary : colors.transparent,
       borderRadius: AppBorderRadius.circular(14),
       child: InkWell(
         borderRadius: AppBorderRadius.circular(14),
@@ -892,9 +895,7 @@ class _SegmentedTabButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected
-                    ? AppPalette.textPrimary
-                    : AppPalette.amberLight08,
+                color: selected ? colors.textPrimary : colors.textSecondary,
               ),
               const SizedBox(width: 7),
               Flexible(
@@ -904,9 +905,7 @@ class _SegmentedTabButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected
-                        ? AppPalette.textPrimary
-                        : AppPalette.amberLight08,
+                    color: selected ? colors.textPrimary : colors.textSecondary,
                     fontWeight: FontWeight.w900,
                     height: 1,
                   ),
@@ -933,10 +932,11 @@ class _ActiveSubscriptionFilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
-        color: AppPalette.primary.withValues(alpha: 0.14),
+        color: colors.primary.withValues(alpha: 0.14),
         borderRadius: AppBorderRadius.circular(999),
         child: InkWell(
           borderRadius: AppBorderRadius.circular(999),
@@ -946,19 +946,19 @@ class _ActiveSubscriptionFilterPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.filter_alt_rounded, size: 16),
+                Icon(Icons.filter_alt_rounded, size: 16, color: colors.primary),
                 const SizedBox(width: 6),
                 Text(
                   '$label · $count',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppPalette.amberLight08,
+                    color: colors.textSecondary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(width: 5),
-                const Icon(Icons.close_rounded, size: 16),
+                Icon(Icons.close_rounded, size: 16, color: colors.primary),
               ],
             ),
           ),
@@ -1089,10 +1089,18 @@ class _SubscriptionPill extends StatelessWidget {
     final avatarUrl = data.avatarUrl;
     final community = data.community;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Material(
-      color: AppPalette.white.withValues(alpha: 0.08),
-      borderRadius: AppBorderRadius.circular(8),
+      color: colors.surfaceHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppBorderRadius.circular(8),
+        side: BorderSide(
+          color: colors.primary.withValues(alpha: 0.42),
+          width: 1.2,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         key: data.openKey,
         borderRadius: AppBorderRadius.circular(8),
@@ -1128,7 +1136,7 @@ class _SubscriptionPill extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppPalette.surfaceInverse,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1138,7 +1146,7 @@ class _SubscriptionPill extends StatelessWidget {
                         community: community,
                         resolver: locationLabelResolver,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08,
+                          color: colors.textSecondary,
                           height: 1.14,
                         ),
                       ),
@@ -1150,9 +1158,7 @@ class _SubscriptionPill extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08.withValues(
-                            alpha: 0.82,
-                          ),
+                          color: colors.textMuted,
                           height: 1.14,
                         ),
                       ),
@@ -1163,7 +1169,7 @@ class _SubscriptionPill extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
@@ -1196,6 +1202,7 @@ class _CommunitySubscriptionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     if (communities.isEmpty) {
       return _SheetEmptyState(message: l10n.feedMySubscriptionsEmptyMessage);
     }
@@ -1216,7 +1223,7 @@ class _CommunitySubscriptionList extends StatelessWidget {
             includeCountry: true,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppPalette.amberLight08,
+              color: colors.textSecondary,
               height: 1.14,
             ),
           ),
@@ -1292,8 +1299,9 @@ class _SheetListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return Material(
-      color: AppPalette.white.withValues(alpha: 0.08),
+      color: colors.surfaceHigh,
       borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         borderRadius: AppBorderRadius.circular(8),
@@ -1313,7 +1321,7 @@ class _SheetListTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppPalette.surfaceInverse,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1327,7 +1335,7 @@ class _SheetListTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
@@ -1338,9 +1346,7 @@ class _SheetListTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.amberLight08.withValues(
-                            alpha: 0.82,
-                          ),
+                          color: colors.textMuted,
                           height: 1.14,
                         ),
                       ),
@@ -1350,9 +1356,9 @@ class _SheetListTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               trailing ??
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: AppPalette.amberLight08,
+                    color: colors.textSecondary,
                   ),
             ],
           ),
@@ -1375,21 +1381,22 @@ class _CommunitySubscriptionToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return IconButton.filledTonal(
       key: ValueKey('my-subscriptions-sheet-toggle-${community.id}'),
       onPressed: isUpdating ? null : onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: AppPalette.primary.withValues(alpha: 0.14),
-        foregroundColor: AppPalette.primary,
+        backgroundColor: colors.primary.withValues(alpha: 0.14),
+        foregroundColor: colors.primary,
         minimumSize: const Size.square(42),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       icon: isUpdating
-          ? const SizedBox.square(
+          ? SizedBox.square(
               dimension: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppPalette.primary,
+                color: colors.textPrimary,
               ),
             )
           : Icon(
@@ -1416,11 +1423,12 @@ class _SubscriptionAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final initial = title.trim().isEmpty ? 'F' : title.trim()[0].toUpperCase();
     final url = imageUrl?.trim();
+    final colors = AppDesignSystem.colorsFor(context);
 
     return CircleAvatar(
       radius: 22,
-      backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
-      foregroundColor: AppPalette.primary,
+      backgroundColor: colors.primary.withValues(alpha: 0.18),
+      foregroundColor: colors.primary,
       backgroundImage: url == null || url.isEmpty ? null : NetworkImage(url),
       child: url == null || url.isEmpty
           ? icon == Icons.person_rounded
@@ -1634,6 +1642,7 @@ class _MySubscriptionsFiltersSheetState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final applyLabel = _isPeopleTab
@@ -1655,7 +1664,7 @@ class _MySubscriptionsFiltersSheetState
             top: AppRadiusValue.circular(28),
           ),
           child: DecoratedBox(
-            decoration: const AppBoxDecoration(color: AppPalette.warmInk66),
+            decoration: AppBoxDecoration(color: colors.background),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1748,11 +1757,13 @@ class _FilterSheetIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.07),
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(22),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(14),
@@ -1763,9 +1774,9 @@ class _FilterSheetIntro extends StatelessWidget {
               height: 42,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppPalette.primary.withValues(alpha: 0.16),
+                color: colors.primary.withValues(alpha: 0.16),
               ),
-              child: const Icon(Icons.tune_rounded, color: AppPalette.primary),
+              child: Icon(Icons.tune_rounded, color: colors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1774,7 +1785,7 @@ class _FilterSheetIntro extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
@@ -1783,7 +1794,7 @@ class _FilterSheetIntro extends StatelessWidget {
             const SizedBox(width: 8),
             DecoratedBox(
               decoration: AppBoxDecoration(
-                color: AppPalette.primary.withValues(alpha: 0.18),
+                color: colors.primary.withValues(alpha: 0.18),
                 borderRadius: AppBorderRadius.circular(999),
               ),
               child: Padding(
@@ -1794,7 +1805,7 @@ class _FilterSheetIntro extends StatelessWidget {
                 child: Text(
                   resultCount.toString(),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1814,13 +1825,11 @@ class _FilterSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
-        const Icon(
-          Icons.filter_list_rounded,
-          color: AppPalette.primary,
-          size: 18,
-        ),
+        Icon(Icons.filter_list_rounded, color: colors.primary, size: 18),
         const SizedBox(width: 7),
         Expanded(
           child: Text(
@@ -1828,7 +1837,7 @@ class _FilterSectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppPalette.textPrimary,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w900,
               height: 1.1,
             ),
@@ -1846,14 +1855,16 @@ class _FilterOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final foreground = data.selected
-        ? AppPalette.textPrimary
-        : AppPalette.amberLight08;
+        ? colors.textPrimary
+        : colors.textSecondary;
+
     return Material(
       key: ValueKey(data.key),
       color: data.selected
-          ? AppPalette.primary.withValues(alpha: 0.20)
-          : AppPalette.white.withValues(alpha: 0.07),
+          ? colors.primary.withValues(alpha: 0.20)
+          : colors.surfaceHigh,
       borderRadius: AppBorderRadius.circular(18),
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
@@ -1863,9 +1874,7 @@ class _FilterOptionTile extends StatelessWidget {
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
-              color: data.selected
-                  ? AppPalette.primary
-                  : AppPalette.primary.withValues(alpha: 0.16),
+              color: data.selected ? colors.primary : colors.borderPrimary,
             ),
           ),
           child: Row(
@@ -1876,14 +1885,12 @@ class _FilterOptionTile extends StatelessWidget {
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: data.selected
-                      ? AppPalette.primary
-                      : AppPalette.primary.withValues(alpha: 0.12),
+                      ? colors.primary
+                      : colors.primary.withValues(alpha: 0.12),
                 ),
                 child: Icon(
                   data.selected ? Icons.check_rounded : data.icon,
-                  color: data.selected
-                      ? AppPalette.textPrimary
-                      : AppPalette.primary,
+                  color: data.selected ? colors.textPrimary : colors.primary,
                   size: 19,
                 ),
               ),
@@ -1904,11 +1911,9 @@ class _FilterOptionTile extends StatelessWidget {
                 const SizedBox(width: 10),
                 DecoratedBox(
                   decoration: AppBoxDecoration(
-                    color: AppPalette.black.withValues(alpha: 0.20),
+                    color: colors.black.withValues(alpha: 0.20),
                     borderRadius: AppBorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppPalette.primary.withValues(alpha: 0.12),
-                    ),
+                    border: Border.all(color: colors.borderPrimary),
                   ),
                   child: Padding(
                     padding: const AppEdgeInsets.symmetric(
@@ -1941,6 +1946,8 @@ class _SheetEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Center(
       child: Text(
         message,
@@ -1949,7 +1956,7 @@ class _SheetEmptyState extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: Theme.of(
           context,
-        ).textTheme.bodyMedium?.copyWith(color: AppPalette.amberLight08),
+        ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
       ),
     );
   }
@@ -2262,6 +2269,26 @@ FeedCommunityVm _mergeCommunityForSubscriptions(
 String? _trimmedStringOrNull(String? value) {
   final trimmed = (value ?? '').trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+List<BoxShadow> _v2DarkShadow(
+  BuildContext context,
+  AppColors colors, {
+  double alpha = 0.16,
+  double blurRadius = 18,
+  double dy = 10,
+}) {
+  if (Theme.of(context).brightness != Brightness.dark) {
+    return const [];
+  }
+
+  return [
+    BoxShadow(
+      color: colors.black.withValues(alpha: alpha),
+      blurRadius: blurRadius,
+      offset: Offset(0, dy),
+    ),
+  ];
 }
 
 String _formatCount(int value) {

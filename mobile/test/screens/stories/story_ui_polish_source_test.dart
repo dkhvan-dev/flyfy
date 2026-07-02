@@ -3,6 +3,29 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'story cover placeholder uses a clean solid surface without gradient',
+    () {
+      final source = File(
+        'lib/features/stories/story_ui.dart',
+      ).readAsStringSync();
+
+      final coverStart = source.indexOf('class StoryCoverImage');
+      final coverEnd = source.indexOf('return LayoutBuilder(', coverStart);
+
+      expect(coverStart, isNonNegative);
+      expect(coverEnd, greaterThan(coverStart));
+
+      final placeholderSource = source.substring(coverStart, coverEnd);
+
+      expect(placeholderSource, contains('color: colors.surfaceWarm'));
+      expect(placeholderSource, contains('Border.all'));
+      expect(placeholderSource, isNot(contains('LinearGradient(')));
+      expect(placeholderSource, isNot(contains('gradient:')));
+      expect(placeholderSource, isNot(contains('AppPalette.warmInk86')));
+    },
+  );
+
   test('story feed uses adaptive search hint and semantic sort buttons', () {
     final source = File(
       'lib/screens/stories/stories_screen.dart',
@@ -25,6 +48,13 @@ void main() {
     expect(sortSource, contains(r'selected: selectedSort == item.$1'));
     expect(sortSource, contains('InkWell('));
     expect(sortSource, isNot(contains('GestureDetector(')));
+    expect(sortSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(sortSource, contains('colors.textMuted'));
+    expect(sortSource, contains('colors.primary'));
+    expect(sortSource, contains('colors.textSecondary'));
+    expect(sortSource, contains('colors.transparent'));
+    expect(sortSource, isNot(contains('AppPalette.')));
+    expect(sortSource, isNot(contains('StoryPalette.')));
   });
 
   test('story title typography avoids negative letter spacing', () {
@@ -204,7 +234,10 @@ void main() {
 
     expect(heroSource, contains('storyDeleteAction'));
     expect(heroSource, contains('TextButton.styleFrom('));
-    expect(heroSource, contains('foregroundColor: AppPalette.danger'));
+    expect(
+      heroSource,
+      contains('foregroundColor: _StoryDetailsColors.of(context).danger'),
+    );
   });
 
   test('story list filter sheet uses summary chips and card-like options', () {
@@ -222,22 +255,183 @@ void main() {
     expect(filterSource, contains('_FilterCategoryGrid('));
     expect(storiesSource, contains('class _FilterOptionCard'));
     expect(storiesSource, contains('Wrap('));
+
+    final optionStart = storiesSource.indexOf('class _FilterOptionCard');
+    final optionEnd = storiesSource.indexOf(
+      'IconData _categoryFilterIcon',
+      optionStart,
+    );
+    expect(optionStart, isNonNegative);
+    expect(optionEnd, greaterThan(optionStart));
+    final optionSource = storiesSource.substring(optionStart, optionEnd);
+
+    expect(optionSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(optionSource, contains('color: colors.transparent'));
+    expect(optionSource, contains('colors.primary.withValues(alpha: 0.14)'));
+    expect(optionSource, contains('colors.surfaceRaised'));
+    expect(optionSource, contains('colors.textPrimary'));
+    expect(optionSource, contains('colors.textSecondary'));
+    expect(optionSource, isNot(contains('AppPalette.')));
+    expect(optionSource, isNot(contains('StoryPalette.')));
   });
 
-  test('story list format tag uses primary text color on accent badge', () {
+  test('story filter sheet chrome uses adaptive V2 colors', () {
     final storiesSource = File(
       'lib/screens/stories/stories_screen.dart',
     ).readAsStringSync();
 
+    final activeStart = storiesSource.indexOf('class _ActiveFiltersSummary');
+    final formatGridStart = storiesSource.indexOf(
+      'class _FilterFormatGrid',
+      activeStart,
+    );
+    expect(activeStart, isNonNegative);
+    expect(formatGridStart, greaterThan(activeStart));
+    final sheetChromeSource = storiesSource.substring(
+      activeStart,
+      formatGridStart,
+    );
+
+    expect(sheetChromeSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(sheetChromeSource, contains('colors.surface'));
+    expect(sheetChromeSource, contains('colors.surfaceRaised'));
+    expect(sheetChromeSource, contains('colors.surfaceHigh'));
+    expect(sheetChromeSource, contains('colors.borderSoft'));
+    expect(sheetChromeSource, contains('colors.primary'));
+    expect(sheetChromeSource, contains('colors.textPrimary'));
+    expect(sheetChromeSource, isNot(contains('AppPalette.')));
+    expect(sheetChromeSource, isNot(contains('StoryPalette.')));
+    expect(sheetChromeSource, isNot(contains('LinearGradient(')));
+  });
+
+  test('story list compact tags use adaptive V2 colors', () {
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+
+    final metaStart = storiesSource.indexOf('class _StoryMetaChip');
     final tagStart = storiesSource.indexOf('class _FormatTag');
     final locationStart = storiesSource.indexOf('class _LocationTag');
+    final locationEnd = storiesSource.indexOf(
+      'class _StoriesLoadingState',
+      locationStart,
+    );
+    expect(metaStart, isNonNegative);
     expect(tagStart, isNonNegative);
+    expect(tagStart, greaterThan(metaStart));
     expect(locationStart, greaterThan(tagStart));
+    expect(locationEnd, greaterThan(locationStart));
+    final metaSource = storiesSource.substring(metaStart, tagStart);
     final tagSource = storiesSource.substring(tagStart, locationStart);
+    final locationSource = storiesSource.substring(locationStart, locationEnd);
 
-    expect(tagSource, contains('color: AppPalette.primary'));
-    expect(tagSource, contains('color: AppPalette.textPrimary'));
-    expect(tagSource, isNot(contains('AppPalette.warmInk72')));
+    for (final source in [metaSource, tagSource, locationSource]) {
+      expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      expect(source, isNot(contains('AppPalette.')));
+      expect(source, isNot(contains('StoryPalette.')));
+    }
+    expect(metaSource, contains('colors.surfaceHigh'));
+    expect(metaSource, contains('colors.primary'));
+    expect(metaSource, contains('colors.textMuted'));
+    expect(tagSource, contains('color: colors.primary'));
+    expect(tagSource, contains('color: colors.textPrimary'));
+    expect(locationSource, contains('colors.surfaceHigh'));
+    expect(locationSource, contains('colors.border'));
+    expect(locationSource, contains('colors.textPrimary'));
+  });
+
+  test('story list card chrome uses adaptive V2 colors', () {
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+
+    final listCardStart = storiesSource.indexOf('class _StoryListCard');
+    final metaChipStart = storiesSource.indexOf('class _StoryMetaChip');
+    expect(listCardStart, isNonNegative);
+    expect(metaChipStart, greaterThan(listCardStart));
+    final listCardSource = storiesSource.substring(
+      listCardStart,
+      metaChipStart,
+    );
+
+    expect(listCardSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(listCardSource, contains('colors.black.withValues'));
+    expect(listCardSource, contains('colors.textPrimary'));
+    expect(listCardSource, contains('colors.textSecondary'));
+    expect(listCardSource, contains('colors.textMuted'));
+    expect(listCardSource, isNot(contains('AppPalette.')));
+    expect(listCardSource, isNot(contains('StoryPalette.')));
+  });
+
+  test('story list card has a feed-like outer V2 border', () {
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+
+    final listCardStart = storiesSource.indexOf('class _StoryListCard');
+    final metaChipStart = storiesSource.indexOf('class _StoryMetaChip');
+    expect(listCardStart, isNonNegative);
+    expect(metaChipStart, greaterThan(listCardStart));
+    final listCardSource = storiesSource.substring(
+      listCardStart,
+      metaChipStart,
+    );
+
+    expect(listCardSource, contains('final cardRadius = AppBorderRadius'));
+    expect(listCardSource, contains('Material('));
+    expect(listCardSource, contains('InkWell('));
+    expect(listCardSource, contains('Ink('));
+    expect(listCardSource, contains('color: colors.surfaceRaised'));
+    expect(
+      listCardSource,
+      contains('border: Border.all(color: colors.border)'),
+    );
+    expect(listCardSource, contains('borderRadius: cardRadius'));
+  });
+
+  test('story list loading error and empty states use adaptive V2 colors', () {
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+
+    final loadingStart = storiesSource.indexOf('class _StoriesLoadingState');
+    final filtersResultStart = storiesSource.indexOf(
+      'class _StoryFiltersResult',
+      loadingStart,
+    );
+    expect(loadingStart, isNonNegative);
+    expect(filtersResultStart, greaterThan(loadingStart));
+    final stateSource = storiesSource.substring(
+      loadingStart,
+      filtersResultStart,
+    );
+
+    expect(stateSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(stateSource, contains('colors.surfaceRaised'));
+    expect(stateSource, contains('colors.surfaceHigh'));
+    expect(stateSource, contains('colors.borderSoft'));
+    expect(stateSource, contains('colors.primary'));
+    expect(stateSource, contains('colors.textPrimary'));
+    expect(stateSource, contains('colors.textSecondary'));
+    expect(stateSource, isNot(contains('AppPalette.')));
+    expect(stateSource, isNot(contains('StoryPalette.')));
+    expect(stateSource, isNot(contains('LinearGradient(')));
+  });
+
+  test('stories bottom nav buttons use adaptive V2 colors', () {
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+
+    final buttonStart = storiesSource.indexOf('class _StoriesNavButton');
+    expect(buttonStart, isNonNegative);
+    final buttonSource = storiesSource.substring(buttonStart);
+
+    expect(buttonSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(buttonSource, contains('active ? colors.primary'));
+    expect(buttonSource, contains('colors.textSecondary'));
+    expect(buttonSource, contains('colors.transparent'));
+    expect(buttonSource, isNot(contains('AppPalette.')));
   });
 
   test('story related view all action uses accent color token', () {
@@ -252,7 +446,10 @@ void main() {
     final sectionSource = detailSource.substring(sectionStart, errorStart);
 
     expect(sectionSource, contains('l10n.storyViewAll'));
-    expect(sectionSource, contains('color: AppPalette.primary'));
+    expect(
+      sectionSource,
+      contains('color: _StoryDetailsColors.of(context).primary'),
+    );
     expect(sectionSource, isNot(contains('AppPalette.amberSoft18')));
   });
 
@@ -322,7 +519,10 @@ void main() {
     final openSource = detailSource.substring(openStart, startComment);
 
     expect(openSource, contains('showAppModalDialog<int>('));
-    expect(openSource, contains('barrierColor: AppPalette.black'));
+    expect(
+      openSource,
+      contains('barrierColor: _StoryDetailsColors.of(context).black'),
+    );
     expect(openSource, contains('FadeTransition('));
     expect(openSource, isNot(contains('PageRouteBuilder<int>(')));
   });
@@ -453,7 +653,7 @@ void main() {
     expect(viewerSource, contains('publicUrl: url'));
   });
 
-  test('my stories status tabs reuse my excursions button colors', () {
+  test('my stories status tabs use adaptive V2 colors', () {
     final source = File(
       'lib/screens/stories/stories_screen.dart',
     ).readAsStringSync();
@@ -464,16 +664,17 @@ void main() {
     expect(searchStart, greaterThan(tabsStart));
     final tabsSource = source.substring(tabsStart, searchStart);
 
-    expect(tabsSource, contains('selectedColor: AppPalette.primary'));
-    expect(tabsSource, contains('backgroundColor: AppPalette.warmSurface17'));
+    expect(tabsSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(tabsSource, contains('selectedColor: colors.primary'));
+    expect(tabsSource, contains('backgroundColor: colors.surfaceRaised'));
     expect(tabsSource, contains('showCheckmark: false'));
     expect(tabsSource, contains('SingleChildScrollView('));
     expect(tabsSource, contains('scrollDirection: Axis.horizontal'));
     expect(tabsSource, contains('Row('));
     expect(tabsSource, isNot(contains('Wrap(')));
-    expect(tabsSource, contains('AppPalette.white'));
-    expect(tabsSource, contains('AppPalette.orangeSoft29'));
-    expect(tabsSource, isNot(contains('AppPalette.warmInk72')));
+    expect(tabsSource, contains('colors.textPrimary'));
+    expect(tabsSource, contains('colors.textSecondary'));
+    expect(tabsSource, isNot(contains('AppPalette.')));
     expect(tabsSource, isNot(contains('StoryPalette.textSoft')));
   });
 

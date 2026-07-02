@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/network/post_api.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../providers/auth_provider.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 Future<bool> ensurePostCreateAllowed(
   BuildContext context, {
@@ -58,66 +58,73 @@ Future<void> _showPostRateLimitSheet(
   PostCreateEligibilityVm eligibility,
 ) {
   final l10n = AppLocalizations.of(context)!;
+  final colors = AppDesignSystem.colorsFor(context);
   final retrySeconds = eligibility.retryAfter.inSeconds;
   final retryMinutes = retrySeconds <= 0 ? 1 : ((retrySeconds + 59) ~/ 60);
   return showAppModalBottomSheet<void>(
     context: context,
     isDismissible: true,
     showDragHandle: true,
-    backgroundColor: AppPalette.surfaceCool,
+    backgroundColor: colors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: AppBorderRadius.vertical(top: AppRadiusValue.circular(28)),
     ),
     builder: (sheetContext) {
-      return SafeArea(
-        child: Padding(
-          padding: const AppEdgeInsets.fromLTRB(24, 8, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.16),
-                  borderRadius: AppBorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.hourglass_bottom_rounded,
-                  color: AppPalette.primary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.postCreateRateLimitTitle,
-                style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                  color: AppPalette.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.postCreateRateLimitMessage(retryMinutes),
-                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                  color: AppPalette.textCoolSecondary,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.textPrimary,
-                    minimumSize: const Size.fromHeight(48),
+      final colors = AppDesignSystem.colorsFor(sheetContext);
+      final theme = AppDesignSystem.themeFor(sheetContext);
+
+      return Theme(
+        data: theme,
+        child: SafeArea(
+          child: Padding(
+            padding: const AppEdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: AppBoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.16),
+                    borderRadius: AppBorderRadius.circular(16),
                   ),
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: Text(l10n.postCreateRateLimitAction),
+                  child: Icon(
+                    Icons.hourglass_bottom_rounded,
+                    color: colors.primary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  l10n.postCreateRateLimitTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.postCreateRateLimitMessage(retryMinutes),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.textPrimary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: Text(l10n.postCreateRateLimitAction),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -127,29 +134,28 @@ Future<void> _showPostRateLimitSheet(
 
 void _showPreflightWarning(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
+  final colors = AppDesignSystem.colorsFor(context);
+  final theme = AppDesignSystem.themeFor(context);
   final messenger = ScaffoldMessenger.of(context);
   messenger
     ..hideCurrentMaterialBanner()
     ..showMaterialBanner(
       MaterialBanner(
-        backgroundColor: AppPalette.surfaceCool,
-        elevation: 1,
+        backgroundColor: colors.surface,
+        elevation: 0,
         leading: Container(
           width: 40,
           height: 40,
           decoration: AppBoxDecoration(
-            color: AppPalette.primary.withValues(alpha: 0.14),
+            color: colors.primary.withValues(alpha: 0.14),
             borderRadius: AppBorderRadius.circular(14),
           ),
-          child: const Icon(
-            Icons.info_outline_rounded,
-            color: AppPalette.primary,
-          ),
+          child: Icon(Icons.info_outline_rounded, color: colors.primary),
         ),
         content: Text(
           l10n.postCreatePreflightFailed,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppPalette.textPrimary,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
             height: 1.35,
           ),
         ),

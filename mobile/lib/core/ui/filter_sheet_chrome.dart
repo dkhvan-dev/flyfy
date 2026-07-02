@@ -23,6 +23,7 @@ class AppFilterSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final textScaler = MediaQuery.textScalerOf(context);
     final effectiveHeight = height ?? 46;
     final effectiveHorizontalPadding = horizontalPadding ?? 18;
@@ -33,8 +34,8 @@ class AppFilterSheetHeader extends StatelessWidget {
     return Container(
       height: effectiveHeight,
       padding: AppEdgeInsets.symmetric(horizontal: effectiveHorizontalPadding),
-      decoration: const AppBoxDecoration(
-        border: Border(bottom: BorderSide(color: AppPalette.warmSurface66)),
+      decoration: AppBoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.borderSoft)),
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -47,7 +48,7 @@ class AppFilterSheetHeader extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: effectiveTitleSize,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -59,7 +60,7 @@ class AppFilterSheetHeader extends StatelessWidget {
             child: TextButton(
               onPressed: onClear,
               style: TextButton.styleFrom(
-                foregroundColor: AppPalette.primary,
+                foregroundColor: colors.primary,
                 padding: AppEdgeInsets.zero,
                 minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -104,6 +105,7 @@ class AppFilterApplyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final effectiveFontSize = fontSize ?? 17;
     final effectiveIconSize = (effectiveFontSize + 1).clamp(16, 20).toDouble();
 
@@ -112,12 +114,10 @@ class AppFilterApplyButton extends StatelessWidget {
       child: FilledButton(
         onPressed: isLoading ? null : onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: AppPalette.primary,
-          disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.72),
-          foregroundColor: AppPalette.textPrimary,
-          disabledForegroundColor: AppPalette.textPrimary.withValues(
-            alpha: 0.82,
-          ),
+          backgroundColor: colors.primary,
+          disabledBackgroundColor: colors.primary.withValues(alpha: 0.72),
+          foregroundColor: colors.textPrimary,
+          disabledForegroundColor: colors.textPrimary.withValues(alpha: 0.82),
           minimumSize: Size(0, minHeight),
           padding: const AppEdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(
@@ -132,9 +132,9 @@ class AppFilterApplyButton extends StatelessWidget {
             ? SizedBox(
                 width: effectiveIconSize,
                 height: effectiveIconSize,
-                child: const CircularProgressIndicator(
+                child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                 ),
               )
             : Row(

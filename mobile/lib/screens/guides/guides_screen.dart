@@ -307,7 +307,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (context) => _GuidesFiltersSheet(
         initialFilters: _filters,
         filterOptions: _filterOptions,
@@ -366,40 +366,56 @@ class _GuidesScreenState extends State<GuidesScreen> {
     final totalPages = math.max(1, (_totalGuides / _pageSize).ceil());
     final activePage = _currentPage.clamp(1, totalPages).toInt();
     final pageGuides = _guides;
+    final theme = AppDesignSystem.themeFor(context);
+    final colors = AppDesignSystem.colorsFor(context);
 
     _scheduleApplyDefaultCityFilter(locationProvider);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppPalette.warmInk34,
-        bottomNavigationBar: CommonBottomNavigationBar(
-          onHomeTap: () => context.go('/'),
-          onQrTap: () => context.push('/qr'),
-          onMapTap: () => context.push('/map'),
-          onServicesTap: () => context.push('/services'),
-          onChatsTap: () => context.push('/chats'),
-        ),
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              AppListScreenHeader(
-                title: l10n.guidesTitle,
-                notificationsTooltip: l10n.profileNotificationsRowTitle,
-                onBackTap: _goBack,
-                onNotificationsTap: () => context.push('/notifications'),
+    return Theme(
+      data: theme,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+        child: Scaffold(
+          backgroundColor: colors.background,
+          bottomNavigationBar: CommonBottomNavigationBar(
+            onHomeTap: () => context.go('/'),
+            onQrTap: () => context.push('/qr'),
+            onMapTap: () => context.push('/map'),
+            onServicesTap: () => context.push('/services'),
+            onChatsTap: () => context.push('/chats'),
+          ),
+          body: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
               ),
-              Expanded(
-                child: _buildBody(
-                  l10n: l10n,
-                  pageGuides: pageGuides,
-                  totalVisible: _totalGuides,
-                  totalPages: totalPages,
-                  activePage: activePage,
-                ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  AppListScreenHeader(
+                    title: l10n.guidesTitle,
+                    notificationsTooltip: l10n.profileNotificationsRowTitle,
+                    onBackTap: _goBack,
+                    onNotificationsTap: () => context.push('/notifications'),
+                  ),
+                  Expanded(
+                    child: _buildBody(
+                      l10n: l10n,
+                      pageGuides: pageGuides,
+                      totalVisible: _totalGuides,
+                      totalPages: totalPages,
+                      activePage: activePage,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -426,9 +442,11 @@ class _GuidesScreenState extends State<GuidesScreen> {
 
     final padX = _horizontalPadding(context);
 
+    final colors = AppDesignSystem.colorsFor(context);
+
     return RefreshIndicator(
-      color: AppPalette.primary,
-      backgroundColor: AppPalette.warmSurface27,
+      color: colors.primary,
+      backgroundColor: colors.surface,
       onRefresh: () => _loadGuides(page: _currentPage),
       child: CustomScrollView(
         controller: _scrollController,
@@ -461,15 +479,15 @@ class _GuidesScreenState extends State<GuidesScreen> {
           if (_isRefreshingList)
             SliverPadding(
               padding: AppEdgeInsets.fromLTRB(padX, 14, padX, 0),
-              sliver: const SliverToBoxAdapter(
+              sliver: SliverToBoxAdapter(
                 child: ClipRRect(
-                  borderRadius: AppBorderRadius.all(
+                  borderRadius: const AppBorderRadius.all(
                     AppRadiusValue.circular(999),
                   ),
                   child: LinearProgressIndicator(
                     minHeight: 3,
-                    color: AppPalette.primary,
-                    backgroundColor: AppPalette.warmSurface44,
+                    color: colors.primary,
+                    backgroundColor: colors.surfaceHigh,
                   ),
                 ),
               ),
@@ -653,6 +671,8 @@ class _GuidesSortBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return AppInlineSortRow<_GuideSortMode>(
       label: l10n.guidesSortLabel,
       options: [
@@ -668,8 +688,8 @@ class _GuidesSortBar extends StatelessWidget {
       labelToOptionsGap: 14,
       optionGap: 18,
       letterSpacing: 0,
-      labelColor: AppPalette.warmMuted04,
-      inactiveColor: AppPalette.orangeLight03,
+      labelColor: colors.textMuted,
+      inactiveColor: colors.textSecondary,
     );
   }
 }
@@ -763,20 +783,23 @@ class _GuideSkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface27,
+        color: colors.surface,
         borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: ClipRRect(
         borderRadius: AppBorderRadius.circular(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Expanded(
+            Expanded(
               flex: 4,
               child: DecoratedBox(
-                decoration: AppBoxDecoration(color: AppPalette.warmSurface46),
+                decoration: AppBoxDecoration(color: colors.surfaceHigh),
               ),
             ),
             Expanded(
@@ -812,12 +835,14 @@ class _GuideSkeletonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return FractionallySizedBox(
       widthFactor: widthFactor,
       alignment: Alignment.centerLeft,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.white.withValues(alpha: 0.08),
+          color: colors.textMuted.withValues(alpha: 0.16),
           borderRadius: AppBorderRadius.circular(999),
         ),
         child: SizedBox(height: height),
@@ -839,29 +864,27 @@ class _GuidesInlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.warmSurface50,
+        color: colors.primaryContainer.withValues(alpha: 0.46),
         borderRadius: AppBorderRadius.circular(14),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.24)),
       ),
       child: Padding(
         padding: const AppEdgeInsetsDirectional.fromSTEB(14, 11, 10, 11),
         child: Row(
           children: [
-            const Icon(
-              Icons.wifi_off_rounded,
-              color: AppPalette.primary,
-              size: 20,
-            ),
+            Icon(Icons.wifi_off_rounded, color: colors.primary, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeWash21,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   height: 1.25,
@@ -944,6 +967,7 @@ class _GuideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final languageLabel = guideExcursionLanguageLabel(l10n, guide);
     final roleLabel = guideRoleLabel(l10n, guide);
     final serviceLabel = guideServiceLabels(l10n, guide).take(2).join(' • ');
@@ -974,15 +998,16 @@ class _GuideCard extends StatelessWidget {
       onTap: onTap,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: onTap,
             excludeFromSemantics: true,
             borderRadius: AppBorderRadius.circular(22),
             child: Ink(
               decoration: AppBoxDecoration(
-                color: AppPalette.warmSurface27,
+                color: colors.surface,
                 borderRadius: AppBorderRadius.circular(22),
+                border: Border.all(color: colors.borderSoft),
               ),
               child: ClipRRect(
                 borderRadius: AppBorderRadius.circular(22),
@@ -1009,14 +1034,14 @@ class _GuideCard extends StatelessWidget {
                             )
                           else
                             _GuideFallbackArt(initials: guide.initials),
-                          const DecoratedBox(
+                          DecoratedBox(
                             decoration: AppBoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  AppPalette.transparent,
-                                  AppPalette.warmOverlayInk02,
+                                  colors.transparent,
+                                  colors.black.withValues(alpha: 0.52),
                                 ],
                                 stops: [0.55, 1.0],
                               ),
@@ -1043,8 +1068,8 @@ class _GuideCard extends StatelessWidget {
                               guide.preferredName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
-                                color: AppPalette.orangeWash21,
+                              style: AppTextStyle(
+                                color: colors.textPrimary,
                                 fontSize: _guideCardNameFontSize,
                                 fontWeight: FontWeight.w900,
                                 height: _guideCardNameLineHeight,
@@ -1057,8 +1082,8 @@ class _GuideCard extends StatelessWidget {
                                 roleLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const AppTextStyle(
-                                  color: AppPalette.orangeLight24,
+                                style: AppTextStyle(
+                                  color: colors.textSecondary,
                                   fontSize: _guideCardRoleFontSize,
                                   fontWeight: FontWeight.w700,
                                   height: _guideCardRoleLineHeight,
@@ -1072,8 +1097,8 @@ class _GuideCard extends StatelessWidget {
                                 languageLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const AppTextStyle(
-                                  color: AppPalette.orangeLight17,
+                                style: AppTextStyle(
+                                  color: colors.textSecondary,
                                   fontSize: _guideCardLanguageFontSize,
                                   fontWeight: FontWeight.w500,
                                   height: _guideCardLanguageLineHeight,
@@ -1086,8 +1111,8 @@ class _GuideCard extends StatelessWidget {
                               metaLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
-                                color: AppPalette.orangeSoft16,
+                              style: AppTextStyle(
+                                color: colors.textMuted,
                                 fontSize: _guideCardMetaFontSize,
                                 fontWeight: FontWeight.w800,
                                 height: _guideCardMetaLineHeight,
@@ -1100,8 +1125,8 @@ class _GuideCard extends StatelessWidget {
                                 serviceLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const AppTextStyle(
-                                  color: AppPalette.warmMuted07,
+                                style: AppTextStyle(
+                                  color: colors.textMuted,
                                   fontSize: _guideCardMetaFontSize,
                                   fontWeight: FontWeight.w700,
                                   height: _guideCardMetaLineHeight,
@@ -1139,16 +1164,14 @@ class _GuideFallbackArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
-      decoration: const AppBoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppPalette.tealSurface09,
-            AppPalette.warmSurfaceHigh20,
-            AppPalette.warmInk28,
-          ],
+          colors: [colors.surfaceTeal, colors.surfaceWarm, colors.surfaceHigh],
         ),
       ),
       child: Center(
@@ -1156,15 +1179,15 @@ class _GuideFallbackArt extends StatelessWidget {
           width: 78,
           height: 78,
           decoration: AppBoxDecoration(
-            color: AppPalette.black.withValues(alpha: 0.22),
+            color: colors.black.withValues(alpha: 0.22),
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+            border: Border.all(color: colors.borderSecondary),
           ),
           alignment: Alignment.center,
           child: Text(
             initials,
-            style: const AppTextStyle(
-              color: AppPalette.orangeWash21,
+            style: AppTextStyle(
+              color: colors.textPrimary,
               fontSize: 27,
               fontWeight: FontWeight.w900,
             ),
@@ -1182,22 +1205,24 @@ class _RatingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       height: 30,
       padding: const AppEdgeInsets.symmetric(horizontal: 10),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlaySurface17,
+        color: colors.surface.withValues(alpha: 0.9),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star_rounded, color: AppPalette.primary, size: 18),
+          Icon(Icons.star_rounded, color: colors.primary, size: 18),
           const SizedBox(width: 4),
           Text(
             (rating <= 0 ? 5.0 : rating).toStringAsFixed(1),
-            style: const AppTextStyle(
-              color: AppPalette.primary,
+            style: AppTextStyle(
+              color: colors.primary,
               fontSize: 14,
               fontWeight: FontWeight.w900,
               height: 1,
@@ -1216,11 +1241,13 @@ class _ViewProfileButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       constraints: const BoxConstraints(minHeight: _guideCardButtonMinHeight),
       alignment: Alignment.center,
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.04),
+        color: colors.primaryContainer.withValues(alpha: 0.38),
         borderRadius: AppBorderRadius.circular(9),
       ),
       padding: const AppEdgeInsets.symmetric(
@@ -1232,8 +1259,8 @@ class _ViewProfileButton extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
-        style: const AppTextStyle(
-          color: AppPalette.primary,
+        style: AppTextStyle(
+          color: colors.primary,
           fontSize: _guideCardButtonFontSize,
           fontWeight: FontWeight.w900,
           height: 1,
@@ -1265,6 +1292,7 @@ class _GuidesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final actions = [
       if (onClearSearch != null)
         _GuidesEmptyAction(label: clearSearchLabel, onPressed: onClearSearch!),
@@ -1280,17 +1308,13 @@ class _GuidesEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.explore_outlined,
-            color: AppPalette.primary,
-            size: 56,
-          ),
+          Icon(Icons.explore_outlined, color: colors.primary, size: 56),
           const SizedBox(height: 18),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.orangeWash21,
+            style: AppTextStyle(
+              color: colors.textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
@@ -1299,8 +1323,8 @@ class _GuidesEmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const AppTextStyle(
-              color: AppPalette.orangeSoft24,
+            style: AppTextStyle(
+              color: colors.textSecondary,
               fontSize: 15,
               height: 1.35,
             ),
@@ -1328,11 +1352,13 @@ class _GuidesEmptyAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppPalette.primary,
-        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.42)),
+        foregroundColor: colors.primary,
+        side: BorderSide(color: colors.primary.withValues(alpha: 0.42)),
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(12),
         ),
@@ -1564,6 +1590,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = _resultCount ?? widget.fallbackResultCount;
     final selectedLanguage = _selectedLanguage(l10n);
@@ -1576,12 +1603,12 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
           maxWidth: 520,
         ),
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(
-            color: AppPalette.warmInk76,
-            borderRadius: AppBorderRadius.vertical(
+          decoration: AppBoxDecoration(
+            color: colors.surface,
+            borderRadius: const AppBorderRadius.vertical(
               top: AppRadiusValue.circular(24),
             ),
-            border: Border(top: BorderSide(color: AppPalette.border)),
+            border: Border(top: BorderSide(color: colors.border)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1651,13 +1678,9 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                           children: [
                             DecoratedBox(
                               decoration: AppBoxDecoration(
-                                color: AppPalette.warmSurface28,
+                                color: colors.surfaceHigh,
                                 borderRadius: AppBorderRadius.circular(16),
-                                border: Border.all(
-                                  color: AppPalette.white.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                ),
+                                border: Border.all(color: colors.borderSoft),
                               ),
                               child: Padding(
                                 padding: const AppEdgeInsets.symmetric(
@@ -1666,9 +1689,9 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.translate_rounded,
-                                      color: AppPalette.primary,
+                                      color: colors.primary,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 10),
@@ -1678,8 +1701,8 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                             l10n.guidesFilterLanguageAll,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const AppTextStyle(
-                                          color: AppPalette.textPrimary,
+                                        style: AppTextStyle(
+                                          color: colors.textPrimary,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w800,
                                         ),
@@ -1694,9 +1717,9 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                             languageCodes: const <String>{},
                                           ),
                                         ),
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.close_rounded,
-                                          color: AppPalette.orangeSoft17,
+                                          color: colors.textMuted,
                                           size: 20,
                                         ),
                                       ),
@@ -1707,24 +1730,24 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                             const SizedBox(height: 12),
                             TextField(
                               controller: _languageSearchController,
-                              cursorColor: AppPalette.primary,
-                              style: const AppTextStyle(
-                                color: AppPalette.textPrimary,
+                              cursorColor: colors.primary,
+                              style: AppTextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               ),
                               decoration: AppInputDecoration(
                                 hintText: l10n.guidesFilterLanguageSearchHint,
-                                hintStyle: const AppTextStyle(
-                                  color: AppPalette.warmMuted18,
+                                hintStyle: AppTextStyle(
+                                  color: colors.textMuted,
                                   fontWeight: FontWeight.w600,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.search_rounded,
-                                  color: AppPalette.primary,
+                                  color: colors.primary,
                                 ),
                                 filled: true,
-                                fillColor: AppPalette.warmInk27,
+                                fillColor: colors.surfaceRaised,
                                 contentPadding: const AppEdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 12,
@@ -1735,16 +1758,12 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: AppBorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: AppPalette.white.withValues(
-                                      alpha: 0.06,
-                                    ),
-                                  ),
+                                  borderSide: BorderSide(color: colors.border),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: AppBorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: AppPalette.primary,
+                                  borderSide: BorderSide(
+                                    color: colors.primary,
                                     width: 1.2,
                                   ),
                                 ),
@@ -1755,8 +1774,8 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                               if (visibleLanguages.isEmpty)
                                 Text(
                                   l10n.guidesFilterLanguageNoResults,
-                                  style: const AppTextStyle(
-                                    color: AppPalette.orangeSoft17,
+                                  style: AppTextStyle(
+                                    color: colors.textMuted,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1846,13 +1865,15 @@ class _GuideFilterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           title,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash21,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 19,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -1879,8 +1900,10 @@ class _GuideFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(999),
@@ -1889,15 +1912,18 @@ class _GuideFilterChip extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 42),
           padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 10),
           decoration: AppBoxDecoration(
-            color: selected ? AppPalette.primary : AppPalette.warmSurfaceHigh03,
+            color: selected ? colors.primary : colors.surfaceHigh,
             borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? colors.primary : colors.borderSoft,
+            ),
           ),
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: selected ? AppPalette.white : AppPalette.orangeLight15,
+              color: selected ? colors.textPrimary : colors.textSecondary,
               fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
@@ -1923,19 +1949,19 @@ class _GuideLanguageOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: AppBorderRadius.circular(14),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
           color: selected
-              ? AppPalette.primary.withValues(alpha: 0.18)
-              : AppPalette.warmSurface28,
+              ? colors.primary.withValues(alpha: 0.18)
+              : colors.surfaceHigh,
           borderRadius: AppBorderRadius.circular(14),
           border: Border.all(
-            color: selected
-                ? AppPalette.primary
-                : AppPalette.white.withValues(alpha: 0.07),
+            color: selected ? colors.primary : colors.borderSoft,
           ),
         ),
         child: Padding(
@@ -1947,8 +1973,8 @@ class _GuideLanguageOptionRow extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1957,8 +1983,8 @@ class _GuideLanguageOptionRow extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 code,
-                style: const AppTextStyle(
-                  color: AppPalette.orangeSoft17,
+                style: AppTextStyle(
+                  color: colors.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2035,8 +2061,10 @@ class _GuideSegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(10),
@@ -2045,8 +2073,11 @@ class _GuideSegmentButton extends StatelessWidget {
           alignment: Alignment.center,
           padding: const AppEdgeInsets.symmetric(horizontal: 10),
           decoration: AppBoxDecoration(
-            color: selected ? AppPalette.primary : AppPalette.warmSurfaceHigh01,
+            color: selected ? colors.primary : colors.surfaceHigh,
             borderRadius: AppBorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? colors.primary : colors.borderSoft,
+            ),
           ),
           child: Text(
             label,
@@ -2054,7 +2085,7 @@ class _GuideSegmentButton extends StatelessWidget {
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: selected ? AppPalette.white : AppPalette.orangeLight15,
+              color: selected ? colors.textPrimary : colors.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w800,
               height: 1.15,

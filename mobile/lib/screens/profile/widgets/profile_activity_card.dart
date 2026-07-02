@@ -22,6 +22,7 @@ class ProfileActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
     final date = item.completedAt ?? item.endAt;
@@ -36,14 +37,14 @@ class ProfileActivityCard extends StatelessWidget {
         : item.formattedPriceLabel(localeName);
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 22),
         ),
         child: Ink(
-          decoration: profileCardDecoration(context, highlighted: true),
+          decoration: _profileActivityCardDecoration(context, colors),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -89,7 +90,7 @@ class ProfileActivityCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: colors.textPrimary,
                         fontSize: profileScaled(context, 16, min: 14, max: 17),
                         fontWeight: FontWeight.w900,
                       ),
@@ -127,6 +128,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
     final metaText = _compactActivityMetaText(item, l10n, localeName);
@@ -136,14 +138,14 @@ class ProfileCompactActivityCard extends StatelessWidget {
     final locationFallbackText = activityLocationFallbackText(item, l10n);
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 22),
         ),
         child: Ink(
-          decoration: profileCardDecoration(context, highlighted: true),
+          decoration: _profileActivityCardDecoration(context, colors),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final padding = profileScaled(context, 12, min: 10);
@@ -183,7 +185,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                              color: colors.textSecondary,
                               fontSize: profileScaled(
                                 context,
                                 12,
@@ -199,7 +201,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: AppPalette.textPrimary,
+                              color: colors.textPrimary,
                               fontSize: profileScaled(
                                 context,
                                 15,
@@ -275,6 +277,7 @@ class _ProfileActivityCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final imageUrl = resolveActivityCoverUrl(item);
     final cover = ActivityDecorativeCover(
       spec: activityCardArtForItem(item),
@@ -295,8 +298,8 @@ class _ProfileActivityCover extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppPalette.transparent,
-                AppPalette.black.withValues(alpha: 0.18),
+                colors.transparent,
+                colors.black.withValues(alpha: 0.18),
               ],
             ),
           ),
@@ -314,6 +317,8 @@ class _ProfileActivityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       constraints: const BoxConstraints(minHeight: 30),
       padding: AppEdgeInsets.symmetric(
@@ -321,9 +326,9 @@ class _ProfileActivityChip extends StatelessWidget {
         vertical: profileScaled(context, 6, min: 5, max: 6),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -331,7 +336,7 @@ class _ProfileActivityChip extends StatelessWidget {
           Icon(
             icon,
             size: profileScaled(context, 14, min: 13, max: 14),
-            color: AppPalette.primary,
+            color: colors.primary,
           ),
           SizedBox(width: profileScaled(context, 5, min: 4, max: 6)),
           ConstrainedBox(
@@ -343,7 +348,7 @@ class _ProfileActivityChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: profileTextSoft,
+                color: colors.textSecondary,
                 fontSize: profileScaled(context, 11, min: 10, max: 11),
                 fontWeight: FontWeight.w800,
               ),
@@ -363,12 +368,14 @@ class _ProfileActivityMetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
         Icon(
           icon,
           size: profileScaled(context, 17, min: 15, max: 17),
-          color: AppPalette.primary.withValues(alpha: 0.82),
+          color: colors.primary.withValues(alpha: 0.82),
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
         Expanded(
@@ -377,7 +384,7 @@ class _ProfileActivityMetaLine extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: profileTextMuted,
+              color: colors.textSecondary,
               fontSize: profileScaled(context, 13, min: 12, max: 13),
               fontWeight: FontWeight.w700,
             ),
@@ -401,8 +408,9 @@ class _ProfileActivityLocationLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final style = AppTextStyle(
-      color: profileTextMuted,
+      color: colors.textSecondary,
       fontSize: profileScaled(
         context,
         compact ? 12 : 13,
@@ -420,7 +428,7 @@ class _ProfileActivityLocationLine extends StatelessWidget {
           child: Icon(
             Icons.place_outlined,
             size: profileScaled(context, compact ? 15 : 17, min: 14, max: 17),
-            color: AppPalette.primary.withValues(alpha: 0.82),
+            color: colors.primary.withValues(alpha: 0.82),
           ),
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
@@ -448,13 +456,15 @@ class _ProfileActivityTinyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           size: profileScaled(context, 14, min: 13, max: 15),
-          color: AppPalette.primary.withValues(alpha: 0.78),
+          color: colors.primary.withValues(alpha: 0.78),
         ),
         SizedBox(width: profileScaled(context, 5, min: 4)),
         Flexible(
@@ -463,7 +473,7 @@ class _ProfileActivityTinyBadge extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.textCoolSecondary,
+              color: colors.textSecondary,
               fontSize: profileScaled(context, 12, min: 11, max: 13),
               fontWeight: FontWeight.w700,
             ),
@@ -472,6 +482,34 @@ class _ProfileActivityTinyBadge extends StatelessWidget {
       ],
     );
   }
+}
+
+BoxDecoration _profileActivityCardDecoration(
+  BuildContext context,
+  AppColors colors,
+) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return AppBoxDecoration(
+    color: colors.surface,
+    borderRadius: AppBorderRadius.circular(
+      profileScaled(context, 22, min: 18, max: 28),
+    ),
+    border: Border.all(
+      color: isDark
+          ? colors.borderPrimary.withValues(alpha: 0.54)
+          : colors.border,
+    ),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.24),
+              blurRadius: profileScaled(context, 20, min: 14, max: 24),
+              offset: Offset(0, profileScaled(context, 8, min: 5, max: 10)),
+            ),
+          ]
+        : const [],
+  );
 }
 
 IconData _formatIcon(String value) {

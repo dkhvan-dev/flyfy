@@ -12,19 +12,17 @@ class FeatureStubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
+      backgroundColor: colors.background,
       body: DecoratedBox(
-        decoration: const AppBoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppPalette.warmInk38,
-              AppPalette.warmInk08,
-              AppPalette.warmInk04,
-            ],
+            colors: colors.screenGradientColors,
           ),
         ),
         child: SafeArea(
@@ -35,7 +33,7 @@ class FeatureStubScreen extends StatelessWidget {
                 Row(
                   children: [
                     Material(
-                      color: AppPalette.transparent,
+                      color: colors.transparent,
                       child: InkWell(
                         onTap: () => context.pop(),
                         borderRadius: AppBorderRadius.circular(999),
@@ -43,15 +41,13 @@ class FeatureStubScreen extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: AppBoxDecoration(
-                            color: AppPalette.white.withValues(alpha: 0.04),
+                            color: colors.surface,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppPalette.white.withValues(alpha: 0.06),
-                            ),
+                            border: Border.all(color: colors.borderSoft),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: AppPalette.textPrimary,
+                            color: colors.textPrimary,
                             size: 18,
                           ),
                         ),
@@ -61,8 +57,8 @@ class FeatureStubScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: colors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
@@ -82,34 +78,34 @@ class FeatureStubScreen extends StatelessWidget {
                             height: 120,
                             decoration: AppBoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppPalette.primary.withValues(alpha: 0.10),
+                              color: colors.primaryContainer,
                               border: Border.all(
-                                color: AppPalette.primary.withValues(
-                                  alpha: 0.24,
-                                ),
+                                color: colors.borderPrimary,
                                 width: 2,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppPalette.primary.withValues(
-                                    alpha: 0.10,
-                                  ),
-                                  blurRadius: 34,
-                                ),
-                              ],
+                              boxShadow: isDark
+                                  ? [
+                                      BoxShadow(
+                                        color: colors.primary.withValues(
+                                          alpha: 0.10,
+                                        ),
+                                        blurRadius: 34,
+                                      ),
+                                    ]
+                                  : const [],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.auto_awesome_rounded,
                               size: 48,
-                              color: AppPalette.primary,
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 28),
                           Text(
                             title,
                             textAlign: TextAlign.center,
-                            style: const AppTextStyle(
-                              color: AppPalette.textPrimary,
+                            style: AppTextStyle(
+                              color: colors.textPrimary,
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
                               height: 1,
@@ -119,8 +115,8 @@ class FeatureStubScreen extends StatelessWidget {
                           Text(
                             l10n.comingSoon,
                             textAlign: TextAlign.center,
-                            style: const AppTextStyle(
-                              color: AppPalette.textCoolSecondary,
+                            style: AppTextStyle(
+                              color: colors.textSecondary,
                               fontSize: 16,
                               height: 1.5,
                             ),
@@ -129,8 +125,8 @@ class FeatureStubScreen extends StatelessWidget {
                           FilledButton(
                             onPressed: () => context.go('/'),
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppPalette.primary,
-                              foregroundColor: AppPalette.backgroundWarm,
+                              backgroundColor: colors.primary,
+                              foregroundColor: colors.textPrimary,
                               minimumSize: const Size(180, 54),
                             ),
                             child: Text(l10n.homeNavHome),

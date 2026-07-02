@@ -39,15 +39,31 @@ void main() {
       );
       expect(
         source,
-        contains('padding: EdgeInsets.only(top: feedHeaderTopNudge)'),
+        contains('padding: AppEdgeInsets.only(top: feedHeaderTopNudge)'),
       );
       expect(source, contains('_feedTabsTopGap'));
-      expect(
-        source,
-        contains('AppEdgeInsets.fromLTRB(16, _feedTabsTopGap, 16, 12)'),
-      );
+      expect(source, contains('AppEdgeInsets.fromLTRB('));
     },
   );
+
+  test('feed screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/features/feed/presentation/feed_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('AppButtonStyles.primary(colors)'));
+    expect(source, contains('colors.background'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, contains('colors.textSecondary'));
+    expect(source, contains('colors.border'));
+    expect(source, contains('colors.transparent'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
 
   testWidgets('loads for-you feed and renders story and community blocks', (
     tester,

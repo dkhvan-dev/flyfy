@@ -22,10 +22,130 @@ void main() {
     expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
     expect(source, contains('bool isScrollControlled = true'));
     expect(source, contains('bool isDismissible = true'));
-    expect(source, contains('AppPalette.'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('AppButtonStyles.primary(colors)'));
+    expect(source, isNot(contains('AppPalette.')));
     expect(source, isNot(contains('AlertDialog(')));
     expect(source, isNot(contains('AppColor(')));
     expect(source, isNot(contains('AppColors.')));
+  });
+
+  test('app modal bottom sheets use full viewport width by default', () {
+    final source = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('BoxConstraints _fullWidthBottomSheetConstraints'));
+    expect(
+      source,
+      contains('final viewportWidth = MediaQuery.sizeOf(context).width'),
+    );
+    expect(source, contains('minWidth: viewportWidth'));
+    expect(source, contains('maxWidth: viewportWidth'));
+    expect(
+      source,
+      contains(
+        'constraints: _fullWidthBottomSheetConstraints(context, constraints)',
+      ),
+    );
+    expect(source, contains('width: double.infinity'));
+  });
+
+  test(
+    'titled app modal bottom sheets keep the surface anchored to screen bottom',
+    () {
+      final source = File(
+        'lib/core/ui/app_modal_templates.dart',
+      ).readAsStringSync();
+
+      final sheetStart = source.indexOf(
+        'Future<T?> showAppModalBottomSheet<T>',
+      );
+      final actionSheetStart = source.indexOf(
+        'Future<T?> showAppActionSheet<T>',
+      );
+      expect(sheetStart, isNonNegative);
+      expect(actionSheetStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, actionSheetStart);
+      expect(
+        sheetSource,
+        contains('SafeArea(\n          top: false,\n          bottom: false,'),
+      );
+      expect(
+        sheetSource,
+        isNot(
+          contains(
+            'SafeArea(\n          top: false,\n          child: DraggableScrollableSheet(',
+          ),
+        ),
+      );
+      expect(sheetSource, contains('surfaceBorderRadius: AppRadius.sheetTop'));
+    },
+  );
+
+  test('app modal scaffold can use sheet-only top corners', () {
+    final source = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
+
+    final scaffoldStart = source.indexOf('class AppModalScaffold<T>');
+    final dialogStart = source.indexOf('class AppModalDialogCard');
+    expect(scaffoldStart, isNonNegative);
+    expect(dialogStart, greaterThan(scaffoldStart));
+
+    final scaffoldSource = source.substring(scaffoldStart, dialogStart);
+    expect(
+      scaffoldSource,
+      contains('this.surfaceBorderRadius = AppRadius.panel'),
+    );
+    expect(
+      scaffoldSource,
+      contains('final BorderRadiusGeometry surfaceBorderRadius'),
+    );
+    expect(scaffoldSource, contains('borderRadius: surfaceBorderRadius'));
+  });
+
+  test('app modal dialogs cannot disable outside tap dismissal', () {
+    final source = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
+    final dialogStart = source.indexOf('Future<T?> showAppModalDialog<T>');
+    final bottomSheetStart = source.indexOf(
+      'Future<T?> showAppModalBottomSheet<T>',
+    );
+
+    expect(dialogStart, isNonNegative);
+    expect(bottomSheetStart, greaterThan(dialogStart));
+
+    final dialogSource = source.substring(dialogStart, bottomSheetStart);
+
+    expect(dialogSource, isNot(contains('bool barrierDismissible')));
+    expect(dialogSource, contains('barrierDismissible: true,'));
+    expect(dialogSource, isNot(contains('barrierDismissible: false')));
+  });
+
+  test('mobile UI does not opt out of outside tap modal dismissal', () {
+    final libDir = Directory('lib');
+    final violations = <String>[];
+    final bannedPatterns = <String, RegExp>{
+      'barrierDismissible false': RegExp(r'barrierDismissible\s*:\s*false'),
+      'isDismissible false': RegExp(r'isDismissible\s*:\s*false'),
+    };
+
+    for (final entity in libDir.listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (entity.path.startsWith('lib/l10n/generated/')) continue;
+
+      final source = entity.readAsStringSync();
+      for (final entry in bannedPatterns.entries) {
+        if (entry.value.hasMatch(source)) {
+          violations.add('${entity.path} uses ${entry.key}');
+        }
+      }
+    }
+
+    expect(violations, isEmpty, reason: violations.join('\n'));
   });
 
   test(

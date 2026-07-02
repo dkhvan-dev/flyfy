@@ -38,6 +38,7 @@ class StoryMediaBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final mediaItems = _normalizedQueueItems;
     final status = _effectiveStatus(block, mediaItems);
     final isFailed =
@@ -67,9 +68,7 @@ class StoryMediaBlock extends StatelessWidget {
       onTap: onFocus,
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
-          border: Border.all(
-            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
-          ),
+          border: Border.all(color: selected ? colors.primary : colors.border),
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
@@ -320,15 +319,13 @@ class _GalleryPreviewCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final itemCount = math.max(images.length, queueItems.length);
     if (itemCount == 0) {
       return AspectRatio(
         aspectRatio: 16 / 9,
         child: _MediaPreviewFrame(
-          child: Icon(
-            Icons.photo_library_outlined,
-            color: AppPalette.textCaption,
-          ),
+          child: Icon(Icons.photo_library_outlined, color: colors.textMuted),
         ),
       );
     }
@@ -407,6 +404,7 @@ class _GalleryPreviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final uploadState = image?.uploadState;
     final status = queueItem?.status;
     final previewKey = queueItem?.localMediaId ?? image?.fileId ?? '$index';
@@ -434,12 +432,10 @@ class _GalleryPreviewTile extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 style: IconButton.styleFrom(
-                  backgroundColor: AppPalette.surfaceCool.withValues(
-                    alpha: 0.86,
-                  ),
-                  foregroundColor: AppPalette.danger,
+                  backgroundColor: colors.surface.withValues(alpha: 0.86),
+                  foregroundColor: colors.danger,
                   side: BorderSide(
-                    color: AppPalette.danger.withValues(alpha: 0.45),
+                    color: colors.danger.withValues(alpha: 0.45),
                   ),
                 ),
                 icon: const Icon(Icons.close_rounded, size: 18),
@@ -473,6 +469,7 @@ class _MediaPreviewStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final effectiveStatus = status;
     final failed =
         effectiveStatus == StoryEditorMediaStatus.failed ||
@@ -486,14 +483,14 @@ class _MediaPreviewStatusPill extends StatelessWidget {
         ? Icons.check_rounded
         : Icons.schedule_rounded;
     final color = failed
-        ? AppPalette.danger
+        ? colors.danger
         : done
-        ? AppPalette.success
-        : AppPalette.primary;
+        ? colors.success
+        : colors.primary;
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCool.withValues(alpha: 0.82),
+        color: colors.surface.withValues(alpha: 0.82),
         borderRadius: AppBorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.55)),
       ),
@@ -512,11 +509,12 @@ class _MediaPreviewFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCoolLight,
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.outlineOverlay),
+        border: Border.all(color: colors.border),
       ),
       child: Center(child: child),
     );

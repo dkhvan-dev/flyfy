@@ -217,7 +217,10 @@ class AppNotificationBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final visual = _NotificationBannerVisual.forChannel(display.channel);
+    final visualColor = visual.color(colors);
     final textTheme = Theme.of(context).textTheme;
     final body = display.body.trim();
     final title = display.title.trim().isEmpty
@@ -228,7 +231,7 @@ class AppNotificationBanner extends StatelessWidget {
       button: true,
       label: title,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           borderRadius: AppBorderRadius.circular(18),
           onTap: onTap,
@@ -256,24 +259,26 @@ class AppNotificationBanner extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppPalette.warmSurface18.withValues(alpha: 0.98),
-                          AppPalette.warmInk67.withValues(alpha: 0.98),
-                          AppPalette.surfaceCool.withValues(alpha: 0.98),
+                          colors.surfaceRaised.withValues(alpha: 0.98),
+                          colors.surface.withValues(alpha: 0.98),
+                          colors.surfaceTeal.withValues(alpha: 0.98),
                         ],
                       ),
-                      border: Border.all(color: AppPalette.outlineOverlayLight),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppPalette.black.withValues(alpha: 0.34),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                        BoxShadow(
-                          color: AppPalette.primary.withValues(alpha: 0.10),
-                          blurRadius: 28,
-                          offset: const Offset(0, 16),
-                        ),
-                      ],
+                      border: Border.all(color: colors.borderPrimary),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: colors.black.withValues(alpha: 0.34),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                              BoxShadow(
+                                color: visualColor.withValues(alpha: 0.10),
+                                blurRadius: 28,
+                                offset: const Offset(0, 16),
+                              ),
+                            ]
+                          : const [],
                     ),
                     child: Stack(
                       children: [
@@ -287,8 +292,8 @@ class AppNotificationBanner extends StatelessWidget {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  AppPalette.primary,
-                                  AppPalette.primary.withValues(alpha: 0.72),
+                                  visualColor,
+                                  visualColor.withValues(alpha: 0.72),
                                 ],
                               ),
                             ),
@@ -321,12 +326,12 @@ class AppNotificationBanner extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style:
                                           textTheme.titleSmall?.copyWith(
-                                            color: AppPalette.textPrimary,
+                                            color: colors.textPrimary,
                                             fontWeight: FontWeight.w800,
                                             height: 1.15,
                                           ) ??
-                                          const AppTextStyle(
-                                            color: AppPalette.textPrimary,
+                                          AppTextStyle(
+                                            color: colors.textPrimary,
                                             fontSize: 15,
                                             fontWeight: FontWeight.w800,
                                             height: 1.15,
@@ -340,14 +345,12 @@ class AppNotificationBanner extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style:
                                             textTheme.bodySmall?.copyWith(
-                                              color:
-                                                  AppPalette.textCoolSecondary,
+                                              color: colors.textSecondary,
                                               fontWeight: FontWeight.w500,
                                               height: 1.25,
                                             ) ??
-                                            const AppTextStyle(
-                                              color:
-                                                  AppPalette.textCoolSecondary,
+                                            AppTextStyle(
+                                              color: colors.textSecondary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
                                               height: 1.25,
@@ -390,16 +393,18 @@ class _NotificationBannerMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final visualColor = visual.color(colors);
     final textTheme = Theme.of(context).textTheme;
     final style =
         textTheme.labelSmall?.copyWith(
-          color: AppPalette.textCaption,
+          color: colors.textMuted,
           fontWeight: FontWeight.w700,
           height: 1,
           letterSpacing: 0,
         ) ??
-        const AppTextStyle(
-          color: AppPalette.textCaption,
+        AppTextStyle(
+          color: colors.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           height: 1,
@@ -413,7 +418,7 @@ class _NotificationBannerMeta extends StatelessWidget {
             'Inflap',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: style.copyWith(color: AppPalette.textCoolSecondary),
+            style: style.copyWith(color: colors.textSecondary),
           ),
         ),
         if (showChannel) ...[
@@ -421,7 +426,7 @@ class _NotificationBannerMeta extends StatelessWidget {
             padding: const AppEdgeInsets.symmetric(horizontal: 6),
             child: DecoratedBox(
               decoration: AppBoxDecoration(
-                color: AppPalette.primary.withValues(alpha: 0.86),
+                color: visualColor.withValues(alpha: 0.86),
                 shape: BoxShape.circle,
               ),
               child: const SizedBox.square(dimension: 4),
@@ -454,13 +459,15 @@ class _NotificationBannerCloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Semantics(
       label: 'Dismiss notification',
       button: true,
       child: SizedBox.square(
         dimension: size,
         child: Material(
-          color: AppPalette.surfaceCoolLight,
+          color: colors.surfaceHigh,
           shape: const CircleBorder(),
           child: InkResponse(
             onTap: onDismiss,
@@ -470,7 +477,7 @@ class _NotificationBannerCloseButton extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: iconSize,
-              color: AppPalette.textCoolSecondary,
+              color: colors.textSecondary,
             ),
           ),
         ),
@@ -487,16 +494,19 @@ class _NotificationBannerIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final visualColor = visual.color(colors);
+
     return Container(
       width: size,
       height: size,
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.14),
+        color: visualColor.withValues(alpha: 0.14),
         borderRadius: AppBorderRadius.circular(size * 0.34),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
+        border: Border.all(color: visualColor.withValues(alpha: 0.26)),
       ),
       alignment: Alignment.center,
-      child: Icon(visual.icon, color: AppPalette.primary, size: size * 0.54),
+      child: Icon(visual.icon, color: visualColor, size: size * 0.54),
     );
   }
 }
@@ -509,34 +519,34 @@ class _NotificationBannerVisual {
   });
 
   final IconData icon;
-  final Color color;
+  final Color Function(AppColors colors) color;
   final String label;
 
   static _NotificationBannerVisual forChannel(PushNotificationChannel channel) {
     return switch (channel) {
-      PushNotificationChannel.activity => const _NotificationBannerVisual(
+      PushNotificationChannel.activity => _NotificationBannerVisual(
         icon: Icons.event_available_rounded,
-        color: AppPalette.primary,
+        color: (colors) => colors.primary,
         label: 'Activity',
       ),
-      PushNotificationChannel.checklists => const _NotificationBannerVisual(
+      PushNotificationChannel.checklists => _NotificationBannerVisual(
         icon: Icons.checklist_rounded,
-        color: AppPalette.primary,
+        color: (colors) => colors.secondary,
         label: 'Checklist',
       ),
-      PushNotificationChannel.messages => const _NotificationBannerVisual(
+      PushNotificationChannel.messages => _NotificationBannerVisual(
         icon: Icons.chat_bubble_rounded,
-        color: AppPalette.primary,
+        color: (colors) => colors.primary,
         label: 'Messages',
       ),
-      PushNotificationChannel.content => const _NotificationBannerVisual(
+      PushNotificationChannel.content => _NotificationBannerVisual(
         icon: Icons.auto_stories_rounded,
-        color: AppPalette.primary,
+        color: (colors) => colors.secondary,
         label: 'Posts and stories',
       ),
-      PushNotificationChannel.system => const _NotificationBannerVisual(
+      PushNotificationChannel.system => _NotificationBannerVisual(
         icon: Icons.notifications_active_rounded,
-        color: AppPalette.primary,
+        color: (colors) => colors.primary,
         label: 'System',
       ),
     };

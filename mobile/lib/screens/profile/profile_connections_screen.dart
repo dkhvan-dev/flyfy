@@ -275,7 +275,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (context) => _ConnectionFiltersSheet(initialFilters: _filters),
     );
 
@@ -311,10 +311,11 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: AppPalette.surfaceRaised,
+      color: colors.surfaceRaised,
       elevation: 18,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
@@ -366,10 +367,11 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: AppPalette.surfaceRaised,
+      color: colors.surfaceRaised,
       elevation: 18,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
@@ -447,7 +449,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       builder: (context) => _FriendRequestsSheet(
         profileApi: _profileApi,
         onOpenProfile: _openProfile,
@@ -518,90 +520,106 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 0),
-                  child: _ConnectionHeader(title: l10n.profileConnectionsTitle),
-                ),
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(18, 20, 18, 0),
-                  child: AppListSearchField(
-                    controller: _searchController,
-                    hintText: l10n.profileConnectionsSearchHint,
-                    filterTooltip: l10n.myActivitiesFilterButton,
-                    activeFilterCount: _filters.activeCount,
-                    showClearButton: true,
-                    onFilterTap: _showFilters,
-                  ),
-                ),
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(18, 12, 0, 0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppInlineSortRow<_ConnectionSortMode>(
-                      label: l10n.excursionsSortLabel,
-                      options: [
-                        for (final mode in _ConnectionSortMode.values)
-                          AppInlineSortOption(
-                            value: mode,
-                            label: mode.label(l10n),
-                          ),
-                      ],
-                      selectedValue: _sortMode,
-                      isAscending:
-                          _sortDirection == _ConnectionSortDirection.asc,
-                      onSelected: _handleSortChanged,
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 0),
+                      child: _ConnectionHeader(
+                        title: l10n.profileConnectionsTitle,
+                      ),
                     ),
-                  ),
-                ),
-                _FriendRequestsPreviewSection(
-                  data: _requestsPreviewData,
-                  actionUserId: _actionUserId,
-                  onViewAll: _showFriendRequestsSheet,
-                  onTap: _openProfile,
-                  onActionsTap: _showFriendRequestActions,
-                ),
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(18, 12, 18, 0),
-                  child: _ConnectionTabBar(
-                    controller: _tabController,
-                    friendsLabel: l10n.profileConnectionsFriendsTab,
-                    followingLabel: l10n.profileConnectionsFollowingTab,
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _ConnectionListView(
-                        tab: _ConnectionTab.friends,
-                        data: _friendsData,
-                        actionUserId: _actionUserId,
-                        onRefresh: () => _reloadTab(_ConnectionTab.friends),
-                        onTap: _openProfile,
-                        onActionsTap: _showUserActions,
+                    Padding(
+                      padding: const AppEdgeInsets.fromLTRB(18, 20, 18, 0),
+                      child: AppListSearchField(
+                        controller: _searchController,
+                        hintText: l10n.profileConnectionsSearchHint,
+                        filterTooltip: l10n.myActivitiesFilterButton,
+                        activeFilterCount: _filters.activeCount,
+                        showClearButton: true,
+                        onFilterTap: _showFilters,
                       ),
-                      _ConnectionListView(
-                        tab: _ConnectionTab.following,
-                        data: _followingData,
-                        actionUserId: _actionUserId,
-                        onRefresh: () => _reloadTab(_ConnectionTab.following),
-                        onTap: _openProfile,
-                        onActionsTap: _showUserActions,
+                    ),
+                    Padding(
+                      padding: const AppEdgeInsets.fromLTRB(18, 12, 0, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: AppInlineSortRow<_ConnectionSortMode>(
+                          label: l10n.excursionsSortLabel,
+                          options: [
+                            for (final mode in _ConnectionSortMode.values)
+                              AppInlineSortOption(
+                                value: mode,
+                                label: mode.label(l10n),
+                              ),
+                          ],
+                          selectedValue: _sortMode,
+                          isAscending:
+                              _sortDirection == _ConnectionSortDirection.asc,
+                          onSelected: _handleSortChanged,
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    _FriendRequestsPreviewSection(
+                      data: _requestsPreviewData,
+                      actionUserId: _actionUserId,
+                      onViewAll: _showFriendRequestsSheet,
+                      onTap: _openProfile,
+                      onActionsTap: _showFriendRequestActions,
+                    ),
+                    Padding(
+                      padding: const AppEdgeInsets.fromLTRB(18, 12, 18, 0),
+                      child: _ConnectionTabBar(
+                        controller: _tabController,
+                        friendsLabel: l10n.profileConnectionsFriendsTab,
+                        followingLabel: l10n.profileConnectionsFollowingTab,
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _ConnectionListView(
+                            tab: _ConnectionTab.friends,
+                            data: _friendsData,
+                            actionUserId: _actionUserId,
+                            onRefresh: () => _reloadTab(_ConnectionTab.friends),
+                            onTap: _openProfile,
+                            onActionsTap: _showUserActions,
+                          ),
+                          _ConnectionListView(
+                            tab: _ConnectionTab.following,
+                            data: _followingData,
+                            actionUserId: _actionUserId,
+                            onRefresh: () =>
+                                _reloadTab(_ConnectionTab.following),
+                            onTap: _openProfile,
+                            onActionsTap: _showUserActions,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -687,13 +705,15 @@ class _ConnectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
         IconButton(
           onPressed: () => context.pop(),
           style: IconButton.styleFrom(
-            backgroundColor: AppPalette.surfaceRaised,
-            foregroundColor: AppPalette.textPrimary,
+            backgroundColor: colors.surfaceRaised,
+            foregroundColor: colors.textPrimary,
             minimumSize: const Size(44, 44),
           ),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
@@ -704,8 +724,8 @@ class _ConnectionHeader extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: colors.textPrimary,
               fontSize: 25,
               fontWeight: FontWeight.w900,
             ),
@@ -729,18 +749,20 @@ class _ConnectionTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceRaised,
+        color: colors.surfaceRaised,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: TabBar(
         controller: controller,
         indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: AppPalette.transparent,
-        labelColor: AppPalette.textPrimary,
-        unselectedLabelColor: AppPalette.orangeMuted04,
+        dividerColor: colors.transparent,
+        labelColor: colors.textPrimary,
+        unselectedLabelColor: colors.textSecondary,
         labelStyle: const AppTextStyle(
           fontWeight: FontWeight.w900,
           fontSize: 14,
@@ -750,9 +772,9 @@ class _ConnectionTabBar extends StatelessWidget {
           fontSize: 14,
         ),
         indicator: AppBoxDecoration(
-          color: AppPalette.primary,
+          color: colors.primary,
           borderRadius: AppBorderRadius.circular(16),
-          border: Border.all(color: AppPalette.primary),
+          border: Border.all(color: colors.primary),
         ),
         tabs: [
           Tab(text: friendsLabel),
@@ -788,9 +810,10 @@ class _ConnectionListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     return RefreshIndicator(
-      color: AppPalette.primary,
-      backgroundColor: AppPalette.surfaceRaised,
+      color: colors.primary,
+      backgroundColor: colors.surfaceRaised,
       onRefresh: onRefresh,
       child: Builder(
         builder: (context) {
@@ -800,15 +823,15 @@ class _ConnectionListView extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              children: const [
-                SizedBox(height: 180),
+              children: [
+                const SizedBox(height: 180),
                 Center(
                   child: SizedBox(
                     width: 28,
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.6,
-                      color: AppPalette.primary,
+                      color: colors.primary,
                     ),
                   ),
                 ),
@@ -864,15 +887,15 @@ class _ConnectionListView extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               if (index >= data.items.length) {
-                return const Padding(
-                  padding: AppEdgeInsets.symmetric(vertical: 12),
+                return Padding(
+                  padding: const AppEdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.4,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                       ),
                     ),
                   ),
@@ -923,6 +946,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final user = data.items.first;
 
     return Padding(
@@ -937,8 +961,8 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                   l10n.profileConnectionsFriendRequestsTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -948,7 +972,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                 TextButton(
                   onPressed: onViewAll,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppPalette.primary,
+                    foregroundColor: colors.primary,
                     padding: const AppEdgeInsets.symmetric(horizontal: 8),
                     minimumSize: const Size(0, 34),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1104,10 +1128,11 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: AppPalette.surfaceRaised,
+      color: colors.surfaceRaised,
       elevation: 18,
       shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
@@ -1173,6 +1198,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return AppModalSheetFrame(
       child: ConstrainedBox(
@@ -1181,12 +1207,12 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
           maxWidth: 520,
         ),
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(
-            color: AppPalette.surface,
+          decoration: AppBoxDecoration(
+            color: colors.surface,
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(24),
             ),
-            border: Border(top: BorderSide(color: AppPalette.border)),
+            border: Border(top: BorderSide(color: colors.border)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1208,21 +1234,23 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
   }
 
   Widget _buildContent(BuildContext context, AppLocalizations l10n) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     if (_requestsSheetData.loading) {
       return ListView(
         controller: _requestsSheetData.scrollController,
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        children: const [
-          SizedBox(height: 120),
+        children: [
+          const SizedBox(height: 120),
           Center(
             child: SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: AppPalette.primary,
+                color: colors.primary,
               ),
             ),
           ),
@@ -1277,15 +1305,15 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         if (index >= _requestsSheetData.items.length) {
-          return const Padding(
-            padding: AppEdgeInsets.symmetric(vertical: 12),
+          return Padding(
+            padding: const AppEdgeInsets.symmetric(vertical: 12),
             child: Center(
               child: SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                 ),
               ),
             ),
@@ -1321,6 +1349,7 @@ class _ConnectionUserRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final nickname = user.nicknameOrFallback(l10n.chatUserFallbackName);
     final presence = chatPresenceStatusLabelForValues(
       l10n,
@@ -1329,16 +1358,16 @@ class _ConnectionUserRow extends StatelessWidget {
     );
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(18),
         child: Ink(
           padding: const AppEdgeInsets.all(14),
           decoration: AppBoxDecoration(
-            color: AppPalette.surfaceRaised,
+            color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
+            border: Border.all(color: colors.borderSoft),
           ),
           child: Row(
             children: [
@@ -1352,8 +1381,8 @@ class _ConnectionUserRow extends StatelessWidget {
                       nickname,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: colors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1365,9 +1394,9 @@ class _ConnectionUserRow extends StatelessWidget {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const AppBoxDecoration(
+                            decoration: AppBoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppPalette.primary,
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1379,8 +1408,8 @@ class _ConnectionUserRow extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
                               color: user.isOnline
-                                  ? AppPalette.primary
-                                  : AppPalette.orangeMuted04,
+                                  ? colors.primary
+                                  : colors.textSecondary,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1393,12 +1422,12 @@ class _ConnectionUserRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               if (busy)
-                const SizedBox(
+                SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                   ),
                 )
               else
@@ -1407,7 +1436,7 @@ class _ConnectionUserRow extends StatelessWidget {
                     tooltip: MaterialLocalizations.of(context).showMenuTooltip,
                     onPressed: () => unawaited(onActionsTap(buttonContext)),
                     style: IconButton.styleFrom(
-                      foregroundColor: AppPalette.primary,
+                      foregroundColor: colors.primary,
                       minimumSize: const Size(42, 42),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -1429,17 +1458,18 @@ class _ConnectionAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final imageUrl = resolvePublicFileContentUrl(user.avatarFileId ?? '');
     return Container(
       width: 54,
       height: 54,
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: ClipOval(
         child: ColoredBox(
-          color: AppPalette.warmInk27,
+          color: colors.surfaceHigh,
           child: imageUrl == null
               ? _ConnectionAvatarFallback(initials: user.initials)
               : Image.network(
@@ -1461,19 +1491,21 @@ class _ConnectionAvatarFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
-      decoration: const AppBoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppPalette.warmSurface78, AppPalette.warmInk27],
+          colors: [colors.surfaceWarm, colors.surfaceHigh],
         ),
       ),
       child: Center(
         child: Text(
           initials,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
@@ -1496,16 +1528,18 @@ class _ConnectionStateMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppPalette.orangeMuted04, size: 42),
+        Icon(icon, color: colors.textMuted, size: 42),
         const SizedBox(height: 16),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w900,
           ),
@@ -1514,8 +1548,8 @@ class _ConnectionStateMessage extends StatelessWidget {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const AppTextStyle(
-            color: AppPalette.orangeMuted04,
+          style: AppTextStyle(
+            color: colors.textSecondary,
             fontSize: 14,
             height: 1.42,
             fontWeight: FontWeight.w600,
@@ -1539,7 +1573,8 @@ class _ConnectionPopupActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppPalette.danger : AppPalette.textPrimary;
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = destructive ? colors.danger : colors.textPrimary;
     return Row(
       children: [
         Icon(icon, color: color, size: 20),
@@ -1588,6 +1623,7 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return AppModalSheetFrame(
       child: ConstrainedBox(
@@ -1596,12 +1632,12 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
           maxWidth: 520,
         ),
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(
-            color: AppPalette.surface,
+          decoration: AppBoxDecoration(
+            color: colors.surface,
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(24),
             ),
-            border: Border(top: BorderSide(color: AppPalette.border)),
+            border: Border(top: BorderSide(color: colors.border)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1671,20 +1707,22 @@ class _ConnectionFilterToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return InkWell(
       onTap: () => onChanged(!value),
       borderRadius: AppBorderRadius.circular(18),
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmSurface28,
+          color: colors.surfaceRaised,
           borderRadius: AppBorderRadius.circular(18),
-          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+          border: Border.all(color: colors.borderSoft),
         ),
         child: Padding(
           padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 13),
           child: Row(
             children: [
-              Icon(icon, color: AppPalette.primary, size: 20),
+              Icon(icon, color: colors.primary, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1694,8 +1732,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.textPrimary,
+                      style: AppTextStyle(
+                        color: colors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1705,8 +1743,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const AppTextStyle(
-                        color: AppPalette.orangeSoft17,
+                      style: AppTextStyle(
+                        color: colors.textSecondary,
                         fontSize: 13,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
@@ -1718,8 +1756,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
               const SizedBox(width: 12),
               Switch.adaptive(
                 value: value,
-                activeThumbColor: AppPalette.primary,
-                activeTrackColor: AppPalette.primary.withValues(alpha: 0.32),
+                activeThumbColor: colors.primary,
+                activeTrackColor: colors.primary.withValues(alpha: 0.32),
                 onChanged: onChanged,
               ),
             ],

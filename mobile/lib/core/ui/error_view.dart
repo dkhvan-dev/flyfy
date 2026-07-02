@@ -12,6 +12,7 @@ class ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Center(
       child: Padding(
@@ -19,24 +20,17 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 72,
-              color: AppPalette.materialDangerAccent,
-            ),
+            Icon(Icons.error_outline, size: 72, color: colors.danger),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const AppTextStyle(color: AppPalette.white),
+              style: AppTextStyle(color: colors.textPrimary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            FilledButton(
               onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
-              ),
+              style: AppButtonStyles.primary(colors),
               child: Text(l10n.retryButton),
             ),
           ],

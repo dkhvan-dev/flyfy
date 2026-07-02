@@ -27,6 +27,67 @@ import '../../shared/map/app_map_gesture_recognizers.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_map_attribution.dart';
 
+final class _MapColors {
+  const _MapColors._(this.colors);
+
+  final AppColors colors;
+
+  static _MapColors of(BuildContext context) {
+    return _MapColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get background => colors.background;
+  Color get backgroundWarm => colors.backgroundWarm;
+  List<Color> get screenGradientColors => colors.screenGradientColors;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceTeal => colors.surfaceTeal;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get border => colors.border;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get success => colors.success;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+
+  Color get amberLight09 => colors.primarySoft;
+  Color get amberSoft03 => colors.primarySoft;
+  Color get amberWash05 => colors.primaryContainer;
+  Color get amberWash07 => colors.primaryContainer;
+  Color get blueSoft03 => colors.secondaryContainer;
+  Color get greenSoft05 => colors.secondaryContainer;
+  Color get orangeLight36 => colors.primarySoft;
+  Color get orangeLight38 => colors.primarySoft;
+  Color get orangeOverlayWash05 => colors.primary.withValues(alpha: 0.20);
+  Color get orangeOverlayWash09 => colors.primary.withValues(alpha: 0.30);
+  Color get orangeSoft05 => colors.primarySoft;
+  Color get orangeWash07 => colors.textSecondary;
+  Color get warmInk04 => colors.backgroundDeep;
+  Color get warmInk08 => colors.background;
+  Color get warmInk38 => colors.surfaceRaised;
+  Color get warmInk90 => colors.textPrimary;
+  Color get warmInk104 => colors.surface;
+  Color get warmMuted45 => colors.textMuted;
+  Color get warmOverlayInk08 => colors.surfaceRaised;
+  Color get warmOverlayInk09 => colors.surface;
+  Color get warmSurface48 => colors.surfaceHigh;
+  Color get warmSurfaceHigh14 => colors.surfaceHigh;
+}
+
+extension _MapColorContext on BuildContext {
+  _MapColors get mapColors => _MapColors.of(this);
+}
+
 class MapTarget {
   const MapTarget({
     required this.title,
@@ -1251,14 +1312,14 @@ class _MapScreenState extends State<MapScreen> {
           ..add(
             PolylineLayer(
               polylines: [routeFeature],
-              color: AppPalette.white.withValues(alpha: 0.78),
+              color: context.mapColors.white.withValues(alpha: 0.78),
               width: 8,
             ),
           )
           ..add(
             PolylineLayer(
               polylines: [routeFeature],
-              color: AppPalette.primary,
+              color: context.mapColors.primary,
               width: 5,
             ),
           );
@@ -1273,9 +1334,9 @@ class _MapScreenState extends State<MapScreen> {
                 for (final stop in stops) _pointFeature(stop.id, stop.point),
               ],
               radius: 11,
-              color: AppPalette.amberWash07,
+              color: context.mapColors.amberWash07,
               strokeWidth: 3,
-              strokeColor: AppPalette.primary,
+              strokeColor: context.mapColors.primary,
             ),
           )
           ..add(
@@ -1285,9 +1346,9 @@ class _MapScreenState extends State<MapScreen> {
                   _pointFeature('${stop.id}:core', stop.point),
               ],
               radius: 5,
-              color: AppPalette.primary,
+              color: context.mapColors.primary,
               strokeWidth: 1,
-              strokeColor: AppPalette.warmSurface48,
+              strokeColor: context.mapColors.warmSurface48,
             ),
           );
       }
@@ -1305,9 +1366,9 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature(stop.id, stop.point),
             ],
             radius: 11,
-            color: AppPalette.amberWash07,
+            color: context.mapColors.amberWash07,
             strokeWidth: 3,
-            strokeColor: AppPalette.primary,
+            strokeColor: context.mapColors.primary,
           ),
         )
         ..add(
@@ -1317,9 +1378,9 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature('${stop.id}:core', stop.point),
             ],
             radius: 5,
-            color: AppPalette.primary,
+            color: context.mapColors.primary,
             strokeWidth: 1,
-            strokeColor: AppPalette.warmSurface48,
+            strokeColor: context.mapColors.warmSurface48,
           ),
         );
     }
@@ -1333,9 +1394,9 @@ class _MapScreenState extends State<MapScreen> {
               _pointFeature('meeting-point-picker', selectedPickerPoint),
             ],
             radius: 16,
-            color: AppPalette.primary.withValues(alpha: 0.28),
+            color: context.mapColors.primary.withValues(alpha: 0.28),
             strokeWidth: 3,
-            strokeColor: AppPalette.white,
+            strokeColor: context.mapColors.white,
           ),
         )
         ..add(
@@ -1344,9 +1405,9 @@ class _MapScreenState extends State<MapScreen> {
               _pointFeature('meeting-point-picker-core', selectedPickerPoint),
             ],
             radius: 7,
-            color: AppPalette.primary,
+            color: context.mapColors.primary,
             strokeWidth: 2,
-            strokeColor: AppPalette.warmSurface48,
+            strokeColor: context.mapColors.warmSurface48,
           ),
         );
     }
@@ -1357,9 +1418,9 @@ class _MapScreenState extends State<MapScreen> {
         CircleLayer(
           points: [_pointFeature('user-location', userLocation)],
           radius: 8,
-          color: AppPalette.blueSoft03,
+          color: context.mapColors.blueSoft03,
           strokeWidth: 3,
-          strokeColor: AppPalette.white,
+          strokeColor: context.mapColors.white,
         ),
       );
     }
@@ -1373,10 +1434,10 @@ class _MapScreenState extends State<MapScreen> {
           points: [for (final place in places) _placeFeature(place)],
           radius: _showsActivityMarkers ? 9 : 7,
           color: _showsActivityMarkers
-              ? AppPalette.primarySoft
-              : AppPalette.orangeLight38,
+              ? context.mapColors.primarySoft
+              : context.mapColors.orangeLight38,
           strokeWidth: 2,
-          strokeColor: AppPalette.white,
+          strokeColor: context.mapColors.white,
         ),
       );
     }
@@ -1387,9 +1448,9 @@ class _MapScreenState extends State<MapScreen> {
         CircleLayer(
           points: [_placeFeature(selectedPlace)],
           radius: 13,
-          color: AppPalette.primary.withValues(alpha: 0.42),
+          color: context.mapColors.primary.withValues(alpha: 0.42),
           strokeWidth: 3,
-          strokeColor: AppPalette.white,
+          strokeColor: context.mapColors.white,
         ),
       );
     }
@@ -1849,18 +1910,14 @@ class _MapScreenState extends State<MapScreen> {
         : l10n.mapTapPlaceHint;
 
     return Scaffold(
-      backgroundColor: AppPalette.backgroundWarm,
+      backgroundColor: context.mapColors.background,
       body: _MapResponsiveTextScope(
         child: DecoratedBox(
-          decoration: const AppBoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppPalette.warmInk38,
-                AppPalette.warmInk08,
-                AppPalette.warmInk04,
-              ],
+              colors: context.mapColors.screenGradientColors,
             ),
           ),
           child: LayoutBuilder(
@@ -1990,7 +2047,7 @@ class _MapScreenState extends State<MapScreen> {
                   KeyedSubtree(
                     key: const ValueKey('map-screen-full-bleed-layer'),
                     child: ColoredBox(
-                      color: AppPalette.orangeSoft05,
+                      color: context.mapColors.orangeSoft05,
                       child: _mapSuspendedForNavigation
                           ? const _MapNativeSuspendedPlaceholder()
                           : MapLibreMap(
@@ -2001,7 +2058,7 @@ class _MapScreenState extends State<MapScreen> {
                                 initCenter: _toGeographic(_mapCenter),
                                 initZoom: _initialMapZoom,
                                 androidForegroundLoadColor:
-                                    AppPalette.orangeSoft05,
+                                    context.mapColors.orangeSoft05,
                               ),
                               onMapCreated: (controller) {
                                 if (!mounted || _mapSuspendedForNavigation) {
@@ -2158,9 +2215,13 @@ class _MapScreenState extends State<MapScreen> {
                             end: Alignment.bottomCenter,
                             stops: const [0, 0.38, 1],
                             colors: [
-                              AppPalette.warmInk104.withValues(alpha: 0.64),
-                              AppPalette.transparent,
-                              AppPalette.warmInk104.withValues(alpha: 0.72),
+                              context.mapColors.warmInk104.withValues(
+                                alpha: 0.64,
+                              ),
+                              context.mapColors.transparent,
+                              context.mapColors.warmInk104.withValues(
+                                alpha: 0.72,
+                              ),
                             ],
                           ),
                         ),
@@ -2196,9 +2257,9 @@ class _MapScreenState extends State<MapScreen> {
                   if (_bootstrapping)
                     Positioned.fill(
                       bottom: bottomOverlayHeight + bottomAttributionHeight,
-                      child: const Center(
+                      child: Center(
                         child: CircularProgressIndicator(
-                          color: AppPalette.primary,
+                          color: context.mapColors.primary,
                         ),
                       ),
                     ),
@@ -2236,7 +2297,7 @@ class _MapScreenState extends State<MapScreen> {
                                     Text(
                                       mapTitle,
                                       style: AppTextStyle(
-                                        color: AppPalette.textPrimary,
+                                        color: context.mapColors.textPrimary,
                                         fontSize: _mapScaled(
                                           context,
                                           24,
@@ -2259,7 +2320,7 @@ class _MapScreenState extends State<MapScreen> {
                                       maxLines: compactHeight ? 2 : 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTextStyle(
-                                        color: AppPalette.primary,
+                                        color: context.mapColors.primary,
                                         fontSize: _mapScaled(
                                           context,
                                           14,
@@ -2553,15 +2614,15 @@ class _MapNativeSuspendedPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    return DecoratedBox(
       decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppPalette.orangeSoft05,
-            AppPalette.amberSoft03,
-            AppPalette.greenSoft05,
+            context.mapColors.orangeSoft05,
+            context.mapColors.amberSoft03,
+            context.mapColors.greenSoft05,
           ],
         ),
       ),
@@ -2598,15 +2659,17 @@ class _MeetingPointPickerPanel extends StatelessWidget {
         : coordinateLabel ?? '';
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.mapColors.transparent,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmInk104.withValues(alpha: 0.96),
+          color: context.mapColors.warmInk104.withValues(alpha: 0.96),
           borderRadius: AppBorderRadius.circular(radius),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
+          border: Border.all(
+            color: context.mapColors.primary.withValues(alpha: 0.28),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.22),
+              color: context.mapColors.black.withValues(alpha: 0.22),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
@@ -2625,15 +2688,17 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                     width: _mapScaled(context, 42, min: 36, max: 42),
                     height: _mapScaled(context, 42, min: 36, max: 42),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.18),
+                      color: context.mapColors.primary.withValues(alpha: 0.18),
                       borderRadius: AppBorderRadius.circular(8),
                       border: Border.all(
-                        color: AppPalette.primary.withValues(alpha: 0.36),
+                        color: context.mapColors.primary.withValues(
+                          alpha: 0.36,
+                        ),
                       ),
                     ),
                     child: Icon(
                       Icons.location_on_rounded,
-                      color: AppPalette.primary,
+                      color: context.mapColors.primary,
                       size: _mapScaled(context, 22, min: 18, max: 22),
                     ),
                   ),
@@ -2648,7 +2713,7 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: AppPalette.textPrimary,
+                            color: context.mapColors.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -2673,9 +2738,9 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                                     min: 12,
                                     max: 14,
                                   ),
-                                  child: const CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppPalette.primary,
+                                    color: context.mapColors.primary,
                                   ),
                                 ),
                               ),
@@ -2686,7 +2751,7 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppPalette.orangeLight36,
+                                  color: context.mapColors.orangeLight36,
                                   fontWeight: FontWeight.w600,
                                   height: 1.28,
                                 ),
@@ -2705,7 +2770,7 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppPalette.orangeOverlayWash05,
+                              color: context.mapColors.orangeOverlayWash05,
                               fontWeight: FontWeight.w500,
                               height: 1.2,
                             ),
@@ -2722,14 +2787,12 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onConfirm,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.textPrimary,
-                    disabledBackgroundColor: AppPalette.primary.withValues(
-                      alpha: 0.42,
-                    ),
-                    disabledForegroundColor: AppPalette.textPrimary.withValues(
-                      alpha: 0.54,
-                    ),
+                    backgroundColor: context.mapColors.primary,
+                    foregroundColor: context.mapColors.textPrimary,
+                    disabledBackgroundColor: context.mapColors.primary
+                        .withValues(alpha: 0.42),
+                    disabledForegroundColor: context.mapColors.textPrimary
+                        .withValues(alpha: 0.54),
                     padding: AppEdgeInsets.symmetric(
                       horizontal: _mapScaled(context, 14, min: 12, max: 16),
                       vertical: _mapScaled(context, 12, min: 10, max: 13),
@@ -2795,15 +2858,17 @@ class _RouteBuilderPanel extends StatelessWidget {
     final message = errorMessage?.trim();
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.mapColors.transparent,
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: AppPalette.warmInk104.withValues(alpha: 0.96),
+          color: context.mapColors.warmInk104.withValues(alpha: 0.96),
           borderRadius: AppBorderRadius.circular(8),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.36)),
+          border: Border.all(
+            color: context.mapColors.primary.withValues(alpha: 0.36),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.24),
+              color: context.mapColors.black.withValues(alpha: 0.24),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
@@ -2822,15 +2887,15 @@ class _RouteBuilderPanel extends StatelessWidget {
                     width: _mapScaled(context, 40, min: 36, max: 42),
                     height: _mapScaled(context, 40, min: 36, max: 42),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.18),
+                      color: context.mapColors.primary.withValues(alpha: 0.18),
                       borderRadius: AppBorderRadius.circular(8),
                       border: Border.all(
-                        color: AppPalette.primary.withValues(alpha: 0.4),
+                        color: context.mapColors.primary.withValues(alpha: 0.4),
                       ),
                     ),
                     child: Icon(
                       Icons.alt_route_rounded,
-                      color: AppPalette.primary,
+                      color: context.mapColors.primary,
                       size: _mapScaled(context, 21, min: 18, max: 22),
                     ),
                   ),
@@ -2844,7 +2909,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: AppPalette.textPrimary,
+                            color: context.mapColors.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -2856,7 +2921,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppPalette.primary,
+                            color: context.mapColors.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -2873,7 +2938,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppPalette.orangeLight36,
+                  color: context.mapColors.orangeLight36,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -2881,9 +2946,9 @@ class _RouteBuilderPanel extends StatelessWidget {
                 SizedBox(height: _mapScaled(context, 10, min: 8, max: 10)),
                 ClipRRect(
                   borderRadius: AppBorderRadius.circular(999),
-                  child: const LinearProgressIndicator(
+                  child: LinearProgressIndicator(
                     minHeight: 3,
-                    color: AppPalette.primary,
+                    color: context.mapColors.primary,
                   ),
                 ),
               ],
@@ -2901,14 +2966,12 @@ class _RouteBuilderPanel extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: building || savingRoute ? null : onBuildRoute,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.warmInk90,
-                    disabledBackgroundColor: AppPalette.primary.withValues(
-                      alpha: 0.46,
-                    ),
-                    disabledForegroundColor: AppPalette.warmInk90.withValues(
-                      alpha: 0.58,
-                    ),
+                    backgroundColor: context.mapColors.primary,
+                    foregroundColor: context.mapColors.textPrimary,
+                    disabledBackgroundColor: context.mapColors.primary
+                        .withValues(alpha: 0.46),
+                    disabledForegroundColor: context.mapColors.warmInk90
+                        .withValues(alpha: 0.58),
                     padding: AppEdgeInsets.symmetric(
                       horizontal: _mapScaled(context, 14, min: 12, max: 16),
                       vertical: _mapScaled(context, 12, min: 10, max: 13),
@@ -2920,12 +2983,12 @@ class _RouteBuilderPanel extends StatelessWidget {
                   icon: building
                       ? SizedBox.square(
                           dimension: _mapScaled(context, 16, min: 14, max: 16),
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppPalette.warmInk90,
+                            color: context.mapColors.textPrimary,
                           ),
                         )
-                      : const Icon(Icons.route_rounded),
+                      : Icon(Icons.route_rounded),
                   label: Text(
                     l10n.mapRouteBuilderBuildRoute,
                     maxLines: 1,
@@ -2939,7 +3002,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                   final removeButton = OutlinedButton.icon(
                     onPressed: canRemoveLast ? onRemoveLast : null,
                     style: _routeBuilderSecondaryButtonStyle(context),
-                    icon: const Icon(Icons.undo_rounded),
+                    icon: Icon(Icons.undo_rounded),
                     label: Text(
                       l10n.mapRouteBuilderRemoveLast,
                       maxLines: 1,
@@ -2949,7 +3012,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                   final clearButton = OutlinedButton.icon(
                     onPressed: canClear ? onClear : null,
                     style: _routeBuilderSecondaryButtonStyle(context),
-                    icon: const Icon(Icons.delete_outline_rounded),
+                    icon: Icon(Icons.delete_outline_rounded),
                     label: Text(
                       l10n.mapRouteBuilderClear,
                       maxLines: 1,
@@ -2988,11 +3051,11 @@ class _RouteBuilderPanel extends StatelessWidget {
                         ? null
                         : onSaveRoute,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppPalette.amberWash05,
-                      disabledBackgroundColor: AppPalette.amberWash05
+                      backgroundColor: context.mapColors.amberWash05,
+                      disabledBackgroundColor: context.mapColors.amberWash05
                           .withValues(alpha: 0.58),
-                      foregroundColor: AppPalette.textPrimary,
-                      disabledForegroundColor: AppPalette.textPrimary
+                      foregroundColor: context.mapColors.textPrimary,
+                      disabledForegroundColor: context.mapColors.textPrimary
                           .withValues(alpha: 0.58),
                       padding: AppEdgeInsets.symmetric(
                         horizontal: _mapScaled(context, 14, min: 12, max: 16),
@@ -3010,14 +3073,14 @@ class _RouteBuilderPanel extends StatelessWidget {
                               min: 14,
                               max: 16,
                             ),
-                            child: const CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppPalette.textPrimary,
+                              color: context.mapColors.textPrimary,
                             ),
                           )
                         : routeSaved
-                        ? const Icon(Icons.check_circle_rounded)
-                        : const Icon(Icons.bookmark_add_rounded),
+                        ? Icon(Icons.check_circle_rounded)
+                        : Icon(Icons.bookmark_add_rounded),
                     label: Text(
                       routeSaved
                           ? l10n.userRoutesRouteSaved
@@ -3037,9 +3100,13 @@ class _RouteBuilderPanel extends StatelessWidget {
 
   ButtonStyle _routeBuilderSecondaryButtonStyle(BuildContext context) {
     return OutlinedButton.styleFrom(
-      foregroundColor: AppPalette.amberLight09,
-      disabledForegroundColor: AppPalette.amberLight09.withValues(alpha: 0.38),
-      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.42)),
+      foregroundColor: context.mapColors.amberLight09,
+      disabledForegroundColor: context.mapColors.amberLight09.withValues(
+        alpha: 0.38,
+      ),
+      side: BorderSide(
+        color: context.mapColors.primary.withValues(alpha: 0.42),
+      ),
       padding: AppEdgeInsets.symmetric(
         horizontal: _mapScaled(context, 12, min: 10, max: 14),
         vertical: _mapScaled(context, 11, min: 9, max: 12),
@@ -3079,7 +3146,7 @@ class _RoutePreviewPanel extends StatelessWidget {
     final message = errorMessage;
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.mapColors.transparent,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3113,9 +3180,9 @@ class _RoutePreviewPanel extends StatelessWidget {
           if (switching) ...[
             ClipRRect(
               borderRadius: AppBorderRadius.circular(999),
-              child: const LinearProgressIndicator(
+              child: LinearProgressIndicator(
                 minHeight: 3,
-                color: AppPalette.primary,
+                color: context.mapColors.primary,
               ),
             ),
             SizedBox(height: _mapScaled(context, 8, min: 6, max: 8)),
@@ -3134,14 +3201,13 @@ class _RoutePreviewPanel extends StatelessWidget {
                     ? null
                     : onSaveRoute,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.primary,
-                  foregroundColor: AppPalette.textPrimary,
-                  disabledBackgroundColor: AppPalette.primary.withValues(
+                  backgroundColor: context.mapColors.primary,
+                  foregroundColor: context.mapColors.textPrimary,
+                  disabledBackgroundColor: context.mapColors.primary.withValues(
                     alpha: 0.46,
                   ),
-                  disabledForegroundColor: AppPalette.textPrimary.withValues(
-                    alpha: 0.58,
-                  ),
+                  disabledForegroundColor: context.mapColors.textPrimary
+                      .withValues(alpha: 0.58),
                   padding: AppEdgeInsets.symmetric(
                     horizontal: _mapScaled(context, 14, min: 12, max: 16),
                     vertical: _mapScaled(context, 12, min: 10, max: 13),
@@ -3153,14 +3219,14 @@ class _RoutePreviewPanel extends StatelessWidget {
                 icon: savingRoute
                     ? SizedBox.square(
                         dimension: _mapScaled(context, 16, min: 14, max: 16),
-                        child: const CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppPalette.textPrimary,
+                          color: context.mapColors.textPrimary,
                         ),
                       )
                     : routeSaved
-                    ? const Icon(Icons.check_circle_rounded)
-                    : const Icon(Icons.bookmark_add_rounded),
+                    ? Icon(Icons.check_circle_rounded)
+                    : Icon(Icons.bookmark_add_rounded),
                 label: Text(
                   routeSaved
                       ? l10n.userRoutesRouteSaved
@@ -3263,6 +3329,84 @@ double _mapScaled(
   return scaled.clamp(min ?? scaled, max ?? scaled);
 }
 
+bool _isLightMapTheme(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.light;
+}
+
+Color _mapOverlaySurfaceColor(BuildContext context) {
+  final colors = context.mapColors;
+  if (_isLightMapTheme(context)) {
+    return colors.white.withValues(alpha: 0.94);
+  }
+  return colors.surfaceRaised.withValues(alpha: 0.96);
+}
+
+Color _mapOverlayAccentSurfaceColor(BuildContext context) {
+  final colors = context.mapColors;
+  if (_isLightMapTheme(context)) {
+    return colors.primaryContainer.withValues(alpha: 0.94);
+  }
+  return colors.primary.withValues(alpha: 0.18);
+}
+
+Color _mapOverlayBorderColor(BuildContext context) {
+  final colors = context.mapColors;
+  if (_isLightMapTheme(context)) {
+    return colors.border;
+  }
+  return colors.primary.withValues(alpha: 0.38);
+}
+
+List<BoxShadow> _mapOverlayShadow(BuildContext context) {
+  final colors = context.mapColors;
+  return [
+    BoxShadow(
+      color: colors.black.withValues(
+        alpha: _isLightMapTheme(context) ? 0.10 : 0.32,
+      ),
+      blurRadius: _isLightMapTheme(context) ? 16 : 20,
+      offset: const Offset(0, 8),
+    ),
+  ];
+}
+
+Color _mapPlaceCardSurfaceColor(
+  BuildContext context, {
+  required bool selected,
+}) {
+  final colors = context.mapColors;
+  if (_isLightMapTheme(context)) {
+    return colors.surface;
+  }
+  if (selected) {
+    return colors.surfaceRaised;
+  }
+  return colors.surface;
+}
+
+Color _mapPlaceCardBorderColor(BuildContext context, {required bool selected}) {
+  final colors = context.mapColors;
+  if (selected) {
+    return colors.primary.withValues(
+      alpha: _isLightMapTheme(context) ? 0.58 : 0.46,
+    );
+  }
+  return _isLightMapTheme(context) ? colors.border : colors.borderPrimary;
+}
+
+List<BoxShadow> _mapPlaceCardShadow(BuildContext context) {
+  if (_isLightMapTheme(context)) {
+    return const [];
+  }
+  return [
+    BoxShadow(
+      color: context.mapColors.black.withValues(alpha: 0.28),
+      blurRadius: 18,
+      offset: const Offset(0, 10),
+    ),
+  ];
+}
+
 class _MapHeaderButton extends StatelessWidget {
   const _MapHeaderButton({
     required this.icon,
@@ -3281,7 +3425,7 @@ class _MapHeaderButton extends StatelessWidget {
     final progressSize = _mapScaled(context, 18, min: 16, max: 18);
 
     return Material(
-      color: AppPalette.transparent,
+      color: context.mapColors.transparent,
       child: InkWell(
         onTap: loading ? null : onTap,
         borderRadius: AppBorderRadius.circular(999),
@@ -3289,16 +3433,10 @@ class _MapHeaderButton extends StatelessWidget {
           width: buttonSize,
           height: buttonSize,
           decoration: AppBoxDecoration(
-            color: AppPalette.warmInk104.withValues(alpha: 0.78),
+            color: _mapOverlaySurfaceColor(context),
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.20),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            border: Border.all(color: _mapOverlayBorderColor(context)),
+            boxShadow: _mapOverlayShadow(context),
           ),
           child: Center(
             child: loading
@@ -3307,10 +3445,14 @@ class _MapHeaderButton extends StatelessWidget {
                     height: progressSize,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppPalette.primary,
+                      color: context.mapColors.primary,
                     ),
                   )
-                : Icon(icon, color: AppPalette.textPrimary, size: iconSize),
+                : Icon(
+                    icon,
+                    color: context.mapColors.textPrimary,
+                    size: iconSize,
+                  ),
           ),
         ),
       ),
@@ -3332,8 +3474,11 @@ class _MapInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = accent
-        ? AppPalette.textPrimary
-        : AppPalette.orangeWash07;
+        ? context.mapColors.primary
+        : context.mapColors.textPrimary;
+    final backgroundColor = accent
+        ? _mapOverlayAccentSurfaceColor(context)
+        : _mapOverlaySurfaceColor(context);
     final maxWidth = (MediaQuery.sizeOf(context).width - 32)
         .clamp(140.0, 360.0)
         .toDouble();
@@ -3351,19 +3496,9 @@ class _MapInfoChip extends StatelessWidget {
         ),
         decoration: AppBoxDecoration(
           borderRadius: AppBorderRadius.circular(999),
-          gradient: accent
-              ? const LinearGradient(
-                  colors: [AppPalette.primarySoft, AppPalette.warmMuted45],
-                )
-              : LinearGradient(
-                  colors: [
-                    AppPalette.warmInk104.withValues(alpha: 0.78),
-                    AppPalette.warmInk90.withValues(alpha: 0.66),
-                  ],
-                ),
-          border: accent
-              ? null
-              : Border.all(color: AppPalette.primary.withValues(alpha: 0.12)),
+          color: backgroundColor,
+          border: Border.all(color: _mapOverlayBorderColor(context)),
+          boxShadow: _mapOverlayShadow(context),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -3423,9 +3558,11 @@ class _MapBanner extends StatelessWidget {
             bottomPadding,
           ),
           decoration: AppBoxDecoration(
-            color: AppPalette.warmOverlayInk08,
+            color: context.mapColors.warmOverlayInk08,
             borderRadius: AppBorderRadius.circular(radius),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: context.mapColors.white.withValues(alpha: 0.08),
+            ),
           ),
           child: stacked
               ? Column(
@@ -3440,7 +3577,7 @@ class _MapBanner extends StatelessWidget {
                           ),
                           child: Icon(
                             icon,
-                            color: AppPalette.primary,
+                            color: context.mapColors.primary,
                             size: _mapScaled(context, 18, min: 16, max: 18),
                           ),
                         ),
@@ -3451,7 +3588,7 @@ class _MapBanner extends StatelessWidget {
                           child: Text(
                             label,
                             style: AppTextStyle(
-                              color: AppPalette.textPrimary,
+                              color: context.mapColors.textPrimary,
                               fontSize: _mapScaled(
                                 context,
                                 14,
@@ -3473,7 +3610,7 @@ class _MapBanner extends StatelessWidget {
                         child: TextButton(
                           onPressed: onActionTap,
                           style: TextButton.styleFrom(
-                            foregroundColor: AppPalette.primary,
+                            foregroundColor: context.mapColors.primary,
                             minimumSize: Size(
                               0,
                               _mapScaled(context, 36, min: 34, max: 38),
@@ -3498,7 +3635,7 @@ class _MapBanner extends StatelessWidget {
                   children: [
                     Icon(
                       icon,
-                      color: AppPalette.primary,
+                      color: context.mapColors.primary,
                       size: _mapScaled(context, 18, min: 16, max: 18),
                     ),
                     SizedBox(width: _mapScaled(context, 10, min: 8, max: 10)),
@@ -3506,7 +3643,7 @@ class _MapBanner extends StatelessWidget {
                       child: Text(
                         label,
                         style: AppTextStyle(
-                          color: AppPalette.textPrimary,
+                          color: context.mapColors.textPrimary,
                           fontSize: _mapScaled(context, 14, min: 13, max: 14),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3517,7 +3654,7 @@ class _MapBanner extends StatelessWidget {
                       TextButton(
                         onPressed: onActionTap,
                         style: TextButton.styleFrom(
-                          foregroundColor: AppPalette.primary,
+                          foregroundColor: context.mapColors.primary,
                           minimumSize: Size(
                             0,
                             _mapScaled(context, 36, min: 34, max: 38),
@@ -3561,11 +3698,13 @@ class _MapEmptyState extends StatelessWidget {
         _mapScaled(context, 18, min: 14, max: 18),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlayInk09,
+        color: context.mapColors.warmOverlayInk09,
         borderRadius: AppBorderRadius.circular(
           _mapScaled(context, 24, min: 20, max: 24),
         ),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: context.mapColors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3575,11 +3714,11 @@ class _MapEmptyState extends StatelessWidget {
             height: circleSize,
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: context.mapColors.primary.withValues(alpha: 0.12),
             ),
             child: Icon(
               Icons.travel_explore_rounded,
-              color: AppPalette.primary,
+              color: context.mapColors.primary,
               size: _mapScaled(context, 28, min: 22, max: 28),
             ),
           ),
@@ -3588,7 +3727,7 @@ class _MapEmptyState extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.mapColors.textPrimary,
               fontSize: _mapScaled(context, 20, min: 17, max: 20),
               fontWeight: FontWeight.w800,
             ),
@@ -3598,7 +3737,7 @@ class _MapEmptyState extends StatelessWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: AppPalette.orangeOverlayWash09,
+              color: context.mapColors.orangeOverlayWash09,
               fontSize: _mapScaled(context, 14, min: 13, max: 14),
               height: 1.45,
             ),
@@ -3639,11 +3778,11 @@ class _RoutePointMarker extends StatelessWidget {
       child: DecoratedBox(
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.amberWash07,
-          border: Border.all(color: AppPalette.warmSurface48, width: 2),
+          color: context.mapColors.amberWash07,
+          border: Border.all(color: context.mapColors.warmSurface48, width: 2),
           boxShadow: [
             BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.24),
+              color: context.mapColors.black.withValues(alpha: 0.24),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -3655,7 +3794,7 @@ class _RoutePointMarker extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.clip,
             style: AppTextStyle(
-              color: AppPalette.primary,
+              color: context.mapColors.primary,
               fontSize: _mapScaled(context, 13, min: 11, max: 13),
               fontWeight: FontWeight.w900,
             ),
@@ -3676,7 +3815,7 @@ class _UserLocationMarker extends StatelessWidget {
     return DecoratedBox(
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: AppPalette.white.withValues(alpha: 0.16),
+        color: context.mapColors.white.withValues(alpha: 0.16),
       ),
       child: Center(
         child: Container(
@@ -3684,9 +3823,9 @@ class _UserLocationMarker extends StatelessWidget {
           height: dotSize,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.blueSoft03,
+            color: context.mapColors.blueSoft03,
             border: Border.all(
-              color: AppPalette.white,
+              color: context.mapColors.white,
               width: _mapScaled(context, 2, min: 1.5, max: 2),
             ),
           ),
@@ -3711,14 +3850,14 @@ class _MeetingPointPickerMarker extends StatelessWidget {
           height: pinSize,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.primary,
+            color: context.mapColors.primary,
             border: Border.all(
-              color: AppPalette.white,
+              color: context.mapColors.white,
               width: _mapScaled(context, 2, min: 1.5, max: 2),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.2),
+                color: context.mapColors.black.withValues(alpha: 0.2),
                 blurRadius: _mapScaled(context, 14, min: 10, max: 14),
                 offset: Offset(0, _mapScaled(context, 8, min: 5, max: 8)),
               ),
@@ -3726,7 +3865,7 @@ class _MeetingPointPickerMarker extends StatelessWidget {
           ),
           child: Icon(
             Icons.location_on_rounded,
-            color: AppPalette.textPrimary,
+            color: context.mapColors.textPrimary,
             size: _mapScaled(context, 19, min: 16, max: 20),
           ),
         ),
@@ -3734,7 +3873,7 @@ class _MeetingPointPickerMarker extends StatelessWidget {
           width: _mapScaled(context, 3, min: 2.5, max: 3),
           height: _mapScaled(context, 14, min: 10, max: 14),
           decoration: AppBoxDecoration(
-            color: AppPalette.primary,
+            color: context.mapColors.primary,
             borderRadius: AppBorderRadius.circular(999),
           ),
         ),
@@ -3763,13 +3902,13 @@ class _PlaceMarker extends StatelessWidget {
       max: selected ? 36 : 32,
     );
     final markerColor = selected
-        ? AppPalette.primary
-        : place.accentColor ?? AppPalette.orangeLight38;
+        ? context.mapColors.primary
+        : place.accentColor ?? context.mapColors.orangeLight38;
     final markerForeground = selected
-        ? AppPalette.textPrimary
+        ? context.mapColors.textPrimary
         : place.accentColor == null
-        ? AppPalette.warmSurfaceHigh14
-        : AppPalette.white;
+        ? context.mapColors.warmSurfaceHigh14
+        : context.mapColors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -3783,12 +3922,14 @@ class _PlaceMarker extends StatelessWidget {
               shape: BoxShape.circle,
               color: markerColor,
               border: Border.all(
-                color: selected ? AppPalette.white : AppPalette.primarySoft,
+                color: selected
+                    ? context.mapColors.white
+                    : context.mapColors.primarySoft,
                 width: _mapScaled(context, 2, min: 1.5, max: 2),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.18),
+                  color: context.mapColors.black.withValues(alpha: 0.18),
                   blurRadius: _mapScaled(context, 14, min: 10, max: 14),
                   offset: Offset(0, _mapScaled(context, 8, min: 5, max: 8)),
                 ),
@@ -3817,7 +3958,9 @@ class _PlaceMarker extends StatelessWidget {
             width: _mapScaled(context, 3, min: 2.5, max: 3),
             height: _mapScaled(context, 14, min: 10, max: 14),
             decoration: AppBoxDecoration(
-              color: selected ? AppPalette.primary : AppPalette.primarySoft,
+              color: selected
+                  ? context.mapColors.primary
+                  : context.mapColors.primarySoft,
               borderRadius: AppBorderRadius.circular(999),
             ),
           ),
@@ -3893,7 +4036,7 @@ class _PlacePreviewCard extends StatelessWidget {
           );
 
           return Material(
-            color: AppPalette.transparent,
+            color: context.mapColors.transparent,
             child: InkWell(
               onTap: onTap,
               borderRadius: AppBorderRadius.circular(radius),
@@ -3906,35 +4049,14 @@ class _PlacePreviewCard extends StatelessWidget {
                 ),
                 decoration: AppBoxDecoration(
                   borderRadius: AppBorderRadius.circular(radius),
-                  gradient: selected
-                      ? const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppPalette.primarySoft,
-                            AppPalette.warmMuted45,
-                          ],
-                        )
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppPalette.warmInk104.withValues(alpha: 0.94),
-                            AppPalette.warmInk90.withValues(alpha: 0.92),
-                          ],
-                        ),
+                  color: _mapPlaceCardSurfaceColor(context, selected: selected),
                   border: Border.all(
-                    color: selected
-                        ? AppPalette.primary.withValues(alpha: 0.28)
-                        : AppPalette.primary.withValues(alpha: 0.34),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.28),
-                      blurRadius: 18,
-                      offset: const Offset(0, 10),
+                    color: _mapPlaceCardBorderColor(
+                      context,
+                      selected: selected,
                     ),
-                  ],
+                  ),
+                  boxShadow: _mapPlaceCardShadow(context),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3947,14 +4069,12 @@ class _PlacePreviewCard extends StatelessWidget {
                           decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
                             color: selected
-                                ? AppPalette.white.withValues(alpha: 0.18)
-                                : AppPalette.primary.withValues(alpha: 0.20),
+                                ? _mapOverlayAccentSurfaceColor(context)
+                                : context.mapColors.primaryContainer,
                           ),
                           child: Icon(
                             place.icon,
-                            color: selected
-                                ? AppPalette.textPrimary
-                                : AppPalette.primary,
+                            color: context.mapColors.primary,
                             size: _mapScaled(context, 18, min: 15, max: 18),
                           ),
                         ),
@@ -3970,11 +4090,7 @@ class _PlacePreviewCard extends StatelessWidget {
                               softWrap: false,
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyle(
-                                color: selected
-                                    ? AppPalette.textPrimary.withValues(
-                                        alpha: 0.78,
-                                      )
-                                    : AppPalette.orangeLight36,
+                                color: context.mapColors.textSecondary,
                                 fontSize: _mapScaled(
                                   context,
                                   12,
@@ -3995,7 +4111,7 @@ class _PlacePreviewCard extends StatelessWidget {
                       softWrap: !compactCard,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: context.mapColors.textPrimary,
                         fontSize: _mapScaled(
                           context,
                           compactCard ? 14 : 15,
@@ -4014,9 +4130,7 @@ class _PlacePreviewCard extends StatelessWidget {
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: selected
-                              ? AppPalette.textPrimary.withValues(alpha: 0.72)
-                              : AppPalette.orangeOverlayWash09,
+                          color: context.mapColors.textSecondary,
                           fontSize: _mapScaled(context, 13, min: 12, max: 13),
                           fontWeight: FontWeight.w500,
                         ),
@@ -4049,18 +4163,14 @@ class _MapHintCard extends StatelessWidget {
         _mapScaled(context, 16, min: 12, max: 16),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk104.withValues(alpha: 0.96),
+        color: _mapPlaceCardSurfaceColor(context, selected: false),
         borderRadius: AppBorderRadius.circular(
           _mapScaled(context, 24, min: 20, max: 24),
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.32)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.28),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(
+          color: _mapPlaceCardBorderColor(context, selected: false),
+        ),
+        boxShadow: _mapPlaceCardShadow(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4070,11 +4180,11 @@ class _MapHintCard extends StatelessWidget {
             height: _mapScaled(context, 40, min: 34, max: 40),
             decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppPalette.primary.withValues(alpha: 0.12),
+              color: context.mapColors.primary.withValues(alpha: 0.12),
             ),
             child: Icon(
               Icons.touch_app_rounded,
-              color: AppPalette.primary,
+              color: context.mapColors.primary,
               size: _mapScaled(context, 18, min: 15, max: 18),
             ),
           ),
@@ -4083,7 +4193,7 @@ class _MapHintCard extends StatelessWidget {
             child: Text(
               label,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: context.mapColors.textPrimary,
                 fontSize: _mapScaled(context, 14, min: 13, max: 14),
                 fontWeight: FontWeight.w600,
               ),
@@ -4125,31 +4235,20 @@ class _SelectedPlaceCard extends StatelessWidget {
         _mapScaled(context, 18, min: 14, max: 18),
       ),
       decoration: AppBoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppPalette.warmInk104.withValues(alpha: 0.97),
-            AppPalette.warmInk90.withValues(alpha: 0.94),
-          ],
-        ),
+        color: _mapPlaceCardSurfaceColor(context, selected: true),
         borderRadius: AppBorderRadius.circular(radius),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.36)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.30),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        border: Border.all(
+          color: _mapPlaceCardBorderColor(context, selected: true),
+        ),
+        boxShadow: _mapPlaceCardShadow(context),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final button = FilledButton.tonal(
             onPressed: onActionTap,
             style: FilledButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.textPrimary,
+              backgroundColor: context.mapColors.primary,
+              foregroundColor: context.mapColors.textPrimary,
               minimumSize: Size(0, buttonHeight),
               padding: AppEdgeInsets.symmetric(
                 horizontal: _mapScaled(context, 16, min: 12, max: 16),
@@ -4191,7 +4290,7 @@ class _SelectedPlaceCard extends StatelessWidget {
                     height: avatarSize,
                     decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: (place.accentColor ?? AppPalette.primary)
+                      color: (place.accentColor ?? context.mapColors.primary)
                           .withValues(alpha: 0.22),
                     ),
                     child: _SelectedPlaceAvatar(place: place),
@@ -4208,7 +4307,7 @@ class _SelectedPlaceCard extends StatelessWidget {
                           softWrap: true,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.textPrimary,
+                            color: context.mapColors.textPrimary,
                             fontSize: _mapScaled(context, 16, min: 14, max: 16),
                             fontWeight: FontWeight.w800,
                             height: 1.12,
@@ -4259,7 +4358,7 @@ class _SelectedPlaceMeta extends StatelessWidget {
           softWrap: false,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
-            color: AppPalette.orangeLight36,
+            color: context.mapColors.orangeLight36,
             fontSize: _mapScaled(context, 13, min: 12, max: 13),
             fontWeight: FontWeight.w600,
           ),
@@ -4272,7 +4371,7 @@ class _SelectedPlaceMeta extends StatelessWidget {
             softWrap: false,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.orangeOverlayWash09,
+              color: context.mapColors.orangeOverlayWash09,
               fontSize: _mapScaled(context, 12, min: 11, max: 12),
               fontWeight: FontWeight.w500,
             ),
@@ -4297,7 +4396,7 @@ class _SelectedPlaceAvatar extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.clip,
           style: AppTextStyle(
-            color: place.accentColor ?? AppPalette.primary,
+            color: place.accentColor ?? context.mapColors.primary,
             fontSize: _mapScaled(context, 16, min: 14, max: 16),
             fontWeight: FontWeight.w900,
           ),
@@ -4307,7 +4406,7 @@ class _SelectedPlaceAvatar extends StatelessWidget {
 
     return Icon(
       place.icon,
-      color: place.accentColor ?? AppPalette.primary,
+      color: place.accentColor ?? context.mapColors.primary,
       size: _mapScaled(context, 22, min: 18, max: 22),
     );
   }

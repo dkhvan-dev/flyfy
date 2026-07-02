@@ -250,6 +250,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final selectedCountry = widget.selectedCountry;
     final queryHasEnoughText = _countrySearchQuery.trim().length >= 2;
 
@@ -260,8 +261,8 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
           widget.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 19,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -271,9 +272,9 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
         const SizedBox(height: 16),
         DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface28,
+            color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(color: colors.border),
           ),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(
@@ -282,11 +283,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.flag_rounded,
-                  color: AppPalette.primary,
-                  size: 21,
-                ),
+                Icon(Icons.flag_rounded, color: colors.primary, size: 21),
                 const SizedBox(width: 10),
                 Expanded(
                   child: selectedCountry == null
@@ -294,8 +291,8 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                           widget.allCountriesLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.textPrimary,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -308,8 +305,8 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                           resolver: _labelResolver,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.textPrimary,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -320,9 +317,9 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                     tooltip: widget.allCountriesLabel,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => widget.onChanged(null),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: AppPalette.orangeSoft17,
+                      color: colors.primary,
                       size: 20,
                     ),
                   ),
@@ -333,25 +330,22 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
         const SizedBox(height: 12),
         TextField(
           controller: _countrySearchController,
-          cursorColor: AppPalette.primary,
+          cursorColor: colors.primary,
           textInputAction: TextInputAction.search,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
           decoration: AppInputDecoration(
             hintText: widget.searchHint,
-            hintStyle: const AppTextStyle(
-              color: AppPalette.warmMuted18,
+            hintStyle: AppTextStyle(
+              color: colors.textMuted,
               fontWeight: FontWeight.w600,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppPalette.primary,
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: colors.primary),
             filled: true,
-            fillColor: AppPalette.warmInk27,
+            fillColor: colors.surfaceHigh,
             contentPadding: const AppEdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
@@ -362,29 +356,24 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppPalette.white.withValues(alpha: 0.06),
-              ),
+              borderSide: BorderSide(color: colors.borderSoft),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppPalette.primary,
-                width: 1.2,
-              ),
+              borderSide: BorderSide(color: colors.primary, width: 1.2),
             ),
           ),
         ),
         if (_isSearching) ...[
           const SizedBox(height: 12),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2.4,
-                color: AppPalette.primary,
+                color: colors.primary,
               ),
             ),
           ),
@@ -393,17 +382,17 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
           if (_visibleCountries.isEmpty)
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.flag_circle_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.noResultsText,
-                    style: const AppTextStyle(
-                      color: AppPalette.primary,
+                    style: AppTextStyle(
+                      color: colors.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -558,6 +547,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final selectedCity = widget.selectedCity;
     final queryHasEnoughText = _citySearchQuery.trim().length >= 2;
 
@@ -568,8 +558,8 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
           widget.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 19,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -579,9 +569,9 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
         const SizedBox(height: 16),
         DecoratedBox(
           decoration: AppBoxDecoration(
-            color: AppPalette.warmSurface28,
+            color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(color: colors.border),
           ),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(
@@ -590,9 +580,9 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_city_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   size: 21,
                 ),
                 const SizedBox(width: 10),
@@ -602,8 +592,8 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                           widget.allCitiesLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.textPrimary,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -616,8 +606,8 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                           resolver: _labelResolver,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const AppTextStyle(
-                            color: AppPalette.textPrimary,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -628,9 +618,9 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                     tooltip: widget.allCitiesLabel,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => widget.onChanged(null),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: AppPalette.orangeSoft17,
+                      color: colors.primary,
                       size: 20,
                     ),
                   ),
@@ -641,25 +631,22 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
         const SizedBox(height: 12),
         TextField(
           controller: _citySearchController,
-          cursorColor: AppPalette.primary,
+          cursorColor: colors.primary,
           textInputAction: TextInputAction.search,
-          style: const AppTextStyle(
-            color: AppPalette.textPrimary,
+          style: AppTextStyle(
+            color: colors.textPrimary,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
           decoration: AppInputDecoration(
             hintText: widget.searchHint,
-            hintStyle: const AppTextStyle(
-              color: AppPalette.warmMuted18,
+            hintStyle: AppTextStyle(
+              color: colors.textMuted,
               fontWeight: FontWeight.w600,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppPalette.primary,
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: colors.primary),
             filled: true,
-            fillColor: AppPalette.warmInk27,
+            fillColor: colors.surfaceHigh,
             contentPadding: const AppEdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
@@ -670,29 +657,24 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: AppPalette.white.withValues(alpha: 0.06),
-              ),
+              borderSide: BorderSide(color: colors.borderSoft),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppPalette.primary,
-                width: 1.2,
-              ),
+              borderSide: BorderSide(color: colors.primary, width: 1.2),
             ),
           ),
         ),
         if (_isSearching) ...[
           const SizedBox(height: 12),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2.4,
-                color: AppPalette.primary,
+                color: colors.primary,
               ),
             ),
           ),
@@ -701,17 +683,17 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
           if (_visibleCities.isEmpty)
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_off_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.noResultsText,
-                    style: const AppTextStyle(
-                      color: AppPalette.primary,
+                    style: AppTextStyle(
+                      color: colors.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -763,23 +745,20 @@ class _CountryOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final code = country.code.trim().toUpperCase();
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(14),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: selected
-                ? AppPalette.primary.withValues(alpha: 0.18)
-                : AppPalette.warmSurface28,
+            color: selected ? colors.primaryContainer : colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(14),
             border: Border.all(
-              color: selected
-                  ? AppPalette.primary
-                  : AppPalette.white.withValues(alpha: 0.07),
+              color: selected ? colors.primary : colors.borderSoft,
             ),
           ),
           child: Padding(
@@ -794,8 +773,8 @@ class _CountryOptionRow extends StatelessWidget {
                     country.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -805,8 +784,8 @@ class _CountryOptionRow extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     code,
-                    style: const AppTextStyle(
-                      color: AppPalette.orangeSoft17,
+                    style: AppTextStyle(
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -814,9 +793,9 @@ class _CountryOptionRow extends StatelessWidget {
                 ],
                 if (selected) ...[
                   const SizedBox(width: 8),
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: 18,
                   ),
                 ],
@@ -842,23 +821,20 @@ class _CityOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final code = city.countryCode.trim().toUpperCase();
 
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(14),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            color: selected
-                ? AppPalette.primary.withValues(alpha: 0.18)
-                : AppPalette.warmSurface28,
+            color: selected ? colors.primaryContainer : colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(14),
             border: Border.all(
-              color: selected
-                  ? AppPalette.primary
-                  : AppPalette.white.withValues(alpha: 0.07),
+              color: selected ? colors.primary : colors.borderSoft,
             ),
           ),
           child: Padding(
@@ -873,8 +849,8 @@ class _CityOptionRow extends StatelessWidget {
                     city.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const AppTextStyle(
-                      color: AppPalette.textPrimary,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -884,8 +860,8 @@ class _CityOptionRow extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     code,
-                    style: const AppTextStyle(
-                      color: AppPalette.orangeSoft17,
+                    style: AppTextStyle(
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -893,9 +869,9 @@ class _CityOptionRow extends StatelessWidget {
                 ],
                 if (selected) ...[
                   const SizedBox(width: 8),
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
-                    color: AppPalette.primary,
+                    color: colors.primary,
                     size: 18,
                   ),
                 ],

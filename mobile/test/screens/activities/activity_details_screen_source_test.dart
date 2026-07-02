@@ -3,6 +3,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('activity details screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('activityDetailsColors.primary'));
+    expect(source, contains('activityDetailsColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test(
     'details route forwards initial activity from navigation extra',
     () async {
@@ -70,6 +82,14 @@ void main() {
       expect(
         sheetSource,
         contains('MediaQuery.viewPaddingOf(sheetContext).bottom'),
+      );
+      expect(
+        sheetSource,
+        contains('padding: const AppEdgeInsets.fromLTRB(0, 12, 0, 0)'),
+      );
+      expect(
+        sheetSource,
+        isNot(contains('padding: const AppEdgeInsets.fromLTRB(12, 12, 12, 0)')),
       );
     },
   );
@@ -152,6 +172,57 @@ void main() {
       );
     },
   );
+
+  test(
+    'details hero hides decorative white stripes in light V2 theme',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final heroStart = source.indexOf('class _DetailsHero');
+      final artworkStart = source.indexOf(
+        'class _DetailsHeroArtwork',
+        heroStart,
+      );
+      expect(heroStart, isNonNegative);
+      expect(artworkStart, greaterThan(heroStart));
+
+      final heroSource = source.substring(heroStart, artworkStart);
+      expect(
+        heroSource,
+        contains(
+          'final isLight = Theme.of(context).brightness == Brightness.light;',
+        ),
+      );
+      expect(heroSource, contains('if (!isLight)'));
+      expect(heroSource, contains('height: height * 0.42'));
+      expect(heroSource, contains('..rotateX(1.18)'));
+    },
+  );
+
+  test('meeting map removes outer shadow in light V2 theme', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final sectionStart = source.indexOf('class _MeetingSection');
+    final mapCardStart = source.indexOf('class _MeetingMapCard', sectionStart);
+    expect(sectionStart, isNonNegative);
+    expect(mapCardStart, greaterThan(sectionStart));
+
+    final sectionSource = source.substring(sectionStart, mapCardStart);
+    expect(
+      sectionSource,
+      contains(
+        'final isLight = Theme.of(context).brightness == Brightness.light;',
+      ),
+    );
+    expect(sectionSource, contains('boxShadow: isLight'));
+    expect(sectionSource, contains('? null'));
+    expect(sectionSource, contains(': ['));
+    expect(sectionSource, contains('BoxShadow('));
+  });
 
   test('details screen does not look up providers from dispose', () async {
     final source = await File(
@@ -331,7 +402,7 @@ void main() {
 
       expect(source, contains('Icons.chevron_right_rounded'));
       expect(source, isNot(contains('Icons.arrow_forward_rounded')));
-      expect(source, contains('foregroundColor: AppPalette.textPrimary'));
+      expect(source, contains('foregroundColor: colors.textPrimary'));
       expect(source, contains('iconAlignment: IconAlignment.end'));
     },
   );
@@ -541,6 +612,76 @@ void main() {
       );
       expect(usageSource, contains('onTap: ()'));
       expect(usageSource, isNot(contains('buttonLabel: l10n.profileTitle')));
+    },
+  );
+
+  test(
+    'details stat and host cards use visible V2 card surface and border',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains('Color get detailCardSurface => colors.surfaceRaised;'),
+      );
+      expect(source, contains('Color get detailCardBorder => colors.border;'));
+
+      final hostCardStart = source.indexOf('class _HostCard');
+      final hostRatingStart = source.indexOf(
+        'class _HostRatingPill',
+        hostCardStart,
+      );
+      expect(hostCardStart, isNonNegative);
+      expect(hostRatingStart, greaterThan(hostCardStart));
+
+      final hostCardSource = source.substring(hostCardStart, hostRatingStart);
+      expect(
+        hostCardSource,
+        contains('color: context.activityDetailsColors.detailCardSurface'),
+      );
+      expect(
+        hostCardSource,
+        contains('color: context.activityDetailsColors.detailCardBorder'),
+      );
+      expect(
+        hostCardSource,
+        isNot(
+          contains(
+            'context.activityDetailsColors.white.withValues(alpha: 0.04)',
+          ),
+        ),
+      );
+
+      final statCardStart = source.indexOf('class _DetailsStatCard');
+      final meetingSectionStart = source.indexOf(
+        'class _MeetingSection',
+        statCardStart,
+      );
+      expect(statCardStart, isNonNegative);
+      expect(meetingSectionStart, greaterThan(statCardStart));
+
+      final statCardSource = source.substring(
+        statCardStart,
+        meetingSectionStart,
+      );
+      expect(
+        statCardSource,
+        contains('color: context.activityDetailsColors.detailCardSurface'),
+      );
+      expect(
+        statCardSource,
+        contains('color: context.activityDetailsColors.detailCardBorder'),
+      );
+      expect(
+        statCardSource,
+        isNot(
+          contains(
+            'context.activityDetailsColors.white.withValues(alpha: 0.045)',
+          ),
+        ),
+      );
     },
   );
 

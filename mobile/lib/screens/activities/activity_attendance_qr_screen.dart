@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -117,140 +117,139 @@ class _ActivityAttendanceQrScreenState
           ? provider.selectedActivity
           : null,
     );
+    final colors = AppDesignSystem.colorsFor(context);
     final compact = MediaQuery.sizeOf(context).width < 360;
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk11,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadQr,
-          color: AppPalette.primary,
-          backgroundColor: AppPalette.warmInk83,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
             ),
-            padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 24),
-            children: [
-              Row(
+          ),
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _loadQr,
+              color: colors.primary,
+              backgroundColor: colors.surface,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 24),
                 children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: AppPalette.white,
-                  ),
-                  Expanded(
-                    child: Text(
-                      l10n.activityAttendanceQrTitle,
-                      textAlign: TextAlign.center,
-                      style: const AppTextStyle(
-                        color: AppPalette.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        color: colors.textPrimary,
                       ),
+                      Expanded(
+                        child: Text(
+                          l10n.activityAttendanceQrTitle,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    activity?.title ?? l10n.activityAttendanceQrFallbackTitle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
+                      fontSize: compact ? 24 : 28,
+                      fontWeight: FontWeight.w900,
+                      height: 1.06,
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.activityAttendanceQrSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Container(
+                    padding: const AppEdgeInsets.all(22),
+                    decoration: _attendanceQrCardDecoration(
+                      context,
+                      colors,
+                      highlighted: true,
+                    ),
+                    child: _buildQrBody(context, l10n),
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const AppEdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: _attendanceQrCardDecoration(context, colors),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: AppBoxDecoration(
+                            color: colors.primarySoft,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.borderPrimary),
+                          ),
+                          child: Icon(
+                            Icons.timelapse_rounded,
+                            color: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _countdownLabel(l10n),
+                                style: AppTextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.activityAttendanceQrRefreshHint,
+                                style: AppTextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Text(
-                activity?.title ?? l10n.activityAttendanceQrFallbackTitle,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyle(
-                  color: AppPalette.white,
-                  fontSize: compact ? 24 : 28,
-                  fontWeight: FontWeight.w900,
-                  height: 1.06,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l10n.activityAttendanceQrSubtitle,
-                textAlign: TextAlign.center,
-                style: AppTextStyle(
-                  color: AppPalette.white.withValues(alpha: 0.72),
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Container(
-                padding: const AppEdgeInsets.all(22),
-                decoration: AppBoxDecoration(
-                  color: AppPalette.warmInk68,
-                  borderRadius: AppBorderRadius.circular(32),
-                  border: Border.all(
-                    color: AppPalette.primary.withValues(alpha: 0.18),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppPalette.black.withValues(alpha: 0.26),
-                      blurRadius: 30,
-                      offset: const Offset(0, 18),
-                    ),
-                  ],
-                ),
-                child: _buildQrBody(context, l10n),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const AppEdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: AppBoxDecoration(
-                  color: AppPalette.warmInk107,
-                  borderRadius: AppBorderRadius.circular(22),
-                  border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: AppBoxDecoration(
-                        color: AppPalette.primary.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.timelapse_rounded,
-                        color: AppPalette.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _countdownLabel(l10n),
-                            style: const AppTextStyle(
-                              color: AppPalette.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.activityAttendanceQrRefreshHint,
-                            style: AppTextStyle(
-                              color: AppPalette.white.withValues(alpha: 0.66),
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -258,12 +257,12 @@ class _ActivityAttendanceQrScreenState
   }
 
   Widget _buildQrBody(BuildContext context, AppLocalizations l10n) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     if (_isLoading) {
       return SizedBox(
         height: _qrBodyHeight(context),
-        child: const Center(
-          child: CircularProgressIndicator(color: AppPalette.primary),
-        ),
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       );
     }
 
@@ -273,17 +272,13 @@ class _ActivityAttendanceQrScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.qr_code_2_rounded,
-              color: AppPalette.primary,
-              size: 42,
-            ),
+            Icon(Icons.qr_code_2_rounded, color: colors.danger, size: 42),
             const SizedBox(height: 14),
             Text(
               l10n.activityAttendanceQrLoadFailed,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(
-                color: AppPalette.white,
+              style: AppTextStyle(
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -292,8 +287,8 @@ class _ActivityAttendanceQrScreenState
             FilledButton(
               onPressed: _loadQr,
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.black,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.textPrimary,
               ),
               child: Text(l10n.retryButton),
             ),
@@ -308,8 +303,9 @@ class _ActivityAttendanceQrScreenState
           aspectRatio: 1,
           child: Container(
             decoration: AppBoxDecoration(
-              color: AppPalette.white,
+              color: colors.white,
               borderRadius: AppBorderRadius.circular(28),
+              border: Border.all(color: colors.borderSoft),
             ),
             padding: const AppEdgeInsets.all(18),
             child: LayoutBuilder(
@@ -318,13 +314,13 @@ class _ActivityAttendanceQrScreenState
                 return Center(
                   child: QrImageView(
                     data: _token!,
-                    backgroundColor: AppPalette.white,
-                    eyeStyle: const QrEyeStyle(
+                    backgroundColor: colors.white,
+                    eyeStyle: QrEyeStyle(
                       eyeShape: QrEyeShape.square,
-                      color: AppPalette.black,
+                      color: colors.black,
                     ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      color: AppPalette.black,
+                    dataModuleStyle: QrDataModuleStyle(
+                      color: colors.black,
                       dataModuleShape: QrDataModuleShape.square,
                     ),
                     size: qrSize,
@@ -339,7 +335,7 @@ class _ActivityAttendanceQrScreenState
           l10n.activityAttendanceQrHelper,
           textAlign: TextAlign.center,
           style: AppTextStyle(
-            color: AppPalette.white.withValues(alpha: 0.7),
+            color: colors.textSecondary,
             fontSize: 14,
             height: 1.45,
           ),
@@ -352,4 +348,29 @@ class _ActivityAttendanceQrScreenState
     final screenHeight = MediaQuery.sizeOf(context).height;
     return (screenHeight * 0.42).clamp(260.0, 360.0);
   }
+}
+
+BoxDecoration _attendanceQrCardDecoration(
+  BuildContext context,
+  AppColors colors, {
+  bool highlighted = false,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return AppBoxDecoration(
+    color: highlighted ? colors.surface : colors.surfaceRaised,
+    borderRadius: AppBorderRadius.circular(highlighted ? 32 : 22),
+    border: Border.all(
+      color: highlighted ? colors.borderPrimary : colors.border,
+    ),
+    boxShadow: isDark && highlighted
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.24),
+              blurRadius: 30,
+              offset: const Offset(0, 18),
+            ),
+          ]
+        : const [],
+  );
 }

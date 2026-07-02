@@ -148,8 +148,8 @@ void main() {
         .widgetList<Text>(find.text('08:00'))
         .firstWhere((widget) => widget.style?.fontSize == 17);
 
-    expect(dateText.style?.color, AppPalette.primary);
-    expect(timeText.style?.color, AppPalette.primary);
+    expect(dateText.style?.color, AppColorSchemes.light.primary);
+    expect(timeText.style?.color, AppColorSchemes.light.primary);
 
     final dateIcon = tester.widget<Icon>(
       find.byIcon(Icons.calendar_month_rounded),

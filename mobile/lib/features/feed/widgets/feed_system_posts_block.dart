@@ -26,13 +26,14 @@ class FeedSystemPostsBlock extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
       key: const ValueKey('feed-system-posts-block'),
       decoration: AppBoxDecoration(
-        color: AppPalette.surfaceCoolLight,
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(16),
@@ -47,7 +48,7 @@ class FeedSystemPostsBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppPalette.textPrimary,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -55,7 +56,7 @@ class FeedSystemPostsBlock extends StatelessWidget {
                 TextButton(
                   onPressed: onOpenAll == null ? null : () => onOpenAll!(posts),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppPalette.primary,
+                    foregroundColor: colors.primary,
                     textStyle: const AppTextStyle(fontWeight: FontWeight.w900),
                   ),
                   child: Text(l10n.feedSystemPostsViewAll),
@@ -85,12 +86,13 @@ class _SystemPostPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final title = post.title.trim();
     final excerpt = post.excerpt.trim();
     final author = post.author.nickname?.trim() ?? '';
 
     return Material(
-      color: AppPalette.surface,
+      color: colors.surfaceRaised,
       borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         onTap: onOpen == null ? null : () => onOpen!(post),
@@ -104,12 +106,12 @@ class _SystemPostPreviewCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: AppBoxDecoration(
-                  color: AppPalette.primary.withValues(alpha: 0.18),
+                  color: colors.primary.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   size: 20,
                 ),
               ),
@@ -123,7 +125,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppPalette.textPrimary,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -134,7 +136,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppPalette.textCoolSecondary,
+                          color: colors.textSecondary,
                           height: 1.25,
                         ),
                       ),
@@ -146,7 +148,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppPalette.primary,
+                          color: colors.primary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

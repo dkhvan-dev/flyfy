@@ -3,6 +3,55 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('create excursion screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('createExcursionColors.primary'));
+    expect(source, contains('createExcursionColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test(
+    'create and edit excursion shell uses shared V2 screen gradient',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final stateStart = source.indexOf('class _CreateExcursionScreenState');
+      final buildStart = source.indexOf(
+        '@override\n  Widget build',
+        stateStart,
+      );
+      final buildEnd = source.indexOf(
+        '  Widget _buildStepOfferMediaAndItinerary',
+        buildStart,
+      );
+      expect(stateStart, isNonNegative);
+      expect(buildStart, isNonNegative);
+      expect(buildEnd, greaterThan(buildStart));
+
+      final shellSource = source.substring(buildStart, buildEnd);
+
+      expect(source, contains('List<Color> get screenGradientColors'));
+      expect(source, contains('colors.screenGradientColors'));
+      expect(
+        shellSource,
+        contains('colors: context.createExcursionColors.screenGradientColors'),
+      );
+      expect(
+        shellSource,
+        contains('backgroundColor: context.createExcursionColors.background'),
+      );
+      expect(shellSource, isNot(contains('surfaceWarm,')));
+      expect(shellSource, isNot(contains('backgroundWarm')));
+    },
+  );
+
   test(
     'create excursion screen keeps a responsive three-step guide flow',
     () async {
@@ -130,8 +179,13 @@ void main() {
       ).readAsString();
 
       expect(source, contains('isDone'));
-      expect(source, contains('? AppPalette.success'));
-      expect(source, contains('AppPalette.success.withValues'));
+      expect(source, contains('? context.createExcursionColors.success'));
+      expect(
+        RegExp(
+          r'context\.createExcursionColors\.success\s*\.withValues',
+        ).hasMatch(source),
+        isTrue,
+      );
       expect(source, contains('onStepTap'));
       expect(
         source,
@@ -149,14 +203,16 @@ void main() {
 
       expect(source, contains('class _VisibilityCard'));
       expect(
-        source,
-        contains(
-          'color: selected ? AppPalette.primary : AppPalette.warmSurface48',
-        ),
+        RegExp(
+          r'color:\s+selected\s+\?\s+context\.createExcursionColors\.primary\s+:\s+context\.createExcursionColors\.surfaceWarm',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(
-        source,
-        contains('selected ? AppPalette.white : AppPalette.primary'),
+        RegExp(
+          r'selected\s+\?\s+context\.createExcursionColors\.white\s+:\s+context\.createExcursionColors\.primary',
+        ).hasMatch(source),
+        isTrue,
       );
     },
   );
@@ -174,7 +230,10 @@ void main() {
         contains('floatingLabelBehavior: FloatingLabelBehavior.never'),
       );
       expect(source, contains('Text(label,'));
-      expect(source, contains('fillColor: AppPalette.warmSurface35'));
+      expect(
+        source,
+        contains('fillColor: context.createExcursionColors.surfaceWarm'),
+      );
     },
   );
 
@@ -356,9 +415,14 @@ void main() {
       ).readAsString();
 
       expect(source, contains('final effectiveIconColor'));
-      expect(source, contains('iconColor: AppPalette.primary'));
       expect(
-        RegExp('iconColor: AppPalette\\.primary').allMatches(source).length,
+        source,
+        contains('iconColor: context.createExcursionColors.primary'),
+      );
+      expect(
+        RegExp(
+          r'iconColor: context\.createExcursionColors\.primary',
+        ).allMatches(source).length,
         greaterThanOrEqualTo(3),
       );
       expect(source, contains('label: l10n.createMeetingPointLocationLabel'));
@@ -391,41 +455,38 @@ void main() {
     },
   );
 
-  test(
-    'create excursion highlights logistics input icons with accent color',
-    () async {
-      final source = await File(
-        'lib/screens/excursions/create_excursion_screen.dart',
-      ).readAsString();
+  test('create excursion highlights logistics input icons with accent color', () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
 
-      expect(source, contains('icon: Icons.schedule_rounded'));
-      expect(source, contains('icon: Icons.group_outlined'));
-      expect(
-        RegExp(
-          r'Icons\.schedule_rounded,[\s\S]*?iconColor: AppPalette\.primary',
-        ).hasMatch(source),
-        isTrue,
-      );
-      expect(
-        RegExp(
-          r'Icons\.group_outlined,[\s\S]*?iconColor: AppPalette\.primary',
-        ).hasMatch(source),
-        isTrue,
-      );
-      expect(
-        RegExp(
-          r'Icons\.timelapse_rounded,[\s\S]*?color: AppPalette\.primary',
-        ).hasMatch(source),
-        isTrue,
-      );
-      expect(
-        RegExp(
-          r'Icons\.keyboard_arrow_down_rounded,[\s\S]*?color: AppPalette\.primary',
-        ).hasMatch(source),
-        isTrue,
-      );
-    },
-  );
+    expect(source, contains('icon: Icons.schedule_rounded'));
+    expect(source, contains('icon: Icons.group_outlined'));
+    expect(
+      RegExp(
+        r'Icons\.schedule_rounded,[\s\S]*?iconColor: context\.createExcursionColors\.primary',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'Icons\.group_outlined,[\s\S]*?iconColor: context\.createExcursionColors\.primary',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'Icons\.timelapse_rounded,[\s\S]*?color: context\.createExcursionColors\.primary',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'Icons\.keyboard_arrow_down_rounded,[\s\S]*?color: context\.createExcursionColors\.primary',
+      ).hasMatch(source),
+      isTrue,
+    );
+  });
 
   test(
     'create excursion displays localized currency names and keeps currency codes',
@@ -763,10 +824,22 @@ void main() {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
+      final cardStart = source.indexOf('class _ItinerarySlotCard');
+      final cardEnd = source.indexOf('class _VisibilityCard', cardStart);
 
-      expect(source, contains('class _ItinerarySlotCard'));
-      expect(source, contains('color: AppPalette.warmSurface85'));
-      expect(source, isNot(contains('color: AppPalette.orangeLight32')));
+      expect(cardStart, isNonNegative);
+      expect(cardEnd, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, cardEnd);
+
+      expect(
+        cardSource,
+        contains('color: context.createExcursionColors.surfaceWarm'),
+      );
+      expect(
+        cardSource,
+        isNot(contains('color: context.createExcursionColors.primarySoft')),
+      );
     },
   );
 
@@ -1040,7 +1113,7 @@ void main() {
       expect(source, contains('Icons.warning_amber_rounded'));
       expect(source, contains('l10n.createExcursionDiscardTitle'));
       expect(source, contains('l10n.createExcursionDiscardConfirm'));
-      expect(source, contains('AppPalette.primary'));
+      expect(source, contains('context.createExcursionColors.primary'));
       expect(enSource, contains('"createExcursionDiscardTitle"'));
       expect(ruSource, contains('"createExcursionDiscardTitle"'));
       expect(kkSource, contains('"createExcursionDiscardTitle"'));

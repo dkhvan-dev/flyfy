@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
@@ -48,6 +50,12 @@ class StoryTrayBlock extends StatelessWidget {
         final itemWidth = _storyItemWidth(constraints.maxWidth);
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final avatarSize = _storyAvatarSize(constraints.maxWidth);
+        final createStoryLabel = l10n.feedCreateStoryAction;
+        final createStoryItemWidth = _createStoryItemWidth(
+          context,
+          createStoryLabel,
+          avatarSize,
+        );
         final trayHeight = (112 * textScale).clamp(112.0, 138.0);
         final itemCount =
             otherStoryGroups.length + (onCreateStory == null ? 0 : 1);
@@ -65,9 +73,9 @@ class StoryTrayBlock extends StatelessWidget {
               itemBuilder: (context, index) {
                 if (onCreateStory != null && index == 0) {
                   return SizedBox(
-                    width: itemWidth,
+                    width: createStoryItemWidth,
                     child: _CreateStoryTrayItem(
-                      label: l10n.feedCreateStoryAction,
+                      label: createStoryLabel,
                       avatarUrl: viewerAvatarUrl,
                       initials: viewerInitials,
                       avatarSize: avatarSize,
@@ -132,60 +140,71 @@ class _CreateStoryTrayItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return _StoryTrayScaffold(
       key: const ValueKey('open-feed-create-story'),
       label: label,
       onTap: hasViewableStories && onOpenStories != null
           ? onOpenStories
           : onCreateStory,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          _StoryCircleFrame(
-            size: avatarSize,
-            state: hasUnseenStories
-                ? _StoryCircleState.unseen
-                : _StoryCircleState.seen,
-            child: _StoryCircleImage(
-              imageUrl: avatarUrl,
-              initials: initials,
-              icon: Icons.person_rounded,
-            ),
-          ),
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Tooltip(
-              message: label,
-              child: Material(
-                color: AppPalette.transparent,
-                child: InkWell(
-                  key: const ValueKey('open-feed-create-story-plus'),
-                  onTap: onCreateStory,
-                  customBorder: const CircleBorder(),
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      color: AppPalette.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppPalette.backgroundWarm,
-                        width: 3,
-                      ),
-                    ),
-                    child: const SizedBox.square(
-                      dimension: 24,
-                      child: Icon(
-                        Icons.add_rounded,
-                        size: 18,
-                        color: AppPalette.warmInk93,
+      child: Align(
+        alignment: Alignment.center,
+        child: SizedBox(
+          key: const ValueKey('open-feed-create-story-visual'),
+          width: avatarSize,
+          height: avatarSize,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _StoryCircleFrame(
+                key: const ValueKey('open-feed-create-story-avatar'),
+                size: avatarSize,
+                state: hasUnseenStories
+                    ? _StoryCircleState.unseen
+                    : _StoryCircleState.seen,
+                child: _StoryCircleImage(
+                  imageUrl: avatarUrl,
+                  initials: initials,
+                  icon: Icons.person_rounded,
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Tooltip(
+                  message: label,
+                  child: Material(
+                    color: colors.transparent,
+                    child: InkWell(
+                      key: const ValueKey('open-feed-create-story-plus'),
+                      onTap: onCreateStory,
+                      customBorder: const CircleBorder(),
+                      child: DecoratedBox(
+                        decoration: AppBoxDecoration(
+                          color: colors.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colors.background,
+                            width: 3,
+                          ),
+                        ),
+                        child: SizedBox.square(
+                          dimension: 24,
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 18,
+                            color: colors.textPrimary,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -254,32 +273,52 @@ class _StoryTrayScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: colors.textSecondary,
+      fontWeight: FontWeight.w600,
+    );
+
     return Semantics(
       button: onTap != null,
       label: label,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppBorderRadius.circular(999),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(vertical: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                child,
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppPalette.textPrimary,
-                    fontWeight: FontWeight.w600,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: constraints.maxWidth,
+                          child: Center(child: child),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: constraints.maxWidth,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: labelStyle,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),
@@ -304,31 +343,23 @@ class _StoryCircleFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final ringWidth = state == _StoryCircleState.create ? 2.0 : 3.0;
     final gradient = switch (state) {
-      _StoryCircleState.unseen => const LinearGradient(
+      _StoryCircleState.unseen => LinearGradient(
         begin: Alignment.bottomLeft,
         end: Alignment.topRight,
-        colors: [
-          AppPalette.amberSoft20,
-          AppPalette.orangeSoft42,
-          AppPalette.pinkSoft05,
-        ],
+        colors: [colors.primarySoft, colors.primary, colors.secondary],
       ),
       _StoryCircleState.create => LinearGradient(
         begin: Alignment.bottomLeft,
         end: Alignment.topRight,
         colors: [
-          AppPalette.primary.withValues(alpha: 0.34),
-          AppPalette.primary.withValues(alpha: 0.70),
+          colors.primary.withValues(alpha: 0.34),
+          colors.primary.withValues(alpha: 0.70),
         ],
       ),
-      _ => LinearGradient(
-        colors: [
-          AppPalette.outlineOverlay.withValues(alpha: 0.74),
-          AppPalette.outlineOverlay.withValues(alpha: 0.46),
-        ],
-      ),
+      _ => LinearGradient(colors: [colors.border, colors.borderSoft]),
     };
 
     return Container(
@@ -339,7 +370,7 @@ class _StoryCircleFrame extends StatelessWidget {
       child: DecoratedBox(
         decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: AppPalette.backgroundWarm,
+          color: colors.background,
         ),
         child: Padding(
           padding: const AppEdgeInsets.all(3),
@@ -389,28 +420,17 @@ class _StoryCircleFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
-      decoration: AppBoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.primary.withValues(alpha: 0.22),
-            AppPalette.warmSurface23,
-          ],
-        ),
-      ),
+      decoration: AppBoxDecoration(color: colors.surfaceWarm),
       child: Center(
         child: initials.trim().isEmpty
-            ? Icon(
-                icon,
-                color: AppPalette.white.withValues(alpha: 0.74),
-                size: 28,
-              )
+            ? Icon(icon, color: colors.primary, size: 28)
             : Text(
                 initials.characters.take(2).toString().toUpperCase(),
-                style: const AppTextStyle(
-                  color: AppPalette.textWarm,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
@@ -420,14 +440,36 @@ class _StoryCircleFallback extends StatelessWidget {
   }
 }
 
+double _createStoryItemWidth(
+  BuildContext context,
+  String label,
+  double avatarSize,
+) {
+  final textStyle =
+      Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600) ??
+      const TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
+  final painter = TextPainter(
+    text: TextSpan(text: label, style: textStyle),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+
+  final labelWidth = painter.width.ceilToDouble();
+  final visualWidth = avatarSize;
+  return math.max(labelWidth, visualWidth);
+}
+
 double _storyItemWidth(double availableWidth) {
   if (availableWidth >= 600) {
-    return 92;
+    return 164;
   }
   if (availableWidth >= 360) {
-    return 84;
+    return 156;
   }
-  return 78;
+  return 148;
 }
 
 double _storyAvatarSize(double availableWidth) {

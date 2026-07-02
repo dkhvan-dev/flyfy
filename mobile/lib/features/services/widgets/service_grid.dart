@@ -3,25 +3,79 @@ import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../service_catalog.dart';
 
-const _availableBackgroundColor = AppPalette.warmSurface74;
-const _availableTextColor = AppPalette.orangeLight33;
-const _unavailableBackgroundColor = AppPalette.warmSurface38;
-const _unavailableForegroundColor = AppPalette.warmMuted15;
-const _unavailableTextColor = AppPalette.orangeSoft07;
-const _unavailableBorderColor = AppPalette.warmSurfaceHigh10;
+class ServiceGridStyle {
+  const ServiceGridStyle({
+    required this.availableBackgroundColor,
+    required this.availableForegroundColor,
+    required this.availableTextColor,
+    required this.availableBorderColor,
+    required this.unavailableBackgroundColor,
+    required this.unavailableForegroundColor,
+    required this.unavailableTextColor,
+    required this.unavailableBorderColor,
+    required this.splashColor,
+    required this.highlightColor,
+  });
+
+  final Color availableBackgroundColor;
+  final Color availableForegroundColor;
+  final Color availableTextColor;
+  final Color availableBorderColor;
+  final Color unavailableBackgroundColor;
+  final Color unavailableForegroundColor;
+  final Color unavailableTextColor;
+  final Color unavailableBorderColor;
+  final Color splashColor;
+  final Color highlightColor;
+
+  static const _v2Dark = ServiceGridStyle(
+    availableBackgroundColor: AppPalette.surfaceRaised,
+    availableForegroundColor: AppPalette.primary,
+    availableTextColor: AppPalette.textPrimary,
+    availableBorderColor: AppPalette.borderSoft,
+    unavailableBackgroundColor: AppPalette.surface,
+    unavailableForegroundColor: AppPalette.textDisabled,
+    unavailableTextColor: AppPalette.textMuted,
+    unavailableBorderColor: AppPalette.border,
+    splashColor: AppPalette.borderPrimary,
+    highlightColor: AppPalette.transparent,
+  );
+
+  static ServiceGridStyle v2(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return ServiceGridStyle(
+      availableBackgroundColor: colors.surfaceRaised,
+      availableForegroundColor: colors.primary,
+      availableTextColor: colors.textPrimary,
+      availableBorderColor: colors.border,
+      unavailableBackgroundColor: colors.surface,
+      unavailableForegroundColor: colors.textDisabled,
+      unavailableTextColor: colors.textMuted,
+      unavailableBorderColor: colors.border,
+      splashColor: colors.borderPrimary,
+      highlightColor: colors.transparent,
+    );
+  }
+
+  static ServiceGridStyle v2Dark() => _v2Dark;
+}
 
 class ServiceGrid extends StatelessWidget {
   const ServiceGrid({
     super.key,
     required this.services,
     required this.onServiceTap,
+    this.style,
   });
 
   final List<TravelServiceEntry> services;
   final ValueChanged<TravelServiceEntry> onServiceTap;
+  final ServiceGridStyle? style;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedStyle = style ?? ServiceGridStyle.v2(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -48,6 +102,7 @@ class ServiceGrid extends StatelessWidget {
                 child: _ServiceTile(
                   service: service,
                   isCompact: isCompact,
+                  style: resolvedStyle,
                   onServiceTap: onServiceTap,
                 ),
               ),
@@ -62,26 +117,30 @@ class _ServiceTile extends StatelessWidget {
   const _ServiceTile({
     required this.service,
     required this.isCompact,
+    required this.style,
     required this.onServiceTap,
   });
 
   final TravelServiceEntry service;
   final bool isCompact;
+  final ServiceGridStyle style;
   final ValueChanged<TravelServiceEntry> onServiceTap;
 
   @override
   Widget build(BuildContext context) {
     final isEnabled = service.isAvailable && service.route.trim().isNotEmpty;
     final foregroundColor = isEnabled
-        ? AppPalette.primary
-        : _unavailableForegroundColor;
-    final textColor = isEnabled ? _availableTextColor : _unavailableTextColor;
+        ? style.availableForegroundColor
+        : style.unavailableForegroundColor;
+    final textColor = isEnabled
+        ? style.availableTextColor
+        : style.unavailableTextColor;
     final backgroundColor = isEnabled
-        ? _availableBackgroundColor
-        : _unavailableBackgroundColor;
+        ? style.availableBackgroundColor
+        : style.unavailableBackgroundColor;
     final borderColor = isEnabled
-        ? AppPalette.transparent
-        : _unavailableBorderColor;
+        ? style.availableBorderColor
+        : style.unavailableBorderColor;
     final iconSize = isCompact ? 26.0 : 31.0;
     final iconLabelGap = isCompact ? 7.0 : 9.0;
     final verticalPadding = isCompact ? 10.0 : 12.0;
@@ -96,14 +155,12 @@ class _ServiceTile extends StatelessWidget {
       onTap: isEnabled ? () => onServiceTap(service) : null,
       child: ExcludeSemantics(
         child: Material(
-          color: AppPalette.transparent,
+          color: style.highlightColor,
           child: InkWell(
             onTap: isEnabled ? () => onServiceTap(service) : null,
             borderRadius: AppBorderRadius.circular(16),
-            splashColor: isEnabled
-                ? AppPalette.primary.withValues(alpha: 0.10)
-                : AppPalette.transparent,
-            highlightColor: AppPalette.transparent,
+            splashColor: isEnabled ? style.splashColor : style.highlightColor,
+            highlightColor: style.highlightColor,
             child: Ink(
               decoration: AppBoxDecoration(
                 color: backgroundColor,

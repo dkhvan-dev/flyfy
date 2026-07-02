@@ -3,6 +3,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('my excursions screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('myExcursionsColors.primary'));
+    expect(source, contains('myExcursionsColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test(
     'my excursions empty state suggests changing city filter when city is active',
     () async {

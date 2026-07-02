@@ -261,4 +261,112 @@ void main() {
       isNot(contains('height: _activitiesScaled(context, 76')),
     );
   });
+
+  test(
+    'discover activities filter controls use readable V2 surfaces and text',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activities_screen.dart',
+      ).readAsString();
+      final categoryStart = source.indexOf('class _CategoryFilterPill');
+      final visibilityStart = source.indexOf('class _VisibilityOptionCard');
+      final filterSectionStart = source.indexOf('class _FilterSection');
+      final rangeFieldStart = source.indexOf('class _RangeTextField');
+      final presetChipStart = source.indexOf('class _PresetChip');
+      final primaryButtonStart = source.indexOf('class _PrimaryPillButton');
+
+      expect(categoryStart, isNonNegative);
+      expect(visibilityStart, greaterThan(categoryStart));
+      expect(filterSectionStart, greaterThan(visibilityStart));
+      expect(rangeFieldStart, isNonNegative);
+      expect(presetChipStart, greaterThan(rangeFieldStart));
+      expect(primaryButtonStart, greaterThan(presetChipStart));
+
+      final categorySource = source.substring(categoryStart, visibilityStart);
+      final visibilitySource = source.substring(
+        visibilityStart,
+        filterSectionStart,
+      );
+      final rangeFieldSource = source.substring(
+        rangeFieldStart,
+        presetChipStart,
+      );
+      final presetChipSource = source.substring(
+        presetChipStart,
+        primaryButtonStart,
+      );
+
+      expect(
+        categorySource,
+        contains('context.activitiesColors.surfaceRaised'),
+      );
+      expect(categorySource, contains('context.activitiesColors.textPrimary'));
+      expect(
+        categorySource,
+        contains('context.activitiesColors.textSecondary'),
+      );
+      expect(categorySource, isNot(contains('orangeOverlayWash11')));
+      expect(categorySource, isNot(contains('orangeOverlayWash04')));
+      expect(categorySource, isNot(contains('white.withValues(alpha: 0.03)')));
+      expect(categorySource, isNot(contains('white.withValues(alpha: 0.015)')));
+
+      expect(
+        visibilitySource,
+        contains('context.activitiesColors.surfaceRaised'),
+      );
+      expect(
+        visibilitySource,
+        contains('context.activitiesColors.textPrimary'),
+      );
+      expect(
+        visibilitySource,
+        contains('context.activitiesColors.textSecondary'),
+      );
+      expect(visibilitySource, isNot(contains('orangeOverlayLight03')));
+      expect(visibilitySource, isNot(contains('orangeOverlayWash07')));
+      expect(
+        visibilitySource,
+        isNot(contains('white.withValues(alpha: 0.03)')),
+      );
+      expect(
+        visibilitySource,
+        isNot(contains('white.withValues(alpha: 0.015)')),
+      );
+
+      expect(
+        rangeFieldSource,
+        contains('context.activitiesColors.surfaceRaised'),
+      );
+      expect(
+        rangeFieldSource,
+        contains('context.activitiesColors.textPrimary'),
+      );
+      expect(
+        rangeFieldSource,
+        contains('context.activitiesColors.textSecondary'),
+      );
+      expect(rangeFieldSource, contains('context.activitiesColors.textMuted'));
+      expect(rangeFieldSource, isNot(contains('orangeOverlayWash06')));
+      expect(rangeFieldSource, isNot(contains('orangeOverlayWash10')));
+      expect(rangeFieldSource, isNot(contains('orangeOverlayWash01')));
+      expect(
+        rangeFieldSource,
+        isNot(contains('white.withValues(alpha: 0.015)')),
+      );
+
+      expect(
+        presetChipSource,
+        contains('context.activitiesColors.surfaceRaised'),
+      );
+      expect(
+        presetChipSource,
+        contains('context.activitiesColors.textPrimary'),
+      );
+      expect(presetChipSource, isNot(contains('orangeOverlayLight03')));
+      expect(
+        presetChipSource,
+        isNot(contains('white.withValues(alpha: 0.02)')),
+      );
+    },
+  );
 }

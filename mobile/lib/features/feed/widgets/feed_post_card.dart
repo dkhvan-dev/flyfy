@@ -19,6 +19,105 @@ class FeedPostLikeResult {
 
 enum FeedPostFeedbackAction { hide, notInterested }
 
+class FeedPostCardStyle {
+  const FeedPostCardStyle({
+    required this.blockedBorderColor,
+    required this.seenBorderColor,
+    required this.borderColor,
+    required this.surfaceStartColor,
+    required this.surfaceMiddleColor,
+    required this.surfaceEndColor,
+    required this.shadowColor,
+    required this.glowColor,
+    required this.hasShadow,
+    required this.coverScrimGradient,
+    required this.titleColor,
+    required this.disabledTitleColor,
+    required this.bodyColor,
+    required this.metaColor,
+    required this.chipBackgroundColor,
+    required this.chipBorderColor,
+    required this.chipForegroundColor,
+    required this.actionSelectedBackgroundColor,
+    required this.actionSelectedForegroundColor,
+    required this.actionBackgroundColor,
+    required this.actionForegroundColor,
+    required this.menuBackgroundColor,
+    required this.avatarBackgroundColor,
+    required this.avatarBorderColor,
+  });
+
+  final Color blockedBorderColor;
+  final Color seenBorderColor;
+  final Color borderColor;
+  final Color surfaceStartColor;
+  final Color surfaceMiddleColor;
+  final Color surfaceEndColor;
+  final Color shadowColor;
+  final Color glowColor;
+  final bool hasShadow;
+  final Gradient? coverScrimGradient;
+  final Color titleColor;
+  final Color disabledTitleColor;
+  final Color bodyColor;
+  final Color metaColor;
+  final Color chipBackgroundColor;
+  final Color chipBorderColor;
+  final Color chipForegroundColor;
+  final Color actionSelectedBackgroundColor;
+  final Color actionSelectedForegroundColor;
+  final Color actionBackgroundColor;
+  final Color actionForegroundColor;
+  final Color menuBackgroundColor;
+  final Color avatarBackgroundColor;
+  final Color avatarBorderColor;
+
+  static FeedPostCardStyle v2(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
+    return FeedPostCardStyle(
+      blockedBorderColor: colors.borderSoft,
+      seenBorderColor: colors.primary.withValues(alpha: 0.18),
+      borderColor: colors.border,
+      surfaceStartColor: colors.surfaceRaised,
+      surfaceMiddleColor: colors.surface,
+      surfaceEndColor: colors.background,
+      shadowColor: isDarkV2
+          ? colors.black.withValues(alpha: 0.18)
+          : colors.transparent,
+      glowColor: isDarkV2
+          ? colors.primary.withValues(alpha: 0.06)
+          : colors.transparent,
+      hasShadow: isDarkV2,
+      coverScrimGradient: isDarkV2
+          ? LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colors.transparent,
+                colors.black.withValues(alpha: 0.10),
+                colors.black.withValues(alpha: 0.34),
+              ],
+            )
+          : null,
+      titleColor: colors.textPrimary,
+      disabledTitleColor: colors.textMuted,
+      bodyColor: colors.textSecondary,
+      metaColor: colors.textMuted,
+      chipBackgroundColor: colors.primary.withValues(alpha: 0.13),
+      chipBorderColor: colors.primary.withValues(alpha: 0.22),
+      chipForegroundColor: colors.primarySoft,
+      actionSelectedBackgroundColor: colors.primary,
+      actionSelectedForegroundColor: colors.textPrimary,
+      actionBackgroundColor: colors.primary.withValues(alpha: 0.12),
+      actionForegroundColor: colors.primary,
+      menuBackgroundColor: colors.surfaceRaised,
+      avatarBackgroundColor: colors.primary.withValues(alpha: 0.18),
+      avatarBorderColor: colors.primary.withValues(alpha: 0.38),
+    );
+  }
+}
+
 class FeedPostCard extends StatefulWidget {
   const FeedPostCard({
     super.key,
@@ -28,6 +127,7 @@ class FeedPostCard extends StatefulWidget {
     this.onShare,
     this.onHide,
     this.onNotInterested,
+    this.style,
   });
 
   final PostVm post;
@@ -36,6 +136,7 @@ class FeedPostCard extends StatefulWidget {
   final FeedPostActionCallback? onShare;
   final FeedPostActionCallback? onHide;
   final FeedPostActionCallback? onNotInterested;
+  final FeedPostCardStyle? style;
 
   @override
   State<FeedPostCard> createState() => _FeedPostCardState();
@@ -168,6 +269,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final style = widget.style ?? FeedPostCardStyle.v2(context);
     final state = resolvePostEntryState(post);
     final isSeen = state == StoryEntryState.seen;
     final isBlocked = state.disablesEntry;
@@ -179,10 +281,10 @@ class _FeedPostCardState extends State<FeedPostCard> {
         onNotInterested != null;
     final l10n = hasActions ? AppLocalizations.of(context) : null;
     final borderColor = isBlocked
-        ? AppPalette.white.withValues(alpha: 0.08)
+        ? style.blockedBorderColor
         : isSeen
-        ? AppPalette.primary.withValues(alpha: 0.18)
-        : AppPalette.primary.withValues(alpha: 0.46);
+        ? style.seenBorderColor
+        : style.borderColor;
     final authorName = post.author.preferredName.trim();
     final normalizedCategory = _postCategoryLabel(post.category);
     final coverUrl = post.coverUrl;
@@ -191,7 +293,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
     return Opacity(
       opacity: isBlocked ? 0.54 : (isSeen ? 0.88 : 1),
       child: Material(
-        color: AppPalette.transparent,
+        color: Colors.transparent,
         borderRadius: AppBorderRadius.circular(8),
         child: InkWell(
           key: ValueKey('open-feed-post-${post.id}'),
@@ -205,24 +307,26 @@ class _FeedPostCardState extends State<FeedPostCard> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppPalette.warmSurface52.withValues(alpha: 0.96),
-                  AppPalette.warmInk71,
-                  AppPalette.warmInk16,
+                  style.surfaceStartColor,
+                  style.surfaceMiddleColor,
+                  style.surfaceEndColor,
                 ],
                 stops: const [0, 0.52, 1],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.24),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.07),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
+              boxShadow: style.hasShadow
+                  ? [
+                      BoxShadow(
+                        color: style.shadowColor,
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                      BoxShadow(
+                        color: style.glowColor,
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ]
+                  : null,
             ),
             child: ClipRRect(
               borderRadius: AppBorderRadius.circular(8),
@@ -234,7 +338,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        _AuthorAvatar(author: post.author),
+                        _AuthorAvatar(author: post.author, style: style),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -246,7 +350,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: textTheme.bodyMedium?.copyWith(
-                                  color: AppPalette.surfaceInverse,
+                                  color: style.titleColor,
                                   fontWeight: FontWeight.w900,
                                   height: 1.12,
                                 ),
@@ -257,7 +361,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: textTheme.bodySmall?.copyWith(
-                                  color: AppPalette.orangeSoft21,
+                                  color: style.metaColor,
                                   fontWeight: FontWeight.w700,
                                   height: 1.1,
                                 ),
@@ -269,7 +373,10 @@ class _FeedPostCardState extends State<FeedPostCard> {
                           const SizedBox(width: 8),
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 132),
-                            child: _PostCategoryPill(label: normalizedCategory),
+                            child: _PostCategoryPill(
+                              label: normalizedCategory,
+                              style: style,
+                            ),
                           ),
                         ],
                       ],
@@ -285,19 +392,12 @@ class _FeedPostCardState extends State<FeedPostCard> {
                           fit: StackFit.expand,
                           children: [
                             StoryCoverImage(url: coverUrl),
-                            DecoratedBox(
-                              decoration: AppBoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppPalette.transparent,
-                                    AppPalette.black.withValues(alpha: 0.10),
-                                    AppPalette.black.withValues(alpha: 0.34),
-                                  ],
+                            if (style.coverScrimGradient != null)
+                              DecoratedBox(
+                                decoration: AppBoxDecoration(
+                                  gradient: style.coverScrimGradient,
                                 ),
                               ),
-                            ),
                             if (state != StoryEntryState.available &&
                                 state != StoryEntryState.seen)
                               Positioned(
@@ -324,8 +424,8 @@ class _FeedPostCardState extends State<FeedPostCard> {
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.titleMedium?.copyWith(
                             color: isBlocked
-                                ? AppPalette.textCoolSecondary
-                                : AppPalette.surfaceInverse,
+                                ? style.disabledTitleColor
+                                : style.titleColor,
                             fontWeight: FontWeight.w900,
                             height: 1.16,
                           ),
@@ -337,7 +437,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.bodyMedium?.copyWith(
-                              color: AppPalette.orangeLight21,
+                              color: style.bodyColor,
                               height: 1.35,
                               fontWeight: FontWeight.w500,
                             ),
@@ -357,23 +457,26 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                     label: formatStoryCountCompact(
                                       post.stats.views,
                                     ),
+                                    style: style,
                                   ),
                                   _StoryMetaChip(
                                     icon: Icons.favorite_border_rounded,
                                     label: formatStoryCountCompact(_likeCount),
+                                    style: style,
                                   ),
                                   _StoryMetaChip(
                                     icon: Icons.chat_bubble_outline_rounded,
                                     label: formatStoryCountCompact(
                                       post.stats.comments,
                                     ),
+                                    style: style,
                                   ),
                                 ],
                               ),
                             ),
                             if (isInteractive) ...[
                               const SizedBox(width: 10),
-                              const _OpenPostAffordance(),
+                              _OpenPostAffordance(style: style),
                             ],
                           ],
                         ),
@@ -393,6 +496,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                     : l10n?.feedPostLikeAction ?? 'Like post',
                                 isSelected: _likedByViewer,
                                 isBusy: _isTogglingLike,
+                                style: style,
                                 onPressed: onLike == null ? null : _handleLike,
                               ),
                               const SizedBox(width: 8),
@@ -403,6 +507,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                 tooltip:
                                     l10n?.feedPostShareAction ?? 'Share post',
                                 isBusy: _isSharing,
+                                style: style,
                                 onPressed: onShare == null
                                     ? null
                                     : _handleShare,
@@ -422,6 +527,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                       'Post actions',
                                   hasHide: onHide != null,
                                   hasNotInterested: onNotInterested != null,
+                                  style: style,
                                 ),
                             ],
                           ),
@@ -440,21 +546,23 @@ class _FeedPostCardState extends State<FeedPostCard> {
 }
 
 class _OpenPostAffordance extends StatelessWidget {
-  const _OpenPostAffordance();
+  const _OpenPostAffordance({required this.style});
+
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.16),
+        color: style.chipBackgroundColor,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(color: style.chipBorderColor),
       ),
-      child: const SizedBox.square(
+      child: SizedBox.square(
         dimension: 34,
         child: Icon(
           Icons.arrow_forward_rounded,
-          color: AppPalette.primary,
+          color: style.actionForegroundColor,
           size: 20,
         ),
       ),
@@ -470,6 +578,7 @@ class _PostActionButton extends StatelessWidget {
     required this.tooltip,
     this.isSelected = false,
     this.isBusy = false,
+    required this.style,
     this.onPressed,
   });
 
@@ -478,14 +587,17 @@ class _PostActionButton extends StatelessWidget {
   final String tooltip;
   final bool isSelected;
   final bool isBusy;
+  final FeedPostCardStyle style;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = isSelected ? AppPalette.warmInk42 : AppPalette.primary;
+    final foreground = isSelected
+        ? style.actionSelectedForegroundColor
+        : style.actionForegroundColor;
     final background = isSelected
-        ? AppPalette.primary
-        : AppPalette.primary.withValues(alpha: 0.12);
+        ? style.actionSelectedBackgroundColor
+        : style.actionBackgroundColor;
 
     return Tooltip(
       message: tooltip,
@@ -503,9 +615,7 @@ class _PostActionButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(999),
             side: BorderSide(
-              color: AppPalette.primary.withValues(
-                alpha: isSelected ? 0 : 0.22,
-              ),
+              color: isSelected ? Colors.transparent : style.chipBorderColor,
             ),
           ),
         ),
@@ -538,6 +648,7 @@ class _PostFeedbackMenu extends StatelessWidget {
     required this.tooltip,
     required this.hasHide,
     required this.hasNotInterested,
+    required this.style,
   });
 
   final String postId;
@@ -547,6 +658,7 @@ class _PostFeedbackMenu extends StatelessWidget {
   final String tooltip;
   final bool hasHide;
   final bool hasNotInterested;
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -554,9 +666,9 @@ class _PostFeedbackMenu extends StatelessWidget {
       key: ValueKey('feed-post-more-$postId'),
       tooltip: tooltip,
       position: PopupMenuPosition.under,
-      color: AppPalette.warmSurface13,
-      surfaceTintColor: AppPalette.transparent,
-      icon: const Icon(Icons.more_horiz_rounded, color: AppPalette.primary),
+      color: style.menuBackgroundColor,
+      surfaceTintColor: Colors.transparent,
+      icon: Icon(Icons.more_horiz_rounded, color: style.actionForegroundColor),
       onSelected: onSelected,
       itemBuilder: (context) => [
         if (hasHide)
@@ -566,6 +678,7 @@ class _PostFeedbackMenu extends StatelessWidget {
             child: _PostFeedbackMenuItem(
               icon: Icons.visibility_off_outlined,
               label: hideLabel,
+              style: style,
             ),
           ),
         if (hasNotInterested)
@@ -575,6 +688,7 @@ class _PostFeedbackMenu extends StatelessWidget {
             child: _PostFeedbackMenuItem(
               icon: Icons.thumb_down_alt_outlined,
               label: notInterestedLabel,
+              style: style,
             ),
           ),
       ],
@@ -583,24 +697,29 @@ class _PostFeedbackMenu extends StatelessWidget {
 }
 
 class _PostFeedbackMenuItem extends StatelessWidget {
-  const _PostFeedbackMenuItem({required this.icon, required this.label});
+  const _PostFeedbackMenuItem({
+    required this.icon,
+    required this.label,
+    required this.style,
+  });
 
   final IconData icon;
   final String label;
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppPalette.primary, size: 20),
+        Icon(icon, color: style.actionForegroundColor, size: 20),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.surfaceInverse,
+            style: AppTextStyle(
+              color: style.titleColor,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -611,25 +730,30 @@ class _PostFeedbackMenuItem extends StatelessWidget {
 }
 
 class _StoryMetaChip extends StatelessWidget {
-  const _StoryMetaChip({required this.icon, required this.label});
+  const _StoryMetaChip({
+    required this.icon,
+    required this.label,
+    required this.style,
+  });
 
   final IconData icon;
   final String label;
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.11),
+        color: style.chipBackgroundColor,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: style.chipBorderColor),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppPalette.primary, size: 15),
+            Icon(icon, color: style.actionForegroundColor, size: 15),
             const SizedBox(width: 4),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 180),
@@ -638,7 +762,7 @@ class _StoryMetaChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppPalette.amberLight08,
+                  color: style.chipForegroundColor,
                   fontWeight: FontWeight.w900,
                   height: 1,
                 ),
@@ -652,9 +776,10 @@ class _StoryMetaChip extends StatelessWidget {
 }
 
 class _AuthorAvatar extends StatelessWidget {
-  const _AuthorAvatar({required this.author});
+  const _AuthorAvatar({required this.author, required this.style});
 
   final PostAuthorVm author;
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -664,24 +789,26 @@ class _AuthorAvatar extends StatelessWidget {
       height: 40,
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.primary.withValues(alpha: 0.10),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(color: style.avatarBorderColor),
+        boxShadow: style.hasShadow
+            ? [
+                BoxShadow(
+                  color: style.glowColor,
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : null,
       ),
       child: CircleAvatar(
         radius: 18,
-        backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+        backgroundColor: style.avatarBackgroundColor,
         backgroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
         child: avatarUrl == null
             ? Text(
                 author.initials,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppPalette.primary,
+                  color: style.actionForegroundColor,
                   fontWeight: FontWeight.w900,
                 ),
               )
@@ -692,17 +819,18 @@ class _AuthorAvatar extends StatelessWidget {
 }
 
 class _PostCategoryPill extends StatelessWidget {
-  const _PostCategoryPill({required this.label});
+  const _PostCategoryPill({required this.label, required this.style});
 
   final String label;
+  final FeedPostCardStyle style;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.13),
+        color: style.chipBackgroundColor,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
+        border: Border.all(color: style.chipBorderColor),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
@@ -711,7 +839,7 @@ class _PostCategoryPill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppPalette.amberSoft22,
+            color: style.chipForegroundColor,
             fontWeight: FontWeight.w900,
             height: 1,
           ),

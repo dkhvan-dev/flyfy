@@ -328,7 +328,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final selected = await showAppModalBottomSheet<_StoryFiltersResult>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: AppDesignSystem.colorsFor(context).transparent,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) {
@@ -631,35 +631,36 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (dialogContext) {
+        final colors = AppDesignSystem.colorsFor(dialogContext);
         return AppModalDialogCard(
-          backgroundColor: AppPalette.warmSurface18,
+          backgroundColor: colors.surfaceRaised,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(22),
           ),
           title: Text(
             l10n.logoutDialogTitle,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: colors.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
           content: Text(
             l10n.logoutDialogMessage,
-            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+            style: AppTextStyle(color: colors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+                style: AppTextStyle(color: colors.textSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.backgroundWarm,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.textPrimary,
               ),
               child: Text(l10n.logoutConfirmButton),
             ),
@@ -700,6 +701,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final auth = context.watch<AuthProvider>();
     final session = context.watch<SessionProvider>();
     final profile = session.profile;
@@ -712,10 +714,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: StoryPalette.backgroundDeep,
+      backgroundColor: colors.backgroundDeep,
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
-      drawerScrimColor: AppPalette.black.withValues(alpha: 0.42),
+      drawerScrimColor: colors.black.withValues(alpha: 0.42),
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
@@ -748,7 +750,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
-        decoration: storyScreenBackground(),
+        decoration: storyScreenBackground(context),
         child: SafeArea(
           bottom: false,
           child: Column(
@@ -765,7 +767,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
               ),
               Expanded(
                 child: RefreshIndicator(
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   onRefresh: _refresh,
                   child: CustomScrollView(
                     controller: _scrollController,
@@ -832,10 +834,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                   padding: AppEdgeInsets.only(
                                     bottom: adaptive.scale(12),
                                   ),
-                                  child: const LinearProgressIndicator(
+                                  child: LinearProgressIndicator(
                                     minHeight: 2,
-                                    color: AppPalette.primary,
-                                    backgroundColor: AppPalette.transparent,
+                                    color: colors.primary,
+                                    backgroundColor: colors.transparent,
                                   ),
                                 ),
                               for (final story in _stories) ...[
@@ -943,6 +945,7 @@ class _MyStoriesStatusTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -954,18 +957,16 @@ class _MyStoriesStatusTabs extends StatelessWidget {
               label: Text(tab.label(l10n)),
               selected: selected == tab,
               onSelected: (_) => onSelected(tab),
-              selectedColor: AppPalette.primary,
-              backgroundColor: AppPalette.warmSurface17,
+              selectedColor: colors.primary,
+              backgroundColor: colors.surfaceRaised,
               showCheckmark: false,
               side: BorderSide(
-                color: selected == tab
-                    ? AppPalette.primary
-                    : AppPalette.transparent,
+                color: selected == tab ? colors.primary : colors.transparent,
               ),
               labelStyle: AppTextStyle(
                 color: selected == tab
-                    ? AppPalette.white
-                    : AppPalette.orangeSoft29,
+                    ? colors.textPrimary
+                    : colors.textSecondary,
                 fontWeight: FontWeight.w800,
               ),
               shape: RoundedRectangleBorder(
@@ -1031,6 +1032,7 @@ class _StoriesSortRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final items = <(String value, String label)>[
       ('latest', l10n.storySortDate),
       ('popular', l10n.storySortViews),
@@ -1048,7 +1050,7 @@ class _StoriesSortRow extends StatelessWidget {
           Text(
             '${l10n.storySortLabel}:',
             style: AppTextStyle(
-              color: StoryPalette.textMuted,
+              color: colors.textMuted,
               fontSize: adaptive.scale(12),
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4,
@@ -1062,7 +1064,7 @@ class _StoriesSortRow extends StatelessWidget {
               label: item.$2,
               onTap: () => onSortSelected(item.$1),
               child: Material(
-                color: AppPalette.transparent,
+                color: colors.transparent,
                 child: InkWell(
                   onTap: () => onSortSelected(item.$1),
                   borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
@@ -1080,8 +1082,8 @@ class _StoriesSortRow extends StatelessWidget {
                             item.$2,
                             style: AppTextStyle(
                               color: selectedSort == item.$1
-                                  ? AppPalette.primary
-                                  : AppPalette.orangeMuted04,
+                                  ? colors.primary
+                                  : colors.textSecondary,
                               fontSize: adaptive.scale(12),
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.4,
@@ -1091,7 +1093,7 @@ class _StoriesSortRow extends StatelessWidget {
                             SizedBox(width: adaptive.scale(5, minFactor: 0.72)),
                             Icon(
                               directionIcon,
-                              color: AppPalette.primary,
+                              color: colors.primary,
                               size: adaptive.scale(14, minFactor: 0.82),
                             ),
                           ],
@@ -1119,6 +1121,8 @@ class _StoryListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     final state = resolvePostEntryState(story);
     final publishedLabel = formatStoryDate(
@@ -1128,6 +1132,8 @@ class _StoryListCard extends StatelessWidget {
     final imageHeight = adaptive.isVeryNarrow
         ? adaptive.scale(214, maxFactor: 1.0)
         : adaptive.scale(236, maxFactor: 1.04);
+    final cardRadius = AppBorderRadius.circular(adaptive.radius(18));
+    final imageRadius = AppBorderRadius.circular(adaptive.radius(34));
 
     return Semantics(
       button: true,
@@ -1135,142 +1141,157 @@ class _StoryListCard extends StatelessWidget {
       enabled: !state.disablesEntry,
       label: story.title,
       onTap: state.disablesEntry ? null : onTap,
-      child: GestureDetector(
-        onTap: state.disablesEntry ? null : onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: imageHeight,
-              width: double.infinity,
-              decoration: AppBoxDecoration(
-                borderRadius: AppBorderRadius.circular(adaptive.radius(42)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppPalette.black.withValues(alpha: 0.35),
-                    blurRadius: adaptive.scale(30),
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
+      child: Material(
+        color: colors.transparent,
+        borderRadius: cardRadius,
+        child: InkWell(
+          borderRadius: cardRadius,
+          onTap: state.disablesEntry ? null : onTap,
+          child: Ink(
+            decoration: AppBoxDecoration(
+              color: colors.surfaceRaised,
+              borderRadius: cardRadius,
+              border: Border.all(color: colors.border),
+              boxShadow: isDark
+                  ? [
+                      BoxShadow(
+                        color: colors.black.withValues(alpha: 0.18),
+                        blurRadius: adaptive.scale(18),
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Padding(
+              padding: AppEdgeInsets.all(adaptive.scale(10, minFactor: 0.82)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  StoryCoverImage(url: story.coverUrl),
-                  if (state.disablesEntry)
-                    Positioned.fill(
-                      child: ColoredBox(
-                        color: AppPalette.black.withValues(alpha: 0.38),
-                      ),
-                    ),
-                  Positioned(
-                    left: adaptive.scale(14),
-                    top: adaptive.scale(14),
-                    child: _LocationTag(
-                      label: (story.placeName ?? '').trim().isEmpty
-                          ? formatStoryCategory(l10n, story.category)
-                          : story.placeName!.trim(),
-                    ),
-                  ),
-                  Positioned(
-                    right: adaptive.scale(14),
-                    top: adaptive.scale(14),
-                    child: _FormatTag(
-                      label: formatStoryFormat(l10n, story.format),
-                    ),
-                  ),
-                  Positioned(
-                    left: adaptive.scale(14),
-                    bottom: adaptive.scale(14),
-                    child: StoryStateAffordance.fromPost(story),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: adaptive.scale(18)),
-            Text(
-              story.title,
-              maxLines: adaptive.isNarrow ? 3 : 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle(
-                color: AppPalette.orangeWash29,
-                fontSize: adaptive.scale(adaptive.isNarrow ? 23 : 26),
-                height: 1.08,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
-              ),
-            ),
-            SizedBox(height: adaptive.scale(10)),
-            Wrap(
-              spacing: adaptive.scale(8),
-              runSpacing: adaptive.scale(8),
-              children: [
-                _StoryMetaChip(
-                  icon: Icons.auto_stories_outlined,
-                  label: formatStoryFormat(l10n, story.format),
-                ),
-                _StoryMetaChip(
-                  icon: Icons.category_outlined,
-                  label: formatStoryCategory(l10n, story.category),
-                ),
-                if (publishedLabel.trim().isNotEmpty)
-                  _StoryMetaChip(
-                    icon: Icons.calendar_month_outlined,
-                    label: publishedLabel,
-                  ),
-              ],
-            ),
-            SizedBox(height: adaptive.scale(16)),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      StoryAvatar(
-                        label: story.author.initials,
-                        imageUrl: story.author.avatarUrl,
-                        size: adaptive.scale(36),
-                      ),
-                      SizedBox(width: adaptive.scale(12)),
-                      Expanded(
-                        child: Text(
-                          story.author.preferredName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyle(
-                            color: AppPalette.orangeLight08,
-                            fontSize: adaptive.scale(15),
-                            fontWeight: FontWeight.w500,
+                  Container(
+                    height: imageHeight,
+                    width: double.infinity,
+                    decoration: AppBoxDecoration(borderRadius: imageRadius),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        StoryCoverImage(url: story.coverUrl),
+                        if (state.disablesEntry)
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color: colors.black.withValues(alpha: 0.38),
+                            ),
+                          ),
+                        Positioned(
+                          left: adaptive.scale(14),
+                          top: adaptive.scale(14),
+                          child: _LocationTag(
+                            label: (story.placeName ?? '').trim().isEmpty
+                                ? formatStoryCategory(l10n, story.category)
+                                : story.placeName!.trim(),
                           ),
                         ),
+                        Positioned(
+                          right: adaptive.scale(14),
+                          top: adaptive.scale(14),
+                          child: _FormatTag(
+                            label: formatStoryFormat(l10n, story.format),
+                          ),
+                        ),
+                        Positioned(
+                          left: adaptive.scale(14),
+                          bottom: adaptive.scale(14),
+                          child: StoryStateAffordance.fromPost(story),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: adaptive.scale(18)),
+                  Text(
+                    story.title,
+                    maxLines: adaptive.isNarrow ? 3 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle(
+                      color: colors.textPrimary,
+                      fontSize: adaptive.scale(adaptive.isNarrow ? 23 : 26),
+                      height: 1.08,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  SizedBox(height: adaptive.scale(10)),
+                  Wrap(
+                    spacing: adaptive.scale(8),
+                    runSpacing: adaptive.scale(8),
+                    children: [
+                      _StoryMetaChip(
+                        icon: Icons.auto_stories_outlined,
+                        label: formatStoryFormat(l10n, story.format),
+                      ),
+                      _StoryMetaChip(
+                        icon: Icons.category_outlined,
+                        label: formatStoryCategory(l10n, story.category),
+                      ),
+                      if (publishedLabel.trim().isNotEmpty)
+                        _StoryMetaChip(
+                          icon: Icons.calendar_month_outlined,
+                          label: publishedLabel,
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: adaptive.scale(16)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            StoryAvatar(
+                              label: story.author.initials,
+                              imageUrl: story.author.avatarUrl,
+                              size: adaptive.scale(36),
+                            ),
+                            SizedBox(width: adaptive.scale(12)),
+                            Expanded(
+                              child: Text(
+                                story.author.preferredName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: adaptive.scale(15),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: adaptive.scale(14)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.remove_red_eye_outlined,
+                            color: colors.textMuted,
+                            size: adaptive.scale(16),
+                          ),
+                          SizedBox(width: adaptive.scale(6)),
+                          Text(
+                            '${formatStoryCountCompact(story.stats.views)} ${l10n.storyViewsSuffix}',
+                            style: AppTextStyle(
+                              color: colors.textMuted,
+                              fontSize: adaptive.scale(15),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-                SizedBox(width: adaptive.scale(14)),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.remove_red_eye_outlined,
-                      color: StoryPalette.textMuted,
-                      size: adaptive.scale(16),
-                    ),
-                    SizedBox(width: adaptive.scale(6)),
-                    Text(
-                      '${formatStoryCountCompact(story.stats.views)} ${l10n.storyViewsSuffix}',
-                      style: AppTextStyle(
-                        color: StoryPalette.textMuted,
-                        fontSize: adaptive.scale(15),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1286,6 +1307,7 @@ class _StoryMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(210)),
@@ -1294,14 +1316,14 @@ class _StoryMetaChip extends StatelessWidget {
         vertical: adaptive.scale(7),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.06),
+        color: colors.surfaceHigh.withValues(alpha: 0.72),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppPalette.primary, size: adaptive.scale(14)),
+          Icon(icon, color: colors.primary, size: adaptive.scale(14)),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
@@ -1309,7 +1331,7 @@ class _StoryMetaChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: StoryPalette.textMuted,
+                color: colors.textMuted,
                 fontSize: adaptive.scale(13),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -1330,6 +1352,7 @@ class _FormatTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(150)),
       padding: AppEdgeInsets.symmetric(
@@ -1337,7 +1360,7 @@ class _FormatTag extends StatelessWidget {
         vertical: adaptive.scale(8),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.92),
+        color: colors.primary.withValues(alpha: 0.92),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
       ),
       child: Text(
@@ -1345,7 +1368,7 @@ class _FormatTag extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: AppTextStyle(
-          color: AppPalette.textPrimary,
+          color: colors.textPrimary,
           fontSize: adaptive.scale(11),
           fontWeight: FontWeight.w900,
           letterSpacing: 0.6,
@@ -1363,29 +1386,30 @@ class _LocationTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(14),
         vertical: adaptive.scale(9),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmOverlaySurface09,
+        color: colors.surfaceHigh.withValues(alpha: 0.78),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.place_outlined,
-            color: AppPalette.white,
+            color: colors.textPrimary,
             size: adaptive.scale(13),
           ),
           SizedBox(width: adaptive.scale(7)),
           Text(
             label,
             style: AppTextStyle(
-              color: AppPalette.white,
+              color: colors.textPrimary,
               fontSize: adaptive.scale(12),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
@@ -1403,6 +1427,7 @@ class _StoriesLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Column(
       children: List.generate(
         3,
@@ -1411,8 +1436,9 @@ class _StoriesLoadingState extends StatelessWidget {
           child: Container(
             height: adaptive.scale(320),
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.04),
+              color: colors.surfaceHigh,
               borderRadius: AppBorderRadius.circular(adaptive.radius(28)),
+              border: Border.all(color: colors.borderSoft),
             ),
           ),
         ),
@@ -1435,18 +1461,19 @@ class _StoriesErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       padding: AppEdgeInsets.all(adaptive.scale(22)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(26)),
-        color: AppPalette.white.withValues(alpha: 0.03),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Column(
         children: [
           Icon(
             Icons.cloud_off_rounded,
-            color: AppPalette.primary,
+            color: colors.primary,
             size: adaptive.scale(36),
           ),
           SizedBox(height: adaptive.scale(14)),
@@ -1454,7 +1481,7 @@ class _StoriesErrorState extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: StoryPalette.textSoft,
+              color: colors.textSecondary,
               fontSize: adaptive.scale(15),
               height: 1.45,
             ),
@@ -1463,8 +1490,8 @@ class _StoriesErrorState extends StatelessWidget {
           ElevatedButton(
             onPressed: () => onRetry(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppPalette.primary,
-              foregroundColor: AppPalette.white,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.textPrimary,
               padding: AppEdgeInsets.symmetric(
                 horizontal: adaptive.scale(20),
                 vertical: adaptive.scale(14),
@@ -1497,25 +1524,19 @@ class _StoriesEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       padding: AppEdgeInsets.all(adaptive.scale(24)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(28)),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.white.withValues(alpha: 0.03),
-            AppPalette.primary.withValues(alpha: 0.06),
-          ],
-        ),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Column(
         children: [
           Icon(
             Icons.auto_stories_rounded,
-            color: AppPalette.primary,
+            color: colors.primary,
             size: adaptive.scale(40),
           ),
           SizedBox(height: adaptive.scale(16)),
@@ -1523,7 +1544,7 @@ class _StoriesEmptyState extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: StoryPalette.text,
+              color: colors.textPrimary,
               fontSize: adaptive.scale(20),
               fontWeight: FontWeight.w800,
             ),
@@ -1533,7 +1554,7 @@ class _StoriesEmptyState extends StatelessWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: AppTextStyle(
-              color: StoryPalette.textSoft,
+              color: colors.textSecondary,
               fontSize: adaptive.scale(15),
               height: 1.45,
             ),
@@ -1543,8 +1564,8 @@ class _StoriesEmptyState extends StatelessWidget {
             FilledButton(
               onPressed: onAction,
               style: FilledButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.textPrimary,
                 padding: AppEdgeInsets.symmetric(
                   horizontal: adaptive.scale(20),
                   vertical: adaptive.scale(12),
@@ -1826,11 +1847,12 @@ class _ActiveFiltersSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.08),
+        color: colors.primary.withValues(alpha: 0.08),
         borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
+        border: Border.all(color: colors.borderPrimary),
       ),
       child: Padding(
         padding: AppEdgeInsets.all(adaptive.scale(14)),
@@ -1841,7 +1863,7 @@ class _ActiveFiltersSummary extends StatelessWidget {
               children: [
                 Icon(
                   Icons.tune_rounded,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                   size: adaptive.scale(18),
                 ),
                 SizedBox(width: adaptive.scale(8)),
@@ -1851,7 +1873,7 @@ class _ActiveFiltersSummary extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.textPrimary,
+                      color: colors.textPrimary,
                       fontSize: adaptive.scale(13),
                       fontWeight: FontWeight.w800,
                     ),
@@ -1898,6 +1920,7 @@ class _ActiveFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(230)),
       padding: AppEdgeInsets.symmetric(
@@ -1905,14 +1928,14 @@ class _ActiveFilterChip extends StatelessWidget {
         vertical: adaptive.scale(7),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.16),
+        color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: adaptive.scale(14), color: AppPalette.primary),
+          Icon(icon, size: adaptive.scale(14), color: colors.primary),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
@@ -1920,7 +1943,7 @@ class _ActiveFilterChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: adaptive.scale(12),
                 fontWeight: FontWeight.w700,
               ),
@@ -1954,6 +1977,7 @@ class _FilterSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
@@ -1967,15 +1991,11 @@ class _FilterSheet extends StatelessWidget {
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           decoration: AppBoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
-            ),
+            color: colors.surface,
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
+            border: Border.all(color: colors.borderSoft),
           ),
           child: SafeArea(
             top: false,
@@ -2014,12 +2034,8 @@ class _FilterSheet extends StatelessWidget {
                     adaptive.scale(14) + safeBottomInset,
                   ),
                   decoration: AppBoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: AppPalette.primary.withValues(alpha: 0.09),
-                      ),
-                    ),
-                    color: AppPalette.black.withValues(alpha: 0.06),
+                    border: Border(top: BorderSide(color: colors.borderSoft)),
+                    color: colors.surfaceRaised,
                   ),
                   child: AppFilterApplyButton(
                     label: applyLabel,
@@ -2146,8 +2162,9 @@ class _FilterOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
@@ -2155,13 +2172,13 @@ class _FilterOptionCard extends StatelessWidget {
           padding: AppEdgeInsets.all(adaptive.scale(12)),
           decoration: AppBoxDecoration(
             color: selected
-                ? AppPalette.primary.withValues(alpha: 0.14)
-                : AppPalette.white.withValues(alpha: 0.04),
+                ? colors.primary.withValues(alpha: 0.14)
+                : colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
             border: Border.all(
               color: selected
-                  ? AppPalette.primary.withValues(alpha: 0.40)
-                  : AppPalette.white.withValues(alpha: 0.08),
+                  ? colors.primary.withValues(alpha: 0.40)
+                  : colors.borderSoft,
             ),
           ),
           child: Row(
@@ -2171,13 +2188,13 @@ class _FilterOptionCard extends StatelessWidget {
                 height: adaptive.scale(34),
                 decoration: AppBoxDecoration(
                   color: selected
-                      ? AppPalette.primary.withValues(alpha: 0.18)
-                      : AppPalette.black.withValues(alpha: 0.12),
+                      ? colors.primary.withValues(alpha: 0.18)
+                      : colors.surfaceHigh,
                   borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
                 ),
                 child: Icon(
                   icon,
-                  color: selected ? AppPalette.primary : StoryPalette.textSoft,
+                  color: selected ? colors.primary : colors.textSecondary,
                   size: adaptive.scale(18),
                 ),
               ),
@@ -2188,9 +2205,7 @@ class _FilterOptionCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
-                    color: selected
-                        ? AppPalette.textPrimary
-                        : StoryPalette.textSoft,
+                    color: selected ? colors.textPrimary : colors.textSecondary,
                     fontSize: adaptive.scale(14),
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -2201,8 +2216,8 @@ class _FilterOptionCard extends StatelessWidget {
                     ? Icons.check_circle_rounded
                     : Icons.add_circle_outline,
                 color: selected
-                    ? AppPalette.primary
-                    : AppPalette.white.withValues(alpha: 0.24),
+                    ? colors.primary
+                    : colors.textMuted.withValues(alpha: 0.78),
                 size: adaptive.scale(19),
               ),
             ],
@@ -2242,12 +2257,13 @@ class _FilterSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return Text(
       label.toUpperCase(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: AppTextStyle(
-        color: StoryPalette.textMuted,
+        color: colors.textMuted,
         fontSize: adaptive.scale(12),
         fontWeight: FontWeight.w900,
         letterSpacing: 1.2,
@@ -2272,6 +2288,7 @@ class StoriesBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
 
     return SafeArea(
       top: false,
@@ -2283,17 +2300,12 @@ class StoriesBottomNavBar extends StatelessWidget {
           adaptive.scale(10),
         ),
         decoration: AppBoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppPalette.warmOverlaySurface19,
-              AppPalette.warmOverlayInk14,
-            ],
+            colors: [colors.surfaceRaised, colors.surface],
           ),
-          border: Border(
-            top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
-          ),
+          border: Border(top: BorderSide(color: colors.borderSoft)),
         ),
         child: Row(
           children: [
@@ -2350,7 +2362,8 @@ class _StoriesNavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final color = active ? AppPalette.primary : AppPalette.orangeSoft22;
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = active ? colors.primary : colors.textSecondary;
 
     return Expanded(
       child: Semantics(
@@ -2359,7 +2372,7 @@ class _StoriesNavButton extends StatelessWidget {
         label: label,
         onTap: onTap,
         child: Material(
-          color: AppPalette.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: onTap,
             child: Padding(

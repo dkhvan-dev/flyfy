@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../features/notifications/presentation/notification_unread_badge.dart';
+import 'app_notification_header_button.dart';
 
 class AppListScreenHeader extends StatelessWidget {
   const AppListScreenHeader({
@@ -29,17 +29,19 @@ class AppListScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final scale = _scaleFor(context);
-    final resolvedHeight = height ?? (76 * scale).clamp(68.0, 84.0);
+    final resolvedHeight = height ?? (64 * scale).clamp(58.0, 66.0);
     final resolvedHorizontalPadding =
-        horizontalPadding ?? (24 * scale).clamp(18.0, 26.0);
-    final resolvedTopPadding = topPadding ?? (14 * scale).clamp(12.0, 16.0);
+        horizontalPadding ?? (20 * scale).clamp(16.0, 22.0);
+    final resolvedTopPadding = topPadding ?? (10 * scale).clamp(8.0, 11.0);
     final resolvedBottomPadding =
-        bottomPadding ?? (14 * scale).clamp(12.0, 16.0);
-    final buttonSize = (48 * scale).clamp(42.0, 52.0);
-    final backIconSize = (28 * scale).clamp(24.0, 30.0);
-    final notificationIconSize = (28 * scale).clamp(24.0, 30.0);
-    final titleSize = (28 * scale).clamp(22.0, 30.0);
+        bottomPadding ?? (10 * scale).clamp(8.0, 11.0);
+    final buttonSize = (42 * scale).clamp(38.0, 44.0);
+    final backIconSize = (24 * scale).clamp(22.0, 25.0);
+    final notificationButtonSize = (40 * scale).clamp(38.0, 40.0);
+    final notificationIconSize = (20 * scale).clamp(18.0, 20.0);
+    final titleSize = (24 * scale).clamp(20.0, 24.0);
 
     return Container(
       height: resolvedHeight,
@@ -51,15 +53,15 @@ class AppListScreenHeader extends StatelessWidget {
       ),
       decoration: AppBoxDecoration(
         border: showBottomBorder
-            ? const Border(bottom: BorderSide(color: AppPalette.warmSurface57))
+            ? Border(bottom: BorderSide(color: colors.borderSoft))
             : null,
       ),
       child: Row(
         children: [
           _AppListHeaderButton(
             icon: Icons.arrow_back_ios_new_rounded,
-            color: AppPalette.textPrimary,
-            background: AppPalette.transparent,
+            color: colors.textPrimary,
+            background: colors.transparent,
             size: buttonSize,
             iconSize: backIconSize,
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
@@ -72,7 +74,7 @@ class AppListScreenHeader extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: AppTextStyle(
-                  color: AppPalette.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -82,16 +84,11 @@ class AppListScreenHeader extends StatelessWidget {
               ),
             ),
           ),
-          NotificationUnreadBadge(
-            child: _AppListHeaderButton(
-              icon: Icons.notifications_outlined,
-              color: AppPalette.primary,
-              background: AppPalette.warmSurface54,
-              size: buttonSize,
-              iconSize: notificationIconSize,
-              tooltip: notificationsTooltip,
-              onTap: onNotificationsTap,
-            ),
+          AppNotificationHeaderButton(
+            tooltip: notificationsTooltip,
+            onTap: onNotificationsTap,
+            size: notificationButtonSize,
+            iconSize: notificationIconSize,
           ),
         ],
       ),
@@ -127,10 +124,12 @@ class _AppListHeaderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: AppPalette.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),

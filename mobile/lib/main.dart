@@ -25,6 +25,7 @@ import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/notification_badge_provider.dart';
 import 'providers/routing_provider.dart';
+import 'providers/theme_mode_provider.dart';
 import 'providers/user_routes_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/ui/keyboard_dismiss_on_scroll.dart';
@@ -63,6 +64,7 @@ class _SuperAppState extends State<SuperApp> {
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
+  late final ThemeModeProvider _themeModeProvider;
   late final NotificationBadgeProvider _notificationBadgeProvider;
   late final PushRegistrationService _pushRegistrationService;
   late final PushNotificationBannerController _pushNotificationBannerController;
@@ -79,6 +81,7 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
     _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
     _localeProvider = LocaleProvider();
+    _themeModeProvider = ThemeModeProvider();
     _notificationBadgeProvider = NotificationBadgeProvider();
     _pushRegistrationService = PushRegistrationService(
       client: NotificationApi(
@@ -110,6 +113,7 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider.dispose();
     _sessionProvider.dispose();
     _localeProvider.dispose();
+    _themeModeProvider.dispose();
     _notificationBadgeProvider.dispose();
     unawaited(_pushNotificationCoordinator.dispose());
     unawaited(_pushNotificationBannerController.dispose());
@@ -123,6 +127,9 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
+        ChangeNotifierProvider<ThemeModeProvider>.value(
+          value: _themeModeProvider,
+        ),
         ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
         ChangeNotifierProvider(create: (_) => CurrencyRateProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
@@ -136,8 +143,8 @@ class _SuperAppState extends State<SuperApp> {
         ),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProvider, _) {
+      child: Consumer2<LocaleProvider, ThemeModeProvider>(
+        builder: (context, localeProvider, themeModeProvider, _) {
           ApiClient.setAppLocale(localeProvider.locale.languageCode);
 
           return MaterialApp.router(
@@ -162,7 +169,9 @@ class _SuperAppState extends State<SuperApp> {
                 ),
               );
             },
-            theme: AppDesignSystem.darkTheme(),
+            theme: AppDesignSystem.lightTheme(),
+            darkTheme: AppDesignSystem.darkTheme(),
+            themeMode: themeModeProvider.themeMode,
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -189,6 +198,7 @@ class _SuperAppState extends State<SuperApp> {
     if (!mounted) return;
 
     unawaited(_localeProvider.load());
+    unawaited(_themeModeProvider.load());
     unawaited(_bootstrapAuth());
     unawaited(_runDeferredPushStartupWork());
   }

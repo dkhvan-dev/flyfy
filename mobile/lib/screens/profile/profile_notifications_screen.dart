@@ -379,222 +379,255 @@ class _ProfileNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final padding = profileScaled(context, 20, min: 14, max: 20);
     final pushControlsEnabled = _deliveryControlsEnabled;
     final categoryControlsEnabled =
         pushControlsEnabled && _preferences.pushEnabled;
 
-    return Scaffold(
-      backgroundColor: AppPalette.transparent,
-      body: ProfileResponsiveScope(
-        child: ProfileGlassBackground(
-          child: SafeArea(
-            child: ListView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: ProfileResponsiveScope(
+          child: DecoratedBox(
+            decoration: AppBoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: colors.screenGradientColors,
               ),
-              padding: AppEdgeInsets.fromLTRB(
-                padding,
-                profileScaled(context, 14, min: 10, max: 18),
-                padding,
-                profileScaled(context, 28, min: 20, max: 34),
-              ),
-              children: [
-                const _NotificationsTopBar(),
-                SizedBox(height: profileScaled(context, 24, min: 18, max: 28)),
-                _NotificationsHero(
-                  title: l10n.profileNotificationsHeroTitle,
-                  subtitle: l10n.profileNotificationsHeroSubtitle,
-                  pushEnabled: _preferences.pushEnabled,
-                  quietHoursEnabled: _preferences.quietHoursEnabled,
+            ),
+            child: SafeArea(
+              child: ListView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                if (_preferencesLoading) ...[
+                padding: AppEdgeInsets.fromLTRB(
+                  padding,
+                  profileScaled(context, 14, min: 10, max: 18),
+                  padding,
+                  profileScaled(context, 28, min: 20, max: 34),
+                ),
+                children: [
+                  const _NotificationsTopBar(),
+                  SizedBox(
+                    height: profileScaled(context, 24, min: 18, max: 28),
+                  ),
+                  _NotificationsHero(
+                    title: l10n.profileNotificationsHeroTitle,
+                    subtitle: l10n.profileNotificationsHeroSubtitle,
+                    pushEnabled: _preferences.pushEnabled,
+                    quietHoursEnabled: _preferences.quietHoursEnabled,
+                  ),
+                  if (_preferencesLoading) ...[
+                    SizedBox(
+                      height: profileScaled(context, 16, min: 12, max: 18),
+                    ),
+                    const _NotificationLinearLoader(),
+                  ],
+                  if (_preferencesLoadFailed) ...[
+                    SizedBox(
+                      height: profileScaled(context, 16, min: 12, max: 18),
+                    ),
+                    _NotificationInfoBanner(
+                      icon: Icons.cloud_off_rounded,
+                      title:
+                          l10n.profileNotificationsPreferencesLoadFailedTitle,
+                      subtitle: l10n
+                          .profileNotificationsPreferencesLoadFailedSubtitle,
+                      actionLabel: l10n.retry,
+                      onAction: _loadNotificationPreferences,
+                    ),
+                  ],
+                  SizedBox(
+                    height: profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  _NotificationSectionHeading(
+                    title: l10n.profileNotificationsDeliverySection,
+                  ),
                   SizedBox(
                     height: profileScaled(context, 16, min: 12, max: 18),
                   ),
-                  const _NotificationLinearLoader(),
-                ],
-                if (_preferencesLoadFailed) ...[
+                  _NotificationSwitchTile(
+                    icon: Icons.notifications_active_outlined,
+                    title: l10n.profileNotificationsPushTitle,
+                    subtitle: l10n.profileNotificationsPushSubtitle,
+                    value: _preferences.pushEnabled,
+                    enabled: pushControlsEnabled && !_busyKeys.contains('push'),
+                    busy: _busyKeys.contains('push'),
+                    onChanged: _updatePushEnabled,
+                  ),
+                  if (!_preferences.pushEnabled)
+                    _NotificationInfoBanner(
+                      icon: Icons.notifications_paused_rounded,
+                      title: l10n.profileNotificationsPushPausedTitle,
+                      subtitle: l10n.profileNotificationsPushPausedSubtitle,
+                    ),
+                  SizedBox(
+                    height: profileScaled(context, 20, min: 16, max: 24),
+                  ),
+                  _NotificationSectionHeading(
+                    title: l10n.profileNotificationsCategoriesSection,
+                  ),
                   SizedBox(
                     height: profileScaled(context, 16, min: 12, max: 18),
                   ),
+                  _NotificationSwitchTile(
+                    icon: Icons.groups_2_outlined,
+                    title: l10n.profileNotificationsActivityPushTitle,
+                    subtitle: l10n.profileNotificationsActivityPushSubtitle,
+                    value: _preferences.activityEnabled,
+                    enabled:
+                        categoryControlsEnabled &&
+                        !_busyKeys.contains('activity'),
+                    busy: _busyKeys.contains('activity'),
+                    onChanged: (value) => _updateDeliveryPreference(
+                      'activity',
+                      _preferences.copyWith(activityEnabled: value),
+                      NotificationPreferencesUpdate(activityEnabled: value),
+                    ),
+                  ),
+                  _NotificationSwitchTile(
+                    icon: Icons.explore_outlined,
+                    title: l10n.profileNotificationsExcursionPushTitle,
+                    subtitle: l10n.profileNotificationsExcursionPushSubtitle,
+                    value: _preferences.excursionEnabled,
+                    enabled:
+                        categoryControlsEnabled &&
+                        !_busyKeys.contains('excursion'),
+                    busy: _busyKeys.contains('excursion'),
+                    onChanged: (value) => _updateDeliveryPreference(
+                      'excursion',
+                      _preferences.copyWith(excursionEnabled: value),
+                      NotificationPreferencesUpdate(excursionEnabled: value),
+                    ),
+                  ),
+                  _NotificationSwitchTile(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: l10n.profileNotificationsChatPushTitle,
+                    subtitle: l10n.profileNotificationsChatPushSubtitle,
+                    value: _preferences.chatEnabled,
+                    enabled:
+                        categoryControlsEnabled && !_busyKeys.contains('chat'),
+                    busy: _busyKeys.contains('chat'),
+                    onChanged: (value) => _updateDeliveryPreference(
+                      'chat',
+                      _preferences.copyWith(chatEnabled: value),
+                      NotificationPreferencesUpdate(chatEnabled: value),
+                    ),
+                  ),
+                  _NotificationSwitchTile(
+                    icon: Icons.local_offer_outlined,
+                    title: l10n.profileNotificationsMarketingTitle,
+                    subtitle: l10n.profileNotificationsMarketingSubtitle,
+                    value: _preferences.marketingEnabled,
+                    enabled:
+                        categoryControlsEnabled &&
+                        !_busyKeys.contains('marketing'),
+                    busy: _busyKeys.contains('marketing'),
+                    onChanged: _updateMarketingEnabled,
+                  ),
                   _NotificationInfoBanner(
-                    icon: Icons.cloud_off_rounded,
-                    title: l10n.profileNotificationsPreferencesLoadFailedTitle,
-                    subtitle:
-                        l10n.profileNotificationsPreferencesLoadFailedSubtitle,
-                    actionLabel: l10n.retry,
-                    onAction: _loadNotificationPreferences,
+                    icon: Icons.verified_user_outlined,
+                    title: l10n.profileNotificationsSystemTitle,
+                    subtitle: l10n.profileNotificationsSystemSubtitle,
                   ),
-                ],
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(
-                  title: l10n.profileNotificationsDeliverySection,
-                ),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _NotificationSwitchTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: l10n.profileNotificationsPushTitle,
-                  subtitle: l10n.profileNotificationsPushSubtitle,
-                  value: _preferences.pushEnabled,
-                  enabled: pushControlsEnabled && !_busyKeys.contains('push'),
-                  busy: _busyKeys.contains('push'),
-                  onChanged: _updatePushEnabled,
-                ),
-                if (!_preferences.pushEnabled)
-                  _NotificationInfoBanner(
-                    icon: Icons.notifications_paused_rounded,
-                    title: l10n.profileNotificationsPushPausedTitle,
-                    subtitle: l10n.profileNotificationsPushPausedSubtitle,
+                  SizedBox(
+                    height: profileScaled(context, 20, min: 16, max: 24),
                   ),
-                SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
-                ProfileSectionHeading(
-                  title: l10n.profileNotificationsCategoriesSection,
-                ),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _NotificationSwitchTile(
-                  icon: Icons.groups_2_outlined,
-                  title: l10n.profileNotificationsActivityPushTitle,
-                  subtitle: l10n.profileNotificationsActivityPushSubtitle,
-                  value: _preferences.activityEnabled,
-                  enabled:
-                      categoryControlsEnabled &&
-                      !_busyKeys.contains('activity'),
-                  busy: _busyKeys.contains('activity'),
-                  onChanged: (value) => _updateDeliveryPreference(
-                    'activity',
-                    _preferences.copyWith(activityEnabled: value),
-                    NotificationPreferencesUpdate(activityEnabled: value),
+                  _NotificationSectionHeading(
+                    title: l10n.profileNotificationsQuietHoursSection,
                   ),
-                ),
-                _NotificationSwitchTile(
-                  icon: Icons.explore_outlined,
-                  title: l10n.profileNotificationsExcursionPushTitle,
-                  subtitle: l10n.profileNotificationsExcursionPushSubtitle,
-                  value: _preferences.excursionEnabled,
-                  enabled:
-                      categoryControlsEnabled &&
-                      !_busyKeys.contains('excursion'),
-                  busy: _busyKeys.contains('excursion'),
-                  onChanged: (value) => _updateDeliveryPreference(
-                    'excursion',
-                    _preferences.copyWith(excursionEnabled: value),
-                    NotificationPreferencesUpdate(excursionEnabled: value),
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
                   ),
-                ),
-                _NotificationSwitchTile(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: l10n.profileNotificationsChatPushTitle,
-                  subtitle: l10n.profileNotificationsChatPushSubtitle,
-                  value: _preferences.chatEnabled,
-                  enabled:
-                      categoryControlsEnabled && !_busyKeys.contains('chat'),
-                  busy: _busyKeys.contains('chat'),
-                  onChanged: (value) => _updateDeliveryPreference(
-                    'chat',
-                    _preferences.copyWith(chatEnabled: value),
-                    NotificationPreferencesUpdate(chatEnabled: value),
+                  _NotificationSwitchTile(
+                    icon: Icons.bedtime_outlined,
+                    title: l10n.profileNotificationsQuietHoursTitle,
+                    subtitle: l10n.profileNotificationsQuietHoursSubtitle(
+                      _formatMinutes(
+                        context,
+                        _preferences.quietHoursStartMinutes,
+                      ),
+                      _formatMinutes(
+                        context,
+                        _preferences.quietHoursEndMinutes,
+                      ),
+                    ),
+                    value: _preferences.quietHoursEnabled,
+                    enabled:
+                        pushControlsEnabled &&
+                        _preferences.pushEnabled &&
+                        !_busyKeys.contains('quiet-hours'),
+                    busy: _busyKeys.contains('quiet-hours'),
+                    onChanged: (value) => _applyQuietHours(
+                      startMinutes: _preferences.quietHoursStartMinutes,
+                      endMinutes: _preferences.quietHoursEndMinutes,
+                      enabled: value,
+                    ),
                   ),
-                ),
-                _NotificationSwitchTile(
-                  icon: Icons.local_offer_outlined,
-                  title: l10n.profileNotificationsMarketingTitle,
-                  subtitle: l10n.profileNotificationsMarketingSubtitle,
-                  value: _preferences.marketingEnabled,
-                  enabled:
-                      categoryControlsEnabled &&
-                      !_busyKeys.contains('marketing'),
-                  busy: _busyKeys.contains('marketing'),
-                  onChanged: _updateMarketingEnabled,
-                ),
-                _NotificationInfoBanner(
-                  icon: Icons.verified_user_outlined,
-                  title: l10n.profileNotificationsSystemTitle,
-                  subtitle: l10n.profileNotificationsSystemSubtitle,
-                ),
-                SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
-                ProfileSectionHeading(
-                  title: l10n.profileNotificationsQuietHoursSection,
-                ),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _NotificationSwitchTile(
-                  icon: Icons.bedtime_outlined,
-                  title: l10n.profileNotificationsQuietHoursTitle,
-                  subtitle: l10n.profileNotificationsQuietHoursSubtitle(
-                    _formatMinutes(
+                  _QuietHoursPanel(
+                    enabled:
+                        pushControlsEnabled &&
+                        _preferences.pushEnabled &&
+                        !_busyKeys.contains('quiet-hours'),
+                    startLabel: _formatMinutes(
                       context,
                       _preferences.quietHoursStartMinutes,
                     ),
-                    _formatMinutes(context, _preferences.quietHoursEndMinutes),
+                    endLabel: _formatMinutes(
+                      context,
+                      _preferences.quietHoursEndMinutes,
+                    ),
+                    timezone: _effectiveTimezone,
+                    onStartTap: () => _pickQuietHour(start: true),
+                    onEndTap: () => _pickQuietHour(start: false),
+                    onPresetSelected: (start, end) => _applyQuietHours(
+                      startMinutes: start,
+                      endMinutes: end,
+                      enabled: true,
+                    ),
                   ),
-                  value: _preferences.quietHoursEnabled,
-                  enabled:
-                      pushControlsEnabled &&
-                      _preferences.pushEnabled &&
-                      !_busyKeys.contains('quiet-hours'),
-                  busy: _busyKeys.contains('quiet-hours'),
-                  onChanged: (value) => _applyQuietHours(
-                    startMinutes: _preferences.quietHoursStartMinutes,
-                    endMinutes: _preferences.quietHoursEndMinutes,
-                    enabled: value,
+                  SizedBox(
+                    height: profileScaled(context, 20, min: 16, max: 24),
                   ),
-                ),
-                _QuietHoursPanel(
-                  enabled:
-                      pushControlsEnabled &&
-                      _preferences.pushEnabled &&
-                      !_busyKeys.contains('quiet-hours'),
-                  startLabel: _formatMinutes(
-                    context,
-                    _preferences.quietHoursStartMinutes,
+                  _NotificationSectionHeading(
+                    title: l10n.profileNotificationsChannelsSection,
                   ),
-                  endLabel: _formatMinutes(
-                    context,
-                    _preferences.quietHoursEndMinutes,
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
                   ),
-                  timezone: _effectiveTimezone,
-                  onStartTap: () => _pickQuietHour(start: true),
-                  onEndTap: () => _pickQuietHour(start: false),
-                  onPresetSelected: (start, end) => _applyQuietHours(
-                    startMinutes: start,
-                    endMinutes: end,
-                    enabled: true,
+                  _NotificationSwitchTile(
+                    icon: Icons.mail_outline_rounded,
+                    title: l10n.profileNotificationsEmailTitle,
+                    subtitle: l10n.profileNotificationsEmailSubtitle,
+                    value: _settings.notificationsEmailEnabled,
+                    enabled: !_busyKeys.contains('email'),
+                    busy: _busyKeys.contains('email'),
+                    onChanged: (value) => _updateAccountSetting(
+                      'email',
+                      (current) =>
+                          current.copyWith(notificationsEmailEnabled: value),
+                      notificationsEmailEnabled: value,
+                    ),
                   ),
-                ),
-                SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
-                ProfileSectionHeading(
-                  title: l10n.profileNotificationsChannelsSection,
-                ),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _NotificationSwitchTile(
-                  icon: Icons.mail_outline_rounded,
-                  title: l10n.profileNotificationsEmailTitle,
-                  subtitle: l10n.profileNotificationsEmailSubtitle,
-                  value: _settings.notificationsEmailEnabled,
-                  enabled: !_busyKeys.contains('email'),
-                  busy: _busyKeys.contains('email'),
-                  onChanged: (value) => _updateAccountSetting(
-                    'email',
-                    (current) =>
-                        current.copyWith(notificationsEmailEnabled: value),
-                    notificationsEmailEnabled: value,
+                  _NotificationSwitchTile(
+                    icon: Icons.sms_outlined,
+                    title: l10n.profileNotificationsSmsTitle,
+                    subtitle: l10n.profileNotificationsSmsSubtitle,
+                    value: _settings.notificationsSmsEnabled,
+                    enabled: !_busyKeys.contains('sms'),
+                    busy: _busyKeys.contains('sms'),
+                    onChanged: (value) => _updateAccountSetting(
+                      'sms',
+                      (current) =>
+                          current.copyWith(notificationsSmsEnabled: value),
+                      notificationsSmsEnabled: value,
+                    ),
                   ),
-                ),
-                _NotificationSwitchTile(
-                  icon: Icons.sms_outlined,
-                  title: l10n.profileNotificationsSmsTitle,
-                  subtitle: l10n.profileNotificationsSmsSubtitle,
-                  value: _settings.notificationsSmsEnabled,
-                  enabled: !_busyKeys.contains('sms'),
-                  busy: _busyKeys.contains('sms'),
-                  onChanged: (value) => _updateAccountSetting(
-                    'sms',
-                    (current) =>
-                        current.copyWith(notificationsSmsEnabled: value),
-                    notificationsSmsEnabled: value,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -608,9 +641,11 @@ class _NotificationsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Row(
       children: [
-        ProfileTopIconButton(
+        _NotificationTopIconButton(
           icon: Icons.arrow_back,
           onTap: () => context.pop(),
         ),
@@ -623,7 +658,7 @@ class _NotificationsTopBar extends StatelessWidget {
               AppLocalizations.of(context)!.profileNotificationsPageTitle,
               textAlign: TextAlign.center,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: colors.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
               ),
@@ -632,6 +667,53 @@ class _NotificationsTopBar extends StatelessWidget {
         ),
         SizedBox(width: profileScaled(context, 38, min: 34, max: 40)),
       ],
+    );
+  }
+}
+
+class _NotificationTopIconButton extends StatelessWidget {
+  const _NotificationTopIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final size = profileScaled(context, 38, min: 34, max: 40);
+    final iconSize = profileScaled(context, 20, min: 18, max: 20);
+
+    return Material(
+      color: colors.surfaceRaised,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox.square(
+          dimension: size,
+          child: Icon(icon, size: iconSize, color: colors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationSectionHeading extends StatelessWidget {
+  const _NotificationSectionHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return Text(
+      title,
+      style: AppTextStyle(
+        color: colors.textPrimary,
+        fontSize: profileScaled(context, 18, min: 16, max: 22),
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 }
@@ -652,9 +734,11 @@ class _NotificationsHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       padding: AppEdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
-      decoration: profileCardDecoration(
+      decoration: _notificationCardDecoration(
         context,
         highlighted: true,
         radius: profileScaled(context, 28, min: 22, max: 30),
@@ -666,7 +750,7 @@ class _NotificationsHero extends StatelessWidget {
             width: profileScaled(context, 54, min: 48, max: 58),
             height: profileScaled(context, 54, min: 48, max: 58),
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.14),
+              color: colors.primary.withValues(alpha: 0.14),
               borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
@@ -675,7 +759,7 @@ class _NotificationsHero extends StatelessWidget {
               pushEnabled
                   ? Icons.notifications_active_outlined
                   : Icons.notifications_paused_outlined,
-              color: AppPalette.primary,
+              color: colors.primary,
               size: profileScaled(context, 26, min: 22, max: 28),
             ),
           ),
@@ -687,7 +771,7 @@ class _NotificationsHero extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle(
-                    color: AppPalette.textPrimary,
+                    color: colors.textPrimary,
                     fontSize: profileScaled(context, 20, min: 18, max: 22),
                     fontWeight: FontWeight.w900,
                   ),
@@ -696,7 +780,7 @@ class _NotificationsHero extends StatelessWidget {
                 Text(
                   subtitle,
                   style: AppTextStyle(
-                    color: profileTextSoft,
+                    color: colors.textSecondary,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     height: 1.45,
                   ),
@@ -750,6 +834,7 @@ class _NotificationSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final disabled = !enabled || onChanged == null;
     return Padding(
       padding: AppEdgeInsets.only(
@@ -759,7 +844,7 @@ class _NotificationSwitchTile extends StatelessWidget {
         padding: AppEdgeInsets.all(
           profileScaled(context, 18, min: 14, max: 20),
         ),
-        decoration: profileCardDecoration(
+        decoration: _notificationCardDecoration(
           context,
           disabled: disabled,
           radius: profileScaled(context, 22, min: 18, max: 24),
@@ -771,14 +856,12 @@ class _NotificationSwitchTile extends StatelessWidget {
               width: profileScaled(context, 46, min: 40, max: 48),
               height: profileScaled(context, 46, min: 40, max: 48),
               decoration: AppBoxDecoration(
-                color: AppPalette.primary.withValues(
-                  alpha: disabled ? 0.05 : 0.12,
-                ),
+                color: colors.primary.withValues(alpha: disabled ? 0.05 : 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: disabled ? profileDisabled : AppPalette.primary,
+                color: disabled ? colors.textDisabled : colors.primary,
               ),
             ),
             SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -790,8 +873,8 @@ class _NotificationSwitchTile extends StatelessWidget {
                     title,
                     style: AppTextStyle(
                       color: disabled
-                          ? profileDisabled
-                          : AppPalette.textPrimary,
+                          ? colors.textDisabled
+                          : colors.textPrimary,
                       fontSize: profileScaled(context, 16, min: 14, max: 17),
                       fontWeight: FontWeight.w800,
                     ),
@@ -800,7 +883,7 @@ class _NotificationSwitchTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyle(
-                      color: disabled ? profileDisabled : profileTextMuted,
+                      color: disabled ? colors.textDisabled : colors.textMuted,
                       fontSize: profileScaled(context, 13, min: 12, max: 13),
                       height: 1.45,
                     ),
@@ -819,7 +902,7 @@ class _NotificationSwitchTile extends StatelessWidget {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppPalette.primary.withValues(alpha: 0.9),
+                      color: colors.primary.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -828,9 +911,10 @@ class _NotificationSwitchTile extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: disabled ? null : onChanged,
-                activeThumbColor: AppPalette.primary,
-                activeTrackColor: AppPalette.primary.withValues(alpha: 0.38),
-                inactiveTrackColor: AppPalette.white.withValues(alpha: 0.1),
+                activeThumbColor: colors.primary,
+                activeTrackColor: colors.primary.withValues(alpha: 0.38),
+                inactiveThumbColor: colors.textDisabled,
+                inactiveTrackColor: colors.border.withValues(alpha: 0.32),
               ),
           ],
         ),
@@ -861,6 +945,7 @@ class _QuietHoursPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final presets = <({String label, int start, int end})>[
       (label: '22:00-08:00', start: 22 * 60, end: 8 * 60),
       (label: '23:00-07:00', start: 23 * 60, end: 7 * 60),
@@ -872,7 +957,7 @@ class _QuietHoursPanel extends StatelessWidget {
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       padding: AppEdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
-      decoration: profileCardDecoration(
+      decoration: _notificationCardDecoration(
         context,
         disabled: !enabled,
         radius: profileScaled(context, 22, min: 18, max: 24),
@@ -902,7 +987,7 @@ class _QuietHoursPanel extends StatelessWidget {
           Text(
             l10n.profileNotificationsQuietHoursTimezone(timezone),
             style: AppTextStyle(
-              color: enabled ? profileTextMuted : profileDisabled,
+              color: enabled ? colors.textMuted : colors.textDisabled,
               fontSize: profileScaled(context, 12, min: 11, max: 13),
               height: 1.35,
             ),
@@ -941,17 +1026,19 @@ class _TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Material(
-      color: AppPalette.transparent,
+      color: colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: AppBorderRadius.circular(18),
         child: Ink(
           padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: AppBoxDecoration(
-            color: AppPalette.white.withValues(alpha: enabled ? 0.06 : 0.03),
+            color: enabled ? colors.surfaceHigh : colors.surface,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
+            border: Border.all(color: colors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -960,7 +1047,7 @@ class _TimeButton extends StatelessWidget {
               Text(
                 label,
                 style: AppTextStyle(
-                  color: enabled ? profileTextMuted : profileDisabled,
+                  color: enabled ? colors.textMuted : colors.textDisabled,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -969,7 +1056,7 @@ class _TimeButton extends StatelessWidget {
               Text(
                 value,
                 style: AppTextStyle(
-                  color: enabled ? AppPalette.textPrimary : profileDisabled,
+                  color: enabled ? colors.textPrimary : colors.textDisabled,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
@@ -995,17 +1082,19 @@ class _PresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ActionChip(
       onPressed: enabled ? onTap : null,
       label: Text(label),
       labelStyle: AppTextStyle(
-        color: enabled ? AppPalette.textPrimary : profileDisabled,
+        color: enabled ? colors.textPrimary : colors.textDisabled,
         fontSize: 12,
         fontWeight: FontWeight.w800,
       ),
-      backgroundColor: AppPalette.white.withValues(alpha: 0.06),
-      disabledColor: AppPalette.white.withValues(alpha: 0.03),
-      side: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
+      backgroundColor: colors.surfaceHigh,
+      disabledColor: colors.surface,
+      side: BorderSide(color: colors.border),
       shape: RoundedRectangleBorder(
         borderRadius: AppBorderRadius.circular(999),
       ),
@@ -1030,22 +1119,24 @@ class _NotificationInfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Container(
       margin: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       padding: AppEdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.08),
+        color: colors.primary.withValues(alpha: 0.08),
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 24),
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppPalette.primary, size: 24),
+          Icon(icon, color: colors.primary, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1053,8 +1144,8 @@ class _NotificationInfoBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const AppTextStyle(
-                    color: AppPalette.textPrimary,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     height: 1.2,
@@ -1064,7 +1155,7 @@ class _NotificationInfoBanner extends StatelessWidget {
                 Text(
                   subtitle,
                   style: AppTextStyle(
-                    color: profileTextMuted,
+                    color: colors.textMuted,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -1074,7 +1165,7 @@ class _NotificationInfoBanner extends StatelessWidget {
                   TextButton(
                     onPressed: onAction,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppPalette.primary,
+                      foregroundColor: colors.primary,
                       padding: AppEdgeInsets.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -1098,7 +1189,8 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppPalette.primary : AppPalette.textCaption;
+    final colors = AppDesignSystem.colorsFor(context);
+    final color = active ? colors.primary : colors.textMuted;
     return DecoratedBox(
       decoration: AppBoxDecoration(
         color: color.withValues(alpha: active ? 0.14 : 0.10),
@@ -1127,15 +1219,53 @@ class _NotificationLinearLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return ClipRRect(
       borderRadius: AppBorderRadius.circular(999),
       child: LinearProgressIndicator(
         minHeight: 3,
-        color: AppPalette.primary,
-        backgroundColor: AppPalette.white.withValues(alpha: 0.08),
+        color: colors.primary,
+        backgroundColor: colors.surfaceHigh,
       ),
     );
   }
+}
+
+BoxDecoration _notificationCardDecoration(
+  BuildContext context, {
+  bool highlighted = false,
+  bool disabled = false,
+  double? radius,
+}) {
+  final colors = AppDesignSystem.colorsFor(context);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final surface = disabled
+      ? colors.surface.withValues(alpha: isDark ? 0.68 : 0.86)
+      : highlighted
+      ? colors.surfaceRaised
+      : colors.surface;
+
+  return AppBoxDecoration(
+    color: surface,
+    borderRadius: AppBorderRadius.circular(
+      radius ?? profileScaled(context, 22, min: 18, max: 28),
+    ),
+    border: Border.all(
+      color: highlighted
+          ? colors.primary.withValues(alpha: isDark ? 0.30 : 0.24)
+          : colors.border,
+    ),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: colors.black.withValues(alpha: 0.20),
+              blurRadius: profileScaled(context, 18, min: 12, max: 22),
+              offset: Offset(0, profileScaled(context, 8, min: 5, max: 10)),
+            ),
+          ]
+        : const [],
+  );
 }
 
 String _formatMinutes(BuildContext context, int minutes) {

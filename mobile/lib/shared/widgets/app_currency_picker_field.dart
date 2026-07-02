@@ -13,7 +13,7 @@ class AppCurrencyPickerField extends StatelessWidget {
     required this.onChanged,
     this.errorText,
     this.enabled = true,
-    this.surfaceColor = AppPalette.warmSurface35,
+    this.surfaceColor,
   });
 
   final String label;
@@ -21,7 +21,7 @@ class AppCurrencyPickerField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final String? errorText;
   final bool enabled;
-  final Color surfaceColor;
+  final Color? surfaceColor;
 
   AppCurrencyOption get _selectedOption {
     final normalized = normalizeAppCurrencyCodeOrDefault(selectedCode);
@@ -33,12 +33,14 @@ class AppCurrencyPickerField extends StatelessWidget {
 
   Future<void> _openPicker(BuildContext context) async {
     if (!enabled) return;
+    final colors = AppDesignSystem.colorsFor(context);
 
     final result = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: colors.transparent,
       builder: (context) {
+        final sheetColors = AppDesignSystem.colorsFor(context);
         final l10n = AppLocalizations.of(context)!;
         final selected = normalizeAppCurrencyCodeOrDefault(selectedCode);
         return SafeArea(
@@ -46,17 +48,16 @@ class AppCurrencyPickerField extends StatelessWidget {
             padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16),
             child: DecoratedBox(
               decoration: AppBoxDecoration(
-                color: AppPalette.warmSurface35,
+                color: sheetColors.surface,
                 borderRadius: AppBorderRadius.circular(28),
+                border: Border.all(color: sheetColors.borderSoft),
               ),
               child: ListView.separated(
                 shrinkWrap: true,
                 padding: const AppEdgeInsets.all(12),
                 itemCount: appCurrencyOptions.length,
-                separatorBuilder: (_, _) => Divider(
-                  height: 1,
-                  color: AppPalette.primary.withValues(alpha: 0.10),
-                ),
+                separatorBuilder: (_, _) =>
+                    Divider(height: 1, color: sheetColors.borderSoft),
                 itemBuilder: (context, index) {
                   final option = appCurrencyOptions[index];
                   final isSelected = option.code == selected;
@@ -64,27 +65,27 @@ class AppCurrencyPickerField extends StatelessWidget {
                     onTap: () => Navigator.of(context).pop(option.code),
                     leading: CircleAvatar(
                       backgroundColor: isSelected
-                          ? AppPalette.primary
-                          : AppPalette.warmSurface62,
-                      foregroundColor: AppPalette.white,
+                          ? sheetColors.primary
+                          : sheetColors.surfaceHigh,
+                      foregroundColor: sheetColors.textPrimary,
                       child: Text(option.symbol),
                     ),
                     title: Text(
                       option.label(l10n),
-                      style: const AppTextStyle(
-                        color: AppPalette.orangeWash27,
+                      style: AppTextStyle(
+                        color: sheetColors.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     trailing: isSelected
-                        ? const Icon(
+                        ? Icon(
                             Icons.check_circle_rounded,
-                            color: AppPalette.primary,
+                            color: sheetColors.primary,
                           )
                         : Text(
                             option.code,
-                            style: const AppTextStyle(
-                              color: AppPalette.textMuted,
+                            style: AppTextStyle(
+                              color: sheetColors.textMuted,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -105,25 +106,27 @@ class AppCurrencyPickerField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final selectedOption = _selectedOption;
     final borderColor = errorText == null
-        ? AppPalette.primary.withValues(alpha: 0.10)
-        : AppPalette.redLight02;
+        ? colors.borderPrimary
+        : colors.danger;
+    final effectiveSurfaceColor = surfaceColor ?? colors.surfaceRaised;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const AppTextStyle(
-            color: AppPalette.orangeWash05,
+          style: AppTextStyle(
+            color: colors.textSecondary,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 10),
         Material(
-          color: surfaceColor,
+          color: effectiveSurfaceColor,
           borderRadius: AppBorderRadius.circular(24),
           child: InkWell(
             onTap: enabled ? () => _openPicker(context) : null,
@@ -144,8 +147,8 @@ class AppCurrencyPickerField extends StatelessWidget {
                     selectedOption.symbol,
                     style: AppTextStyle(
                       color: enabled
-                          ? AppPalette.primary
-                          : AppPalette.primary.withValues(alpha: 0.65),
+                          ? colors.primary
+                          : colors.primary.withValues(alpha: 0.65),
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                     ),
@@ -158,8 +161,8 @@ class AppCurrencyPickerField extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
                         color: enabled
-                            ? AppPalette.orangeWash27
-                            : AppPalette.orangeWash27.withValues(alpha: 0.65),
+                            ? colors.textPrimary
+                            : colors.textPrimary.withValues(alpha: 0.65),
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -168,8 +171,8 @@ class AppCurrencyPickerField extends StatelessWidget {
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: enabled
-                        ? AppPalette.textMuted
-                        : AppPalette.textMuted.withValues(alpha: 0.55),
+                        ? colors.textMuted
+                        : colors.textMuted.withValues(alpha: 0.55),
                   ),
                 ],
               ),
@@ -180,8 +183,8 @@ class AppCurrencyPickerField extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             errorText!,
-            style: const AppTextStyle(
-              color: AppPalette.redLight02,
+            style: AppTextStyle(
+              color: colors.danger,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),

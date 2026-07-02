@@ -868,7 +868,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: _MyActivitiesPalette.of(context).transparent,
       builder: (context) {
         return _MyActivitiesFilterSheet(
           l10n: l10n,
@@ -902,211 +902,213 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final layout = _MyActivitiesAdaptiveLayout.of(context);
+    final palette = _MyActivitiesPalette.of(context);
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final currentUserId = context.select<SessionProvider, String>(
       (session) => session.profile?.userId.trim() ?? '',
     );
 
-    return Scaffold(
-      backgroundColor: _MyActivitiesPalette.background,
-      bottomNavigationBar: CreateActionBottomNavigationBar(
-        backgroundStyle: AppBottomNavCreateBackgroundStyle.flat,
-        onHomeTap: _goHome,
-        onQrTap: _openQrStub,
-        onCreateTap: _openCreateActivity,
-        onServicesTap: _goActivities,
-        onChatsTap: _openChatsStub,
-      ),
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _MyActivitiesPalette.backgroundTop,
-              _MyActivitiesPalette.background,
-              _MyActivitiesPalette.backgroundBottom,
-            ],
-          ),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: palette.background,
+        bottomNavigationBar: CreateActionBottomNavigationBar(
+          backgroundStyle: AppBottomNavCreateBackgroundStyle.flat,
+          onHomeTap: _goHome,
+          onQrTap: _openQrStub,
+          onCreateTap: _openCreateActivity,
+          onServicesTap: _goActivities,
+          onChatsTap: _openChatsStub,
         ),
-        child: SafeArea(
-          bottom: false,
-          child: Consumer<ActivityProvider>(
-            builder: (context, provider, _) {
-              final items = _activeItems(
-                provider,
-                currentUserId: currentUserId,
-              );
-              final state = _activeState(provider);
-              final locale = Localizations.localeOf(context);
-              final localeName = locale.toString();
-              final filteredItems = _filterItems(items);
-              final paginatedItems = paginateItems(
-                filteredItems,
-                currentPage: _activePage,
-                pageSize: _pageSize,
-              );
-              _scheduleReviewStateSyncForPage(
-                paginatedItems.items,
-                currentUserId,
-              );
-              final errorMessage = _activeError(provider);
-              final isInitialLoading =
-                  state == ActivitiesState.loading && items.isEmpty;
-              final isInitialError =
-                  state == ActivitiesState.error && items.isEmpty;
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: palette.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Consumer<ActivityProvider>(
+              builder: (context, provider, _) {
+                final items = _activeItems(
+                  provider,
+                  currentUserId: currentUserId,
+                );
+                final state = _activeState(provider);
+                final locale = Localizations.localeOf(context);
+                final localeName = locale.toString();
+                final filteredItems = _filterItems(items);
+                final paginatedItems = paginateItems(
+                  filteredItems,
+                  currentPage: _activePage,
+                  pageSize: _pageSize,
+                );
+                _scheduleReviewStateSyncForPage(
+                  paginatedItems.items,
+                  currentUserId,
+                );
+                final errorMessage = _activeError(provider);
+                final isInitialLoading =
+                    state == ActivitiesState.loading && items.isEmpty;
+                final isInitialError =
+                    state == ActivitiesState.error && items.isEmpty;
 
-              return RefreshIndicator(
-                color: _MyActivitiesPalette.accent,
-                backgroundColor: _MyActivitiesPalette.card,
-                onRefresh: () => _refreshActive(provider),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: layout.maxContentWidth,
-                    ),
-                    child: ListView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: AppEdgeInsets.fromLTRB(
-                        layout.horizontalPadding,
-                        layout.topPadding,
-                        layout.horizontalPadding,
-                        layout.listBottomPadding + safeBottomInset,
+                return RefreshIndicator(
+                  color: palette.accent,
+                  backgroundColor: palette.card,
+                  onRefresh: () => _refreshActive(provider),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: layout.maxContentWidth,
                       ),
-                      children: [
-                        AppListScreenHeader(
-                          title: l10n.myActivitiesTitle,
-                          notificationsTooltip:
-                              l10n.profileNotificationsRowTitle,
-                          onBackTap: _goBack,
-                          onNotificationsTap: () =>
-                              context.push('/notifications'),
-                          horizontalPadding: 0,
+                      child: ListView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: AppEdgeInsets.fromLTRB(
+                          layout.horizontalPadding,
+                          layout.topPadding,
+                          layout.horizontalPadding,
+                          layout.listBottomPadding + safeBottomInset,
                         ),
-                        SizedBox(height: layout.topSectionSpacing),
-                        _MyActivitiesSearchField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          hintText: l10n.activitiesSearchHint,
-                          filterActiveCount: _filtersForTab(
-                            _activeTab,
-                          ).activeCount,
-                          onFilterTap: () => _openFilters(l10n, items),
-                        ),
-                        SizedBox(height: layout.topSectionSpacing),
-                        _MyActivitiesTabSwitcher(
-                          activeTab: _activeTab,
-                          hostedLabel: l10n.myActivitiesTitle,
-                          attendedLabel: l10n.myActivitiesAttendedTab,
-                          onChanged: (tab) => setState(() => _activeTab = tab),
-                        ),
-                        SizedBox(height: layout.cardSpacing),
-                        if (isInitialLoading) ...[
-                          const _MyActivitiesSkeletonCard(),
-                          SizedBox(height: layout.cardSpacing),
-                          const _MyActivitiesSkeletonCard(),
-                          SizedBox(height: layout.cardSpacing),
-                          const _MyActivitiesSkeletonCard(),
-                        ] else if (isInitialError) ...[
-                          _MyActivitiesInfoCard(
-                            icon: Icons.wifi_off_rounded,
-                            title: _activeTab == _MyActivitiesTab.hosted
-                                ? l10n.myActivitiesLoadFailed
-                                : l10n.myActivitiesAttendedLoadFailed,
-                            message:
-                                errorMessage ??
-                                (_activeTab == _MyActivitiesTab.hosted
-                                    ? l10n.myActivitiesLoadFailed
-                                    : l10n.myActivitiesAttendedLoadFailed),
-                            actionLabel: l10n.myActivitiesRetryButton,
-                            onActionTap: () => _refreshActive(provider),
+                        children: [
+                          AppListScreenHeader(
+                            title: l10n.myActivitiesTitle,
+                            notificationsTooltip:
+                                l10n.profileNotificationsRowTitle,
+                            onBackTap: _goBack,
+                            onNotificationsTap: () =>
+                                context.push('/notifications'),
+                            horizontalPadding: 0,
                           ),
-                        ] else if (filteredItems.isEmpty) ...[
-                          _MyActivitiesInfoCard(
-                            icon: _activeTab == _MyActivitiesTab.hosted
-                                ? Icons.event_note_rounded
-                                : Icons.check_circle_outline_rounded,
-                            title: _activeTab == _MyActivitiesTab.hosted
-                                ? l10n.myActivitiesEmpty
-                                : l10n.myActivitiesAttendedEmpty,
-                            message: _myActivitiesEmptyMessage(l10n),
+                          SizedBox(height: layout.topSectionSpacing),
+                          _MyActivitiesSearchField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            hintText: l10n.activitiesSearchHint,
+                            filterActiveCount: _filtersForTab(
+                              _activeTab,
+                            ).activeCount,
+                            onFilterTap: () => _openFilters(l10n, items),
                           ),
-                        ] else ...[
-                          for (
-                            var i = 0;
-                            i < paginatedItems.items.length;
-                            i++
-                          ) ...[
-                            Builder(
-                              builder: (context) {
-                                final item = paginatedItems.items[i];
-                                return _MyActivitiesCard(
-                                  item: item,
-                                  tab: _activeTab,
-                                  localeName: localeName,
-                                  categoryLabel: _activityCategoryLabel(
-                                    item,
-                                    provider.categoryItems,
-                                    locale.languageCode,
-                                  ),
-                                  onPrimaryTap: () {
-                                    if (_activeTab ==
-                                        _MyActivitiesTab.attended) {
-                                      _openDetails(item);
-                                      return;
-                                    }
+                          SizedBox(height: layout.topSectionSpacing),
+                          _MyActivitiesTabSwitcher(
+                            activeTab: _activeTab,
+                            hostedLabel: l10n.myActivitiesTitle,
+                            attendedLabel: l10n.myActivitiesAttendedTab,
+                            onChanged: (tab) =>
+                                setState(() => _activeTab = tab),
+                          ),
+                          SizedBox(height: layout.cardSpacing),
+                          if (isInitialLoading) ...[
+                            const _MyActivitiesSkeletonCard(),
+                            SizedBox(height: layout.cardSpacing),
+                            const _MyActivitiesSkeletonCard(),
+                            SizedBox(height: layout.cardSpacing),
+                            const _MyActivitiesSkeletonCard(),
+                          ] else if (isInitialError) ...[
+                            _MyActivitiesInfoCard(
+                              icon: Icons.wifi_off_rounded,
+                              title: _activeTab == _MyActivitiesTab.hosted
+                                  ? l10n.myActivitiesLoadFailed
+                                  : l10n.myActivitiesAttendedLoadFailed,
+                              message:
+                                  errorMessage ??
+                                  (_activeTab == _MyActivitiesTab.hosted
+                                      ? l10n.myActivitiesLoadFailed
+                                      : l10n.myActivitiesAttendedLoadFailed),
+                              actionLabel: l10n.myActivitiesRetryButton,
+                              onActionTap: () => _refreshActive(provider),
+                            ),
+                          ] else if (filteredItems.isEmpty) ...[
+                            _MyActivitiesInfoCard(
+                              icon: _activeTab == _MyActivitiesTab.hosted
+                                  ? Icons.event_note_rounded
+                                  : Icons.check_circle_outline_rounded,
+                              title: _activeTab == _MyActivitiesTab.hosted
+                                  ? l10n.myActivitiesEmpty
+                                  : l10n.myActivitiesAttendedEmpty,
+                              message: _myActivitiesEmptyMessage(l10n),
+                            ),
+                          ] else ...[
+                            for (
+                              var i = 0;
+                              i < paginatedItems.items.length;
+                              i++
+                            ) ...[
+                              Builder(
+                                builder: (context) {
+                                  final item = paginatedItems.items[i];
+                                  return _MyActivitiesCard(
+                                    item: item,
+                                    tab: _activeTab,
+                                    localeName: localeName,
+                                    categoryLabel: _activityCategoryLabel(
+                                      item,
+                                      provider.categoryItems,
+                                      locale.languageCode,
+                                    ),
+                                    onPrimaryTap: () {
+                                      if (_activeTab ==
+                                          _MyActivitiesTab.attended) {
+                                        _openDetails(item);
+                                        return;
+                                      }
 
-                                    final status = item.status.toUpperCase();
-                                    if (status == 'COMPLETED' ||
-                                        status == 'CANCELLED' ||
-                                        status == 'ARCHIVED') {
-                                      _openDetails(item);
-                                      return;
-                                    }
-                                    _openEdit(item);
-                                  },
-                                  onSecondaryTap:
-                                      _activeTab == _MyActivitiesTab.hosted
-                                      ? () {
-                                          if (item.status.toUpperCase() ==
-                                              'CANCELLED') {
-                                            _openRepeat(item);
-                                            return;
+                                      final status = item.status.toUpperCase();
+                                      if (status == 'COMPLETED' ||
+                                          status == 'CANCELLED' ||
+                                          status == 'ARCHIVED') {
+                                        _openDetails(item);
+                                        return;
+                                      }
+                                      _openEdit(item);
+                                    },
+                                    onSecondaryTap:
+                                        _activeTab == _MyActivitiesTab.hosted
+                                        ? () {
+                                            if (item.status.toUpperCase() ==
+                                                'CANCELLED') {
+                                              _openRepeat(item);
+                                              return;
+                                            }
+                                            _showComingSoon();
                                           }
-                                          _showComingSoon();
-                                        }
-                                      : null,
-                                  onReviewTap:
-                                      _activeTab == _MyActivitiesTab.attended &&
-                                          _canShowReviewAction(item)
-                                      ? () => _openReviewSheet(item)
-                                      : null,
-                                  hasReview: _reviewedActivityIds.contains(
-                                    item.id,
-                                  ),
-                                  onCardTap: () => _openDetails(item),
-                                );
-                              },
-                            ),
-                            if (i != paginatedItems.items.length - 1)
-                              SizedBox(height: layout.cardSpacing),
-                          ],
-                          if (paginatedItems.hasMultiplePages) ...[
-                            SizedBox(height: layout.sectionSpacing),
-                            InflapPaginationBar(
-                              currentPage: paginatedItems.currentPage,
-                              totalPages: paginatedItems.totalPages,
-                              onPageChanged: _setActivePage,
-                            ),
+                                        : null,
+                                    onReviewTap:
+                                        _activeTab ==
+                                                _MyActivitiesTab.attended &&
+                                            _canShowReviewAction(item)
+                                        ? () => _openReviewSheet(item)
+                                        : null,
+                                    hasReview: _reviewedActivityIds.contains(
+                                      item.id,
+                                    ),
+                                    onCardTap: () => _openDetails(item),
+                                  );
+                                },
+                              ),
+                              if (i != paginatedItems.items.length - 1)
+                                SizedBox(height: layout.cardSpacing),
+                            ],
+                            if (paginatedItems.hasMultiplePages) ...[
+                              SizedBox(height: layout.sectionSpacing),
+                              InflapPaginationBar(
+                                currentPage: paginatedItems.currentPage,
+                                totalPages: paginatedItems.totalPages,
+                                onPageChanged: _setActivePage,
+                              ),
+                            ],
                           ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -1227,18 +1229,41 @@ IconData _activityCategoryIcon(ActivityListItemVm item) {
   }
 }
 
-abstract final class _MyActivitiesPalette {
-  static const Color backgroundTop = AppPalette.warmInk26;
-  static const Color background = AppPalette.warmInk07;
-  static const Color backgroundBottom = AppPalette.warmInk03;
-  static const Color surface = AppPalette.warmInk36;
-  static const Color surfaceSoft = AppPalette.warmInk93;
-  static const Color card = AppPalette.warmInk77;
-  static const Color accent = AppPalette.warmMuted45;
-  static const Color text = AppPalette.orangeWash22;
-  static const Color textMuted = AppPalette.amberSoft01;
-  static const Color badgeCompleted = AppPalette.greenSurfaceHigh11;
-  static const Color badgeCancelled = AppPalette.redSurfaceHigh01;
+final class _MyActivitiesPalette {
+  const _MyActivitiesPalette._(this.colors);
+
+  final AppColors colors;
+
+  static _MyActivitiesPalette of(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return _MyActivitiesPalette._(colors);
+  }
+
+  Color get backgroundTop => colors.backgroundDeep;
+  Color get background => colors.background;
+  Color get backgroundBottom => colors.backgroundWarm;
+  List<Color> get screenGradientColors => colors.screenGradientColors;
+  Color get surface => colors.surface;
+  Color get surfaceSoft => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get card => colors.surfaceRaised;
+  Color get accent => colors.primary;
+  Color get primary => colors.primary;
+  Color get primarySoft => colors.primarySoft;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get text => colors.textPrimary;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get badgeCompleted => colors.success;
+  Color get badgeCancelled => colors.danger;
+  Color get success => colors.success;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
 }
 
 class _MyActivitiesAdaptiveLayout {
@@ -1305,14 +1330,20 @@ class _MyActivitiesSearchField extends StatelessWidget {
         borderRadius: AppBorderRadius.circular(999),
         gradient: LinearGradient(
           colors: [
-            AppPalette.white.withValues(alpha: 0.035),
-            AppPalette.white.withValues(alpha: 0.02),
+            _MyActivitiesPalette.of(context).white.withValues(alpha: 0.035),
+            _MyActivitiesPalette.of(context).white.withValues(alpha: 0.02),
           ],
         ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: _MyActivitiesPalette.of(
+            context,
+          ).primary.withValues(alpha: 0.08),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.14),
+            color: _MyActivitiesPalette.of(
+              context,
+            ).black.withValues(alpha: 0.14),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -1322,17 +1353,17 @@ class _MyActivitiesSearchField extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        style: const AppTextStyle(
-          color: AppPalette.textPrimary,
+        style: AppTextStyle(
+          color: _MyActivitiesPalette.of(context).textPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        cursorColor: AppPalette.primary,
+        cursorColor: _MyActivitiesPalette.of(context).primary,
         decoration: AppInputDecoration(
           isDense: true,
           hintText: hintText,
-          hintStyle: const AppTextStyle(
-            color: AppPalette.orangeOverlayWash03,
+          hintStyle: AppTextStyle(
+            color: _MyActivitiesPalette.of(context).textMuted,
             fontSize: 14,
           ),
           border: InputBorder.none,
@@ -1340,11 +1371,11 @@ class _MyActivitiesSearchField extends StatelessWidget {
             horizontal: 18,
             vertical: 14,
           ),
-          prefixIcon: const Padding(
+          prefixIcon: Padding(
             padding: AppEdgeInsets.only(left: 12, right: 10),
             child: Icon(
               Icons.search_rounded,
-              color: AppPalette.primary,
+              color: _MyActivitiesPalette.of(context).primary,
               size: 20,
             ),
           ),
@@ -1356,9 +1387,9 @@ class _MyActivitiesSearchField extends StatelessWidget {
                 IconButton(
                   onPressed: controller.clear,
                   splashRadius: 20,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: AppPalette.orangeOverlayWash02,
+                    color: _MyActivitiesPalette.of(context).primary,
                   ),
                 ),
               Padding(
@@ -1374,7 +1405,7 @@ class _MyActivitiesSearchField extends StatelessWidget {
                       splashRadius: 20,
                       icon: Icon(
                         Icons.tune_rounded,
-                        color: AppPalette.primary,
+                        color: _MyActivitiesPalette.of(context).primary,
                         size: 20,
                       ),
                     ),
@@ -1389,15 +1420,17 @@ class _MyActivitiesSearchField extends StatelessWidget {
                           ),
                           padding: const AppEdgeInsets.symmetric(horizontal: 4),
                           decoration: AppBoxDecoration(
-                            color: _MyActivitiesPalette.accent,
+                            color: _MyActivitiesPalette.of(context).accent,
                             borderRadius: AppBorderRadius.circular(999),
                             border: Border.all(width: 1.4),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             '$filterActiveCount',
-                            style: const AppTextStyle(
-                              color: AppPalette.textPrimary,
+                            style: AppTextStyle(
+                              color: _MyActivitiesPalette.of(
+                                context,
+                              ).textPrimary,
                               fontSize: 10,
                               height: 1,
                               fontWeight: FontWeight.w900,
@@ -1437,9 +1470,11 @@ class _MyActivitiesTabSwitcher extends StatelessWidget {
     return Container(
       padding: AppEdgeInsets.all(layout.isCompact ? 5 : 6),
       decoration: AppBoxDecoration(
-        color: _MyActivitiesPalette.surfaceSoft,
+        color: _MyActivitiesPalette.of(context).surfaceSoft,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: _MyActivitiesPalette.of(context).white.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -1480,7 +1515,7 @@ class _SegmentButton extends StatelessWidget {
     final layout = _MyActivitiesAdaptiveLayout.of(context);
 
     return Material(
-      color: AppPalette.transparent,
+      color: _MyActivitiesPalette.of(context).transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
@@ -1490,15 +1525,15 @@ class _SegmentButton extends StatelessWidget {
           height: layout.segmentHeight,
           decoration: AppBoxDecoration(
             color: isActive
-                ? _MyActivitiesPalette.accent
-                : AppPalette.transparent,
+                ? _MyActivitiesPalette.of(context).accent
+                : _MyActivitiesPalette.of(context).transparent,
             borderRadius: AppBorderRadius.circular(999),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: _MyActivitiesPalette.accent.withValues(
-                        alpha: 0.25,
-                      ),
+                      color: _MyActivitiesPalette.of(
+                        context,
+                      ).accent.withValues(alpha: 0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -1515,8 +1550,8 @@ class _SegmentButton extends StatelessWidget {
                   maxLines: 1,
                   style: AppTextStyle(
                     color: isActive
-                        ? AppPalette.amberWash10
-                        : AppPalette.amberMuted01,
+                        ? _MyActivitiesPalette.of(context).textPrimary
+                        : _MyActivitiesPalette.of(context).textSecondary,
                     fontSize: layout.segmentFontSize,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1608,28 +1643,32 @@ class _MyActivitiesCard extends StatelessWidget {
         final contentPadding = compactCard ? 12.0 : 14.0;
 
         return Material(
-          color: AppPalette.transparent,
+          color: _MyActivitiesPalette.of(context).transparent,
           child: InkWell(
             borderRadius: AppBorderRadius.circular(radius),
             onTap: onCardTap,
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: AppBoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    _MyActivitiesPalette.card,
-                    _MyActivitiesPalette.surface,
+                    _MyActivitiesPalette.of(context).card,
+                    _MyActivitiesPalette.of(context).surface,
                   ],
                 ),
                 borderRadius: AppBorderRadius.circular(radius),
                 border: Border.all(
-                  color: _MyActivitiesPalette.accent.withValues(alpha: 0.14),
+                  color: _MyActivitiesPalette.of(
+                    context,
+                  ).accent.withValues(alpha: 0.14),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppPalette.black.withValues(alpha: 0.38),
+                    color: _MyActivitiesPalette.of(
+                      context,
+                    ).black.withValues(alpha: 0.38),
                     blurRadius: compactCard ? 28 : 40,
                     offset: Offset(0, compactCard ? 12 : 18),
                   ),
@@ -1657,18 +1696,20 @@ class _MyActivitiesCard extends StatelessWidget {
                                 height: compactCard ? 32 : 34,
                                 decoration: AppBoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: _MyActivitiesPalette.accent.withValues(
-                                    alpha: 0.12,
-                                  ),
+                                  color: _MyActivitiesPalette.of(
+                                    context,
+                                  ).accent.withValues(alpha: 0.12),
                                   border: Border.all(
-                                    color: AppPalette.white.withValues(
-                                      alpha: 0.08,
-                                    ),
+                                    color: _MyActivitiesPalette.of(
+                                      context,
+                                    ).white.withValues(alpha: 0.08),
                                   ),
                                 ),
                                 child: Icon(
                                   _activityCategoryIcon(item),
-                                  color: _MyActivitiesPalette.accent,
+                                  color: _MyActivitiesPalette.of(
+                                    context,
+                                  ).accent,
                                   size: compactCard ? 16 : 18,
                                 ),
                               ),
@@ -1679,7 +1720,9 @@ class _MyActivitiesCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle(
-                                    color: AppPalette.amberSoft16,
+                                    color: _MyActivitiesPalette.of(
+                                      context,
+                                    ).primary,
                                     fontSize: compactCard ? 10 : 11,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.4,
@@ -1695,8 +1738,8 @@ class _MyActivitiesCard extends StatelessWidget {
                             item.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: _MyActivitiesPalette.text,
+                            style: AppTextStyle(
+                              color: _MyActivitiesPalette.of(context).text,
                               fontSize: 17,
                               height: 1.1,
                               fontWeight: FontWeight.w700,
@@ -1708,8 +1751,8 @@ class _MyActivitiesCard extends StatelessWidget {
                             item.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const AppTextStyle(
-                              color: _MyActivitiesPalette.text,
+                            style: AppTextStyle(
+                              color: _MyActivitiesPalette.of(context).text,
                               fontSize: 19,
                               height: 1.08,
                               fontWeight: FontWeight.w700,
@@ -1862,7 +1905,7 @@ class _ActivityCover extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
     final status = item.status.toUpperCase();
-    final badge = _statusBadgeStyle(status);
+    final badge = _statusBadgeStyle(context, status);
     final statusText = formatActivityDisplayStatus(item, l10n);
     final priceText = item.isFree
         ? l10n.createPriceFree
@@ -1889,8 +1932,12 @@ class _ActivityCover extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.black.withValues(alpha: 0.02),
-                  AppPalette.black.withValues(alpha: 0.18),
+                  _MyActivitiesPalette.of(
+                    context,
+                  ).black.withValues(alpha: 0.02),
+                  _MyActivitiesPalette.of(
+                    context,
+                  ).black.withValues(alpha: 0.18),
                 ],
               ),
             ),
@@ -1931,7 +1978,9 @@ class _ActivityCover extends StatelessWidget {
                 vertical: 7,
               ),
               decoration: AppBoxDecoration(
-                color: AppPalette.warmOverlaySurface10,
+                color: _MyActivitiesPalette.of(
+                  context,
+                ).black.withValues(alpha: 0.48),
                 borderRadius: AppBorderRadius.circular(999),
               ),
               child: Text(
@@ -1940,8 +1989,8 @@ class _ActivityCover extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
                   color: item.isFree
-                      ? AppPalette.success
-                      : _MyActivitiesPalette.accent,
+                      ? _MyActivitiesPalette.of(context).success
+                      : _MyActivitiesPalette.of(context).accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.1,
@@ -1954,27 +2003,27 @@ class _ActivityCover extends StatelessWidget {
     );
   }
 
-  _StatusBadgeStyle _statusBadgeStyle(String status) {
+  _StatusBadgeStyle _statusBadgeStyle(BuildContext context, String status) {
     switch (status) {
       case 'COMPLETED':
-        return const _StatusBadgeStyle(
-          background: _MyActivitiesPalette.badgeCompleted,
-          foreground: AppPalette.textPrimary,
+        return _StatusBadgeStyle(
+          background: _MyActivitiesPalette.of(context).badgeCompleted,
+          foreground: _MyActivitiesPalette.of(context).textPrimary,
         );
       case 'CANCELLED':
-        return const _StatusBadgeStyle(
-          background: _MyActivitiesPalette.badgeCancelled,
-          foreground: AppPalette.textPrimary,
+        return _StatusBadgeStyle(
+          background: _MyActivitiesPalette.of(context).badgeCancelled,
+          foreground: _MyActivitiesPalette.of(context).textPrimary,
         );
       case 'ARCHIVED':
-        return const _StatusBadgeStyle(
-          background: AppPalette.warmSurface71,
-          foreground: AppPalette.textPrimary,
+        return _StatusBadgeStyle(
+          background: _MyActivitiesPalette.of(context).surfaceHigh,
+          foreground: _MyActivitiesPalette.of(context).textPrimary,
         );
       default:
-        return const _StatusBadgeStyle(
-          background: _MyActivitiesPalette.accent,
-          foreground: AppPalette.textPrimary,
+        return _StatusBadgeStyle(
+          background: _MyActivitiesPalette.of(context).accent,
+          foreground: _MyActivitiesPalette.of(context).textPrimary,
         );
     }
   }
@@ -1987,7 +2036,7 @@ class _ActivityCoverFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cover = _coverPalette(item);
+    final cover = _coverPalette(context, item);
 
     return Stack(
       fit: StackFit.expand,
@@ -2005,27 +2054,47 @@ class _ActivityCoverFallback extends StatelessWidget {
           child: Icon(
             _coverIcon(item),
             size: 54,
-            color: AppPalette.white.withValues(alpha: 0.22),
+            color: _MyActivitiesPalette.of(
+              context,
+            ).white.withValues(alpha: 0.22),
           ),
         ),
       ],
     );
   }
 
-  List<Color> _coverPalette(ActivityListItemVm item) {
+  List<Color> _coverPalette(BuildContext context, ActivityListItemVm item) {
     switch (item.categorySlug) {
       case 'adventure-sports':
-        return const [AppPalette.warmSurfaceHigh27, AppPalette.orangeSoft32];
+        return [
+          _MyActivitiesPalette.of(context).surfaceWarm,
+          _MyActivitiesPalette.of(context).primaryContainer,
+        ];
       case 'social-nightlife':
-        return const [AppPalette.pinkSurfaceHigh01, AppPalette.pinkSoft01];
+        return [
+          _MyActivitiesPalette.of(context).surfaceWarm,
+          _MyActivitiesPalette.of(context).danger,
+        ];
       case 'health-wellness':
-        return const [AppPalette.tealSurfaceHigh04, AppPalette.tealMuted09];
+        return [
+          _MyActivitiesPalette.of(context).surfaceHigh,
+          _MyActivitiesPalette.of(context).secondary,
+        ];
       case 'workshops-learning':
-        return const [AppPalette.blueSurfaceHigh29, AppPalette.blueSoft14];
+        return [
+          _MyActivitiesPalette.of(context).surfaceHigh,
+          _MyActivitiesPalette.of(context).secondary,
+        ];
       default:
         return item.format.toUpperCase() == 'ONLINE'
-            ? const [AppPalette.blueSurfaceHigh21, AppPalette.blueMuted17]
-            : const [AppPalette.warmSurface83, AppPalette.warmMuted16];
+            ? [
+                _MyActivitiesPalette.of(context).surfaceHigh,
+                _MyActivitiesPalette.of(context).secondary,
+              ]
+            : [
+                _MyActivitiesPalette.of(context).surfaceWarm,
+                _MyActivitiesPalette.of(context).primarySoft,
+              ];
     }
   }
 
@@ -2054,13 +2123,13 @@ class _MetaItem extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: _MyActivitiesPalette.textMuted),
+        Icon(icon, size: 16, color: _MyActivitiesPalette.of(context).textMuted),
         const SizedBox(width: 6),
         Expanded(
           child: Builder(
             builder: (context) {
               final style = AppTextStyle(
-                color: _MyActivitiesPalette.textMuted,
+                color: _MyActivitiesPalette.of(context).textMuted,
                 fontSize: compact ? 12 : 13,
                 height: 1.25,
               );
@@ -2098,19 +2167,21 @@ class _CardActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final backgroundColor = switch (variant) {
-      _CardActionVariant.primary => _MyActivitiesPalette.accent,
-      _CardActionVariant.secondary => _MyActivitiesPalette.accent.withValues(
-        alpha: 0.08,
-      ),
-      _CardActionVariant.disabled => _MyActivitiesPalette.accent.withValues(
-        alpha: 0.05,
-      ),
+      _CardActionVariant.primary => _MyActivitiesPalette.of(context).accent,
+      _CardActionVariant.secondary => _MyActivitiesPalette.of(
+        context,
+      ).accent.withValues(alpha: 0.08),
+      _CardActionVariant.disabled => _MyActivitiesPalette.of(
+        context,
+      ).accent.withValues(alpha: 0.05),
     };
 
     final foregroundColor = switch (variant) {
-      _CardActionVariant.primary => AppPalette.textPrimary,
-      _CardActionVariant.secondary => AppPalette.orangeLight31,
-      _CardActionVariant.disabled => AppPalette.warmMuted14,
+      _CardActionVariant.primary => _MyActivitiesPalette.of(
+        context,
+      ).textPrimary,
+      _CardActionVariant.secondary => _MyActivitiesPalette.of(context).primary,
+      _CardActionVariant.disabled => _MyActivitiesPalette.of(context).textMuted,
     };
 
     final buttonHeight = compact ? 42.0 : 46.0;
@@ -2178,10 +2249,12 @@ class _MyActivitiesInfoCard extends StatelessWidget {
         compact ? 20 : 24,
       ),
       decoration: AppBoxDecoration(
-        color: _MyActivitiesPalette.surfaceSoft,
+        color: _MyActivitiesPalette.of(context).surfaceSoft,
         borderRadius: AppBorderRadius.circular(30),
         border: Border.all(
-          color: _MyActivitiesPalette.accent.withValues(alpha: 0.14),
+          color: _MyActivitiesPalette.of(
+            context,
+          ).accent.withValues(alpha: 0.14),
         ),
       ),
       child: Column(
@@ -2191,12 +2264,14 @@ class _MyActivitiesInfoCard extends StatelessWidget {
             width: compact ? 52 : 58,
             height: compact ? 52 : 58,
             decoration: AppBoxDecoration(
-              color: _MyActivitiesPalette.accent.withValues(alpha: 0.12),
+              color: _MyActivitiesPalette.of(
+                context,
+              ).accent.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: _MyActivitiesPalette.accent,
+              color: _MyActivitiesPalette.of(context).accent,
               size: compact ? 24 : 28,
             ),
           ),
@@ -2204,7 +2279,7 @@ class _MyActivitiesInfoCard extends StatelessWidget {
           Text(
             title,
             style: AppTextStyle(
-              color: _MyActivitiesPalette.text,
+              color: _MyActivitiesPalette.of(context).text,
               fontSize: compact ? 22 : 24,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.6,
@@ -2214,7 +2289,7 @@ class _MyActivitiesInfoCard extends StatelessWidget {
           Text(
             message,
             style: AppTextStyle(
-              color: _MyActivitiesPalette.textMuted,
+              color: _MyActivitiesPalette.of(context).textMuted,
               fontSize: compact ? 14 : 15,
               height: 1.4,
             ),
@@ -2246,9 +2321,11 @@ class _MyActivitiesSkeletonCard extends StatelessWidget {
 
     return Container(
       decoration: AppBoxDecoration(
-        color: _MyActivitiesPalette.surfaceSoft,
+        color: _MyActivitiesPalette.of(context).surfaceSoft,
         borderRadius: AppBorderRadius.circular(34),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: _MyActivitiesPalette.of(context).white.withValues(alpha: 0.05),
+        ),
       ),
       child: Column(
         children: [
@@ -2256,7 +2333,9 @@ class _MyActivitiesSkeletonCard extends StatelessWidget {
             aspectRatio: 1.55,
             child: Container(
               decoration: AppBoxDecoration(
-                color: AppPalette.white.withValues(alpha: 0.05),
+                color: _MyActivitiesPalette.of(
+                  context,
+                ).white.withValues(alpha: 0.05),
                 borderRadius: const AppBorderRadius.vertical(
                   top: AppRadiusValue.circular(34),
                 ),
@@ -2321,7 +2400,9 @@ class _SkeletonLine extends StatelessWidget {
             width: lineWidth,
             height: height,
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.07),
+              color: _MyActivitiesPalette.of(
+                context,
+              ).white.withValues(alpha: 0.07),
               borderRadius: AppBorderRadius.circular(999),
             ),
           ),
@@ -2559,7 +2640,9 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
       curve: Curves.easeOut,
       padding: AppEdgeInsets.only(bottom: keyboardInset),
       child: DecoratedBox(
-        decoration: const AppBoxDecoration(color: AppPalette.transparent),
+        decoration: AppBoxDecoration(
+          color: _MyActivitiesPalette.of(context).transparent,
+        ),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: Container(
@@ -2568,15 +2651,19 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppPalette.warmSurface21.withValues(alpha: 0.99),
-                  AppPalette.warmInk63,
+                  _MyActivitiesPalette.of(
+                    context,
+                  ).surface.withValues(alpha: 0.99),
+                  _MyActivitiesPalette.of(context).background,
                 ],
               ),
               borderRadius: AppBorderRadius.vertical(
                 top: AppRadiusValue.circular(layout.isCompact ? 24 : 28),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.04),
+                color: _MyActivitiesPalette.of(
+                  context,
+                ).white.withValues(alpha: 0.04),
               ),
             ),
             child: SafeArea(
@@ -2769,12 +2856,14 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                     decoration: AppBoxDecoration(
                       border: Border(
                         top: BorderSide(
-                          color: _MyActivitiesPalette.accent.withValues(
-                            alpha: 0.09,
-                          ),
+                          color: _MyActivitiesPalette.of(
+                            context,
+                          ).accent.withValues(alpha: 0.09),
                         ),
                       ),
-                      color: AppPalette.black.withValues(alpha: 0.06),
+                      color: _MyActivitiesPalette.of(
+                        context,
+                      ).black.withValues(alpha: 0.06),
                     ),
                     child: _MyActivitiesFilterPrimaryButton(
                       label: widget.l10n.activitiesShowResults(previewCount),
@@ -2858,12 +2947,20 @@ class _FilterSheetSectionTitle extends StatelessWidget {
           height: 30,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: _MyActivitiesPalette.accent.withValues(alpha: 0.10),
+            color: _MyActivitiesPalette.of(
+              context,
+            ).accent.withValues(alpha: 0.10),
             border: Border.all(
-              color: _MyActivitiesPalette.accent.withValues(alpha: 0.18),
+              color: _MyActivitiesPalette.of(
+                context,
+              ).accent.withValues(alpha: 0.18),
             ),
           ),
-          child: Icon(icon, size: 16, color: _MyActivitiesPalette.accent),
+          child: Icon(
+            icon,
+            size: 16,
+            color: _MyActivitiesPalette.of(context).accent,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -2871,8 +2968,8 @@ class _FilterSheetSectionTitle extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const AppTextStyle(
-              color: AppPalette.textPrimary,
+            style: AppTextStyle(
+              color: _MyActivitiesPalette.of(context).textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
@@ -2911,8 +3008,8 @@ class _FilterDateField extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final hasValue = controller.text.isNotEmpty;
     final borderColor = errorText == null
-        ? _MyActivitiesPalette.accent.withValues(alpha: 0.28)
-        : AppPalette.redSoft04;
+        ? _MyActivitiesPalette.of(context).accent.withValues(alpha: 0.28)
+        : _MyActivitiesPalette.of(context).danger;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2920,7 +3017,7 @@ class _FilterDateField extends StatelessWidget {
         Text(
           label,
           style: AppTextStyle(
-            color: _MyActivitiesPalette.text,
+            color: _MyActivitiesPalette.of(context).text,
             fontSize: compact ? 12 : 13,
             fontWeight: FontWeight.w700,
           ),
@@ -2935,8 +3032,8 @@ class _FilterDateField extends StatelessWidget {
           onSubmitted: onSubmitted,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           inputFormatters: const [_DateTextInputFormatter()],
-          style: const AppTextStyle(
-            color: _MyActivitiesPalette.text,
+          style: AppTextStyle(
+            color: _MyActivitiesPalette.of(context).text,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
@@ -2944,8 +3041,8 @@ class _FilterDateField extends StatelessWidget {
           ),
           decoration: AppInputDecoration(
             hintText: hintText,
-            hintStyle: const AppTextStyle(
-              color: AppPalette.orangeSoft12,
+            hintStyle: AppTextStyle(
+              color: _MyActivitiesPalette.of(context).textMuted,
               fontSize: 16,
               fontWeight: FontWeight.w400,
               letterSpacing: 0.2,
@@ -2954,7 +3051,9 @@ class _FilterDateField extends StatelessWidget {
             errorText: errorText,
             errorMaxLines: 2,
             filled: true,
-            fillColor: AppPalette.white.withValues(alpha: 0.02),
+            fillColor: _MyActivitiesPalette.of(
+              context,
+            ).white.withValues(alpha: 0.02),
             contentPadding: const AppEdgeInsets.symmetric(
               horizontal: 15,
               vertical: 14,
@@ -2963,9 +3062,9 @@ class _FilterDateField extends StatelessWidget {
                 ? IconButton(
                     onPressed: onClear,
                     splashRadius: 20,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: AppPalette.orangeSoft12,
+                      color: _MyActivitiesPalette.of(context).textMuted,
                     ),
                   )
                 : null,
@@ -2983,22 +3082,22 @@ class _FilterDateField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(999),
-              borderSide: const BorderSide(
-                color: _MyActivitiesPalette.accent,
+              borderSide: BorderSide(
+                color: _MyActivitiesPalette.of(context).accent,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(999),
-              borderSide: const BorderSide(
-                color: AppPalette.redSoft04,
+              borderSide: BorderSide(
+                color: _MyActivitiesPalette.of(context).danger,
                 width: 1.2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(999),
-              borderSide: const BorderSide(
-                color: AppPalette.redSoft04,
+              borderSide: BorderSide(
+                color: _MyActivitiesPalette.of(context).danger,
                 width: 1.5,
               ),
             ),
@@ -3070,11 +3169,11 @@ class _FilterStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final foreground = selected
-        ? AppPalette.amberWash10
-        : _MyActivitiesPalette.text;
+        ? _MyActivitiesPalette.of(context).textPrimary
+        : _MyActivitiesPalette.of(context).text;
 
     return Material(
-      color: AppPalette.transparent,
+      color: _MyActivitiesPalette.of(context).transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
@@ -3083,13 +3182,19 @@ class _FilterStatusChip extends StatelessWidget {
           padding: const AppEdgeInsets.symmetric(horizontal: 12),
           decoration: AppBoxDecoration(
             color: selected
-                ? _MyActivitiesPalette.accent.withValues(alpha: 0.18)
-                : AppPalette.white.withValues(alpha: 0.025),
+                ? _MyActivitiesPalette.of(
+                    context,
+                  ).accent.withValues(alpha: 0.18)
+                : _MyActivitiesPalette.of(
+                    context,
+                  ).white.withValues(alpha: 0.025),
             borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? _MyActivitiesPalette.accent
-                  : _MyActivitiesPalette.accent.withValues(alpha: 0.14),
+                  ? _MyActivitiesPalette.of(context).accent
+                  : _MyActivitiesPalette.of(
+                      context,
+                    ).accent.withValues(alpha: 0.14),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -3101,17 +3206,19 @@ class _FilterStatusChip extends StatelessWidget {
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
-                      ? _MyActivitiesPalette.accent
-                      : AppPalette.transparent,
+                      ? _MyActivitiesPalette.of(context).accent
+                      : _MyActivitiesPalette.of(context).transparent,
                   border: Border.all(
-                    color: _MyActivitiesPalette.accent.withValues(alpha: 0.56),
+                    color: _MyActivitiesPalette.of(
+                      context,
+                    ).accent.withValues(alpha: 0.56),
                     width: 1.5,
                   ),
                 ),
                 child: selected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
-                        color: AppPalette.white,
+                        color: _MyActivitiesPalette.of(context).white,
                         size: 18,
                       )
                     : null,
@@ -3136,14 +3243,16 @@ class _FilterStatusChip extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: AppBoxDecoration(
-                  color: _MyActivitiesPalette.accent.withValues(alpha: 0.14),
+                  color: _MyActivitiesPalette.of(
+                    context,
+                  ).accent.withValues(alpha: 0.14),
                   borderRadius: AppBorderRadius.circular(999),
                 ),
                 child: Text(
                   '$count',
                   textAlign: TextAlign.center,
-                  style: const AppTextStyle(
-                    color: _MyActivitiesPalette.accent,
+                  style: AppTextStyle(
+                    color: _MyActivitiesPalette.of(context).accent,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),

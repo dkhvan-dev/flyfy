@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
+import '../../core/ui/app_notification_header_button.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -19,7 +21,6 @@ import '../../features/feed/data/feed_api.dart';
 import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/feed/widgets/feed_post_card.dart';
-import '../../features/notifications/presentation/notification_unread_badge.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/services/service_catalog.dart';
@@ -700,216 +701,229 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk22,
-      bottomNavigationBar: CommonBottomNavigationBar(
-        activeItem: AppBottomNavItem.home,
-        onHomeTap: _handleHomeNavTap,
-        onQrTap: () => context.push('/qr'),
-        onMapTap: () => context.push('/map'),
-        onServicesTap: _openServices,
-        onChatsTap: () => context.push('/chats'),
-      ),
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(color: AppPalette.warmInk81),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: const AppBoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [AppPalette.warmInk81, AppPalette.warmInk81],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: -120,
-              left: -48,
-              right: -48,
-              child: IgnorePointer(
-                child: Container(
-                  height: 310,
-                  decoration: AppBoxDecoration(
-                    gradient: RadialGradient(
-                      center: const Alignment(0, -0.55),
-                      radius: 1.0,
-                      colors: [
-                        AppPalette.primary.withValues(alpha: 0.08),
-                        AppPalette.primary.withValues(alpha: 0.02),
-                        AppPalette.transparent,
-                      ],
-                      stops: const [0, 0.36, 1],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  _HomeHeader(
-                    location: homeLocation,
-                    profile: profile,
-                    onLocationTap: _openLocationSheet,
-                    onProfileTap: _openProfile,
-                    onNotificationsTap: () => context.push('/notifications'),
-                  ),
-                  Expanded(
-                    child: RefreshIndicator(
-                      key: _refreshIndicatorKey,
-                      color: AppPalette.primary,
-                      onRefresh: _refreshActivities,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isCompact = constraints.maxWidth < 375;
-                          final horizontalPadding = isCompact ? 13.0 : 16.0;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
 
-                          return CustomScrollView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            slivers: [
-                              SliverPadding(
-                                padding: AppEdgeInsets.fromLTRB(
-                                  horizontalPadding,
-                                  isCompact ? 24 : 29,
-                                  horizontalPadding,
-                                  32,
-                                ),
-                                sliver: SliverToBoxAdapter(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _SearchBar(
-                                        hint: l10n.homeSearchHint,
-                                        onTap: _openActivities,
-                                      ),
-                                      if (isLoggedIn) ...[
-                                        const SizedBox(height: 16),
-                                        ContextualStoryTrayBlock(
-                                          surface: 'home',
-                                          stories: _homeStoryTrayStories,
-                                          viewerAvatarFileId:
-                                              profile?.avatarFileId,
-                                          viewerInitials:
-                                              profile?.initials ?? 'F',
-                                          viewerUserId: profile?.userId,
-                                        ),
-                                        SizedBox(height: isCompact ? 24 : 30),
-                                      ] else
-                                        SizedBox(height: isCompact ? 24 : 30),
-                                      _SectionHeader(
-                                        title: l10n.servicesSectionTitle,
-                                        actionLabel: l10n.servicesAllButton,
-                                        onActionTap: _openServices,
-                                      ),
-                                      const SizedBox(height: 14),
-                                      ServiceGrid(
-                                        services: servicesPreview,
-                                        onServiceTap: _openService,
-                                      ),
-                                      SizedBox(height: isCompact ? 38 : 52),
-                                      _PromoCarousel(promos: promos),
-                                      SizedBox(height: isCompact ? 20 : 24),
-                                      _SectionHeader(
-                                        title: l10n.homeTopDestinations,
-                                        actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openPlaces,
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _TopDestinationsRow(
-                                        places: _topPlaces,
-                                        isLoading: _topPlacesLoading,
-                                        hasError: _topPlacesLoadFailed,
-                                        onPlaceTap: _openPlaceDetails,
-                                        onRetry: () =>
-                                            _loadTopPlaces(force: true),
-                                      ),
-                                      SizedBox(height: isCompact ? 30 : 34),
-                                      _SectionHeader(
-                                        title: l10n.homeTopStories,
-                                        actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openFeed,
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _TopPostsCarousel(
-                                        posts: _topPosts,
-                                        isLoading: _topPostsLoading,
-                                        hasError: _topPostsLoadFailed,
-                                        onPostTap: _openTopPost,
-                                        onRetry: () =>
-                                            _loadHomeFeed(force: true),
-                                        onEmptyTap: _openFeed,
-                                      ),
-                                      SizedBox(height: isCompact ? 30 : 34),
-                                      _SectionHeader(
-                                        title: l10n.homeRecommendedActivities,
-                                        actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openActivities,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _RecommendedActivitiesSection(
-                                        provider: activityProvider,
-                                        l10n: l10n,
-                                        currentUserId: currentUserId,
-                                        onRetry: () {
-                                          _refreshActivities();
-                                        },
-                                        onEmptyTap: _openActivities,
-                                        onActivityTap:
-                                            _openRecommendedActivityDetails,
-                                        location: homeLocation,
-                                      ),
-                                      if (isLoggedIn) ...[
-                                        SizedBox(height: isCompact ? 30 : 34),
-                                        _SectionHeader(
-                                          title: l10n.homeSmartPostsTitle,
-                                          actionLabel: l10n.homeSeeAll,
-                                          onActionTap: _openFeed,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        _HomeSmartPostsSection(
-                                          items: homePostStreamItems,
-                                          isLoading:
-                                              _topPostsLoading &&
-                                              _homePostFeedItems.isEmpty,
-                                          hasError:
-                                              _topPostsLoadFailed &&
-                                              _homePostFeedItems.isEmpty,
-                                          isLoadingMore:
-                                              _homePostFeedLoadingMore,
-                                          hasLoadMoreError:
-                                              _homePostFeedLoadMoreFailed,
-                                          onPostTap: _openTopPost,
-                                          onRetry: () =>
-                                              _loadHomeFeed(force: true),
-                                          onLoadMoreRetry: () =>
-                                              _loadHomeFeed(append: true),
-                                          onEmptyTap: _openFeed,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value:
+            (isDarkV2 ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+                .copyWith(
+                  statusBarColor: colors.transparent,
+                  statusBarIconBrightness: isDarkV2
+                      ? Brightness.light
+                      : Brightness.dark,
+                  statusBarBrightness: isDarkV2
+                      ? Brightness.dark
+                      : Brightness.light,
+                ),
+        child: Scaffold(
+          backgroundColor: colors.background,
+          bottomNavigationBar: CommonBottomNavigationBar(
+            activeItem: AppBottomNavItem.home,
+            onHomeTap: _handleHomeNavTap,
+            onQrTap: () => context.push('/qr'),
+            onMapTap: () => context.push('/map'),
+            onServicesTap: _openServices,
+            onChatsTap: () => context.push('/chats'),
+            style: AppBottomNavigationBarStyle.v2(context),
+          ),
+          body: DecoratedBox(
+            decoration: AppBoxDecoration(color: colors.background),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: _homeBackgroundGradientColors(
+                            colors,
+                            Theme.of(context).brightness,
+                          ),
+                          stops: _homeBackgroundGradientStops(
+                            Theme.of(context).brightness,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      _HomeHeader(
+                        location: homeLocation,
+                        profile: profile,
+                        onLocationTap: _openLocationSheet,
+                        onProfileTap: _openProfile,
+                        onNotificationsTap: () =>
+                            context.push('/notifications'),
+                      ),
+                      Expanded(
+                        child: RefreshIndicator(
+                          key: _refreshIndicatorKey,
+                          color: AppPalette.primary,
+                          onRefresh: _refreshActivities,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isCompact = constraints.maxWidth < 375;
+                              final horizontalPadding = isCompact ? 13.0 : 16.0;
+
+                              return CustomScrollView(
+                                controller: _scrollController,
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                slivers: [
+                                  SliverPadding(
+                                    padding: AppEdgeInsets.fromLTRB(
+                                      horizontalPadding,
+                                      isCompact ? 24 : 29,
+                                      horizontalPadding,
+                                      32,
+                                    ),
+                                    sliver: SliverToBoxAdapter(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _SearchBar(
+                                            hint: l10n.homeSearchHint,
+                                            onTap: _openActivities,
+                                          ),
+                                          if (isLoggedIn) ...[
+                                            const SizedBox(height: 16),
+                                            ContextualStoryTrayBlock(
+                                              surface: 'home',
+                                              stories: _homeStoryTrayStories,
+                                              viewerAvatarFileId:
+                                                  profile?.avatarFileId,
+                                              viewerInitials:
+                                                  profile?.initials ?? 'F',
+                                              viewerUserId: profile?.userId,
+                                            ),
+                                            SizedBox(
+                                              height: isCompact ? 10 : 14,
+                                            ),
+                                          ] else
+                                            SizedBox(
+                                              height: isCompact ? 24 : 30,
+                                            ),
+                                          _SectionHeader(
+                                            title: l10n.servicesSectionTitle,
+                                            actionLabel: l10n.servicesAllButton,
+                                            onActionTap: _openServices,
+                                          ),
+                                          const SizedBox(height: 14),
+                                          ServiceGrid(
+                                            services: servicesPreview,
+                                            style: ServiceGridStyle.v2(context),
+                                            onServiceTap: _openService,
+                                          ),
+                                          SizedBox(height: isCompact ? 38 : 52),
+                                          _PromoCarousel(promos: promos),
+                                          SizedBox(height: isCompact ? 20 : 24),
+                                          _SectionHeader(
+                                            title: l10n.homeTopDestinations,
+                                            actionLabel: l10n.homeSeeAll,
+                                            onActionTap: _openPlaces,
+                                          ),
+                                          const SizedBox(height: 14),
+                                          _TopDestinationsRow(
+                                            places: _topPlaces,
+                                            isLoading: _topPlacesLoading,
+                                            hasError: _topPlacesLoadFailed,
+                                            onPlaceTap: _openPlaceDetails,
+                                            onRetry: () =>
+                                                _loadTopPlaces(force: true),
+                                          ),
+                                          SizedBox(height: isCompact ? 30 : 34),
+                                          _SectionHeader(
+                                            title: l10n.homeTopStories,
+                                            actionLabel: l10n.homeSeeAll,
+                                            onActionTap: _openFeed,
+                                          ),
+                                          const SizedBox(height: 14),
+                                          _TopPostsCarousel(
+                                            posts: _topPosts,
+                                            isLoading: _topPostsLoading,
+                                            hasError: _topPostsLoadFailed,
+                                            onPostTap: _openTopPost,
+                                            onRetry: () =>
+                                                _loadHomeFeed(force: true),
+                                            onEmptyTap: _openFeed,
+                                          ),
+                                          SizedBox(height: isCompact ? 30 : 34),
+                                          _SectionHeader(
+                                            title:
+                                                l10n.homeRecommendedActivities,
+                                            actionLabel: l10n.homeSeeAll,
+                                            onActionTap: _openActivities,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          _RecommendedActivitiesSection(
+                                            provider: activityProvider,
+                                            l10n: l10n,
+                                            currentUserId: currentUserId,
+                                            onRetry: () {
+                                              _refreshActivities();
+                                            },
+                                            onEmptyTap: _openActivities,
+                                            onActivityTap:
+                                                _openRecommendedActivityDetails,
+                                            location: homeLocation,
+                                          ),
+                                          if (isLoggedIn) ...[
+                                            SizedBox(
+                                              height: isCompact ? 30 : 34,
+                                            ),
+                                            _SectionHeader(
+                                              title: l10n.homeSmartPostsTitle,
+                                              actionLabel: l10n.homeSeeAll,
+                                              onActionTap: _openFeed,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            _HomeSmartPostsSection(
+                                              items: homePostStreamItems,
+                                              isLoading:
+                                                  _topPostsLoading &&
+                                                  _homePostFeedItems.isEmpty,
+                                              hasError:
+                                                  _topPostsLoadFailed &&
+                                                  _homePostFeedItems.isEmpty,
+                                              isLoadingMore:
+                                                  _homePostFeedLoadingMore,
+                                              hasLoadMoreError:
+                                                  _homePostFeedLoadMoreFailed,
+                                              onPostTap: _openTopPost,
+                                              onRetry: () =>
+                                                  _loadHomeFeed(force: true),
+                                              onLoadMoreRetry: () =>
+                                                  _loadHomeFeed(append: true),
+                                              onEmptyTap: _openFeed,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -982,16 +996,9 @@ class _HomeHeader extends StatelessWidget {
     return Container(
       padding: AppEdgeInsets.fromLTRB(16, 12, 16, isCompact ? 13 : 14),
       decoration: AppBoxDecoration(
+        color: AppPalette.transparent,
         border: Border(
-          bottom: BorderSide(color: AppPalette.primary.withValues(alpha: 0.08)),
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.primary.withValues(alpha: 0.03),
-            AppPalette.transparent,
-          ],
+          bottom: BorderSide(color: AppPalette.primary.withValues(alpha: 0.10)),
         ),
       ),
       child: Row(
@@ -1021,9 +1028,9 @@ class _HomeHeader extends StatelessWidget {
                           height: isCompact ? 34 : 38,
                           decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppPalette.primary.withValues(alpha: 0.08),
+                            color: AppPalette.primary.withValues(alpha: 0.13),
                             border: Border.all(
-                              color: AppPalette.primary.withValues(alpha: 0.08),
+                              color: AppPalette.primary.withValues(alpha: 0.24),
                             ),
                           ),
                           child: Icon(
@@ -1051,7 +1058,7 @@ class _HomeHeader extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTextStyle(
-                                        color: AppPalette.textWarm,
+                                        color: context.appColors.textPrimary,
                                         fontSize: isCompact ? 16 : 17,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -1060,9 +1067,8 @@ class _HomeHeader extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.expand_more_rounded,
-                                    color: AppPalette.white.withValues(
-                                      alpha: 0.72,
-                                    ),
+                                    color: context.appColors.textSecondary
+                                        .withValues(alpha: 0.72),
                                     size: isCompact ? 14 : 16,
                                   ),
                                 ],
@@ -1077,12 +1083,10 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
           ),
-          NotificationUnreadBadge(
-            child: _HeaderActionButton(
-              icon: Icons.notifications_none_rounded,
-              size: buttonSize,
-              onTap: onNotificationsTap,
-            ),
+          AppNotificationHeaderButton(
+            tooltip: AppLocalizations.of(context)!.notificationsTitle,
+            size: buttonSize,
+            onTap: onNotificationsTap,
           ),
         ],
       ),
@@ -1108,6 +1112,9 @@ class _HeaderAvatarButton extends StatelessWidget {
       (profile?.avatarFileId ?? '').trim(),
     );
     final initials = _normalizedInitials(profile?.initials);
+    final fallbackAvatar = profile == null
+        ? _HeaderAvatarFallbackIcon(iconSize: size < 46 ? 20 : 22)
+        : _HeaderAvatarInitials(initials: initials);
 
     return Semantics(
       button: true,
@@ -1122,30 +1129,22 @@ class _HeaderAvatarButton extends StatelessWidget {
             width: size,
             height: size,
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.1),
+              color: AppPalette.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.22),
+                color: AppPalette.primary.withValues(alpha: 0.24),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.16),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
             child: ClipOval(
               child: ExcludeSemantics(
                 child: avatarUrl == null
-                    ? _HeaderAvatarInitials(initials: initials)
+                    ? fallbackAvatar
                     : Image.network(
                         avatarUrl,
                         width: size,
                         height: size,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            _HeaderAvatarInitials(initials: initials),
+                        errorBuilder: (_, _, _) => fallbackAvatar,
                       ),
               ),
             ),
@@ -1157,7 +1156,7 @@ class _HeaderAvatarButton extends StatelessWidget {
 
   String _normalizedInitials(String? raw) {
     final value = (raw ?? '').trim();
-    if (value.isEmpty) return 'F';
+    if (value.isEmpty) return 'I';
     return value.length <= 2 ? value.toUpperCase() : value.substring(0, 2);
   }
 }
@@ -1170,23 +1169,14 @@ class _HeaderAvatarInitials extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: AppBoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppPalette.primary.withValues(alpha: 0.32),
-            AppPalette.warmSurface66,
-          ],
-        ),
-      ),
+      decoration: AppBoxDecoration(color: AppPalette.transparent),
       child: Center(
         child: Text(
           initials,
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: const AppTextStyle(
-            color: AppPalette.textWarm,
+          style: AppTextStyle(
+            color: context.appColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -1197,40 +1187,18 @@ class _HeaderAvatarInitials extends StatelessWidget {
   }
 }
 
-class _HeaderActionButton extends StatelessWidget {
-  const _HeaderActionButton({
-    required this.icon,
-    required this.onTap,
-    this.size = 44,
-  });
+class _HeaderAvatarFallbackIcon extends StatelessWidget {
+  const _HeaderAvatarFallbackIcon({required this.iconSize});
 
-  final IconData icon;
-  final VoidCallback onTap;
-  final double size;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppPalette.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppBorderRadius.circular(999),
-        child: Ink(
-          width: size,
-          height: size,
-          decoration: AppBoxDecoration(
-            color: AppPalette.primary.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppPalette.primary.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Icon(
-            icon,
-            color: AppPalette.primary,
-            size: size < 46 ? 20 : 22,
-          ),
-        ),
+    return Center(
+      child: Icon(
+        Icons.person_rounded,
+        color: AppPalette.primary,
+        size: iconSize,
       ),
     );
   }
@@ -1245,6 +1213,7 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
       color: AppPalette.transparent,
@@ -1256,16 +1225,20 @@ class _SearchBar extends StatelessWidget {
           child: Ink(
             padding: AppEdgeInsets.symmetric(horizontal: isCompact ? 16 : 18),
             decoration: AppBoxDecoration(
-              color: AppPalette.warmSurface74,
+              color: context.appColors.surfaceRaised,
               borderRadius: AppBorderRadius.circular(999),
-              boxShadow: [
-                BoxShadow(
-                  color: AppPalette.white.withValues(alpha: 0.02),
-                  blurRadius: 0,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+              border: Border.all(
+                color: AppPalette.primary.withValues(alpha: 0.20),
+              ),
+              boxShadow: isDarkV2
+                  ? [
+                      BoxShadow(
+                        color: AppPalette.black.withValues(alpha: 0.22),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -1278,7 +1251,7 @@ class _SearchBar extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.warmMuted10,
+                      color: context.appColors.textMuted,
                       fontSize: isCompact ? 15 : 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1314,7 +1287,7 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             title,
             style: AppTextStyle(
-              color: AppPalette.orangeWash11,
+              color: context.appColors.textPrimary,
               fontSize: isCompact ? 19 : 20,
               height: 1.1,
               fontWeight: FontWeight.w800,
@@ -1404,19 +1377,20 @@ class _PromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final promoScrimGradient = _homePromoImageScrimGradient(context);
 
     return Material(
       color: AppPalette.transparent,
       child: Ink(
         decoration: AppBoxDecoration(
           borderRadius: AppBorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.22),
-              blurRadius: 35,
-              offset: const Offset(0, 14),
-            ),
-          ],
+          border: Border.all(color: context.appColors.border),
+          boxShadow: _homeDarkV2CardShadow(
+            context,
+            alpha: 0.22,
+            blurRadius: 35,
+            offset: const Offset(0, 14),
+          ),
         ),
         child: ClipRRect(
           borderRadius: AppBorderRadius.circular(14),
@@ -1424,20 +1398,10 @@ class _PromoCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               _NetworkCardImage(imageUrl: data.imageUrl),
-              DecoratedBox(
-                decoration: AppBoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      AppPalette.warmInk52.withValues(alpha: 0.90),
-                      AppPalette.warmInk52.withValues(alpha: 0.38),
-                      AppPalette.warmInk52.withValues(alpha: 0.05),
-                    ],
-                    stops: const [0, 0.48, 1],
-                  ),
+              if (promoScrimGradient != null)
+                DecoratedBox(
+                  decoration: AppBoxDecoration(gradient: promoScrimGradient),
                 ),
-              ),
               FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: 0.66,
@@ -1448,55 +1412,65 @@ class _PromoCard extends StatelessWidget {
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      return FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: constraints.maxWidth,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                data.eyebrow,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle(
-                                  color: AppPalette.primary,
-                                  fontSize: isCompact ? 9 : 10,
-                                  height: 1.1,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                data.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle(
-                                  color: AppPalette.orangeWash30,
-                                  fontSize: isCompact ? 20 : 22,
-                                  height: 1.08,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 7),
-                              Text(
-                                data.description,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle(
-                                  color: AppPalette.white.withValues(
-                                    alpha: 0.78,
+                      final panelHorizontalPadding =
+                          Theme.of(context).brightness == Brightness.dark
+                          ? 0.0
+                          : (isCompact ? 10.0 : 12.0);
+                      final maxTextWidth =
+                          constraints.maxWidth - panelHorizontalPadding * 2;
+
+                      return _PromoTextContrastPanel(
+                        isCompact: isCompact,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: maxTextWidth > 0
+                                  ? maxTextWidth
+                                  : constraints.maxWidth,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data.eyebrow,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle(
+                                    color: AppPalette.primary,
+                                    fontSize: isCompact ? 9 : 10,
+                                    height: 1.1,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 2.2,
                                   ),
-                                  fontSize: isCompact ? 12 : 13,
-                                  height: 1.32,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  data.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle(
+                                    color: context.appColors.textPrimary,
+                                    fontSize: isCompact ? 20 : 22,
+                                    height: 1.08,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  data.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle(
+                                    color: context.appColors.textSecondary,
+                                    fontSize: isCompact ? 12 : 13,
+                                    height: 1.32,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -1506,6 +1480,37 @@ class _PromoCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PromoTextContrastPanel extends StatelessWidget {
+  const _PromoTextContrastPanel({required this.isCompact, required this.child});
+
+  final bool isCompact;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (Theme.of(context).brightness == Brightness.dark) return child;
+
+    final colors = AppDesignSystem.colorsFor(context);
+    return ClipRRect(
+      borderRadius: AppBorderRadius.circular(14),
+      child: DecoratedBox(
+        decoration: AppBoxDecoration(
+          color: colors.surface.withValues(alpha: 0.82),
+          borderRadius: AppBorderRadius.circular(14),
+          border: Border.all(color: colors.border.withValues(alpha: 0.88)),
+        ),
+        child: Padding(
+          padding: AppEdgeInsets.symmetric(
+            horizontal: isCompact ? 10 : 12,
+            vertical: isCompact ? 8 : 10,
+          ),
+          child: child,
         ),
       ),
     );
@@ -1631,7 +1636,7 @@ class _TopDestinationPlaceCard extends StatelessWidget {
     final titleFontSize = isCompact ? 16.0 : 17.0;
     final titleLineHeight = 1.16;
     final titleStyle = AppTextStyle(
-      color: AppPalette.amberWash04,
+      color: context.appColors.textPrimary,
       fontSize: titleFontSize,
       height: titleLineHeight,
       fontWeight: FontWeight.w900,
@@ -1643,6 +1648,11 @@ class _TopDestinationPlaceCard extends StatelessWidget {
     final coverMedia = place.coverMedia;
     final coverUrl = _resolveHomePlaceImageUrl(coverMedia);
     final categoryLabel = _homePlaceCategoryLabel(l10n, place);
+    final imageScrimGradient = _homeBottomImageScrimGradient(
+      context,
+      darkEndAlpha: 0.58,
+      stops: const [0.48, 1],
+    );
 
     return Material(
       color: AppPalette.transparent,
@@ -1659,13 +1669,13 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                 child: Ink(
                   decoration: AppBoxDecoration(
                     borderRadius: AppBorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppPalette.black.withValues(alpha: 0.24),
-                        blurRadius: 28,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
+                    border: Border.all(color: context.appColors.border),
+                    boxShadow: _homeDarkV2CardShadow(
+                      context,
+                      alpha: 0.24,
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: AppBorderRadius.circular(10),
@@ -1680,19 +1690,12 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                             logicalWidth:
                                 MediaQuery.sizeOf(context).width * 0.5,
                           ),
-                        DecoratedBox(
-                          decoration: AppBoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppPalette.transparent,
-                                AppPalette.black.withValues(alpha: 0.58),
-                              ],
-                              stops: const [0.48, 1],
+                        if (imageScrimGradient != null)
+                          DecoratedBox(
+                            decoration: AppBoxDecoration(
+                              gradient: imageScrimGradient,
                             ),
                           ),
-                        ),
                         const Positioned(
                           top: 9,
                           right: 9,
@@ -1749,7 +1752,7 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      color: AppPalette.orangeSoft02,
+                      color: context.appColors.secondary,
                       fontSize: isCompact ? 12 : 13,
                     ),
                   ),
@@ -1780,15 +1783,15 @@ class _DestinationBookmarkBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: AppPalette.tealSurface07.withValues(alpha: 0.70),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.10)),
+        color: AppPalette.secondary.withValues(alpha: 0.24),
+        border: Border.all(color: AppPalette.secondary.withValues(alpha: 0.36)),
       ),
       child: const SizedBox(
         width: 38,
         height: 38,
         child: Icon(
           Icons.bookmark_border_rounded,
-          color: AppPalette.white,
+          color: AppPalette.secondarySoft,
           size: 23,
         ),
       ),
@@ -1805,7 +1808,7 @@ class _DestinationTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.58),
+        color: AppPalette.primary,
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -1814,8 +1817,8 @@ class _DestinationTag extends StatelessWidget {
           label.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const AppTextStyle(
-            color: AppPalette.amberLight14,
+          style: AppTextStyle(
+            color: context.appColors.textPrimary,
             fontSize: 10,
             height: 1,
             fontWeight: FontWeight.w900,
@@ -1867,10 +1870,10 @@ class _PlaceCardImagePlaceholder extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: AppPalette.white.withValues(alpha: 0.05),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.landscape_rounded,
-          color: AppPalette.textCaption,
+          color: context.appColors.textMuted,
           size: 40,
         ),
       ),
@@ -1929,7 +1932,7 @@ class _TopDestinationMessage extends StatelessWidget {
           decoration: AppBoxDecoration(
             color: AppPalette.white.withValues(alpha: 0.05),
             borderRadius: AppBorderRadius.circular(22),
-            border: Border.all(color: AppPalette.outlineOverlayLight),
+            border: Border.all(color: context.appColors.borderSoft),
           ),
           child: Padding(
             padding: const AppEdgeInsets.all(18),
@@ -1940,7 +1943,11 @@ class _TopDestinationMessage extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(icon, color: AppPalette.textCaption, size: 28),
+                          Icon(
+                            icon,
+                            color: context.appColors.textMuted,
+                            size: 28,
+                          ),
                           const SizedBox(width: 14),
                           Expanded(child: _TopDestinationMessageText(message)),
                         ],
@@ -1957,7 +1964,7 @@ class _TopDestinationMessage extends StatelessWidget {
                   )
                 : Row(
                     children: [
-                      Icon(icon, color: AppPalette.textCaption, size: 28),
+                      Icon(icon, color: context.appColors.textMuted, size: 28),
                       const SizedBox(width: 14),
                       Expanded(child: _TopDestinationMessageText(message)),
                       const SizedBox(width: 8),
@@ -1988,8 +1995,8 @@ class _TopDestinationMessageText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       message,
-      style: const AppTextStyle(
-        color: AppPalette.textCoolSecondary,
+      style: AppTextStyle(
+        color: context.appColors.textSecondary,
         fontSize: 14,
         height: 1.35,
       ),
@@ -2014,7 +2021,7 @@ class _TopDestinationMessageAction extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const AppTextStyle(
+        style: AppTextStyle(
           color: AppPalette.primary,
           fontWeight: FontWeight.w800,
         ),
@@ -2159,13 +2166,13 @@ class _TopPostCard extends StatelessWidget {
     final excerptFontSize = isCompact ? 12.0 : 12.5;
     final excerptLineHeight = 1.34;
     final titleStyle = AppTextStyle(
-      color: AppPalette.orangeWash28,
+      color: context.appColors.textPrimary,
       fontSize: titleFontSize,
       height: titleLineHeight,
       fontWeight: FontWeight.w900,
     );
     final excerptStyle = AppTextStyle(
-      color: AppPalette.orangeSoft30,
+      color: context.appColors.textSecondary,
       fontSize: excerptFontSize,
       height: excerptLineHeight,
       fontWeight: FontWeight.w500,
@@ -2177,6 +2184,12 @@ class _TopPostCard extends StatelessWidget {
     final avatarSize = (isCompact ? 24.0 : 26.0) * textScale.clamp(1.0, 1.18);
     final isExpired = post.isExpired;
     final isInteractive = !isExpired;
+    final coverScrimGradient = _homeBottomImageScrimGradient(
+      context,
+      darkStartAlpha: 0.08,
+      darkEndAlpha: 0.62,
+      stops: const [0.42, 1],
+    );
     final borderColor = isExpired
         ? AppPalette.white.withValues(alpha: 0.04)
         : AppPalette.primary.withValues(alpha: 0.18);
@@ -2192,19 +2205,21 @@ class _TopPostCard extends StatelessWidget {
           child: Ink(
             decoration: AppBoxDecoration(
               borderRadius: AppBorderRadius.circular(24),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppPalette.warmSurface23, AppPalette.warmInk74],
+                colors: [
+                  context.appColors.surfaceRaised,
+                  context.appColors.surface,
+                ],
               ),
               border: Border.all(color: borderColor),
-              boxShadow: [
-                BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.28),
-                  blurRadius: 30,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+              boxShadow: _homeDarkV2CardShadow(
+                context,
+                alpha: 0.28,
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
             ),
             child: ClipRRect(
               borderRadius: AppBorderRadius.circular(24),
@@ -2218,19 +2233,12 @@ class _TopPostCard extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         StoryCoverImage(url: post.coverUrl),
-                        DecoratedBox(
-                          decoration: AppBoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppPalette.black.withValues(alpha: 0.08),
-                                AppPalette.black.withValues(alpha: 0.62),
-                              ],
-                              stops: const [0.42, 1],
+                        if (coverScrimGradient != null)
+                          DecoratedBox(
+                            decoration: AppBoxDecoration(
+                              gradient: coverScrimGradient,
                             ),
                           ),
-                        ),
                         Positioned(
                           left: 12,
                           right: 12,
@@ -2257,7 +2265,7 @@ class _TopPostCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: titleStyle.copyWith(
                               color: isExpired
-                                  ? AppPalette.orangeLight18
+                                  ? context.appColors.textMuted
                                   : titleStyle.color,
                             ),
                             strutStyle: StrutStyle(
@@ -2297,7 +2305,7 @@ class _TopPostCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle(
-                                    color: AppPalette.orangeLight18,
+                                    color: context.appColors.textMuted,
                                     fontSize: isCompact ? 11.5 : 12,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -2347,7 +2355,7 @@ class _TopPostTag extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 220),
         padding: const AppEdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: AppBoxDecoration(
-          color: AppPalette.warmOverlayInk07,
+          color: AppPalette.black.withValues(alpha: 0.72),
           borderRadius: AppBorderRadius.circular(999),
           border: Border.all(color: AppPalette.white.withValues(alpha: 0.10)),
         ),
@@ -2365,7 +2373,7 @@ class _TopPostTag extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const AppTextStyle(
+                style: AppTextStyle(
                   color: AppPalette.white,
                   fontSize: 11,
                   height: 1,
@@ -2391,7 +2399,7 @@ class _TopPostLoadingCard extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: AppPalette.white.withValues(alpha: 0.05),
         borderRadius: AppBorderRadius.circular(24),
-        border: Border.all(color: AppPalette.outlineOverlayLight),
+        border: Border.all(color: context.appColors.borderSoft),
       ),
       child: Column(
         children: [
@@ -2495,7 +2503,11 @@ class _HomeSmartPostsSection extends StatelessWidget {
     return Column(
       children: [
         for (var index = 0; index < items.length; index++) ...[
-          FeedPostCard(post: items[index].post, onOpen: onPostTap),
+          FeedPostCard(
+            post: items[index].post,
+            style: FeedPostCardStyle.v2(context),
+            onOpen: onPostTap,
+          ),
           if (index != items.length - 1) const SizedBox(height: 16),
         ],
         if (isLoadingMore || hasLoadMoreError) ...[
@@ -2518,7 +2530,7 @@ class _HomeSmartPostLoadingCard extends StatelessWidget {
     return Container(
       padding: const AppEdgeInsets.all(18),
       decoration: AppBoxDecoration(
-        color: AppPalette.warmInk108,
+        color: context.appColors.surface,
         borderRadius: AppBorderRadius.circular(24),
         border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
@@ -2646,15 +2658,15 @@ class _RecommendedActivitiesSection extends StatelessWidget {
         decoration: AppBoxDecoration(
           color: AppPalette.white.withValues(alpha: 0.05),
           borderRadius: AppBorderRadius.circular(24),
-          border: Border.all(color: AppPalette.outlineOverlayLight),
+          border: Border.all(color: context.appColors.borderSoft),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               provider.errorMessage ?? l10n.activitiesLoadFailed,
-              style: const AppTextStyle(
-                color: AppPalette.textCoolSecondary,
+              style: AppTextStyle(
+                color: context.appColors.textSecondary,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -2686,7 +2698,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
             decoration: AppBoxDecoration(
               color: AppPalette.white.withValues(alpha: 0.05),
               borderRadius: AppBorderRadius.circular(24),
-              border: Border.all(color: AppPalette.outlineOverlayLight),
+              border: Border.all(color: context.appColors.borderSoft),
             ),
             child: Row(
               children: [
@@ -2694,7 +2706,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                   width: 56,
                   height: 56,
                   decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.14),
+                    color: AppPalette.primary.withValues(alpha: 0.16),
                     borderRadius: AppBorderRadius.circular(18),
                   ),
                   child: const Icon(
@@ -2709,8 +2721,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                     children: [
                       Text(
                         l10n.noActivitiesYet,
-                        style: const AppTextStyle(
-                          color: AppPalette.textPrimary,
+                        style: AppTextStyle(
+                          color: context.appColors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2718,8 +2730,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         l10n.activitiesWillAppearHere,
-                        style: const AppTextStyle(
-                          color: AppPalette.textCoolSecondary,
+                        style: AppTextStyle(
+                          color: context.appColors.textSecondary,
                           fontSize: 13,
                           height: 1.4,
                         ),
@@ -2727,10 +2739,10 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: AppPalette.textCaption,
+                  color: context.appColors.textMuted,
                 ),
               ],
             ),
@@ -2844,7 +2856,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.textWarm,
+                            color: context.appColors.textPrimary,
                             fontSize: isCompact ? 15 : 16,
                             height: 1.16,
                             fontWeight: FontWeight.w900,
@@ -2856,7 +2868,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.violetSoft01,
+                            color: context.appColors.textMuted,
                             fontSize: isCompact ? 11.5 : 12,
                           ),
                         ),
@@ -2869,7 +2881,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                             Text(
                               item.isFree ? l10n.freeLabel : item.priceLabel,
                               style: AppTextStyle(
-                                color: AppPalette.orangeMuted07,
+                                color: AppPalette.primary,
                                 fontSize: isCompact ? 16 : 17,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -2878,7 +2890,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                               Text(
                                 l10n.createPricePerPersonHint,
                                 style: AppTextStyle(
-                                  color: AppPalette.violetSoft01,
+                                  color: context.appColors.textMuted,
                                   fontSize: isCompact ? 11 : 11.5,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -2939,7 +2951,7 @@ class _ActivityJoinButton extends StatelessWidget {
                     label,
                     maxLines: 1,
                     style: AppTextStyle(
-                      color: AppPalette.white,
+                      color: context.appColors.textPrimary,
                       fontSize: isCompact ? 12 : 13,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -2971,7 +2983,7 @@ class _ActivityThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final normalizedImageUrl = imageUrl?.trim() ?? '';
-    final art = _homeCardArtForItem(item);
+    final art = _homeCardArtForItem(context, item);
 
     return ClipRRect(
       borderRadius: AppBorderRadius.circular(height / 2),
@@ -3060,13 +3072,13 @@ class _NetworkCardImage extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              decoration: const AppBoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppPalette.warmSurfaceHigh06,
-                    AppPalette.warmSurface30,
+                    context.appColors.surfaceHigh,
+                    context.appColors.surface,
                   ],
                 ),
               ),
@@ -3085,76 +3097,83 @@ class _HomeCardArtSpec {
   final List<Color> colors;
 }
 
-_HomeCardArtSpec _homeCategoryVisual(String slug) {
+_HomeCardArtSpec _homeCategoryVisual(BuildContext context, String slug) {
   if (slug.contains('wellness') || slug.contains('health')) {
     return const _HomeCardArtSpec(
       icon: Icons.spa_rounded,
-      colors: [AppPalette.tealSurfaceHigh06, AppPalette.tealSoft04],
+      colors: [AppPalette.secondaryPressed, AppPalette.secondary],
     );
   }
   if (slug.contains('nature') ||
       slug.contains('outdoor') ||
       slug.contains('hiking')) {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.forest_rounded,
-      colors: [AppPalette.greenSurfaceHigh13, AppPalette.greenSoft03],
+      colors: [
+        context.appColors.secondaryContainer,
+        AppPalette.secondaryPressed,
+      ],
     );
   }
   if (slug.contains('food')) {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.restaurant_rounded,
-      colors: [AppPalette.warmSurfaceHigh12, AppPalette.orangeSoft44],
+      colors: [context.appColors.surfaceWarm, AppPalette.primary],
     );
   }
   if (slug.contains('culture') ||
       slug.contains('art') ||
       slug.contains('history')) {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.palette_outlined,
-      colors: [AppPalette.pinkSurfaceHigh02, AppPalette.pinkSoft02],
+      colors: [context.appColors.surfaceHigh, AppPalette.secondaryPressed],
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
     return const _HomeCardArtSpec(
       icon: Icons.kayaking_rounded,
-      colors: [AppPalette.warmSurfaceHigh11, AppPalette.orangeSoft34],
+      colors: [AppPalette.primaryPressed, AppPalette.primary],
     );
   }
   if (slug.contains('workshop') ||
       slug.contains('learning') ||
       slug.contains('education')) {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.auto_stories_rounded,
-      colors: [AppPalette.blueSurfaceHigh30, AppPalette.blueSoft15],
+      colors: [context.appColors.surfaceHigh, AppPalette.secondary],
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.celebration_rounded,
-      colors: [AppPalette.pinkSurfaceHigh01, AppPalette.pinkSoft04],
+      colors: [context.appColors.surfaceHigh, AppPalette.primaryPressed],
     );
   }
 
-  return const _HomeCardArtSpec(
+  return _HomeCardArtSpec(
     icon: Icons.travel_explore_rounded,
-    colors: [AppPalette.warmSurface90, AppPalette.orangeMuted05],
+    colors: [context.appColors.surfaceWarm, AppPalette.primaryPressed],
   );
 }
 
-_HomeCardArtSpec _homeCardArtForItem(ActivityListItemVm item) {
+_HomeCardArtSpec _homeCardArtForItem(
+  BuildContext context,
+  ActivityListItemVm item,
+) {
   final fromCategory = _homeCategoryVisual(
+    context,
     item.categorySlug.trim().toLowerCase(),
   );
   if (item.format.toUpperCase() == 'ONLINE') {
     return const _HomeCardArtSpec(
       icon: Icons.videocam_rounded,
-      colors: [AppPalette.blueSurfaceHigh18, AppPalette.blueSoft07],
+      colors: [AppPalette.secondaryPressed, AppPalette.secondary],
     );
   }
   if (item.format.toUpperCase() == 'HYBRID') {
-    return const _HomeCardArtSpec(
+    return _HomeCardArtSpec(
       icon: Icons.devices_rounded,
-      colors: [AppPalette.violetMuted01, AppPalette.violetLight02],
+      colors: [context.appColors.surfaceHigh, AppPalette.secondaryPressed],
     );
   }
   return fromCategory;
@@ -3170,7 +3189,7 @@ class _RecommendedLoadingCard extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: AppPalette.white.withValues(alpha: 0.05),
         borderRadius: AppBorderRadius.circular(26),
-        border: Border.all(color: AppPalette.outlineOverlayLight),
+        border: Border.all(color: context.appColors.borderSoft),
       ),
       child: Row(
         children: [
@@ -3291,6 +3310,78 @@ class _PromoCardData {
   final String title;
   final String description;
   final String imageUrl;
+}
+
+List<Color> _homeBackgroundGradientColors(
+  AppColors colors,
+  Brightness brightness,
+) {
+  if (brightness == Brightness.dark) {
+    return [colors.surface, colors.background, colors.background];
+  }
+  return colors.screenGradientColors;
+}
+
+List<double> _homeBackgroundGradientStops(Brightness brightness) {
+  if (brightness == Brightness.dark) {
+    return const [0, 0.18, 1];
+  }
+  return const [0, 0.22, 1];
+}
+
+LinearGradient? _homePromoImageScrimGradient(BuildContext context) {
+  final colors = AppDesignSystem.colorsFor(context);
+  if (Theme.of(context).brightness != Brightness.dark) return null;
+
+  return LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      colors.black.withValues(alpha: 0.82),
+      colors.black.withValues(alpha: 0.38),
+      colors.black.withValues(alpha: 0.05),
+    ],
+    stops: const [0, 0.48, 1],
+  );
+}
+
+LinearGradient? _homeBottomImageScrimGradient(
+  BuildContext context, {
+  double darkStartAlpha = 0,
+  required double darkEndAlpha,
+  required List<double> stops,
+}) {
+  if (Theme.of(context).brightness != Brightness.dark) return null;
+
+  final colors = AppDesignSystem.colorsFor(context);
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      darkStartAlpha <= 0
+          ? colors.transparent
+          : colors.black.withValues(alpha: darkStartAlpha),
+      colors.black.withValues(alpha: darkEndAlpha),
+    ],
+    stops: stops,
+  );
+}
+
+List<BoxShadow>? _homeDarkV2CardShadow(
+  BuildContext context, {
+  required double alpha,
+  required double blurRadius,
+  required Offset offset,
+}) {
+  if (Theme.of(context).brightness != Brightness.dark) return null;
+
+  return [
+    BoxShadow(
+      color: AppPalette.black.withValues(alpha: alpha),
+      blurRadius: blurRadius,
+      offset: offset,
+    ),
+  ];
 }
 
 double _homeTextScaleFactor(BuildContext context) {

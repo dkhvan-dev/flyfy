@@ -42,6 +42,49 @@ void main() {
     expect(find.text('6'), findsOneWidget);
     expect(find.text('15'), findsNothing);
   });
+
+  testWidgets('notification badge centers multi-digit labels in the bubble', (
+    tester,
+  ) async {
+    final provider = NotificationBadgeProvider(
+      notificationApi: _FakeNotificationInboxClient(
+        categories: [_category('support', unreadCount: 41)],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<NotificationBadgeProvider>.value(
+        value: provider,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox.square(
+                dimension: 44,
+                child: NotificationUnreadBadge(
+                  child: Icon(Icons.notifications_none_rounded),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final badgeRect = tester.getRect(
+      find.byKey(const ValueKey('notification-unread-badge')),
+    );
+    final labelRect = tester.getRect(find.text('41'));
+
+    expect(
+      (badgeRect.center.dx - labelRect.center.dx).abs(),
+      lessThanOrEqualTo(0.5),
+    );
+    expect(
+      (badgeRect.center.dy - labelRect.center.dy).abs(),
+      lessThanOrEqualTo(0.5),
+    );
+  });
 }
 
 NotificationCategorySummary _category(

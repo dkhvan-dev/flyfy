@@ -20,6 +20,29 @@ import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
 import 'profile_style.dart';
 
+final class _EditProfileColors {
+  const _EditProfileColors._(this.colors);
+
+  final AppColors colors;
+
+  static _EditProfileColors of(BuildContext context) {
+    return _EditProfileColors._(AppDesignSystem.colorsFor(context));
+  }
+
+  Color get primary => colors.primary;
+  Color get primaryContainer => colors.primaryContainer;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get secondary => colors.secondary;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get secondarySoft => colors.secondarySoft;
+  Color get textPrimary => colors.textPrimary;
+  Color get success => colors.success;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+}
+
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -340,7 +363,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   ButtonStyle get _phoneChangeActionStyle {
     return TextButton.styleFrom(
-      foregroundColor: AppPalette.primary,
+      foregroundColor: _EditProfileColors.of(context).primary,
       padding: AppEdgeInsets.zero,
       alignment: Alignment.centerLeft,
     );
@@ -1237,14 +1260,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     width: profileScaled(context, 42, min: 38, max: 44),
                     height: profileScaled(context, 42, min: 38, max: 44),
                     decoration: AppBoxDecoration(
-                      color: AppPalette.primary.withValues(alpha: 0.12),
+                      color: _EditProfileColors.of(
+                        context,
+                      ).primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isVerified
                           ? Icons.verified_user_rounded
                           : Icons.sms_outlined,
-                      color: AppPalette.primary,
+                      color: _EditProfileColors.of(context).primary,
                       size: profileScaled(context, 21, min: 19, max: 22),
                     ),
                   ),
@@ -1258,7 +1283,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ? l10n.profilePhoneVerifiedTitle
                               : l10n.profilePhoneVerificationTitle,
                           style: AppTextStyle(
-                            color: AppPalette.textPrimary,
+                            color: _EditProfileColors.of(context).textPrimary,
                             fontSize: profileScaled(
                               context,
                               16,
@@ -1308,7 +1333,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _PhoneStatusLine(
                   icon: Icons.check_circle_rounded,
                   text: l10n.profilePhoneVerifiedAs(displayPhone),
-                  color: AppPalette.greenSoft01,
+                  color: _EditProfileColors.of(context).success,
                 ),
                 SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
                 Align(
@@ -1318,7 +1343,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ? null
                         : _startVerifiedPhoneChange,
                     style: _phoneChangeActionStyle,
-                    icon: const Icon(Icons.edit_rounded),
+                    icon: Icon(Icons.edit_rounded),
                     label: Text(l10n.profilePhoneChangeNumber),
                   ),
                 ),
@@ -1331,7 +1356,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   text: l10n.profilePhoneCurrentVerifiedAs(
                     currentVerifiedPhone,
                   ),
-                  color: AppPalette.greenSoft01,
+                  color: _EditProfileColors.of(context).success,
                 ),
               ],
               if (!isVerified && !_hasPendingPhoneVerification) ...[
@@ -1339,8 +1364,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 FilledButton(
                   onPressed: isSendDisabled ? null : _startPhoneVerification,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.white,
+                    backgroundColor: _EditProfileColors.of(context).primary,
+                    foregroundColor: _EditProfileColors.of(context).textPrimary,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
@@ -1355,17 +1380,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? SizedBox(
                           width: profileScaled(context, 18, min: 16, max: 18),
                           height: profileScaled(context, 18, min: 16, max: 18),
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppPalette.white,
+                            color: _EditProfileColors.of(context).textPrimary,
                           ),
                         )
                       : Text(
                           l10n.profilePhoneSendCode,
                           textAlign: TextAlign.center,
-                          style: const AppTextStyle(
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: AppTextStyle(fontWeight: FontWeight.w800),
                         ),
                 ),
                 if (isChangingVerifiedPhone) ...[
@@ -1377,7 +1400,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ? null
                           : _cancelVerifiedPhoneChange,
                       style: _phoneChangeActionStyle,
-                      icon: const Icon(Icons.close_rounded),
+                      icon: Icon(Icons.close_rounded),
                       label: Text(l10n.profilePhoneCancelChange),
                     ),
                   ),
@@ -1405,8 +1428,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 FilledButton(
                   onPressed: isVerifyDisabled ? null : _verifyPhoneVerification,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppPalette.primary,
-                    foregroundColor: AppPalette.white,
+                    backgroundColor: _EditProfileColors.of(context).primary,
+                    foregroundColor: _EditProfileColors.of(context).textPrimary,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
@@ -1421,17 +1444,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? SizedBox(
                           width: profileScaled(context, 18, min: 16, max: 18),
                           height: profileScaled(context, 18, min: 16, max: 18),
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppPalette.white,
+                            color: _EditProfileColors.of(context).textPrimary,
                           ),
                         )
                       : Text(
                           l10n.profilePhoneVerifyCode,
                           textAlign: TextAlign.center,
-                          style: const AppTextStyle(
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: AppTextStyle(fontWeight: FontWeight.w800),
                         ),
                 ),
                 SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
@@ -1457,11 +1478,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 min: 14,
                                 max: 16,
                               ),
-                              child: const CircularProgressIndicator(
+                              child: CircularProgressIndicator(
                                 strokeWidth: 2,
+                                color: _EditProfileColors.of(
+                                  context,
+                                ).textPrimary,
                               ),
                             )
-                          : const Icon(Icons.refresh_rounded),
+                          : Icon(Icons.refresh_rounded),
                       label: Text(
                         _phoneResendSecondsRemaining > 0
                             ? l10n.profilePhoneResendIn(
@@ -1496,7 +1520,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _PhoneStatusLine(
                   icon: Icons.error_outline_rounded,
                   text: _phoneVerificationError!.trim(),
-                  color: AppPalette.redSoft05,
+                  color: _EditProfileColors.of(context).danger,
                 ),
               ],
             ],
@@ -1510,8 +1534,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return FilledButton(
       onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
       style: FilledButton.styleFrom(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: AppPalette.white,
+        backgroundColor: _EditProfileColors.of(context).primary,
+        foregroundColor: _EditProfileColors.of(context).textPrimary,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
@@ -1526,9 +1550,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ? SizedBox(
               width: profileScaled(context, 18, min: 16, max: 18),
               height: profileScaled(context, 18, min: 16, max: 18),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppPalette.white,
+                color: _EditProfileColors.of(context).textPrimary,
               ),
             )
           : Text(
@@ -1550,211 +1574,241 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final previewName = _previewName(profile);
     final previewInitials = _previewInitials(profile);
 
-    return Scaffold(
-      backgroundColor: AppPalette.transparent,
-      bottomNavigationBar: SafeArea(
-        minimum: AppEdgeInsets.fromLTRB(
-          padding,
-          profileScaled(context, 8, min: 6, max: 10),
-          padding,
-          profileScaled(context, 12, min: 10, max: 14),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: _EditProfileColors.of(context).transparent,
+        bottomNavigationBar: SafeArea(
+          minimum: AppEdgeInsets.fromLTRB(
+            padding,
+            profileScaled(context, 8, min: 6, max: 10),
+            padding,
+            profileScaled(context, 12, min: 10, max: 14),
+          ),
+          child: _buildStickySaveButton(l10n),
         ),
-        child: _buildStickySaveButton(l10n),
-      ),
-      body: ProfileResponsiveScope(
-        child: ProfileGlassBackground(
-          child: SafeArea(
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                padding: AppEdgeInsets.fromLTRB(
-                  padding,
-                  profileScaled(context, 14, min: 10, max: 18),
-                  padding,
-                  profileScaled(context, 28, min: 20, max: 34),
-                ),
-                children: [
-                  _EditProfileTopBar(title: l10n.editProfileButton),
-                  SizedBox(
-                    height: profileScaled(context, 26, min: 18, max: 30),
+        body: ProfileResponsiveScope(
+          child: ProfileGlassBackground(
+            child: SafeArea(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  FutureBuilder<String?>(
-                    future: _avatarFuture,
-                    builder: (context, snapshot) {
-                      return _EditProfileHero(
-                        avatarUrl: snapshot.data,
-                        avatarBytes: _avatarPreviewBytes,
-                        initials: previewInitials,
-                        name: previewName,
-                        phone: profile?.primaryPhoneDisplay,
-                        email: profile?.primaryEmail,
-                        avatarHint: _isUploadingAvatar
-                            ? l10n.profileSettingsAvatarUploading
-                            : l10n.profileSettingsAvatarUploadHint,
-                        onAvatarTap: _pickAvatar,
-                        isUploadingAvatar: _isUploadingAvatar,
-                      );
-                    },
+                  padding: AppEdgeInsets.fromLTRB(
+                    padding,
+                    profileScaled(context, 14, min: 10, max: 18),
+                    padding,
+                    profileScaled(context, 28, min: 20, max: 34),
                   ),
-                  SizedBox(
-                    height: profileScaled(context, 32, min: 24, max: 34),
-                  ),
-                  ProfileSectionHeading(
-                    title: l10n.profileSettingsDescriptionSection,
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 14, min: 12, max: 16),
-                  ),
-                  _ProfileSectionCard(
-                    child: _StyledTextField(
-                      controller: _bioController,
-                      hintText: l10n.bioLabel,
-                      minLines: 4,
-                      maxLines: 7,
+                  children: [
+                    _EditProfileTopBar(title: l10n.editProfileButton),
+                    SizedBox(
+                      height: profileScaled(context, 26, min: 18, max: 30),
                     ),
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 28, min: 24, max: 32),
-                  ),
-                  ProfileSectionHeading(
-                    title: l10n.profileSettingsDetailsSection,
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 14, min: 12, max: 16),
-                  ),
-                  _ProfileSectionCard(
-                    child: Column(
-                      children: [
-                        _LabeledInput(
-                          key: _firstNameFieldKey,
-                          label: l10n.firstNameLabel,
-                          child: _StyledTextField(
-                            controller: _firstNameController,
-                            hintText: l10n.firstNameLabel,
-                            validator: (value) {
-                              if ((value ?? '').trim().isEmpty) {
-                                return l10n.firstNameRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 16, min: 14, max: 18),
-                        ),
-                        _LabeledInput(
-                          key: _lastNameFieldKey,
-                          label: l10n.lastNameLabel,
-                          child: _StyledTextField(
-                            controller: _lastNameController,
-                            hintText: l10n.lastNameLabel,
-                            validator: (value) {
-                              if ((value ?? '').trim().isEmpty) {
-                                return l10n.lastNameRequired;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 16, min: 14, max: 18),
-                        ),
-                        _LabeledInput(
-                          key: _nicknameFieldKey,
-                          label: l10n.nicknameLabel,
-                          child: _StyledTextField(
-                            controller: _nicknameController,
-                            hintText: l10n.nicknameLabel,
-                            readOnly: _isNicknameLocked,
-                            helperText: _nicknameSupportingText(l10n),
-                            errorText: _nicknameErrorText(l10n),
-                            textCapitalization: TextCapitalization.none,
-                            validator: (value) {
-                              if (!_isNicknameLocked &&
-                                  (value ?? '').trim().isEmpty) {
-                                return l10n.nicknameRequired;
-                              }
-                              if (_nicknameErrorText(l10n) != null) {
-                                return l10n.profileNicknameTaken;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 16, min: 14, max: 18),
-                        ),
-                        _LabeledInput(
-                          key: _countryFieldKey,
-                          label: l10n.profileCountry,
-                          child: _ProfileCountrySearchField(
-                            value: _countryCodeController.text,
-                            selectedCountry: _selectedCountry(),
-                            selectedCountryCode: normalizeReferenceCountryCode(
-                              _countryCodeController.text,
-                            ),
-                            validator: (value) {
-                              if (normalizeReferenceCountryCode(value) ==
-                                  null) {
-                                return l10n.profileCountryRequired;
-                              }
-                              return null;
-                            },
-                            searchController: _countrySearchController,
-                            visibleCountries: _visibleCountries(),
-                            isLoading: _isCountriesLoading,
-                            searchQuery: _countrySearchQuery,
-                            searchHint: l10n.excursionsFilterCountrySearchHint,
-                            emptyLabel: l10n.excursionsFilterCountryNoResults,
-                            onCountrySelected: _selectCountry,
-                            onClearCountry: _clearCountry,
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 16, min: 14, max: 18),
-                        ),
-                        _LabeledInput(
-                          label: l10n.profileCurrency,
-                          child: _ProfileCurrencySearchField(
-                            selectedCurrency: _selectedCurrency(),
-                            selectedCurrencyCode:
-                                normalizeReferenceCurrencyCode(
-                                  _currencyController.text,
-                                ),
-                            searchController: _currencySearchController,
-                            visibleCurrencies: _visibleCurrencies(),
-                            isLoading: _isCurrenciesLoading,
-                            searchQuery: _currencySearchQuery,
-                            searchHint: l10n.profileCurrencySearchHint,
-                            emptyLabel: l10n.profileCurrencyNoResults,
-                            onCurrencySelected: _selectCurrency,
-                          ),
-                        ),
-                      ],
+                    FutureBuilder<String?>(
+                      future: _avatarFuture,
+                      builder: (context, snapshot) {
+                        return _EditProfileHero(
+                          avatarUrl: snapshot.data,
+                          avatarBytes: _avatarPreviewBytes,
+                          initials: previewInitials,
+                          name: previewName,
+                          phone: profile?.primaryPhoneDisplay,
+                          email: profile?.primaryEmail,
+                          avatarHint: _isUploadingAvatar
+                              ? l10n.profileSettingsAvatarUploading
+                              : l10n.profileSettingsAvatarUploadHint,
+                          onAvatarTap: _pickAvatar,
+                          isUploadingAvatar: _isUploadingAvatar,
+                        );
+                      },
                     ),
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 28, min: 24, max: 32),
-                  ),
-                  _buildPhoneVerificationSection(profile, l10n),
-                  SizedBox(
-                    height: profileScaled(context, 28, min: 24, max: 32),
-                  ),
-                  Center(
-                    child: Text(
-                      l10n.profileDeactivateAccountLabel,
-                      style: AppTextStyle(
-                        color: Color.fromARGB(255, 143, 34, 15),
-                        fontSize: profileScaled(context, 12, min: 11, max: 12),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.1,
+                    SizedBox(
+                      height: profileScaled(context, 32, min: 24, max: 34),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileSettingsDescriptionSection,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _ProfileSectionCard(
+                      child: _StyledTextField(
+                        controller: _bioController,
+                        hintText: l10n.bioLabel,
+                        minLines: 4,
+                        maxLines: 7,
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileSettingsDetailsSection,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _ProfileSectionCard(
+                      child: Column(
+                        children: [
+                          _LabeledInput(
+                            key: _firstNameFieldKey,
+                            label: l10n.firstNameLabel,
+                            child: _StyledTextField(
+                              controller: _firstNameController,
+                              hintText: l10n.firstNameLabel,
+                              validator: (value) {
+                                if ((value ?? '').trim().isEmpty) {
+                                  return l10n.firstNameRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _lastNameFieldKey,
+                            label: l10n.lastNameLabel,
+                            child: _StyledTextField(
+                              controller: _lastNameController,
+                              hintText: l10n.lastNameLabel,
+                              validator: (value) {
+                                if ((value ?? '').trim().isEmpty) {
+                                  return l10n.lastNameRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _nicknameFieldKey,
+                            label: l10n.nicknameLabel,
+                            child: _StyledTextField(
+                              controller: _nicknameController,
+                              hintText: l10n.nicknameLabel,
+                              readOnly: _isNicknameLocked,
+                              helperText: _nicknameSupportingText(l10n),
+                              errorText: _nicknameErrorText(l10n),
+                              textCapitalization: TextCapitalization.none,
+                              validator: (value) {
+                                if (!_isNicknameLocked &&
+                                    (value ?? '').trim().isEmpty) {
+                                  return l10n.nicknameRequired;
+                                }
+                                if (_nicknameErrorText(l10n) != null) {
+                                  return l10n.profileNicknameTaken;
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _countryFieldKey,
+                            label: l10n.profileCountry,
+                            child: _ProfileCountrySearchField(
+                              value: _countryCodeController.text,
+                              selectedCountry: _selectedCountry(),
+                              selectedCountryCode:
+                                  normalizeReferenceCountryCode(
+                                    _countryCodeController.text,
+                                  ),
+                              validator: (value) {
+                                if (normalizeReferenceCountryCode(value) ==
+                                    null) {
+                                  return l10n.profileCountryRequired;
+                                }
+                                return null;
+                              },
+                              searchController: _countrySearchController,
+                              visibleCountries: _visibleCountries(),
+                              isLoading: _isCountriesLoading,
+                              searchQuery: _countrySearchQuery,
+                              searchHint:
+                                  l10n.excursionsFilterCountrySearchHint,
+                              emptyLabel: l10n.excursionsFilterCountryNoResults,
+                              onCountrySelected: _selectCountry,
+                              onClearCountry: _clearCountry,
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            label: l10n.profileCurrency,
+                            child: _ProfileCurrencySearchField(
+                              selectedCurrency: _selectedCurrency(),
+                              selectedCurrencyCode:
+                                  normalizeReferenceCurrencyCode(
+                                    _currencyController.text,
+                                  ),
+                              searchController: _currencySearchController,
+                              visibleCurrencies: _visibleCurrencies(),
+                              isLoading: _isCurrenciesLoading,
+                              searchQuery: _currencySearchQuery,
+                              searchHint: l10n.profileCurrencySearchHint,
+                              emptyLabel: l10n.profileCurrencyNoResults,
+                              onCurrencySelected: _selectCurrency,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    _buildPhoneVerificationSection(profile, l10n),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    Center(
+                      child: Text(
+                        l10n.profileDeactivateAccountLabel,
+                        style: AppTextStyle(
+                          color: Color.fromARGB(255, 143, 34, 15),
+                          fontSize: profileScaled(
+                            context,
+                            12,
+                            min: 11,
+                            max: 12,
+                          ),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1786,7 +1840,7 @@ class _EditProfileTopBar extends StatelessWidget {
               title,
               textAlign: TextAlign.left,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: _EditProfileColors.of(context).textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.6,
@@ -1842,26 +1896,26 @@ class _EditProfileHero extends StatelessWidget {
                   padding: AppEdgeInsets.all(
                     profileScaled(context, 4, min: 3, max: 5),
                   ),
-                  decoration: const AppBoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppPalette.amberSoft06,
-                        AppPalette.warmSurfaceHigh30,
+                        _EditProfileColors.of(context).primaryContainer,
+                        _EditProfileColors.of(context).surfaceWarm,
                       ],
                     ),
                   ),
                   child: ClipOval(
                     child: DecoratedBox(
-                      decoration: const AppBoxDecoration(
+                      decoration: AppBoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            AppPalette.blueWash04,
-                            AppPalette.blueLight07,
+                            _EditProfileColors.of(context).secondaryContainer,
+                            _EditProfileColors.of(context).secondarySoft,
                           ],
                         ),
                       ),
@@ -1878,7 +1932,9 @@ class _EditProfileHero extends StatelessWidget {
                                 child: Text(
                                   initials,
                                   style: AppTextStyle(
-                                    color: AppPalette.blueMuted20,
+                                    color: _EditProfileColors.of(
+                                      context,
+                                    ).secondary,
                                     fontSize: profileScaled(
                                       context,
                                       34,
@@ -1895,7 +1951,9 @@ class _EditProfileHero extends StatelessWidget {
                               child: Text(
                                 initials,
                                 style: AppTextStyle(
-                                  color: AppPalette.blueMuted20,
+                                  color: _EditProfileColors.of(
+                                    context,
+                                  ).secondary,
                                   fontSize: profileScaled(
                                     context,
                                     34,
@@ -1908,7 +1966,9 @@ class _EditProfileHero extends StatelessWidget {
                             ),
                           if (isUploadingAvatar)
                             Container(
-                              color: AppPalette.black.withValues(alpha: 0.28),
+                              color: _EditProfileColors.of(
+                                context,
+                              ).black.withValues(alpha: 0.28),
                               child: Center(
                                 child: SizedBox(
                                   width: profileScaled(
@@ -1923,9 +1983,9 @@ class _EditProfileHero extends StatelessWidget {
                                     min: 22,
                                     max: 24,
                                   ),
-                                  child: const CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2.2,
-                                    color: AppPalette.white,
+                                    color: _EditProfileColors.of(context).white,
                                   ),
                                 ),
                               ),
@@ -1946,14 +2006,14 @@ class _EditProfileHero extends StatelessWidget {
                     height: profileScaled(context, 34, min: 30, max: 36),
                     decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppPalette.primary,
+                      color: _EditProfileColors.of(context).primary,
                       border: Border.all(color: profileBgTop, width: 2),
                     ),
                     child: Icon(
                       isUploadingAvatar
                           ? Icons.hourglass_top_rounded
                           : Icons.edit_rounded,
-                      color: AppPalette.white,
+                      color: _EditProfileColors.of(context).white,
                       size: profileScaled(context, 16, min: 14, max: 16),
                     ),
                   ),
@@ -1967,7 +2027,7 @@ class _EditProfileHero extends StatelessWidget {
           name,
           textAlign: TextAlign.center,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: _EditProfileColors.of(context).textPrimary,
             fontSize: profileScaled(context, 28, min: 24, max: 30),
             fontWeight: FontWeight.w900,
             letterSpacing: -0.8,
@@ -2014,9 +2074,11 @@ class _ContactPill extends StatelessWidget {
         vertical: profileScaled(context, 7, min: 6, max: 8),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.white.withValues(alpha: 0.04),
+        color: _EditProfileColors.of(context).white.withValues(alpha: 0.04),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: _EditProfileColors.of(context).white.withValues(alpha: 0.05),
+        ),
       ),
       child: Text(
         text,
@@ -2110,7 +2172,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
             : _countryLabel(selectedCountry!);
         final errorText = field.errorText;
         final hasError = errorText != null;
-        const errorColor = AppPalette.redSoft05;
+        final errorColor = _EditProfileColors.of(context).danger;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2118,12 +2180,16 @@ class _ProfileCountrySearchField extends StatelessWidget {
             if (hasSelection) ...[
               DecoratedBox(
                 decoration: AppBoxDecoration(
-                  color: AppPalette.white.withValues(alpha: 0.04),
+                  color: _EditProfileColors.of(
+                    context,
+                  ).white.withValues(alpha: 0.04),
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 18, min: 16, max: 20),
                   ),
                   border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.05),
+                    color: _EditProfileColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Padding(
@@ -2135,7 +2201,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.public_rounded,
-                        color: AppPalette.primary,
+                        color: _EditProfileColors.of(context).primary,
                         size: profileScaled(context, 20, min: 18, max: 21),
                       ),
                       SizedBox(
@@ -2147,7 +2213,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: AppPalette.textPrimary,
+                            color: _EditProfileColors.of(context).textPrimary,
                             fontSize: profileScaled(
                               context,
                               15,
@@ -2182,9 +2248,9 @@ class _ProfileCountrySearchField extends StatelessWidget {
             TextField(
               controller: searchController,
               enabled: !isLoading,
-              cursorColor: AppPalette.primary,
+              cursorColor: _EditProfileColors.of(context).primary,
               style: AppTextStyle(
-                color: AppPalette.textPrimary,
+                color: _EditProfileColors.of(context).textPrimary,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 fontWeight: FontWeight.w700,
               ),
@@ -2199,7 +2265,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                   Icons.search_rounded,
                   color: hasError && !hasSelection
                       ? errorColor
-                      : AppPalette.primary,
+                      : _EditProfileColors.of(context).primary,
                 ),
                 errorText: hasSelection ? null : errorText,
                 errorStyle: AppTextStyle(
@@ -2208,7 +2274,9 @@ class _ProfileCountrySearchField extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
                 filled: true,
-                fillColor: AppPalette.white.withValues(alpha: 0.04),
+                fillColor: _EditProfileColors.of(
+                  context,
+                ).white.withValues(alpha: 0.04),
                 contentPadding: AppEdgeInsets.symmetric(
                   horizontal: profileScaled(context, 14, min: 12, max: 16),
                   vertical: profileScaled(context, 13, min: 11, max: 14),
@@ -2224,15 +2292,17 @@ class _ProfileCountrySearchField extends StatelessWidget {
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.05),
+                    color: _EditProfileColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.05),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
-                  borderSide: const BorderSide(
-                    color: AppPalette.primary,
+                  borderSide: BorderSide(
+                    color: _EditProfileColors.of(context).primary,
                     width: 1.2,
                   ),
                 ),
@@ -2240,13 +2310,13 @@ class _ProfileCountrySearchField extends StatelessWidget {
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
-                  borderSide: const BorderSide(color: errorColor),
+                  borderSide: BorderSide(color: errorColor),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
-                  borderSide: const BorderSide(color: errorColor, width: 1.2),
+                  borderSide: BorderSide(color: errorColor, width: 1.2),
                 ),
               ),
             ),
@@ -2257,9 +2327,9 @@ class _ProfileCountrySearchField extends StatelessWidget {
                 child: SizedBox(
                   width: profileScaled(context, 22, min: 20, max: 24),
                   height: profileScaled(context, 22, min: 20, max: 24),
-                  child: const CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    color: AppPalette.primary,
+                    color: _EditProfileColors.of(context).primary,
                   ),
                 ),
               ),
@@ -2304,15 +2374,21 @@ class _ProfileCountrySearchField extends StatelessWidget {
                         child: DecoratedBox(
                           decoration: AppBoxDecoration(
                             color: selected
-                                ? AppPalette.primary.withValues(alpha: 0.16)
-                                : AppPalette.white.withValues(alpha: 0.04),
+                                ? _EditProfileColors.of(
+                                    context,
+                                  ).primary.withValues(alpha: 0.16)
+                                : _EditProfileColors.of(
+                                    context,
+                                  ).white.withValues(alpha: 0.04),
                             borderRadius: AppBorderRadius.circular(
                               profileScaled(context, 14, min: 12, max: 16),
                             ),
                             border: Border.all(
                               color: selected
-                                  ? AppPalette.primary
-                                  : AppPalette.white.withValues(alpha: 0.05),
+                                  ? _EditProfileColors.of(context).primary
+                                  : _EditProfileColors.of(
+                                      context,
+                                    ).white.withValues(alpha: 0.05),
                             ),
                           ),
                           child: Padding(
@@ -2338,7 +2414,9 @@ class _ProfileCountrySearchField extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTextStyle(
-                                      color: AppPalette.textPrimary,
+                                      color: _EditProfileColors.of(
+                                        context,
+                                      ).textPrimary,
                                       fontSize: profileScaled(
                                         context,
                                         14,
@@ -2429,12 +2507,16 @@ class _ProfileCurrencySearchField extends StatelessWidget {
         if (hasSelection) ...[
           DecoratedBox(
             decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.04),
+              color: _EditProfileColors.of(
+                context,
+              ).white.withValues(alpha: 0.04),
               borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 16, max: 20),
               ),
               border: Border.all(
-                color: AppPalette.white.withValues(alpha: 0.05),
+                color: _EditProfileColors.of(
+                  context,
+                ).white.withValues(alpha: 0.05),
               ),
             ),
             child: Padding(
@@ -2449,7 +2531,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                         ? selectedCurrencyCode ?? ''
                         : selectedSymbol,
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: _EditProfileColors.of(context).primary,
                       fontSize: profileScaled(context, 18, min: 16, max: 20),
                       fontWeight: FontWeight.w900,
                     ),
@@ -2461,7 +2543,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: AppPalette.textPrimary,
+                        color: _EditProfileColors.of(context).textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -2476,10 +2558,10 @@ class _ProfileCurrencySearchField extends StatelessWidget {
         TextField(
           controller: searchController,
           enabled: !isLoading,
-          cursorColor: AppPalette.primary,
+          cursorColor: _EditProfileColors.of(context).primary,
           textCapitalization: TextCapitalization.words,
           style: AppTextStyle(
-            color: AppPalette.textPrimary,
+            color: _EditProfileColors.of(context).textPrimary,
             fontSize: profileScaled(context, 14, min: 13, max: 15),
             fontWeight: FontWeight.w700,
           ),
@@ -2490,12 +2572,14 @@ class _ProfileCurrencySearchField extends StatelessWidget {
               fontSize: profileScaled(context, 14, min: 13, max: 15),
               fontWeight: FontWeight.w600,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.search_rounded,
-              color: AppPalette.primary,
+              color: _EditProfileColors.of(context).primary,
             ),
             filled: true,
-            fillColor: AppPalette.white.withValues(alpha: 0.04),
+            fillColor: _EditProfileColors.of(
+              context,
+            ).white.withValues(alpha: 0.04),
             contentPadding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 14, min: 12, max: 16),
               vertical: profileScaled(context, 13, min: 11, max: 14),
@@ -2511,15 +2595,17 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                 profileScaled(context, 16, min: 14, max: 18),
               ),
               borderSide: BorderSide(
-                color: AppPalette.white.withValues(alpha: 0.05),
+                color: _EditProfileColors.of(
+                  context,
+                ).white.withValues(alpha: 0.05),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 16, min: 14, max: 18),
               ),
-              borderSide: const BorderSide(
-                color: AppPalette.primary,
+              borderSide: BorderSide(
+                color: _EditProfileColors.of(context).primary,
                 width: 1.2,
               ),
             ),
@@ -2532,9 +2618,9 @@ class _ProfileCurrencySearchField extends StatelessWidget {
             child: SizedBox(
               width: profileScaled(context, 22, min: 20, max: 24),
               height: profileScaled(context, 22, min: 20, max: 24),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2.2,
-                color: AppPalette.primary,
+                color: _EditProfileColors.of(context).primary,
               ),
             ),
           ),
@@ -2576,15 +2662,21 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                     child: DecoratedBox(
                       decoration: AppBoxDecoration(
                         color: selected
-                            ? AppPalette.primary.withValues(alpha: 0.16)
-                            : AppPalette.white.withValues(alpha: 0.04),
+                            ? _EditProfileColors.of(
+                                context,
+                              ).primary.withValues(alpha: 0.16)
+                            : _EditProfileColors.of(
+                                context,
+                              ).white.withValues(alpha: 0.04),
                         borderRadius: AppBorderRadius.circular(
                           profileScaled(context, 14, min: 12, max: 16),
                         ),
                         border: Border.all(
                           color: selected
-                              ? AppPalette.primary
-                              : AppPalette.white.withValues(alpha: 0.05),
+                              ? _EditProfileColors.of(context).primary
+                              : _EditProfileColors.of(
+                                  context,
+                                ).white.withValues(alpha: 0.05),
                         ),
                       ),
                       child: Padding(
@@ -2607,7 +2699,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                             Text(
                               symbol.isEmpty ? currencyCode : symbol,
                               style: AppTextStyle(
-                                color: AppPalette.primary,
+                                color: _EditProfileColors.of(context).primary,
                                 fontSize: profileScaled(
                                   context,
                                   16,
@@ -2631,7 +2723,9 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTextStyle(
-                                  color: AppPalette.textPrimary,
+                                  color: _EditProfileColors.of(
+                                    context,
+                                  ).textPrimary,
                                   fontSize: profileScaled(
                                     context,
                                     14,
@@ -2763,7 +2857,7 @@ class _StyledTextField extends StatelessWidget {
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       style: AppTextStyle(
-        color: AppPalette.textPrimary,
+        color: _EditProfileColors.of(context).textPrimary,
         fontSize: profileScaled(context, 15, min: 14, max: 16),
       ),
       decoration: AppInputDecoration(
@@ -2777,32 +2871,34 @@ class _StyledTextField extends StatelessWidget {
           fontSize: profileScaled(context, 15, min: 14, max: 16),
         ),
         filled: true,
-        fillColor: AppPalette.white.withValues(alpha: 0.04),
+        fillColor: _EditProfileColors.of(context).white.withValues(alpha: 0.04),
         border: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.04),
+            color: _EditProfileColors.of(context).white.withValues(alpha: 0.04),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(
-            color: AppPalette.white.withValues(alpha: 0.04),
+            color: _EditProfileColors.of(context).white.withValues(alpha: 0.04),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(
-            color: AppPalette.primary.withValues(alpha: 0.3),
+            color: _EditProfileColors.of(
+              context,
+            ).primary.withValues(alpha: 0.3),
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: const BorderSide(color: AppPalette.redSoft05),
+          borderSide: BorderSide(color: _EditProfileColors.of(context).danger),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: const BorderSide(color: AppPalette.redSoft05),
+          borderSide: BorderSide(color: _EditProfileColors.of(context).danger),
         ),
         contentPadding: AppEdgeInsets.symmetric(
           horizontal: profileScaled(context, 16, min: 14, max: 18),

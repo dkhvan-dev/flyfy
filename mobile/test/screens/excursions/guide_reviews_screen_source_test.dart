@@ -39,4 +39,19 @@ void main() {
       expect(source, contains('guideDashboardDirectGuideReviewsEmpty'));
     },
   );
+
+  test('guide reviews screen uses V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_reviews_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.themeFor(context)'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.screenGradientColors'));
+    expect(source, contains('colors.surface'));
+    expect(source, contains('colors.primary'));
+    expect(source, contains('colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
 }

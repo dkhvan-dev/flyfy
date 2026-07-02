@@ -1323,6 +1323,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appLanguageTitle => 'Язык приложения';
 
   @override
+  String get appThemeTitle => 'Тема приложения';
+
+  @override
+  String get appThemeSubtitle => 'Светлая, темная или как в системе';
+
+  @override
+  String get appThemeSystem => 'Как в системе';
+
+  @override
+  String get appThemeSystemDescription => 'Следовать настройкам устройства';
+
+  @override
+  String get appThemeLight => 'Светлая';
+
+  @override
+  String get appThemeLightDescription => 'Использовать светлый интерфейс';
+
+  @override
+  String get appThemeDark => 'Темная';
+
+  @override
+  String get appThemeDarkDescription => 'Использовать темный интерфейс';
+
+  @override
   String get saveProfileButton => 'Сохранить';
 
   @override
@@ -6009,7 +6033,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      'Укажите максимум от 1 до 100 участников';
+      'Укажите максимум от 2 до 100 участников';
 
   @override
   String get createMinParticipantsValidation =>

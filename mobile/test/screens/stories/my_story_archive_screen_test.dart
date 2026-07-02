@@ -91,31 +91,32 @@ void main() {
     );
   });
 
-  testWidgets('my stories tabs use primary text and empty state has no retry', (
-    tester,
-  ) async {
-    final api = _FakeStoryApi(
-      activeStories: const [],
-      archivedStories: const [],
-    );
+  testWidgets(
+    'my stories tabs use V2 primary text and empty state has no retry',
+    (tester) async {
+      final api = _FakeStoryApi(
+        activeStories: const [],
+        archivedStories: const [],
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('ru'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MyStoryArchiveScreen(storyApi: api),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MyStoryArchiveScreen(storyApi: api),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
-    final activeTab = tester.widget<Text>(find.text('Активные'));
-    final archiveTab = tester.widget<Text>(find.text('Архив'));
-    expect(activeTab.style?.color, AppPalette.textPrimary);
-    expect(archiveTab.style?.color, AppPalette.textPrimary);
-    expect(find.text('Попробовать снова'), findsNothing);
-  });
+      final activeTab = tester.widget<Text>(find.text('Активные'));
+      final archiveTab = tester.widget<Text>(find.text('Архив'));
+      expect(activeTab.style?.color, AppColorSchemes.light.textPrimary);
+      expect(archiveTab.style?.color, AppColorSchemes.light.textPrimary);
+      expect(find.text('Попробовать снова'), findsNothing);
+    },
+  );
 }
 
 class _FakeStoryApi extends StoryApi {

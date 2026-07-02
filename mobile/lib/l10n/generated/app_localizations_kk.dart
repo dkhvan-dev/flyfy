@@ -1322,6 +1322,30 @@ class AppLocalizationsKk extends AppLocalizations {
   String get appLanguageTitle => 'Қолданба тілі';
 
   @override
+  String get appThemeTitle => 'Қолданба тақырыбы';
+
+  @override
+  String get appThemeSubtitle => 'Жарық, қараңғы немесе жүйе бойынша';
+
+  @override
+  String get appThemeSystem => 'Жүйе бойынша';
+
+  @override
+  String get appThemeSystemDescription => 'Құрылғы баптауларын қолдану';
+
+  @override
+  String get appThemeLight => 'Жарық';
+
+  @override
+  String get appThemeLightDescription => 'Жарық интерфейсті қолдану';
+
+  @override
+  String get appThemeDark => 'Қараңғы';
+
+  @override
+  String get appThemeDarkDescription => 'Қараңғы интерфейсті қолдану';
+
+  @override
   String get saveProfileButton => 'Сақтау';
 
   @override
@@ -6001,7 +6025,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      '1 мен 100 қатысушы аралығындағы максимумды енгізіңіз';
+      '2 мен 100 қатысушы аралығындағы максимумды енгізіңіз';
 
   @override
   String get createMinParticipantsValidation =>

@@ -20,6 +20,8 @@ class ChatParticipantsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final participants = _orderedParticipants;
     final organizer = participants.where((p) => p.role == 'admin').firstOrNull;
     final currentUserIsOrganizer =
@@ -30,83 +32,92 @@ class ChatParticipantsScreen extends StatelessWidget {
       currentUserIsOrganizer: currentUserIsOrganizer,
     );
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk54,
-      body: Container(
-        decoration: const AppBoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -1),
-            radius: 0.9,
-            colors: [AppPalette.warmOverlayMuted03, AppPalette.clearWarmInk02],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Container(
+          decoration: AppBoxDecoration(
+            color: colors.background,
+            gradient: isDarkV2
+                ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: colors.screenGradientColors,
+                    stops: const [0, 0.42, 1],
+                  )
+                : null,
           ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth.clamp(320.0, 430.0);
-            final horizontalPadding = constraints.maxWidth < 360 ? 16.0 : 20.0;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxWidth = constraints.maxWidth.clamp(320.0, 430.0);
+              final horizontalPadding = constraints.maxWidth < 360
+                  ? 16.0
+                  : 20.0;
 
-            return Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _ParticipantsHeader(
-                        title:
-                            conversation.title ??
-                            l10n.chatActivityFallbackTitle,
-                        count: participants.length,
-                        horizontalPadding: horizontalPadding,
-                      ),
+              return Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    SliverPadding(
-                      padding: AppEdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        24,
-                        horizontalPadding,
-                        MediaQuery.paddingOf(context).bottom + 32,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _ParticipantsHeader(
+                          title:
+                              conversation.title ??
+                              l10n.chatActivityFallbackTitle,
+                          count: participants.length,
+                          horizontalPadding: horizontalPadding,
+                        ),
                       ),
-                      sliver: SliverList.list(
-                        children: [
-                          if (organizer != null) ...[
-                            _SectionTitle(l10n.chatParticipantsHostSection),
+                      SliverPadding(
+                        padding: AppEdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          24,
+                          horizontalPadding,
+                          MediaQuery.paddingOf(context).bottom + 32,
+                        ),
+                        sliver: SliverList.list(
+                          children: [
+                            if (organizer != null) ...[
+                              _SectionTitle(l10n.chatParticipantsHostSection),
+                              const SizedBox(height: 18),
+                              _OrganizerCard(
+                                participant: organizer,
+                                onTap: () =>
+                                    _openParticipantProfile(context, organizer),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+                            _SectionTitle(l10n.chatParticipantsJoinedSection),
                             const SizedBox(height: 18),
-                            _OrganizerCard(
-                              participant: organizer,
-                              onTap: () =>
-                                  _openParticipantProfile(context, organizer),
-                            ),
-                            const SizedBox(height: 28),
-                          ],
-                          _SectionTitle(l10n.chatParticipantsJoinedSection),
-                          const SizedBox(height: 18),
-                          if (joined.isEmpty)
-                            const _EmptyParticipants()
-                          else
-                            ...joined.map(
-                              (participant) => Padding(
-                                padding: const AppEdgeInsets.only(bottom: 34),
-                                child: _ParticipantRow(
-                                  participant: participant,
-                                  onTap: () => _openParticipantProfile(
-                                    context,
-                                    participant,
+                            if (joined.isEmpty)
+                              const _EmptyParticipants()
+                            else
+                              ...joined.map(
+                                (participant) => Padding(
+                                  padding: const AppEdgeInsets.only(bottom: 34),
+                                  child: _ParticipantRow(
+                                    participant: participant,
+                                    onTap: () => _openParticipantProfile(
+                                      context,
+                                      participant,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -175,6 +186,7 @@ class _ParticipantsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Container(
       padding: AppEdgeInsets.fromLTRB(
@@ -184,9 +196,7 @@ class _ParticipantsHeader extends StatelessWidget {
         18,
       ),
       decoration: AppBoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
-        ),
+        border: Border(bottom: BorderSide(color: colors.borderSoft)),
       ),
       child: Stack(
         alignment: Alignment.topCenter,
@@ -207,12 +217,12 @@ class _ParticipantsHeader extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const AppTextStyle(
+                  style: AppTextStyle(
                     fontSize: 25,
                     height: 1.15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.75,
-                    color: AppPalette.orangeWash14,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -224,10 +234,10 @@ class _ParticipantsHeader extends StatelessWidget {
                       height: 11,
                       decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                         boxShadow: [
                           BoxShadow(
-                            color: AppPalette.primary.withValues(alpha: 0.08),
+                            color: colors.primary.withValues(alpha: 0.12),
                             blurRadius: 0,
                             spreadRadius: 5,
                           ),
@@ -237,11 +247,11 @@ class _ParticipantsHeader extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       l10n.chatParticipantsCount(count),
-                      style: const AppTextStyle(
+                      style: AppTextStyle(
                         fontSize: 18,
                         height: 1.25,
                         fontWeight: FontWeight.w500,
-                        color: AppPalette.primary,
+                        color: colors.primary,
                       ),
                     ),
                   ],
@@ -262,16 +272,18 @@ class _BackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: const SizedBox(
+      child: SizedBox(
         width: 40,
         height: 40,
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 24,
-          color: AppPalette.orangeWash14,
+          color: colors.textPrimary,
         ),
       ),
     );
@@ -285,6 +297,8 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return Text(
       text,
       style: AppTextStyle(
@@ -292,7 +306,7 @@ class _SectionTitle extends StatelessWidget {
         height: 1.2,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.92,
-        color: AppPalette.orangeWash14.withValues(alpha: 0.48),
+        color: colors.textMuted,
       ),
     );
   }
@@ -308,6 +322,8 @@ class _OrganizerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
@@ -319,16 +335,18 @@ class _OrganizerCard extends StatelessWidget {
           vertical: compact ? 20 : 24,
         ),
         decoration: AppBoxDecoration(
-          borderRadius: AppBorderRadius.circular(32),
-          color: AppPalette.white.withValues(alpha: 0.04),
-          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
-          boxShadow: [
-            BoxShadow(
-              color: AppPalette.black.withValues(alpha: 0.35),
-              blurRadius: 40,
-              offset: const Offset(0, 18),
-            ),
-          ],
+          borderRadius: AppBorderRadius.circular(28),
+          color: colors.surfaceRaised,
+          border: Border.all(color: colors.borderPrimary),
+          boxShadow: isDarkV2
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.28),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -401,6 +419,7 @@ class _ParticipantText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final displayName = participant.displayName.trim().isEmpty
         ? l10n.chatUserFallbackName
         : participant.displayName.trim();
@@ -418,7 +437,7 @@ class _ParticipantText extends StatelessWidget {
             height: 1.15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.75,
-            color: AppPalette.orangeWash14,
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -428,9 +447,9 @@ class _ParticipantText extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const AppBoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppPalette.primary,
+                  color: colors.primary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -445,9 +464,7 @@ class _ParticipantText extends StatelessWidget {
                   height: 1.3,
                   fontWeight: FontWeight.w400,
                   letterSpacing: 0.72,
-                  color: online
-                      ? AppPalette.primary
-                      : AppPalette.orangeWash14.withValues(alpha: 0.48),
+                  color: online ? colors.primary : colors.textSecondary,
                 ),
               ),
             ),
@@ -471,6 +488,8 @@ class _ParticipantAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
     final imageUrl = resolvePublicFileContentUrl(
       participant.avatarFileId ?? '',
     );
@@ -481,20 +500,22 @@ class _ParticipantAvatar extends StatelessWidget {
       padding: AppEdgeInsets.all(highlighted ? 4 : 0),
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: highlighted ? AppPalette.primary : AppPalette.transparent,
+        color: highlighted ? colors.primary : colors.transparent,
         boxShadow: highlighted
             ? [
                 BoxShadow(
-                  color: AppPalette.primary.withValues(alpha: 0.18),
-                  blurRadius: 30,
-                  offset: const Offset(0, 14),
+                  color: colors.primary.withValues(
+                    alpha: isDarkV2 ? 0.18 : 0.10,
+                  ),
+                  blurRadius: isDarkV2 ? 30 : 18,
+                  offset: Offset(0, isDarkV2 ? 14 : 8),
                 ),
               ]
             : null,
       ),
       child: ClipOval(
         child: Container(
-          color: AppPalette.neutralInk01,
+          color: colors.surfaceHigh,
           child: imageUrl == null
               ? _AvatarFallback(name: participant.displayName)
               : Image.network(
@@ -516,26 +537,24 @@ class _AvatarFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
 
     return Container(
-      decoration: const AppBoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppPalette.neutralSurfaceHigh01,
-            AppPalette.neutralSurface01,
-          ],
+          colors: [colors.surfaceHigh, colors.surfaceWarm],
         ),
       ),
       child: Center(
         child: Text(
           initial,
-          style: const AppTextStyle(
+          style: AppTextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: AppPalette.orangeWash14,
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -549,15 +568,13 @@ class _EmptyParticipants extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
     return Padding(
       padding: const AppEdgeInsets.symmetric(vertical: 16),
       child: Text(
         l10n.chatParticipantsEmpty,
-        style: AppTextStyle(
-          fontSize: 16,
-          color: AppPalette.orangeWash14.withValues(alpha: 0.48),
-        ),
+        style: AppTextStyle(fontSize: 16, color: colors.textSecondary),
       ),
     );
   }

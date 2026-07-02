@@ -25,6 +25,82 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+final class _StoryDetailsColors {
+  const _StoryDetailsColors._(this.colors);
+
+  final AppColors colors;
+
+  static _StoryDetailsColors of(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    return _StoryDetailsColors._(colors);
+  }
+
+  Color get primary => colors.primary;
+  Color get primarySoft => colors.primarySoft;
+  Color get textPrimary => colors.textPrimary;
+  Color get textSecondary => colors.textSecondary;
+  Color get textMuted => colors.textMuted;
+  Color get background => colors.background;
+  Color get backgroundDeep => colors.backgroundDeep;
+  Color get backgroundWarm => colors.backgroundWarm;
+  Color get surface => colors.surface;
+  Color get surfaceRaised => colors.surfaceRaised;
+  Color get surfaceHigh => colors.surfaceHigh;
+  Color get surfaceWarm => colors.surfaceWarm;
+  Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get danger => colors.danger;
+  Color get transparent => colors.transparent;
+  Color get black => colors.black;
+  Color get white => colors.white;
+}
+
+Gradient _storyHeroOverlayGradient(BuildContext context) {
+  final colors = _StoryDetailsColors.of(context);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  if (isDark) {
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        colors.black.withValues(alpha: 0.10),
+        colors.black.withValues(alpha: 0.28),
+        colors.backgroundDeep,
+      ],
+      stops: const [0, 0.42, 1],
+    );
+  }
+
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      colors.black.withValues(alpha: 0.08),
+      colors.black.withValues(alpha: 0.18),
+      colors.black.withValues(alpha: 0.36),
+    ],
+    stops: const [0, 0.48, 1],
+  );
+}
+
+List<BoxShadow> _storyAuthorCardShadow(
+  BuildContext context,
+  StoryAdaptive adaptive,
+) {
+  if (Theme.of(context).brightness == Brightness.dark) {
+    return [
+      BoxShadow(
+        color: _StoryDetailsColors.of(context).black.withValues(alpha: 0.32),
+        blurRadius: adaptive.scale(34),
+        offset: const Offset(0, 14),
+      ),
+    ];
+  }
+
+  return const <BoxShadow>[];
+}
+
 class StoryDetailsScreen extends StatefulWidget {
   const StoryDetailsScreen({
     super.key,
@@ -478,7 +554,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppPalette.warmInk89,
+      backgroundColor: _StoryDetailsColors.of(context).background,
       shape: const RoundedRectangleBorder(
         borderRadius: AppBorderRadius.vertical(
           top: AppRadiusValue.circular(26),
@@ -873,9 +949,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     final page = initialIndex.clamp(0, visibleImages.length - 1).toInt();
     await showAppModalDialog<int>(
       context: context,
-      barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: AppPalette.black,
+      barrierColor: _StoryDetailsColors.of(context).black,
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {
         return _StoryImageGalleryViewer(
@@ -967,30 +1042,37 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       context: context,
       builder: (dialogContext) {
         return AppModalDialogCard(
-          backgroundColor: AppPalette.warmSurface18,
+          backgroundColor: _StoryDetailsColors.of(context).surface,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.storyDeleteCommentTitle,
-            style: const AppTextStyle(color: AppPalette.textPrimary),
+            style: AppTextStyle(
+              color: _StoryDetailsColors.of(context).textPrimary,
+            ),
           ),
           content: Text(
             l10n.storyDeleteCommentMessage,
-            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+            style: AppTextStyle(
+              color: _StoryDetailsColors.of(context).textSecondary,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+                style: AppTextStyle(
+                  color: _StoryDetailsColors.of(context).textSecondary,
+                ),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
+                backgroundColor: _StoryDetailsColors.of(context).primary,
+                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
               ),
               child: Text(l10n.storyDeleteCommentAction),
             ),
@@ -1070,30 +1152,37 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       context: context,
       builder: (dialogContext) {
         return AppModalDialogCard(
-          backgroundColor: AppPalette.warmSurface18,
+          backgroundColor: _StoryDetailsColors.of(context).surface,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.storyDeleteTitle,
-            style: const AppTextStyle(color: AppPalette.textPrimary),
+            style: AppTextStyle(
+              color: _StoryDetailsColors.of(context).textPrimary,
+            ),
           ),
           content: Text(
             l10n.storyDeleteMessage,
-            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+            style: AppTextStyle(
+              color: _StoryDetailsColors.of(context).textSecondary,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
+                style: AppTextStyle(
+                  color: _StoryDetailsColors.of(context).textSecondary,
+                ),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
+                backgroundColor: _StoryDetailsColors.of(context).primary,
+                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
               ),
               child: Text(l10n.storyDeleteAction),
             ),
@@ -1128,151 +1217,156 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = _StoryDetailsColors.of(context);
     final detail = _detail;
     final currentUserId =
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final story = detail?.post;
     final isAuthor = story?.isOwnedBy(currentUserId) ?? false;
 
-    return Scaffold(
-      backgroundColor: StoryPalette.backgroundDeep,
-      body: DecoratedBox(
-        decoration: storyScreenBackground(),
-        child: SafeArea(
-          bottom: false,
-          child: _isLoading && detail == null
-              ? const Center(
-                  child: CircularProgressIndicator(color: AppPalette.primary),
-                )
-              : _errorMessage != null && detail == null
-              ? _StoryDetailErrorState(
-                  message: _errorMessage!,
-                  retryLabel: l10n.retry,
-                  onRetry: _loadDetail,
-                )
-              : Builder(
-                  builder: (context) {
-                    final currentDetail = detail!;
-                    final showSocialSections = currentDetail.post.isPublished;
-                    final commentLockEndsAt =
-                        showSocialSections && _editingCommentId == null
-                        ? _commentLockEndsAt(currentUserId)
-                        : null;
-                    final isCommentComposerLocked = commentLockEndsAt != null;
-                    return CustomScrollView(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: _StoryHero(
-                            story: story!,
-                            titleLabel: l10n.storyDetailsTitle,
-                            isSharing: _isSharing,
-                            onBackTap: () => context.pop(false),
-                            onShareTap: _sharePost,
-                            onOpenImages: _openStoryImages,
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: AppEdgeInsets.fromLTRB(
-                            adaptive.scale(16),
-                            0,
-                            adaptive.scale(16),
-                            adaptive.scale(28),
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Transform.translate(
-                                  offset: Offset(0, adaptive.scale(8)),
-                                  child: _AuthorCard(
-                                    story: story,
-                                    authorProfile: _authorProfile,
-                                    isAuthor: isAuthor,
-                                    isFollowing: _isFollowing,
-                                    onProfileTap: () {
-                                      context.push(
-                                        '/users/${story.author.userId}/profile',
-                                      );
-                                    },
-                                    onFollowTap: _toggleFollow,
-                                    onEditTap: _editStory,
-                                    onDeleteTap: _deletePost,
-                                    onReportTap: showSocialSections && !isAuthor
-                                        ? _reportPost
-                                        : null,
-                                    isReporting: _isSubmittingReport,
-                                    onViewsTap: null,
-                                    onLikesTap: _toggleLike,
-                                    onCommentsTap: showSocialSections
-                                        ? () => _scrollToComments(
-                                            focusComposer: true,
-                                          )
-                                        : null,
-                                    onSharesTap: _sharePost,
-                                  ),
-                                ),
-                                SizedBox(height: adaptive.scale(18)),
-                                _StoryArticle(
-                                  story: story,
-                                  onOpenImages: _openStoryImages,
-                                ),
-                                if (showSocialSections) ...[
-                                  SizedBox(height: adaptive.scale(24)),
-                                  _CommentComposer(
-                                    key: _commentComposerKey,
-                                    controller: _commentController,
-                                    focusNode: _commentFocusNode,
-                                    isSubmitting: _isSubmittingComment,
-                                    enabled: !isCommentComposerLocked,
-                                    isEditing: _editingCommentId != null,
-                                    helperText: isCommentComposerLocked
-                                        ? _formatCommentCooldownLabel(
-                                            context,
-                                            commentLockEndsAt,
-                                          )
-                                        : null,
-                                    editingTitle: _editingCommentId == null
-                                        ? null
-                                        : l10n.storyCommentEditingTitle,
-                                    submitLabel: _editingCommentId == null
-                                        ? null
-                                        : l10n.storyCommentSaveAction,
-                                    onCancelEdit: _editingCommentId == null
-                                        ? null
-                                        : _cancelCommentEditing,
-                                    onSubmit: _submitComment,
-                                  ),
-                                  SizedBox(height: adaptive.scale(18)),
-                                  _CommentsSection(
-                                    key: _commentsSectionKey,
-                                    comments: currentDetail.comments,
-                                    commentKeyForId: _commentKeyFor,
-                                    onEditComment: _startEditingComment,
-                                    onDeleteComment: _deleteComment,
-                                    onLikeComment: _toggleCommentLike,
-                                    onShareComment: _shareComment,
-                                  ),
-                                  SizedBox(height: adaptive.scale(24)),
-                                  _RelatedStoriesSection(
-                                    stories: currentDetail.related,
-                                    onStoryTap: (story) {
-                                      context.pushReplacement(
-                                        '/posts/${Uri.encodeComponent(story.slug)}',
-                                        extra: story,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ],
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.backgroundDeep,
+        body: DecoratedBox(
+          decoration: storyScreenBackground(context),
+          child: SafeArea(
+            bottom: false,
+            child: _isLoading && detail == null
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.primary),
+                  )
+                : _errorMessage != null && detail == null
+                ? _StoryDetailErrorState(
+                    message: _errorMessage!,
+                    retryLabel: l10n.retry,
+                    onRetry: _loadDetail,
+                  )
+                : Builder(
+                    builder: (context) {
+                      final currentDetail = detail!;
+                      final showSocialSections = currentDetail.post.isPublished;
+                      final commentLockEndsAt =
+                          showSocialSections && _editingCommentId == null
+                          ? _commentLockEndsAt(currentUserId)
+                          : null;
+                      final isCommentComposerLocked = commentLockEndsAt != null;
+                      return CustomScrollView(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: _StoryHero(
+                              story: story!,
+                              titleLabel: l10n.storyDetailsTitle,
+                              isSharing: _isSharing,
+                              onBackTap: () => context.pop(false),
+                              onShareTap: _sharePost,
+                              onOpenImages: _openStoryImages,
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                          SliverPadding(
+                            padding: AppEdgeInsets.fromLTRB(
+                              adaptive.scale(16),
+                              0,
+                              adaptive.scale(16),
+                              adaptive.scale(28),
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Transform.translate(
+                                    offset: Offset(0, adaptive.scale(8)),
+                                    child: _AuthorCard(
+                                      story: story,
+                                      authorProfile: _authorProfile,
+                                      isAuthor: isAuthor,
+                                      isFollowing: _isFollowing,
+                                      onProfileTap: () {
+                                        context.push(
+                                          '/users/${story.author.userId}/profile',
+                                        );
+                                      },
+                                      onFollowTap: _toggleFollow,
+                                      onEditTap: _editStory,
+                                      onDeleteTap: _deletePost,
+                                      onReportTap:
+                                          showSocialSections && !isAuthor
+                                          ? _reportPost
+                                          : null,
+                                      isReporting: _isSubmittingReport,
+                                      onViewsTap: null,
+                                      onLikesTap: _toggleLike,
+                                      onCommentsTap: showSocialSections
+                                          ? () => _scrollToComments(
+                                              focusComposer: true,
+                                            )
+                                          : null,
+                                      onSharesTap: _sharePost,
+                                    ),
+                                  ),
+                                  SizedBox(height: adaptive.scale(18)),
+                                  _StoryArticle(
+                                    story: story,
+                                    onOpenImages: _openStoryImages,
+                                  ),
+                                  if (showSocialSections) ...[
+                                    SizedBox(height: adaptive.scale(24)),
+                                    _CommentComposer(
+                                      key: _commentComposerKey,
+                                      controller: _commentController,
+                                      focusNode: _commentFocusNode,
+                                      isSubmitting: _isSubmittingComment,
+                                      enabled: !isCommentComposerLocked,
+                                      isEditing: _editingCommentId != null,
+                                      helperText: isCommentComposerLocked
+                                          ? _formatCommentCooldownLabel(
+                                              context,
+                                              commentLockEndsAt,
+                                            )
+                                          : null,
+                                      editingTitle: _editingCommentId == null
+                                          ? null
+                                          : l10n.storyCommentEditingTitle,
+                                      submitLabel: _editingCommentId == null
+                                          ? null
+                                          : l10n.storyCommentSaveAction,
+                                      onCancelEdit: _editingCommentId == null
+                                          ? null
+                                          : _cancelCommentEditing,
+                                      onSubmit: _submitComment,
+                                    ),
+                                    SizedBox(height: adaptive.scale(18)),
+                                    _CommentsSection(
+                                      key: _commentsSectionKey,
+                                      comments: currentDetail.comments,
+                                      commentKeyForId: _commentKeyFor,
+                                      onEditComment: _startEditingComment,
+                                      onDeleteComment: _deleteComment,
+                                      onLikeComment: _toggleCommentLike,
+                                      onShareComment: _shareComment,
+                                    ),
+                                    SizedBox(height: adaptive.scale(24)),
+                                    _RelatedStoriesSection(
+                                      stories: currentDetail.related,
+                                      onStoryTap: (story) {
+                                        context.pushReplacement(
+                                          '/posts/${Uri.encodeComponent(story.slug)}',
+                                          extra: story,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+          ),
         ),
       ),
     );
@@ -1339,7 +1433,9 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                 width: adaptive.scale(42),
                 height: adaptive.scale(4),
                 decoration: AppBoxDecoration(
-                  color: AppPalette.white.withValues(alpha: 0.22),
+                  color: _StoryDetailsColors.of(
+                    context,
+                  ).white.withValues(alpha: 0.22),
                   borderRadius: AppBorderRadius.circular(999),
                 ),
               ),
@@ -1348,7 +1444,7 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
             Text(
               l10n.storyReportTitle,
               style: AppTextStyle(
-                color: StoryPalette.text,
+                color: _StoryDetailsColors.of(context).textPrimary,
                 fontSize: adaptive.scale(20),
                 fontWeight: FontWeight.w800,
               ),
@@ -1357,7 +1453,7 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
             Text(
               l10n.storyReportSubtitle,
               style: AppTextStyle(
-                color: StoryPalette.textSoft,
+                color: _StoryDetailsColors.of(context).textSecondary,
                 fontSize: adaptive.scale(13),
                 height: 1.35,
               ),
@@ -1379,13 +1475,13 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                   for (final reason in _storyReportReasons)
                     RadioListTile<String>(
                       value: reason,
-                      activeColor: AppPalette.primary,
+                      activeColor: _StoryDetailsColors.of(context).primary,
                       dense: true,
                       contentPadding: AppEdgeInsets.zero,
                       title: Text(
                         _storyReportReasonLabel(l10n, reason),
                         style: AppTextStyle(
-                          color: StoryPalette.text,
+                          color: _StoryDetailsColors.of(context).textPrimary,
                           fontSize: adaptive.scale(13),
                           fontWeight: FontWeight.w700,
                         ),
@@ -1401,21 +1497,31 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
               maxLines: 4,
               maxLength: 500,
               textInputAction: TextInputAction.newline,
-              style: const AppTextStyle(color: StoryPalette.text),
+              style: AppTextStyle(
+                color: _StoryDetailsColors.of(context).textPrimary,
+              ),
               decoration: AppInputDecoration(
                 labelText: l10n.storyReportDetailsLabel,
                 hintText: l10n.storyReportDetailsHint,
-                labelStyle: const AppTextStyle(color: StoryPalette.textMuted),
-                hintStyle: const AppTextStyle(color: StoryPalette.textMuted),
+                labelStyle: AppTextStyle(
+                  color: _StoryDetailsColors.of(context).textMuted,
+                ),
+                hintStyle: AppTextStyle(
+                  color: _StoryDetailsColors.of(context).textMuted,
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
                   borderSide: BorderSide(
-                    color: AppPalette.white.withValues(alpha: 0.12),
+                    color: _StoryDetailsColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.12),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-                  borderSide: const BorderSide(color: AppPalette.primary),
+                  borderSide: BorderSide(
+                    color: _StoryDetailsColors.of(context).primary,
+                  ),
                 ),
               ),
             ),
@@ -1440,8 +1546,10 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppPalette.primary,
-                      foregroundColor: AppPalette.black,
+                      backgroundColor: _StoryDetailsColors.of(context).primary,
+                      foregroundColor: _StoryDetailsColors.of(
+                        context,
+                      ).textPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(
                           adaptive.radius(18),
@@ -1521,23 +1629,16 @@ class _StoryHero extends StatelessWidget {
             behavior: canOpenCover ? HitTestBehavior.opaque : null,
             child: Container(
               height: heroHeight,
-              decoration: const AppBoxDecoration(color: AppPalette.warmInk57),
+              decoration: AppBoxDecoration(
+                color: _StoryDetailsColors.of(context).surfaceRaised,
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   StoryCoverImage(url: story.coverUrl),
                   DecoratedBox(
                     decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppPalette.black.withValues(alpha: 0.10),
-                          AppPalette.black.withValues(alpha: 0.28),
-                          AppPalette.warmOverlayInk11,
-                        ],
-                        stops: const [0, 0.42, 1],
-                      ),
+                      gradient: _storyHeroOverlayGradient(context),
                     ),
                   ),
                 ],
@@ -1563,7 +1664,9 @@ class _StoryHero extends StatelessWidget {
                   titleLabel,
                   textAlign: TextAlign.center,
                   style: AppTextStyle(
-                    color: AppPalette.white.withValues(alpha: 0.92),
+                    color: _StoryDetailsColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.92),
                     fontSize: adaptive.scale(11),
                     fontWeight: FontWeight.w700,
                   ),
@@ -1608,7 +1711,7 @@ class _StoryHero extends StatelessWidget {
                 maxLines: adaptive.isNarrow ? 4 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: AppPalette.white,
+                  color: _StoryDetailsColors.of(context).white,
                   fontSize: adaptive.scale(24),
                   height: 1.05,
                   fontWeight: FontWeight.w800,
@@ -1621,7 +1724,7 @@ class _StoryHero extends StatelessWidget {
                   Text(
                     formatStoryDate(context, story.sortDate),
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: _StoryDetailsColors.of(context).primary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -1631,8 +1734,8 @@ class _StoryHero extends StatelessWidget {
                   Container(
                     width: adaptive.scale(4),
                     height: adaptive.scale(4),
-                    decoration: const AppBoxDecoration(
-                      color: AppPalette.primary,
+                    decoration: AppBoxDecoration(
+                      color: _StoryDetailsColors.of(context).primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1640,7 +1743,7 @@ class _StoryHero extends StatelessWidget {
                   Text(
                     '${formatStoryCountCompact(story.stats.views)} ${AppLocalizations.of(context)!.storyViewsSuffix}',
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: _StoryDetailsColors.of(context).primary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -1681,9 +1784,15 @@ class _OverlayIconButton extends StatelessWidget {
           height: adaptive.scale(36),
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.black.withValues(alpha: 0.18),
+            color: _StoryDetailsColors.of(
+              context,
+            ).black.withValues(alpha: 0.18),
           ),
-          child: Icon(icon, color: AppPalette.white, size: adaptive.scale(18)),
+          child: Icon(
+            icon,
+            color: _StoryDetailsColors.of(context).white,
+            size: adaptive.scale(18),
+          ),
         ),
       ),
     );
@@ -1707,20 +1816,20 @@ class _HeroChip extends StatelessWidget {
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
         color: accent
-            ? AppPalette.primary.withValues(alpha: 0.12)
-            : AppPalette.white.withValues(alpha: 0.08),
+            ? _StoryDetailsColors.of(context).primary.withValues(alpha: 0.12)
+            : _StoryDetailsColors.of(context).white.withValues(alpha: 0.08),
         border: Border.all(
           color: accent
-              ? AppPalette.primary.withValues(alpha: 0.3)
-              : AppPalette.white.withValues(alpha: 0.14),
+              ? _StoryDetailsColors.of(context).primary.withValues(alpha: 0.3)
+              : _StoryDetailsColors.of(context).white.withValues(alpha: 0.14),
         ),
       ),
       child: Text(
         label,
         style: AppTextStyle(
           color: accent
-              ? AppPalette.primary
-              : AppPalette.white.withValues(alpha: 0.9),
+              ? _StoryDetailsColors.of(context).primary
+              : _StoryDetailsColors.of(context).white.withValues(alpha: 0.9),
           fontSize: adaptive.scale(9),
           fontWeight: FontWeight.w800,
           letterSpacing: 1.0,
@@ -1777,19 +1886,9 @@ class _AuthorCard extends StatelessWidget {
       ),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(24)),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppPalette.warmSurface08, AppPalette.warmInk89],
-        ),
-        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.black.withValues(alpha: 0.32),
-            blurRadius: adaptive.scale(34),
-            offset: const Offset(0, 14),
-          ),
-        ],
+        color: _StoryDetailsColors.of(context).surfaceRaised,
+        border: Border.all(color: _StoryDetailsColors.of(context).border),
+        boxShadow: _storyAuthorCardShadow(context, adaptive),
       ),
       child: Column(
         children: [
@@ -1811,7 +1910,7 @@ class _AuthorCard extends StatelessWidget {
                     Text(
                       l10n.storyAuthorLabel,
                       style: AppTextStyle(
-                        color: StoryPalette.textMuted,
+                        color: _StoryDetailsColors.of(context).textMuted,
                         fontSize: adaptive.scale(8),
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,
@@ -1823,7 +1922,7 @@ class _AuthorCard extends StatelessWidget {
                       child: Text(
                         story.author.preferredName,
                         style: AppTextStyle(
-                          color: StoryPalette.text,
+                          color: _StoryDetailsColors.of(context).textPrimary,
                           fontSize: adaptive.scale(15),
                           fontWeight: FontWeight.w700,
                         ),
@@ -1843,9 +1942,11 @@ class _AuthorCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onEditTap,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppPalette.primary,
+                      foregroundColor: _StoryDetailsColors.of(context).primary,
                       side: BorderSide(
-                        color: AppPalette.primary.withValues(alpha: 0.24),
+                        color: _StoryDetailsColors.of(
+                          context,
+                        ).primary.withValues(alpha: 0.24),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(
@@ -1867,7 +1968,7 @@ class _AuthorCard extends StatelessWidget {
                   child: TextButton(
                     onPressed: onDeleteTap,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppPalette.danger,
+                      foregroundColor: _StoryDetailsColors.of(context).danger,
                     ),
                     child: Text(l10n.storyDeleteAction),
                   ),
@@ -1885,9 +1986,13 @@ class _AuthorCard extends StatelessWidget {
                     OutlinedButton(
                       onPressed: isFollowing ? null : onFollowTap,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppPalette.primary,
+                        foregroundColor: _StoryDetailsColors.of(
+                          context,
+                        ).primary,
                         side: BorderSide(
-                          color: AppPalette.primary.withValues(alpha: 0.24),
+                          color: _StoryDetailsColors.of(
+                            context,
+                          ).primary.withValues(alpha: 0.24),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(
@@ -1907,9 +2012,11 @@ class _AuthorCard extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: isReporting ? null : onReportTap,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppPalette.danger,
+                        foregroundColor: _StoryDetailsColors.of(context).danger,
                         side: BorderSide(
-                          color: AppPalette.danger.withValues(alpha: 0.26),
+                          color: _StoryDetailsColors.of(
+                            context,
+                          ).danger.withValues(alpha: 0.26),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(
@@ -1933,7 +2040,9 @@ class _AuthorCard extends StatelessWidget {
             decoration: AppBoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: AppPalette.white.withValues(alpha: 0.06),
+                  color: _StoryDetailsColors.of(
+                    context,
+                  ).white.withValues(alpha: 0.06),
                 ),
               ),
             ),
@@ -1993,38 +2102,42 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final iconColor = active ? AppPalette.primary : StoryPalette.textSoft;
+    final iconColor = active
+        ? _StoryDetailsColors.of(context).primary
+        : _StoryDetailsColors.of(context).textSecondary;
 
     return Material(
-      color: AppPalette.transparent,
+      color: _StoryDetailsColors.of(context).transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(adaptive.radius(14)),
         child: Padding(
           padding: AppEdgeInsets.symmetric(
-            vertical: adaptive.scale(6),
+            vertical: adaptive.scale(4),
             horizontal: adaptive.scale(4),
           ),
           child: Column(
             children: [
               Icon(icon, color: iconColor, size: adaptive.scale(18)),
-              SizedBox(height: adaptive.scale(6)),
+              SizedBox(height: adaptive.scale(2)),
               Text(
                 number,
                 style: AppTextStyle(
                   color: active
-                      ? AppPalette.primary
-                      : AppPalette.white.withValues(alpha: 0.82),
+                      ? _StoryDetailsColors.of(context).primary
+                      : _StoryDetailsColors.of(context).textPrimary,
                   fontSize: adaptive.scale(10),
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: adaptive.scale(2)),
+              SizedBox(height: adaptive.scale(1)),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: AppTextStyle(
-                  color: active ? AppPalette.primary : StoryPalette.textMuted,
+                  color: active
+                      ? _StoryDetailsColors.of(context).primary
+                      : _StoryDetailsColors.of(context).textMuted,
                   fontSize: adaptive.scale(8),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.7,
@@ -2062,7 +2175,7 @@ class _StoryArticle extends StatelessWidget {
           Text(
             AppLocalizations.of(context)!.storyTagsLabel,
             style: AppTextStyle(
-              color: StoryPalette.textMuted,
+              color: _StoryDetailsColors.of(context).textMuted,
               fontSize: adaptive.scale(9),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
@@ -2083,15 +2196,21 @@ class _StoryArticle extends StatelessWidget {
                     borderRadius: AppBorderRadius.circular(
                       adaptive.radius(999),
                     ),
-                    color: AppPalette.white.withValues(alpha: 0.05),
+                    color: _StoryDetailsColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.05),
                     border: Border.all(
-                      color: AppPalette.white.withValues(alpha: 0.06),
+                      color: _StoryDetailsColors.of(
+                        context,
+                      ).white.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Text(
                     tag,
                     style: AppTextStyle(
-                      color: AppPalette.white.withValues(alpha: 0.72),
+                      color: _StoryDetailsColors.of(
+                        context,
+                      ).white.withValues(alpha: 0.72),
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w600,
                     ),
@@ -2147,10 +2266,14 @@ class _CommentComposer extends StatelessWidget {
               vertical: adaptive.scale(10),
             ),
             decoration: AppBoxDecoration(
-              color: AppPalette.primary.withValues(alpha: 0.08),
+              color: _StoryDetailsColors.of(
+                context,
+              ).primary.withValues(alpha: 0.08),
               borderRadius: AppBorderRadius.circular(adaptive.radius(16)),
               border: Border.all(
-                color: AppPalette.primary.withValues(alpha: 0.16),
+                color: _StoryDetailsColors.of(
+                  context,
+                ).primary.withValues(alpha: 0.16),
               ),
             ),
             child: Row(
@@ -2159,7 +2282,7 @@ class _CommentComposer extends StatelessWidget {
                   child: Text(
                     editingTitle!,
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: _StoryDetailsColors.of(context).primary,
                       fontSize: adaptive.scale(13),
                       fontWeight: FontWeight.w700,
                     ),
@@ -2169,7 +2292,9 @@ class _CommentComposer extends StatelessWidget {
                   TextButton(
                     onPressed: onCancelEdit,
                     style: TextButton.styleFrom(
-                      foregroundColor: StoryPalette.textSoft,
+                      foregroundColor: _StoryDetailsColors.of(
+                        context,
+                      ).textSecondary,
                       padding: AppEdgeInsets.symmetric(
                         horizontal: adaptive.scale(8),
                         vertical: adaptive.scale(4),
@@ -2189,10 +2314,14 @@ class _CommentComposer extends StatelessWidget {
             Expanded(
               child: Container(
                 decoration: AppBoxDecoration(
-                  color: AppPalette.white.withValues(alpha: 0.05),
+                  color: _StoryDetailsColors.of(
+                    context,
+                  ).white.withValues(alpha: 0.05),
                   borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
                   border: Border.all(
-                    color: AppPalette.white.withValues(alpha: 0.05),
+                    color: _StoryDetailsColors.of(
+                      context,
+                    ).white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: TextField(
@@ -2202,14 +2331,14 @@ class _CommentComposer extends StatelessWidget {
                   minLines: 1,
                   maxLines: 4,
                   style: AppTextStyle(
-                    color: StoryPalette.text,
+                    color: _StoryDetailsColors.of(context).textPrimary,
                     fontSize: adaptive.scale(15),
                   ),
                   decoration: AppInputDecoration(
                     border: InputBorder.none,
                     hintText: l10n.storyCommentHint,
                     hintStyle: AppTextStyle(
-                      color: StoryPalette.textMuted,
+                      color: _StoryDetailsColors.of(context).textMuted,
                       fontSize: adaptive.scale(15),
                     ),
                     contentPadding: AppEdgeInsets.symmetric(
@@ -2226,8 +2355,8 @@ class _CommentComposer extends StatelessWidget {
                   ? null
                   : onSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
-                foregroundColor: AppPalette.white,
+                backgroundColor: _StoryDetailsColors.of(context).primary,
+                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
                 minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
                 shape: RoundedRectangleBorder(
                   borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
@@ -2237,9 +2366,9 @@ class _CommentComposer extends StatelessWidget {
                   ? SizedBox(
                       width: adaptive.scale(18),
                       height: adaptive.scale(18),
-                      child: const CircularProgressIndicator(
+                      child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppPalette.white,
+                        color: _StoryDetailsColors.of(context).textPrimary,
                       ),
                     )
                   : isEditing
@@ -2259,7 +2388,7 @@ class _CommentComposer extends StatelessWidget {
           Text(
             helperText!,
             style: AppTextStyle(
-              color: StoryPalette.textMuted,
+              color: _StoryDetailsColors.of(context).textMuted,
               fontSize: adaptive.scale(12),
               height: 1.4,
             ),
@@ -2299,7 +2428,7 @@ class _CommentsSection extends StatelessWidget {
         Text(
           l10n.storyCommentsTitle,
           style: AppTextStyle(
-            color: StoryPalette.text,
+            color: _StoryDetailsColors.of(context).textPrimary,
             fontSize: adaptive.scale(20),
             fontWeight: FontWeight.w800,
           ),
@@ -2309,7 +2438,7 @@ class _CommentsSection extends StatelessWidget {
           Text(
             l10n.storyCommentsEmpty,
             style: AppTextStyle(
-              color: StoryPalette.textSoft,
+              color: _StoryDetailsColors.of(context).textSecondary,
               fontSize: adaptive.scale(15),
             ),
           )
@@ -2362,8 +2491,10 @@ class _CommentCard extends StatelessWidget {
       padding: AppEdgeInsets.all(adaptive.scale(14)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
-        color: AppPalette.white.withValues(alpha: 0.04),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
+        color: _StoryDetailsColors.of(context).white.withValues(alpha: 0.04),
+        border: Border.all(
+          color: _StoryDetailsColors.of(context).white.withValues(alpha: 0.05),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2383,7 +2514,7 @@ class _CommentCard extends StatelessWidget {
                     Text(
                       comment.author.preferredName,
                       style: AppTextStyle(
-                        color: StoryPalette.text,
+                        color: _StoryDetailsColors.of(context).textPrimary,
                         fontSize: adaptive.scale(14),
                         fontWeight: FontWeight.w700,
                       ),
@@ -2391,7 +2522,7 @@ class _CommentCard extends StatelessWidget {
                     Text(
                       formatStoryDate(context, comment.createdAt),
                       style: AppTextStyle(
-                        color: StoryPalette.textMuted,
+                        color: _StoryDetailsColors.of(context).textMuted,
                         fontSize: adaptive.scale(11),
                       ),
                     ),
@@ -2400,7 +2531,7 @@ class _CommentCard extends StatelessWidget {
                       Text(
                         '• ${AppLocalizations.of(context)!.chatEditedLabel}',
                         style: AppTextStyle(
-                          color: StoryPalette.textMuted,
+                          color: _StoryDetailsColors.of(context).textMuted,
                           fontSize: adaptive.scale(11),
                         ),
                       ),
@@ -2414,7 +2545,7 @@ class _CommentCard extends StatelessWidget {
           Text(
             comment.body,
             style: AppTextStyle(
-              color: StoryPalette.textSoft,
+              color: _StoryDetailsColors.of(context).textSecondary,
               fontSize: adaptive.scale(15),
               height: 1.5,
             ),
@@ -2474,10 +2605,12 @@ class _CommentActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final color = accent ? AppPalette.primary : StoryPalette.textMuted;
+    final color = accent
+        ? _StoryDetailsColors.of(context).primary
+        : _StoryDetailsColors.of(context).textMuted;
 
     return Material(
-      color: AppPalette.transparent,
+      color: _StoryDetailsColors.of(context).transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
@@ -2689,7 +2822,7 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: DefaultTextStyle.merge(
-        style: const AppTextStyle(decoration: TextDecoration.none),
+        style: AppTextStyle(decoration: TextDecoration.none),
         child: Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: _startSwipeTracking,
@@ -2698,7 +2831,7 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
           onPointerCancel: _cancelSwipeTracking,
           child: SizedBox.expand(
             child: ColoredBox(
-              color: AppPalette.black,
+              color: _StoryDetailsColors.of(context).black,
               child: SafeArea(
                 child: Stack(
                   children: [
@@ -2755,18 +2888,22 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
                             ),
                             alignment: Alignment.center,
                             decoration: AppBoxDecoration(
-                              color: AppPalette.black.withValues(alpha: 0.48),
+                              color: _StoryDetailsColors.of(
+                                context,
+                              ).black.withValues(alpha: 0.48),
                               borderRadius: AppBorderRadius.circular(999),
                               border: Border.all(
-                                color: AppPalette.white.withValues(alpha: 0.14),
+                                color: _StoryDetailsColors.of(
+                                  context,
+                                ).white.withValues(alpha: 0.14),
                               ),
                             ),
                             child: Text(
                               '${_currentIndex + 1}/${widget.images.length}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const AppTextStyle(
-                                color: AppPalette.white,
+                              style: AppTextStyle(
+                                color: _StoryDetailsColors.of(context).white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -3074,10 +3211,20 @@ class _StoryImageViewerIconButton extends StatelessWidget {
           height: 44,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.black.withValues(alpha: 0.54),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
+            color: _StoryDetailsColors.of(
+              context,
+            ).black.withValues(alpha: 0.54),
+            border: Border.all(
+              color: _StoryDetailsColors.of(
+                context,
+              ).white.withValues(alpha: 0.16),
+            ),
           ),
-          child: Icon(icon, color: AppPalette.white, size: 24),
+          child: Icon(
+            icon,
+            color: _StoryDetailsColors.of(context).white,
+            size: 24,
+          ),
         ),
       ),
     );
@@ -3089,11 +3236,11 @@ class _StoryImageViewerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: SizedBox.square(
         dimension: 30,
         child: CircularProgressIndicator(
-          color: AppPalette.primary,
+          color: _StoryDetailsColors.of(context).primary,
           strokeWidth: 2.4,
         ),
       ),
@@ -3106,10 +3253,10 @@ class _StoryImageViewerPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Icon(
         Icons.image_not_supported_rounded,
-        color: AppPalette.textCaption,
+        color: _StoryDetailsColors.of(context).textMuted,
         size: 54,
       ),
     );
@@ -3143,7 +3290,7 @@ class _RelatedStoriesSection extends StatelessWidget {
                   Text(
                     l10n.storyRelatedEyebrow,
                     style: AppTextStyle(
-                      color: AppPalette.primary,
+                      color: _StoryDetailsColors.of(context).primary,
                       fontSize: adaptive.scale(9),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -3153,7 +3300,7 @@ class _RelatedStoriesSection extends StatelessWidget {
                   Text(
                     l10n.storyRelatedTitle,
                     style: AppTextStyle(
-                      color: StoryPalette.text,
+                      color: _StoryDetailsColors.of(context).textPrimary,
                       fontSize: adaptive.scale(18),
                       fontWeight: FontWeight.w800,
                     ),
@@ -3166,7 +3313,7 @@ class _RelatedStoriesSection extends StatelessWidget {
               child: Text(
                 l10n.storyViewAll,
                 style: AppTextStyle(
-                  color: AppPalette.primary,
+                  color: _StoryDetailsColors.of(context).primary,
                   fontSize: adaptive.scale(10),
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
@@ -3180,7 +3327,7 @@ class _RelatedStoriesSection extends StatelessWidget {
           Text(
             l10n.storyRelatedEmpty,
             style: AppTextStyle(
-              color: StoryPalette.textSoft,
+              color: _StoryDetailsColors.of(context).textSecondary,
               fontSize: adaptive.scale(15),
             ),
           )
@@ -3201,16 +3348,18 @@ class _RelatedStoriesSection extends StatelessWidget {
                           borderRadius: AppBorderRadius.circular(
                             adaptive.radius(14),
                           ),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              AppPalette.warmInk84,
-                              AppPalette.warmInk40,
+                              _StoryDetailsColors.of(context).surfaceRaised,
+                              _StoryDetailsColors.of(context).backgroundWarm,
                             ],
                           ),
                           border: Border.all(
-                            color: AppPalette.white.withValues(alpha: 0.03),
+                            color: _StoryDetailsColors.of(
+                              context,
+                            ).white.withValues(alpha: 0.03),
                           ),
                         ),
                         child: Column(
@@ -3233,9 +3382,9 @@ class _RelatedStoriesSection extends StatelessWidget {
                                   if (state.disablesEntry)
                                     Positioned.fill(
                                       child: ColoredBox(
-                                        color: AppPalette.black.withValues(
-                                          alpha: 0.38,
-                                        ),
+                                        color: _StoryDetailsColors.of(
+                                          context,
+                                        ).black.withValues(alpha: 0.38),
                                       ),
                                     ),
                                   Positioned(
@@ -3277,7 +3426,9 @@ class _RelatedStoriesSection extends StatelessWidget {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTextStyle(
-                                      color: AppPalette.orangeWash13,
+                                      color: _StoryDetailsColors.of(
+                                        context,
+                                      ).textPrimary,
                                       fontSize: adaptive.scale(15),
                                       height: 1.15,
                                       fontWeight: FontWeight.w700,
@@ -3287,9 +3438,9 @@ class _RelatedStoriesSection extends StatelessWidget {
                                   Text(
                                     story.author.preferredName,
                                     style: AppTextStyle(
-                                      color: AppPalette.white.withValues(
-                                        alpha: 0.48,
-                                      ),
+                                      color: _StoryDetailsColors.of(
+                                        context,
+                                      ).white.withValues(alpha: 0.48),
                                       fontSize: adaptive.scale(10),
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 1.0,
@@ -3360,20 +3511,23 @@ class _StoryDetailErrorState extends StatelessWidget {
           children: [
             Icon(
               Icons.error_outline_rounded,
-              color: AppPalette.primary,
+              color: _StoryDetailsColors.of(context).primary,
               size: adaptive.scale(42, minFactor: 0.86, maxFactor: 1.04),
             ),
             SizedBox(height: adaptive.scale(14, minFactor: 0.86)),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const AppTextStyle(color: StoryPalette.textSoft),
+              style: AppTextStyle(
+                color: _StoryDetailsColors.of(context).textSecondary,
+              ),
             ),
             SizedBox(height: adaptive.scale(18, minFactor: 0.86)),
             ElevatedButton(
               onPressed: () => onRetry(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.primary,
+                backgroundColor: _StoryDetailsColors.of(context).primary,
+                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
               ),
               child: Text(retryLabel),
             ),

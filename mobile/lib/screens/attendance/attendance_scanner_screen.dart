@@ -349,227 +349,257 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
   Color _feedbackColor() {
     switch (_feedbackTone) {
       case _ScannerFeedbackTone.success:
-        return AppPalette.greenMuted03;
+        return AppPalette.success;
       case _ScannerFeedbackTone.warning:
         return AppPalette.primary;
       case _ScannerFeedbackTone.error:
-        return AppPalette.redSoft07;
+        return AppPalette.danger;
       case _ScannerFeedbackTone.neutral:
-        return AppPalette.white;
+        return context.appColors.textPrimary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      backgroundColor: AppPalette.warmInk13,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: AppPalette.white,
-                  ),
-                  Expanded(
-                    child: Text(
-                      l10n.qrScannerTitle,
-                      textAlign: TextAlign.center,
-                      style: const AppTextStyle(
-                        color: AppPalette.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
             ),
-            Padding(
-              padding: const AppEdgeInsets.fromLTRB(24, 12, 24, 18),
-              child: Text(
-                l10n.qrScannerSubtitle,
-                textAlign: TextAlign.center,
-                style: AppTextStyle(
-                  color: AppPalette.white.withValues(alpha: 0.72),
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const AppEdgeInsets.symmetric(horizontal: 18),
-                child: ClipRRect(
-                  borderRadius: AppBorderRadius.circular(30),
-                  child: Stack(
-                    fit: StackFit.expand,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Row(
                     children: [
-                      MobileScanner(
-                        controller: _controller,
-                        onDetect: _handleDetect,
-                        errorBuilder: (context, error) {
-                          return DecoratedBox(
-                            decoration: const AppBoxDecoration(
-                              color: AppPalette.warmInk82,
-                            ),
-                            child: Center(
-                              child: Padding(
-                                padding: const AppEdgeInsets.symmetric(
-                                  horizontal: 24,
-                                ),
-                                child: Text(
-                                  l10n.qrScannerCameraUnavailable,
-                                  textAlign: TextAlign.center,
-                                  style: const AppTextStyle(
-                                    color: AppPalette.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        overlayBuilder: (context, constraints) {
-                          final frameWidth = constraints.maxWidth * 0.72;
-                          final frameHeight = constraints.maxHeight * 0.38;
-                          return Center(
-                            child: Container(
-                              width: frameWidth,
-                              height: frameHeight,
-                              decoration: AppBoxDecoration(
-                                borderRadius: AppBorderRadius.circular(28),
-                                border: Border.all(
-                                  color: AppPalette.primary,
-                                  width: 2.4,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppPalette.primary.withValues(
-                                      alpha: 0.22,
-                                    ),
-                                    blurRadius: 28,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                      IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        color: AppPalette.primary,
+                        style: AppButtonStyles.icon(context.appColors),
                       ),
-                      Positioned(
-                        left: 18,
-                        right: 18,
-                        bottom: 18,
-                        child: Container(
-                          padding: const AppEdgeInsets.all(16),
-                          decoration: AppBoxDecoration(
-                            color: AppPalette.warmOverlayInk10,
-                            borderRadius: AppBorderRadius.circular(24),
-                            border: Border.all(
-                              color: AppPalette.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _feedbackMessage ?? l10n.qrScannerReady,
-                                style: AppTextStyle(
-                                  color: _feedbackMessage == null
-                                      ? AppPalette.white
-                                      : _feedbackColor(),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _pendingCount > 0
-                                    ? l10n.qrScannerPendingCount(
-                                        _pendingCount.toString(),
-                                      )
-                                    : l10n.qrScannerNoPending,
-                                style: AppTextStyle(
-                                  color: AppPalette.white.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: _isManualSyncing
-                                          ? null
-                                          : _handleManualSync,
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppPalette.white,
-                                        side: BorderSide(
-                                          color: AppPalette.white.withValues(
-                                            alpha: 0.14,
-                                          ),
-                                        ),
-                                        padding: const AppEdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                      ),
-                                      child: _isManualSyncing
-                                          ? SizedBox(
-                                              width: 18,
-                                              height: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation(
-                                                      AppPalette.white
-                                                          .withValues(
-                                                            alpha: 0.92,
-                                                          ),
-                                                    ),
-                                              ),
-                                            )
-                                          : Text(l10n.qrScannerSyncNow),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: FilledButton(
-                                      onPressed: _restartScanner,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: AppPalette.primary,
-                                        foregroundColor: AppPalette.textPrimary,
-                                        padding: const AppEdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                      ),
-                                      child: Text(l10n.qrScannerScanAgain),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                      Expanded(
+                        child: Text(
+                          l10n.qrScannerTitle,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyle(
+                            color: context.appColors.textPrimary,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
+                      const SizedBox(width: 48),
                     ],
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const AppEdgeInsets.fromLTRB(24, 12, 24, 18),
+                  child: Text(
+                    l10n.qrScannerSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle(
+                      color: context.appColors.textSecondary,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const AppEdgeInsets.symmetric(horizontal: 18),
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        color: context.appColors.surfaceRaised,
+                        borderRadius: AppBorderRadius.circular(30),
+                        border: Border.all(
+                          color: context.appColors.borderPrimary,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: AppBorderRadius.circular(30),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            MobileScanner(
+                              controller: _controller,
+                              onDetect: _handleDetect,
+                              errorBuilder: (context, error) {
+                                return DecoratedBox(
+                                  decoration: AppBoxDecoration(
+                                    color: context.appColors.surfaceHigh,
+                                  ),
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const AppEdgeInsets.symmetric(
+                                        horizontal: 24,
+                                      ),
+                                      child: Text(
+                                        l10n.qrScannerCameraUnavailable,
+                                        textAlign: TextAlign.center,
+                                        style: AppTextStyle(
+                                          color: context.appColors.textPrimary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              overlayBuilder: (context, constraints) {
+                                final frameWidth = constraints.maxWidth * 0.72;
+                                final frameHeight =
+                                    constraints.maxHeight * 0.38;
+                                return Center(
+                                  child: Container(
+                                    width: frameWidth,
+                                    height: frameHeight,
+                                    decoration: AppBoxDecoration(
+                                      borderRadius: AppBorderRadius.circular(
+                                        28,
+                                      ),
+                                      border: Border.all(
+                                        color: AppPalette.primary,
+                                        width: 2.4,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppPalette.primary.withValues(
+                                            alpha: 0.24,
+                                          ),
+                                          blurRadius: 30,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Positioned(
+                              left: 18,
+                              right: 18,
+                              bottom: 18,
+                              child: Container(
+                                padding: const AppEdgeInsets.all(16),
+                                decoration: AppBoxDecoration(
+                                  color: context.appColors.surface.withValues(
+                                    alpha: 0.92,
+                                  ),
+                                  borderRadius: AppBorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: context.appColors.borderPrimary,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _feedbackMessage ?? l10n.qrScannerReady,
+                                      style: AppTextStyle(
+                                        color: _feedbackMessage == null
+                                            ? context.appColors.textPrimary
+                                            : _feedbackColor(),
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _pendingCount > 0
+                                          ? l10n.qrScannerPendingCount(
+                                              _pendingCount.toString(),
+                                            )
+                                          : l10n.qrScannerNoPending,
+                                      style: AppTextStyle(
+                                        color: context.appColors.textSecondary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: _isManualSyncing
+                                                ? null
+                                                : _handleManualSync,
+                                            style:
+                                                AppButtonStyles.secondary(
+                                                  context.appColors,
+                                                ).copyWith(
+                                                  padding: WidgetStateProperty.all(
+                                                    const AppEdgeInsets.symmetric(
+                                                      vertical: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                            child: _isManualSyncing
+                                                ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(
+                                                            AppPalette
+                                                                .textPrimary,
+                                                          ),
+                                                    ),
+                                                  )
+                                                : Text(l10n.qrScannerSyncNow),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: FilledButton(
+                                            onPressed: _restartScanner,
+                                            style:
+                                                AppButtonStyles.primary(
+                                                  context.appColors,
+                                                ).copyWith(
+                                                  padding: WidgetStateProperty.all(
+                                                    const AppEdgeInsets.symmetric(
+                                                      vertical: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                            child: Text(
+                                              l10n.qrScannerScanAgain,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
             ),
-            const SizedBox(height: 18),
-          ],
+          ),
         ),
       ),
     );

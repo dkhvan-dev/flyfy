@@ -21,4 +21,35 @@ void main() {
       expect(source, contains('refreshGuideDashboardData'));
     },
   );
+
+  test(
+    'attendance scanner uses v2 design system around camera surface',
+    () async {
+      final source = await File(
+        'lib/screens/attendance/attendance_scanner_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('app_design_system.dart'));
+      expect(source, contains('AppDesignSystem.themeFor(context)'));
+      expect(
+        source,
+        contains('final colors = AppDesignSystem.colorsFor(context)'),
+      );
+      expect(source, contains('backgroundColor: colors.background'));
+      expect(source, contains('colors: colors.screenGradientColors'));
+      expect(source, contains('AppPalette.primary'));
+      expect(
+        source,
+        matches(
+          RegExp(r'AppButtonStyles\.primary\(\s*context\.appColors\s*,?\s*\)'),
+        ),
+      );
+      expect(source, contains('MobileScanner('));
+      expect(source, contains('overlayBuilder:'));
+      expect(source, isNot(contains('AppPalette.warmInk')));
+      expect(source, isNot(contains('AppPalette.warmOverlay')));
+      expect(source, isNot(contains('AppPalette.white')));
+      expect(source, isNot(contains('AppPalette.primary')));
+    },
+  );
 }

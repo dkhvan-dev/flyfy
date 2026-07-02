@@ -77,6 +77,20 @@ void main() {
     expect(viewerSource, contains('Navigator.of(context).pop'));
   });
 
+  test('fullscreen video viewer uses adaptive V2 colors directly', () async {
+    final viewerSource = await File(
+      'lib/screens/chat/chat_video_viewer_screen.dart',
+    ).readAsString();
+
+    expect(viewerSource, contains('app_design_system.dart'));
+    expect(viewerSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(viewerSource, contains('colors.backgroundDeep'));
+    expect(viewerSource, contains('colors.primary'));
+    expect(viewerSource, contains('colors.scrim'));
+    expect(viewerSource, contains('colors.white'));
+    expect(viewerSource, isNot(contains('AppPalette.')));
+  });
+
   test(
     'pending video attachments use playable local preview before sending',
     () async {
@@ -345,6 +359,20 @@ void main() {
     expect(source, contains('loadLocalPreview: true'));
   });
 
+  test('inline video preview uses adaptive V2 colors directly', () async {
+    final previewSource = await File(
+      'lib/screens/chat/widgets/chat_video_preview.dart',
+    ).readAsString();
+
+    expect(previewSource, contains('app_design_system.dart'));
+    expect(previewSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(previewSource, contains('colors.surfaceWarm'));
+    expect(previewSource, contains('colors.backgroundDeep'));
+    expect(previewSource, contains('colors.primary'));
+    expect(previewSource, contains('colors.white'));
+    expect(previewSource, isNot(contains('AppPalette.')));
+  });
+
   test('shared voice messages use inline audio player', () async {
     final source = await File(
       'lib/screens/chat/chat_shared_content_screen.dart',
@@ -362,6 +390,20 @@ void main() {
     expect(playerSource, contains('class ChatVoiceAttachmentPlayer'));
     expect(playerSource, contains('AudioPlayer'));
     expect(playerSource, contains('ChatFileCache'));
+  });
+
+  test('inline voice player uses adaptive V2 colors directly', () async {
+    final playerSource = await File(
+      'lib/screens/chat/widgets/chat_voice_attachment_player.dart',
+    ).readAsString();
+
+    expect(playerSource, contains('app_design_system.dart'));
+    expect(playerSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(playerSource, contains('colors.surfaceHigh'));
+    expect(playerSource, contains('colors.borderSoft'));
+    expect(playerSource, contains('colors.primary'));
+    expect(playerSource, contains('colors.textPrimary'));
+    expect(playerSource, isNot(contains('AppPalette.')));
   });
 
   test('shared voice tab is named audio messages in localizations', () async {
@@ -801,8 +843,11 @@ void main() {
 
     expect(source, contains('class _AmberAttachmentSheet'));
     expect(source, contains('class _AmberAttachmentActionTile'));
-    expect(source, contains('AppPalette.primary'));
-    expect(source, contains('barrierColor: AppPalette.black.withValues'));
+    expect(source, contains('context.chatColors.primary'));
+    expect(
+      source,
+      contains('barrierColor: context.chatColors.black.withValues'),
+    );
     expect(source, contains('chatAttachmentCancel'));
     expect(source, isNot(contains('CupertinoActionSheet')));
   });

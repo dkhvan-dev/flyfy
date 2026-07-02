@@ -33,6 +33,7 @@ class StoryEditorToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -54,14 +55,12 @@ class StoryEditorToolbar extends StatelessWidget {
         );
         return Material(
           elevation: 16,
-          color: StoryPalette.surface,
+          color: colors.surface,
           child: SafeArea(
             top: false,
             child: DecoratedBox(
               decoration: AppBoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppPalette.outlineOverlay),
-                ),
+                border: Border(top: BorderSide(color: colors.borderSoft)),
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: toolbarMinHeight),
@@ -112,7 +111,7 @@ class StoryEditorToolbar extends StatelessWidget {
                         height: dividerHeight,
                         child: VerticalDivider(
                           width: dividerWidth,
-                          color: StoryPalette.line,
+                          color: colors.border,
                         ),
                       ),
                       _ToolbarButton(
@@ -157,14 +156,15 @@ class StoryEditorKeyboardFormattingToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     return TextFieldTapRegion(
       child: Material(
-        color: StoryPalette.surfaceRaised,
+        color: colors.surfaceRaised,
         child: SizedBox(
           width: double.infinity,
           child: DecoratedBox(
             decoration: AppBoxDecoration(
-              border: Border(top: BorderSide(color: AppPalette.outlineOverlay)),
+              border: Border(top: BorderSide(color: colors.borderSoft)),
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -218,6 +218,7 @@ class _InlineFormatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final borderRadius = AppBorderRadius.circular(14);
     return Padding(
       padding: AppEdgeInsetsDirectional.only(
@@ -227,10 +228,10 @@ class _InlineFormatButton extends StatelessWidget {
         label: label,
         button: true,
         child: Material(
-          color: AppPalette.primary.withValues(alpha: 0.18),
+          color: colors.primary.withValues(alpha: 0.18),
           shape: RoundedRectangleBorder(
             borderRadius: borderRadius,
-            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.24)),
+            side: BorderSide(color: colors.borderPrimary),
           ),
           child: InkWell(
             canRequestFocus: false,
@@ -258,7 +259,7 @@ class _InlineFormatButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: StoryPalette.text,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -290,12 +291,13 @@ class _ToolbarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final colors = AppDesignSystem.colorsFor(context);
     final foreground = onPressed == null
-        ? AppPalette.textCaption
-        : AppPalette.textPrimary;
+        ? colors.textDisabled
+        : colors.textPrimary;
     final background = emphasized
-        ? AppPalette.primary
-        : AppPalette.primary.withValues(alpha: onPressed == null ? 0.06 : 0.16);
+        ? colors.primary
+        : colors.primary.withValues(alpha: onPressed == null ? 0.06 : 0.16);
     return Padding(
       padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(2, minFactor: 0.86, maxFactor: 1.04),

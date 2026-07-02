@@ -566,6 +566,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = AppDesignSystem.colorsFor(context);
     final controller = _controller;
     final canFlip = _cameras.length > 1 && !_recording && !_busy;
     final canUseFlash =
@@ -575,7 +576,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
         !_busy;
 
     return Scaffold(
-      backgroundColor: AppPalette.black,
+      backgroundColor: colors.backgroundDeep,
       body: Stack(
         children: [
           Positioned.fill(
@@ -583,8 +584,8 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                 controller == null ||
                     _loading ||
                     !controller.value.isInitialized
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppPalette.primary),
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.primary),
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
@@ -625,9 +626,9 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppPalette.black.withValues(alpha: 0.52),
-                      AppPalette.transparent,
-                      AppPalette.black.withValues(alpha: 0.68),
+                      colors.scrim.withValues(alpha: 0.52),
+                      colors.transparent,
+                      colors.scrim.withValues(alpha: 0.68),
                     ],
                     stops: const [0, 0.45, 1],
                   ),
@@ -762,6 +763,7 @@ class _CameraIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onPressed == null;
+    final colors = AppDesignSystem.colorsFor(context);
     return Semantics(
       button: true,
       label: label,
@@ -774,12 +776,12 @@ class _CameraIconButton extends StatelessWidget {
           height: 42,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppPalette.black.withValues(alpha: 0.34),
-            border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+            color: colors.scrim.withValues(alpha: 0.34),
+            border: Border.all(color: colors.white.withValues(alpha: 0.12)),
           ),
           child: Icon(
             icon,
-            color: AppPalette.white.withValues(alpha: disabled ? 0.36 : 0.95),
+            color: colors.white.withValues(alpha: disabled ? 0.36 : 0.95),
             size: 22,
           ),
         ),
@@ -796,9 +798,11 @@ class _RecordingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.materialDanger.withValues(alpha: 0.9),
+        color: colors.danger.withValues(alpha: 0.9),
         borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
@@ -806,16 +810,12 @@ class _RecordingBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.fiber_manual_record,
-              color: AppPalette.white,
-              size: 12,
-            ),
+            Icon(Icons.fiber_manual_record, color: colors.white, size: 12),
             const SizedBox(width: 6),
             Text(
               '$label ${_formatRecordingDuration(duration)}',
-              style: const AppTextStyle(
-                color: AppPalette.white,
+              style: AppTextStyle(
+                color: colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -843,11 +843,13 @@ class _ZoomLevelSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.48),
+        color: colors.scrim.withValues(alpha: 0.48),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+        border: Border.all(color: colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -883,6 +885,7 @@ class _ZoomLevelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final label = level < 1
         ? level.toStringAsFixed(1)
         : level.toStringAsFixed(level.roundToDouble() == level ? 0 : 1);
@@ -897,15 +900,15 @@ class _ZoomLevelChip extends StatelessWidget {
         height: 34,
         alignment: Alignment.center,
         decoration: AppBoxDecoration(
-          color: selected ? AppPalette.white : AppPalette.transparent,
+          color: selected ? colors.white : colors.transparent,
           borderRadius: AppBorderRadius.circular(999),
         ),
         child: Text(
           '${label}x',
           style: AppTextStyle(
             color: selected
-                ? AppPalette.black
-                : AppPalette.white.withValues(alpha: enabled ? 0.78 : 0.34),
+                ? colors.black
+                : colors.white.withValues(alpha: enabled ? 0.78 : 0.34),
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -921,6 +924,8 @@ class _FocusReticle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return IgnorePointer(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
@@ -928,15 +933,15 @@ class _FocusReticle extends StatelessWidget {
         height: 76,
         decoration: AppBoxDecoration(
           borderRadius: AppBorderRadius.circular(18),
-          border: Border.all(color: AppPalette.white, width: 1.5),
+          border: Border.all(color: colors.white, width: 1.5),
         ),
         child: Center(
           child: Container(
             width: 7,
             height: 7,
-            decoration: const AppBoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppPalette.white,
+              color: colors.white,
             ),
           ),
         ),
@@ -962,11 +967,13 @@ class _CameraModeSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.36),
+        color: colors.scrim.withValues(alpha: 0.36),
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+        border: Border.all(color: colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(4),
@@ -1007,6 +1014,8 @@ class _ModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return InkWell(
       borderRadius: AppBorderRadius.circular(999),
       onTap: enabled ? onTap : null,
@@ -1014,15 +1023,15 @@ class _ModeChip extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: AppBoxDecoration(
-          color: selected ? AppPalette.white : AppPalette.transparent,
+          color: selected ? colors.white : colors.transparent,
           borderRadius: AppBorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: AppTextStyle(
             color: selected
-                ? AppPalette.black
-                : AppPalette.white.withValues(alpha: enabled ? 0.78 : 0.36),
+                ? colors.black
+                : colors.white.withValues(alpha: enabled ? 0.78 : 0.36),
             fontSize: 14,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
             letterSpacing: 0,
@@ -1054,6 +1063,7 @@ class _CaptureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
     final label = videoMode
         ? recording
               ? stopLabel
@@ -1072,21 +1082,19 @@ class _CaptureButton extends StatelessWidget {
           height: 76,
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppPalette.white, width: 5),
+            border: Border.all(color: colors.white, width: 5),
             color: videoMode
-                ? AppPalette.materialDanger.withValues(
-                    alpha: recording ? 0.18 : 0.95,
-                  )
-                : AppPalette.white.withValues(alpha: 0.18),
+                ? colors.danger.withValues(alpha: recording ? 0.18 : 0.95)
+                : colors.white.withValues(alpha: 0.18),
           ),
           child: Center(
             child: busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 28,
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      color: AppPalette.white,
+                      color: colors.white,
                     ),
                   )
                 : AnimatedContainer(
@@ -1094,9 +1102,7 @@ class _CaptureButton extends StatelessWidget {
                     width: recording ? 28 : 52,
                     height: recording ? 28 : 52,
                     decoration: AppBoxDecoration(
-                      color: videoMode
-                          ? AppPalette.materialDanger
-                          : AppPalette.white,
+                      color: videoMode ? colors.danger : colors.white,
                       borderRadius: AppBorderRadius.circular(
                         recording ? 8 : 999,
                       ),
@@ -1116,19 +1122,21 @@ class _CameraErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.black.withValues(alpha: 0.62),
+        color: colors.scrim.withValues(alpha: 0.62),
         borderRadius: AppBorderRadius.circular(14),
-        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+        border: Border.all(color: colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const AppTextStyle(
-            color: AppPalette.white,
+          style: AppTextStyle(
+            color: colors.white,
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0,

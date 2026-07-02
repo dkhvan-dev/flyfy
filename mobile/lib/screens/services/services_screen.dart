@@ -19,55 +19,67 @@ class ServicesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final services = buildTravelServiceCatalog(l10n);
+    final colors = AppDesignSystem.colorsFor(context);
 
-    return Scaffold(
-      key: const ValueKey('services-screen'),
-      backgroundColor: AppPalette.warmInk22,
-      bottomNavigationBar: CommonBottomNavigationBar(
-        activeItem: AppBottomNavItem.services,
-        onHomeTap: () => context.go('/'),
-        onQrTap: () => context.push('/qr'),
-        onMapTap: () => context.push('/map'),
-        onServicesTap: () {},
-        onChatsTap: () => context.push('/chats'),
-      ),
-      body: DecoratedBox(
-        decoration: const AppBoxDecoration(color: AppPalette.warmInk81),
-        child: SafeArea(
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < 375;
-              final horizontalPadding = isCompact ? 13.0 : 16.0;
+    return Theme(
+      data: AppDesignSystem.themeFor(context),
+      child: Scaffold(
+        key: const ValueKey('services-screen'),
+        backgroundColor: colors.background,
+        bottomNavigationBar: CommonBottomNavigationBar(
+          activeItem: AppBottomNavItem.services,
+          style: AppBottomNavigationBarStyle.v2(context),
+          onHomeTap: () => context.go('/'),
+          onQrTap: () => context.push('/qr'),
+          onMapTap: () => context.push('/map'),
+          onServicesTap: () {},
+          onChatsTap: () => context.push('/chats'),
+        ),
+        body: DecoratedBox(
+          decoration: AppBoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: colors.screenGradientColors,
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 375;
+                final horizontalPadding = isCompact ? 13.0 : 16.0;
 
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: AppEdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      isCompact ? 24 : 30,
-                      horizontalPadding,
-                      32,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _ServicesHeader(title: l10n.servicesSectionTitle),
-                          SizedBox(height: isCompact ? 24 : 30),
-                          ServiceGrid(
-                            services: services,
-                            onServiceTap: (service) =>
-                                _openService(context, service),
-                          ),
-                        ],
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: AppEdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        isCompact ? 24 : 30,
+                        horizontalPadding,
+                        32,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _ServicesHeader(title: l10n.servicesSectionTitle),
+                            SizedBox(height: isCompact ? 24 : 30),
+                            ServiceGrid(
+                              services: services,
+                              style: ServiceGridStyle.v2(context),
+                              onServiceTap: (service) =>
+                                  _openService(context, service),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -95,7 +107,7 @@ class _ServicesHeader extends StatelessWidget {
             context.go('/');
           },
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppPalette.textPrimary,
+          style: AppButtonStyles.icon(context.appColors),
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         ),
@@ -106,7 +118,7 @@ class _ServicesHeader extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: AppPalette.textPrimary,
+              color: context.appColors.textPrimary,
               fontSize: isCompact ? 28 : 32,
               height: 1.1,
               fontWeight: FontWeight.w900,

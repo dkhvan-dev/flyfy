@@ -3,6 +3,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('excursion details screen uses adaptive V2 colors only', () async {
+    final source = await File(
+      'lib/screens/excursions/excursion_details_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('excursionDetailsColors.primary'));
+    expect(source, contains('excursionDetailsColors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   test('excursion details screen follows the reference structure', () async {
     final source = await File(
       'lib/screens/excursions/excursion_details_screen.dart',
@@ -118,7 +130,7 @@ void main() {
       expect(source, contains('extra: localizedLandmark'));
       expect(source, contains('actionLabel:'));
       expect(source, contains('l10n.detailsButton'));
-      expect(source, contains('AppPalette.primary'));
+      expect(source, contains('context.excursionDetailsColors.primary'));
     },
   );
 
@@ -194,6 +206,109 @@ void main() {
       expect(source, contains('class _ExcursionCheckoutBar'));
     },
   );
+
+  test(
+    'excursion details hero disables cover fade overlay in light theme',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf(
+        'LinearGradient? _excursionHeroOverlayGradient',
+      );
+      final heroStart = source.indexOf('class _ExcursionHero');
+      final indicatorStart = source.indexOf(
+        'class _ExcursionHeroImageIndicator',
+        heroStart,
+      );
+
+      expect(helperStart, isNonNegative);
+      expect(heroStart, isNonNegative);
+      expect(indicatorStart, greaterThan(heroStart));
+
+      final helperSource = source.substring(helperStart, heroStart);
+      final heroSource = source.substring(heroStart, indicatorStart);
+
+      expect(helperSource, contains('Brightness.light'));
+      expect(helperSource, contains('return null;'));
+      expect(
+        helperSource,
+        contains('context.excursionDetailsColors.warmInk37'),
+      );
+      expect(
+        heroSource,
+        contains(
+          'final overlayGradient = _excursionHeroOverlayGradient(context)',
+        ),
+      );
+      expect(heroSource, contains('if (overlayGradient != null)'));
+      expect(heroSource, contains('gradient: overlayGradient'));
+      expect(
+        heroSource,
+        isNot(
+          contains(
+            'DecoratedBox(\n'
+            '            decoration: AppBoxDecoration(\n'
+            '              gradient: LinearGradient(',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('excursion details light cards use visible V2 borders', () async {
+    final source = await File(
+      'lib/screens/excursions/excursion_details_screen.dart',
+    ).readAsString();
+    final colorsStart = source.indexOf('final class _ExcursionDetailsColors');
+    final colorsEnd = source.indexOf(
+      'extension _ExcursionDetailsColorContext',
+      colorsStart,
+    );
+    final statStart = source.indexOf('class _ExcursionStatCard');
+    final experienceStart = source.indexOf(
+      'class _ExcursionExperienceSection',
+      statStart,
+    );
+    final featureStart = source.indexOf('class _ExcursionFeatureCard');
+    final featureEnd = source.indexOf(
+      'enum _ExcursionIncludedFeatureType',
+      featureStart,
+    );
+
+    expect(colorsStart, isNonNegative);
+    expect(colorsEnd, greaterThan(colorsStart));
+    expect(statStart, isNonNegative);
+    expect(experienceStart, greaterThan(statStart));
+    expect(featureStart, isNonNegative);
+    expect(featureEnd, greaterThan(featureStart));
+
+    final colorsSource = source.substring(colorsStart, colorsEnd);
+    final statSource = source.substring(statStart, experienceStart);
+    final featureSource = source.substring(featureStart, featureEnd);
+
+    expect(
+      colorsSource,
+      contains('Color get detailCardSurface => colors.surfaceRaised'),
+    );
+    expect(
+      colorsSource,
+      contains('Color get detailCardBorder => colors.border'),
+    );
+
+    for (final cardSource in [statSource, featureSource]) {
+      expect(
+        cardSource,
+        contains('context.excursionDetailsColors.detailCardSurface'),
+      );
+      expect(
+        cardSource,
+        contains('context.excursionDetailsColors.detailCardBorder'),
+      );
+      expect(cardSource, isNot(contains('white.withValues(alpha: 0.055)')));
+      expect(cardSource, isNot(contains('white.withValues(alpha: 0.06)')));
+    }
+  });
 
   test(
     'excursion details checks selected guide schedule before booking CTA',
@@ -275,7 +390,7 @@ void main() {
       expect(source, contains('TripPreparationCta('));
       expect(ctaSource, contains('Icons.chevron_right_rounded'));
       expect(ctaSource, contains('iconAlignment: IconAlignment.end'));
-      expect(ctaSource, contains('foregroundColor: AppPalette.textPrimary'));
+      expect(ctaSource, contains('foregroundColor: colors.textPrimary'));
 
       final bottomActionStart = source.indexOf('final bottomAction =');
       final contentStart = source.indexOf(
@@ -305,9 +420,10 @@ void main() {
       expect(loadingStart, greaterThan(checkoutStart));
 
       final checkoutSource = source.substring(checkoutStart, loadingStart);
+      expect(checkoutSource, contains('foregroundColor:'));
       expect(
         checkoutSource,
-        contains('foregroundColor: AppPalette.textPrimary'),
+        contains('context.excursionDetailsColors.textPrimary'),
       );
       expect(checkoutSource, contains('iconAlignment: IconAlignment.end'));
     },
@@ -440,7 +556,7 @@ void main() {
 
       expect(source, contains('class _ExcursionOffersSectionState'));
       expect(source, contains('_offerSearchController'));
-      expect(source, contains('_ExcursionOffersSearchField'));
+      expect(source, contains('AppListSearchField('));
       expect(source, contains('_visibleOffers'));
       expect(
         source,
@@ -483,6 +599,42 @@ void main() {
         apiSource,
         contains('Future<ExcursionOffersPage> getExcursionOffers'),
       );
+    },
+  );
+
+  test(
+    'excursion details offers search uses shared list search field chrome',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+      final offersSectionStart = source.indexOf(
+        'class _ExcursionOffersSectionState',
+      );
+      final sortBarStart = source.indexOf('class _ExcursionOffersSortBar');
+
+      expect(offersSectionStart, isNonNegative);
+      expect(sortBarStart, greaterThan(offersSectionStart));
+
+      final offersSectionSource = source.substring(
+        offersSectionStart,
+        sortBarStart,
+      );
+
+      expect(
+        source,
+        contains("import '../../core/ui/app_list_search_field.dart';"),
+      );
+      expect(source, isNot(contains('class _ExcursionOffersSearchField')));
+      expect(offersSectionSource, contains('AppListSearchField('));
+      expect(
+        offersSectionSource,
+        contains('filterTooltip: l10n.excursionDetailsOffersFiltersTitle'),
+      );
+      expect(offersSectionSource, contains('showClearButton: true'));
+      expect(offersSectionSource, contains('onTapOutside:'));
+      expect(offersSectionSource, contains('onFilterTap: _showFilters'));
+      expect(offersSectionSource, contains('activeFilterCount:'));
     },
   );
 

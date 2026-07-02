@@ -3,6 +3,37 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('map screen uses adaptive V2 colors only', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('app_design_system.dart'));
+    expect(mapSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(mapSource, contains('mapColors.primary'));
+    expect(mapSource, contains('mapColors.textPrimary'));
+    expect(mapSource, isNot(contains('AppPalette.')));
+  });
+
+  test('map screen chrome background uses shared V2 screen gradient', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('List<Color> get screenGradientColors'));
+    expect(mapSource, contains('colors.screenGradientColors'));
+    expect(
+      mapSource,
+      contains('backgroundColor: context.mapColors.background'),
+    );
+    expect(
+      mapSource,
+      contains('colors: context.mapColors.screenGradientColors'),
+    );
+    expect(mapSource, isNot(contains('context.mapColors.backgroundWarm')));
+    expect(mapSource, isNot(contains('context.mapColors.warmInk04')));
+  });
+
   test('map screen uses a configurable MapLibre vector style', () async {
     final mapSource = await File(
       'lib/screens/map/map_screen.dart',
@@ -91,29 +122,97 @@ void main() {
     );
   });
 
-  test('map place overlay cards keep readable opaque surfaces', () async {
+  test('map dark overlay buttons use high contrast V2 surfaces', () async {
     final mapSource = await File(
       'lib/screens/map/map_screen.dart',
     ).readAsString();
+    final helperStart = mapSource.indexOf('bool _isLightMapTheme');
+    final headerStart = mapSource.indexOf('class _MapHeaderButton');
+    final chipStart = mapSource.indexOf('class _MapInfoChip');
+    final bannerStart = mapSource.indexOf('class _MapBanner');
+
+    expect(helperStart, isNonNegative);
+    expect(headerStart, greaterThan(helperStart));
+    expect(chipStart, greaterThan(headerStart));
+    expect(bannerStart, greaterThan(chipStart));
+
+    final helperSource = mapSource.substring(helperStart, headerStart);
+    final headerSource = mapSource.substring(headerStart, chipStart);
+    final chipSource = mapSource.substring(chipStart, bannerStart);
+
+    expect(helperSource, contains('Brightness.light'));
+    expect(helperSource, contains('Color _mapOverlaySurfaceColor'));
+    expect(helperSource, contains('Color _mapOverlayBorderColor'));
+    expect(helperSource, contains('List<BoxShadow> _mapOverlayShadow'));
+    expect(helperSource, contains('surfaceRaised.withValues(alpha: 0.96)'));
+    expect(helperSource, contains('primary.withValues(alpha: 0.38)'));
+
+    expect(headerSource, contains('_mapOverlaySurfaceColor(context)'));
+    expect(headerSource, contains('_mapOverlayBorderColor(context)'));
+    expect(headerSource, contains('_mapOverlayShadow(context)'));
+    expect(headerSource, isNot(contains('warmInk104.withValues(alpha: 0.78)')));
+    expect(headerSource, isNot(contains('white.withValues(alpha: 0.12)')));
+
+    expect(chipSource, contains('_mapOverlaySurfaceColor(context)'));
+    expect(chipSource, contains('_mapOverlayBorderColor(context)'));
+    expect(chipSource, contains('backgroundColor = accent'));
+    expect(chipSource, isNot(contains('LinearGradient(')));
+    expect(chipSource, isNot(contains('warmInk90.withValues(alpha: 0.66)')));
+  });
+
+  test('map place overlay cards use solid readable V2 surfaces', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+    final helperStart = mapSource.indexOf('Color _mapPlaceCardSurfaceColor');
+    final markerStart = mapSource.indexOf('class _PlaceMarker');
     final previewCardSource = _classSource(mapSource, '_PlacePreviewCard');
     final hintCardSource = _classSource(mapSource, '_MapHintCard');
     final selectedCardSource = _classSource(mapSource, '_SelectedPlaceCard');
 
-    expect(previewCardSource, contains('AppPalette.warmInk104'));
-    expect(previewCardSource, contains('alpha: 0.94'));
-    expect(previewCardSource, contains('BoxShadow('));
-    expect(hintCardSource, contains('AppPalette.warmInk104'));
-    expect(hintCardSource, contains('alpha: 0.96'));
-    expect(selectedCardSource, contains('AppPalette.warmInk104'));
-    expect(selectedCardSource, contains('alpha: 0.97'));
-    expect(selectedCardSource, contains('backgroundColor: AppPalette.primary'));
+    expect(helperStart, isNonNegative);
+    expect(markerStart, greaterThan(helperStart));
+
+    final helperSource = mapSource.substring(helperStart, markerStart);
+
+    expect(helperSource, contains('Color _mapPlaceCardSurfaceColor'));
+    expect(helperSource, contains('Color _mapPlaceCardBorderColor'));
+    expect(helperSource, contains('List<BoxShadow> _mapPlaceCardShadow'));
+    expect(helperSource, contains('return colors.surfaceRaised;'));
+    expect(helperSource, contains('return colors.surface;'));
+    expect(helperSource, contains('return const [];'));
+
     expect(
-      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
-      isNot(contains('AppPalette.white.withValues(alpha: 0.05)')),
+      previewCardSource,
+      contains('_mapPlaceCardSurfaceColor(context, selected: selected)'),
+    );
+    expect(
+      hintCardSource,
+      contains('_mapPlaceCardSurfaceColor(context, selected: false)'),
     );
     expect(
       selectedCardSource,
-      isNot(contains('AppPalette.white.withValues(alpha: 0.03)')),
+      contains('_mapPlaceCardSurfaceColor(context, selected: true)'),
+    );
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      contains('_mapPlaceCardBorderColor(context, selected:'),
+    );
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      contains('_mapPlaceCardShadow(context)'),
+    );
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      isNot(contains('LinearGradient(')),
+    );
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      isNot(contains('warmInk104.withValues')),
+    );
+    expect(
+      '$previewCardSource\n$hintCardSource\n$selectedCardSource',
+      isNot(contains('warmInk90.withValues')),
     );
   });
 
@@ -487,8 +586,14 @@ void main() {
 
     expect(saveButtonSections.length, greaterThanOrEqualTo(1));
     for (final section in saveButtonSections) {
-      expect(section, contains('foregroundColor: AppPalette.textPrimary'));
-      expect(section, isNot(contains('foregroundColor: AppPalette.warmInk90')));
+      expect(
+        section,
+        contains('foregroundColor: context.mapColors.textPrimary'),
+      );
+      expect(
+        section,
+        isNot(contains('foregroundColor: context.mapColors.warmInk90')),
+      );
     }
   });
 

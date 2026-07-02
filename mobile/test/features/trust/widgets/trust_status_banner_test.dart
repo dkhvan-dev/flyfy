@@ -1,9 +1,33 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/trust/widgets/trust_moderation_action_bar.dart';
 import 'package:inflap/features/trust/widgets/trust_status_banner.dart';
 
 void main() {
+  test('trust status banner uses adaptive V2 design colors only', () {
+    final source = File(
+      'lib/features/trust/widgets/trust_status_banner.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('color: colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('trust moderation action bar uses V2 design colors only', () {
+    final source = File(
+      'lib/features/trust/widgets/trust_moderation_action_bar.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('app_design_system.dart'));
+    expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('color: colors.textPrimary'));
+    expect(source, isNot(contains('AppPalette.')));
+  });
+
   testWidgets('renders blocked muted pending and rejected trust banners', (
     tester,
   ) async {
