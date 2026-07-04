@@ -210,8 +210,9 @@ jobs:
       - name: Validate required secrets
         shell: bash
         env:
-          TEST_DEPLOY_HOST: ${{ secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
-          TEST_DEPLOY_USER: ${{ secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST || secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
+          TEST_DEPLOY_USER: ${{ vars.TEST_DEPLOY_USER || secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_PORT: ${{ vars.TEST_DEPLOY_PORT || secrets.TEST_DEPLOY_PORT || '22' }}
           TEST_DEPLOY_SSH_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY || secrets.TEST_SERVER_SSH_KEY }}
           TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS || secrets.TEST_SERVER_KNOWN_HOSTS }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -224,6 +225,10 @@ jobs:
               exit 1
             fi
           done
+          if [[ ! "${TEST_DEPLOY_PORT}" =~ ^[0-9]+$ ]]; then
+            echo "TEST_DEPLOY_PORT must be a number." >&2
+            exit 1
+          fi
 
       - name: Package infra files
         shell: bash
@@ -248,8 +253,9 @@ jobs:
       - name: Upload infra and run deploy
         shell: bash
         env:
-          TEST_DEPLOY_HOST: ${{ secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
-          TEST_DEPLOY_USER: ${{ secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST || secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
+          TEST_DEPLOY_USER: ${{ vars.TEST_DEPLOY_USER || secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_PORT: ${{ vars.TEST_DEPLOY_PORT || secrets.TEST_DEPLOY_PORT || '22' }}
           TEST_DEPLOY_SSH_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY || secrets.TEST_SERVER_SSH_KEY }}
           TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS || secrets.TEST_SERVER_KNOWN_HOSTS }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -265,17 +271,35 @@ jobs:
           chmod 600 ~/.ssh/inflap_test_deploy_key
           printf '%s\n' "${TEST_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
 
-          scp -i ~/.ssh/inflap_test_deploy_key /tmp/inflap-test-infra.tgz \
+          ssh_opts=(
+            -i ~/.ssh/inflap_test_deploy_key
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+            -o ConnectionAttempts=3
+            -o "Port=${TEST_DEPLOY_PORT}"
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=2
+          )
+
+          echo "Checking SSH reachability for deploy host on port ${TEST_DEPLOY_PORT}..."
+          if ! ssh-keyscan -T 20 -p "${TEST_DEPLOY_PORT}" "${TEST_DEPLOY_HOST}" >/tmp/inflap_deploy_host_keys 2>/tmp/inflap_ssh_keyscan_error; then
+            echo "Could not reach deploy host on port ${TEST_DEPLOY_PORT} from the GitHub runner." >&2
+            echo "Check TEST_DEPLOY_HOST, VPS firewall rules, netcup firewall settings, and whether sshd is listening on the configured port." >&2
+            cat /tmp/inflap_ssh_keyscan_error >&2
+            exit 1
+          fi
+
+          scp "${ssh_opts[@]}" /tmp/inflap-test-infra.tgz \
             "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}:/tmp/inflap-test-infra.tgz"
 
-          ssh -i ~/.ssh/inflap_test_deploy_key "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+          ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
             "mkdir -p /opt/inflap && tar -xzf /tmp/inflap-test-infra.tgz -C /opt/inflap && chmod +x /opt/inflap/scripts/*.sh"
 
           if [[ -n "${GHCR_USERNAME}" && -n "${GHCR_READ_TOKEN}" ]]; then
             printf 'GHCR_USERNAME=%s\nGHCR_READ_TOKEN=%s\n' "${GHCR_USERNAME}" "${GHCR_READ_TOKEN}" | \
-              ssh -i ~/.ssh/inflap_test_deploy_key "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+              ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
               "mkdir -p /opt/inflap/env && umask 077 && cat > /opt/inflap/env/ghcr.env"
           fi
 
-          ssh -i ~/.ssh/inflap_test_deploy_key "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+          ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
             "REQUIRE_GHCR_AUTH=true IMAGE_REGISTRY='${IMAGE_REGISTRY}' IMAGE_NAMESPACE='${IMAGE_NAMESPACE}' IMAGE_PREFIX='${IMAGE_PREFIX}' IMAGE_TAG='${IMAGE_TAG}' /opt/inflap/scripts/deploy.sh"
