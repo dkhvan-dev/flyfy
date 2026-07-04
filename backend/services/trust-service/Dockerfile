@@ -1,5 +1,8 @@
 FROM golang:1.26-alpine AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
@@ -10,7 +13,7 @@ COPY backend/services/trust-service ./backend/services/trust-service
 WORKDIR /app/backend/services/trust-service
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /bin/trust-service ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /bin/trust-service ./cmd
 
 FROM alpine:3.22
 

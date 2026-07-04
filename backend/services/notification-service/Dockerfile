@@ -1,5 +1,8 @@
 FROM golang:1.26-alpine AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
@@ -11,7 +14,7 @@ RUN go mod download
 
 COPY backend/services/notification-service ./
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /bin/notification-service ./cmd
 
 FROM alpine:3.21

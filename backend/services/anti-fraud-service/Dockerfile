@@ -1,5 +1,8 @@
 FROM golang:1.26 AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 WORKDIR /app
 
 COPY ./backend/services/anti-fraud-service /app/backend/services/anti-fraud-service
@@ -7,7 +10,7 @@ COPY ./backend/services/anti-fraud-service /app/backend/services/anti-fraud-serv
 WORKDIR /app/backend/services/anti-fraud-service
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o anti-fraud-service ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o anti-fraud-service ./cmd
 
 FROM gcr.io/distroless/base-debian12:latest
 

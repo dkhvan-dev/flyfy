@@ -3,6 +3,9 @@
 # ============================================
 FROM golang:1.26-alpine AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 RUN apk add --no-cache git ca-certificates
 
 ENV GOWORK=off
@@ -22,7 +25,7 @@ COPY backend/services/auth-service ./backend/services/auth-service
 WORKDIR /app/backend/services/auth-service
 
 # Собираем бинарь
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /build/auth-service ./cmd/
 
 # ============================================

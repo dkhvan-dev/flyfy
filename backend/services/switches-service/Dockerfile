@@ -1,10 +1,13 @@
 FROM golang:1.26-alpine AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 WORKDIR /src
-COPY go.mod go.sum* ./
+COPY backend/services/switches-service/go.mod backend/services/switches-service/go.sum* ./
 RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/switches-service ./cmd
+COPY backend/services/switches-service ./
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/switches-service ./cmd
 
 FROM alpine:3.22
 

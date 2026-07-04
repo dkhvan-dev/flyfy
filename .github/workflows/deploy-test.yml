@@ -1,0 +1,255 @@
+name: Deploy Test Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Comma-separated service names, "all", or "auto".'
+        required: true
+        default: all
+      deploy:
+        description: 'Deploy to the test VPS after building images.'
+        type: boolean
+        required: true
+        default: true
+  push:
+    branches:
+      - develop
+    paths:
+      - 'backend/services/**'
+      - 'backend/pkg/**'
+      - 'proto/**'
+      - 'infra/test/**'
+      - '.github/workflows/deploy-test.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_PLATFORM: linux/amd64
+
+jobs:
+  build:
+    name: Build linux/amd64 test service images
+    runs-on: ubuntu-24.04
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      image_namespace: ${{ steps.meta.outputs.image_namespace }}
+      image_prefix: ${{ steps.meta.outputs.image_prefix }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Prepare image metadata
+        id: meta
+        shell: bash
+        run: |
+          image_namespace="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          repo_name="$(basename '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          image_prefix="${repo_name}-"
+          image_tag="test-${GITHUB_SHA::12}"
+          echo "image_namespace=${image_namespace}" >>"${GITHUB_OUTPUT}"
+          echo "image_prefix=${image_prefix}" >>"${GITHUB_OUTPUT}"
+          echo "image_tag=${image_tag}" >>"${GITHUB_OUTPUT}"
+
+      - name: Detect services to build
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          all_services=(
+            activity-service
+            admin-panel
+            anti-fraud-service
+            api-gateway
+            auth-service
+            chat-service
+            checklist-service
+            currency-service
+            excursion-service
+            feed-service
+            file-manager-service
+            guide-service
+            notification-service
+            payment-service
+            place-service
+            reference-service
+            routing-service
+            sticker-service
+            support-service
+            switches-service
+            token-service
+            translation-service
+            trust-service
+            user-route-service
+            user-service
+          )
+
+          requested="${{ github.event.inputs.services || 'auto' }}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${requested}" != "auto" ]]; then
+            if [[ "${requested}" == "all" ]]; then
+              selected=("${all_services[@]}")
+            else
+              IFS=',' read -ra selected <<<"${requested}"
+              for i in "${!selected[@]}"; do
+                selected[$i]="$(echo "${selected[$i]}" | xargs)"
+              done
+            fi
+          else
+            base_sha="${{ github.event.before }}"
+            if [[ -z "${base_sha}" || "${base_sha}" =~ ^0+$ ]]; then
+              base_sha="$(git rev-parse HEAD^)"
+            fi
+            changed_files="$(git diff --name-only "${base_sha}" "${GITHUB_SHA}" || true)"
+
+            selected=()
+            if grep -Eq '^(proto/|backend/pkg/)' <<<"${changed_files}"; then
+              selected=("${all_services[@]}")
+            else
+              for service in "${all_services[@]}"; do
+                if grep -q "^backend/services/${service}/" <<<"${changed_files}"; then
+                  selected+=("${service}")
+                fi
+              done
+            fi
+          fi
+
+          if [[ ${#selected[@]} -eq 0 ]]; then
+            echo "No service images need rebuild."
+            echo 'services=[]' >>"${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          printf 'Selected services:\n'
+          printf ' - %s\n' "${selected[@]}"
+
+          json="$(printf '%s\n' "${selected[@]}" | jq -R . | jq -cs .)"
+          echo "services=${json}" >>"${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.detect.outputs.services != '[]' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: ${{ steps.detect.outputs.services != '[]' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Run selected Go service tests
+        if: ${{ steps.detect.outputs.services != '[]' }}
+        shell: bash
+        env:
+          SERVICES_JSON: ${{ steps.detect.outputs.services }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t services < <(jq -r '.[]' <<<"${SERVICES_JSON}")
+          for service in "${services[@]}"; do
+            if [[ ! -f "backend/services/${service}/go.mod" ]]; then
+              echo "Skipping ${service}: no Go module found."
+              continue
+            fi
+
+            echo "::group::Test ${service}"
+            docker run --rm \
+              -v "${PWD}:/workspace" \
+              -w "/workspace/backend/services/${service}" \
+              golang:1.26 \
+              go test ./...
+            echo "::endgroup::"
+          done
+
+      - name: Build and push selected images
+        if: ${{ steps.detect.outputs.services != '[]' }}
+        shell: bash
+        env:
+          SERVICES_JSON: ${{ steps.detect.outputs.services }}
+          IMAGE_NAMESPACE: ${{ steps.meta.outputs.image_namespace }}
+          IMAGE_PREFIX: ${{ steps.meta.outputs.image_prefix }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t services < <(jq -r '.[]' <<<"${SERVICES_JSON}")
+          for service in "${services[@]}"; do
+            echo "::group::Build ${service}"
+            docker buildx build \
+              --platform "${IMAGE_PLATFORM}" \
+              --file "backend/services/${service}/Dockerfile" \
+              --tag "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_PREFIX}${service}:${IMAGE_TAG}" \
+              --tag "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_PREFIX}${service}:test-latest" \
+              --push \
+              .
+            echo "::endgroup::"
+          done
+
+  deploy:
+    name: Deploy to netcup test VPS
+    runs-on: ubuntu-24.04
+    needs: build
+    if: ${{ github.event_name == 'push' || github.event.inputs.deploy == 'true' }}
+    environment: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        env:
+          TEST_DEPLOY_HOST: ${{ secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
+          TEST_DEPLOY_USER: ${{ secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_SSH_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY || secrets.TEST_SERVER_SSH_KEY }}
+          TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS || secrets.TEST_SERVER_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          for name in TEST_DEPLOY_HOST TEST_DEPLOY_USER TEST_DEPLOY_SSH_KEY TEST_DEPLOY_KNOWN_HOSTS; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing GitHub environment secret: ${name}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Package infra files
+        shell: bash
+        run: |
+          tar -czf /tmp/inflap-test-infra.tgz -C infra/test .
+
+      - name: Upload infra and run deploy
+        shell: bash
+        env:
+          TEST_DEPLOY_HOST: ${{ secrets.TEST_DEPLOY_HOST || secrets.TEST_SERVER_HOST }}
+          TEST_DEPLOY_USER: ${{ secrets.TEST_DEPLOY_USER || secrets.TEST_SERVER_USER }}
+          TEST_DEPLOY_SSH_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY || secrets.TEST_SERVER_SSH_KEY }}
+          TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS || secrets.TEST_SERVER_KNOWN_HOSTS }}
+          IMAGE_NAMESPACE: ${{ needs.build.outputs.image_namespace }}
+          IMAGE_PREFIX: ${{ needs.build.outputs.image_prefix }}
+          IMAGE_TAG: test-latest
+        run: |
+          set -euo pipefail
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${TEST_DEPLOY_SSH_KEY}" > ~/.ssh/inflap_test_deploy_key
+          chmod 600 ~/.ssh/inflap_test_deploy_key
+          printf '%s\n' "${TEST_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/inflap_test_deploy_key /tmp/inflap-test-infra.tgz \
+            "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}:/tmp/inflap-test-infra.tgz"
+
+          ssh -i ~/.ssh/inflap_test_deploy_key "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+            "mkdir -p /opt/inflap && tar -xzf /tmp/inflap-test-infra.tgz -C /opt/inflap && chmod +x /opt/inflap/scripts/*.sh"
+
+          ssh -i ~/.ssh/inflap_test_deploy_key "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+            "IMAGE_REGISTRY='${IMAGE_REGISTRY}' IMAGE_NAMESPACE='${IMAGE_NAMESPACE}' IMAGE_PREFIX='${IMAGE_PREFIX}' IMAGE_TAG='${IMAGE_TAG}' /opt/inflap/scripts/deploy.sh"

@@ -1,5 +1,8 @@
 FROM golang:1.26-alpine AS build
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 WORKDIR /src
 COPY proto /proto
 COPY backend/services/admin-panel/go.mod backend/services/admin-panel/go.sum* ./
@@ -8,7 +11,7 @@ RUN go mod download
 
 COPY backend/pkg/switches /pkg/switches
 COPY backend/services/admin-panel ./
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/admin-panel ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/admin-panel ./cmd
 
 FROM alpine:3.22
 RUN addgroup -S app && adduser -S app -G app

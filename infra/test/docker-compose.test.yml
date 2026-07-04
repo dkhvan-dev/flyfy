@@ -1,0 +1,585 @@
+name: inflap-test
+
+x-common-env: &common-env
+  APP_ENV: test
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+  REQUEST_ID_HEADER: X-Request-Id
+  TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+  TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+  TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+  TRUSTED_HEADER_USER_ID: X-User-Id
+  TRUSTED_HEADER_ROLES: X-User-Roles
+  TRUSTED_HEADER_SUB: X-Auth-Subject
+
+x-postgres-env: &postgres-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+  POSTGRES_SSLMODE: disable
+  POSTGRES_MAX_OPEN_CONNS: 8
+  POSTGRES_MIN_OPEN_CONNS: 1
+
+x-db-env: &db-env
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USER: postgres
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+  DB_SSLMODE: disable
+  DB_MAX_CONNS: 8
+  DB_MIN_CONNS: 1
+
+x-pg-env: &pg-env
+  PG_HOST: postgres
+  PG_PORT: 5432
+  PG_USER: postgres
+  PG_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+  PG_SSLMODE: disable
+  PG_MAX_CONNS: 8
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - internal
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+x-image: &image
+  IMAGE_REGISTRY: ${IMAGE_REGISTRY:-ghcr.io}
+  IMAGE_NAMESPACE: ${IMAGE_NAMESPACE:-dkhvan-dev}
+  IMAGE_PREFIX: ${IMAGE_PREFIX:-inflap-}
+  IMAGE_TAG: ${IMAGE_TAG:-test-latest}
+
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      TEST_API_HOST: ${TEST_API_HOST:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - public
+      - internal
+    depends_on:
+      api-gateway:
+        condition: service_started
+
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+      INFLAP_POSTGRES_DATABASES: ${INFLAP_POSTGRES_DATABASES:-auth_db token_service_db user_service_db guide_service_db file_manager_service_db activity_service_db excursion_service_db feed_service_db chat_service_db notification_service_db payment_service_db place_service_db sticker_service_db checklist_service_db switches_service_db trust_service_db anti_fraud_service_db support_service_db admin_panel_db user_route_service_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-256mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-inflap_test_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  minio-mc:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-inflap_test_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
+      MINIO_BUCKET: ${MINIO_BUCKET:-inflap-test}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+        mc version enable "local/$${MINIO_BUCKET}"
+    networks:
+      - internal
+    restart: "no"
+
+  api-gateway:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}api-gateway:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: *common-env
+      HTTP_PORT: 8080
+      REDIS_ADDR: redis:6379
+      REDIS_CACHE_DB: 3
+      TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
+      TOKEN_SERVICE_ID: api-gateway
+      TOKEN_SERVICE_SECRET: ${API_GATEWAY_TOKEN_SERVICE_SECRET:-change-me-api-gateway-token-secret}
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      AUTH_SERVICE_HTTP_URL: http://auth-service:8082
+      USER_SERVICE_HTTP_URL: http://user-service:8084
+      GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
+      FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
+      ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
+      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
+      FEED_SERVICE_HTTP_URL: http://feed-service:8087
+      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
+      CHECKLIST_SERVICE_HTTP_URL: http://checklist-service:8099
+      CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
+      PLACE_SERVICE_HTTP_URL: http://place-service:8090
+      ROUTING_SERVICE_HTTP_URL: http://routing-service:8094
+      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      SUPPORT_SERVICE_HTTP_URL: http://support-service:8100
+      ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    depends_on:
+      auth-service:
+        condition: service_started
+      token-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      trust-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  token-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}token-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *pg-env]
+      HTTP_PORT: 8081
+      GRPC_PORT: 50051
+      PG_DBNAME: token_service_db
+      REDIS_ADDR: redis:6379
+      REDIS_DB: 0
+      JWT_ISSUER: inflap/test-token-service
+      JWT_ACCESS_TTL: 30m
+      JWT_REFRESH_TTL: 720h
+      JWT_SERVICE_TTL: 1h
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/var/lib/inflap/token-service/signing-keys.json}
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+    volumes:
+      - token_service_keys:/var/lib/inflap/token-service
+
+  auth-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}auth-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *pg-env]
+      HTTP_PORT: 8082
+      GRPC_PORT: 50052
+      PG_DBNAME: auth_db
+      REDIS_ADDR: redis:6379
+      REDIS_DB: 1
+      TOKEN_SERVICE_ADDR: token-service:50051
+      TOKEN_SERVICE_ID: auth-service
+      TOKEN_SERVICE_SECRET: ${AUTH_SERVICE_TOKEN_SERVICE_SECRET:-change-me-auth-token-secret}
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      USER_SERVICE_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      AUTH_TEST_OTP_BYPASS_ENABLED: ${AUTH_TEST_OTP_BYPASS_ENABLED:-false}
+      AUTH_TEST_OTP_BYPASS_PHONES: ${AUTH_TEST_OTP_BYPASS_PHONES:-}
+      AUTH_TEST_OTP_BYPASS_CODE: ${AUTH_TEST_OTP_BYPASS_CODE:-}
+
+  user-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}user-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8084
+      GRPC_PORT: 9094
+      POSTGRES_DB: user_service_db
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      FEED_SERVICE_HTTP_URL: http://feed-service:8087
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+
+  guide-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}guide-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8085
+      GRPC_PORT: 9095
+      POSTGRES_DB: guide_service_db
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
+
+  file-manager-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}file-manager-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8083
+      GRPC_PORT: 9093
+      POSTGRES_DB: file_manager_service_db
+      STORAGE_PROVIDER: s3
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_REGION: ${STORAGE_REGION:-auto}
+      STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-inflap_test_minio}
+      STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
+      STORAGE_BUCKET: ${MINIO_BUCKET:-inflap-test}
+      STORAGE_USE_PATH_STYLE: "true"
+      TRUST_SERVICE_GRPC_TARGET: trust-service:9096
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-mc:
+        condition: service_completed_successfully
+
+  activity-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}activity-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8086
+      GRPC_PORT: 9096
+      DB_NAME: activity_service_db
+      USER_SERVICE_GRPC_ADDR: user-service:9094
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      TRUST_SERVICE_GRPC_TARGET: trust-service:9096
+      ATTENDANCE_QR_SIGNING_SECRET: ${ATTENDANCE_QR_SIGNING_SECRET:-change-me-attendance-qr-secret}
+
+  excursion-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}excursion-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8093
+      DB_NAME: excursion_service_db
+      GUIDE_SERVICE_GRPC_TARGET: dns:///guide-service:9095
+      GUIDE_SERVICE_URL: http://guide-service:8085
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      PLACE_SERVICE_URL: http://place-service:8090
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      TRANSLATION_SERVICE_URL: ${TRANSLATION_SERVICE_URL:-}
+      EXCURSION_ATTENDANCE_QR_SIGNING_SECRET: ${EXCURSION_ATTENDANCE_QR_SIGNING_SECRET:-change-me-excursion-qr-secret}
+      TRUST_SERVICE_GRPC_TARGET: trust-service:9096
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+
+  feed-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}feed-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8087
+      POSTGRES_DB: feed_service_db
+      REDIS_ADDR: redis:6379
+      FEED_CACHE_ENABLED: ${FEED_CACHE_ENABLED:-true}
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+
+  chat-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}chat-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8088
+      GRPC_PORT: 9097
+      DB_NAME: chat_service_db
+      NATS_URL: nats://nats:4222
+      REDIS_ADDR: redis:6379
+      USER_SERVICE_GRPC_ADDR: user-service:9094
+      ACTIVITY_SERVICE_GRPC_ADDR: activity-service:9096
+      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
+      STICKER_SERVICE_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      TRUST_SERVICE_GRPC_TARGET: trust-service:9096
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+
+  notification-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}notification-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8097
+      DB_NAME: notification_service_db
+      NATS_URL: nats://nats:4222
+      NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64: ${NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+      NOTIFICATION_TOKEN_HASH_KEY_BASE64: ${NOTIFICATION_TOKEN_HASH_KEY_BASE64:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+      FCM_ENABLED: ${FCM_ENABLED:-false}
+      APNS_ENABLED: ${APNS_ENABLED:-false}
+      HMS_ENABLED: ${HMS_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+
+  payment-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}payment-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8091
+      POSTGRES_DB: payment_service_db
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+
+  place-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}place-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8090
+      POSTGRES_DB: place_service_db
+      REDIS_ADDR: redis:6379
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      PLACE_MEDIA_BACKFILL_FILE_MANAGER_URL: http://file-manager-service:8083
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+
+  reference-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}reference-service:${IMAGE_TAG:-test-latest}
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      <<: *common-env
+      HTTP_PORT: 8089
+
+  sticker-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}sticker-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8092
+      DB_NAME: sticker_service_db
+      FILE_MANAGER_BASE_URL: http://file-manager-service:8083
+      FILE_MANAGER_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+
+  checklist-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}checklist-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8099
+      DB_NAME: checklist_service_db
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8097
+      NOTIFICATION_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      CHECKLIST_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+
+  currency-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}currency-service:${IMAGE_TAG:-test-latest}
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      <<: *common-env
+      HTTP_PORT: 8098
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+    depends_on:
+      switches-service:
+        condition: service_started
+
+  routing-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}routing-service:${IMAGE_TAG:-test-latest}
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      <<: *common-env
+      HTTP_PORT: 8094
+      REDIS_URL: redis://redis:6379/6
+      ROUTING_ENABLE_OSRM: ${ROUTING_ENABLE_OSRM:-false}
+      ROUTING_ENABLE_OTP: ${ROUTING_ENABLE_OTP:-false}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  user-route-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}user-route-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8096
+      POSTGRES_DB: user_route_service_db
+
+  switches-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}switches-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8096
+      DB_NAME: switches_service_db
+      CACHE_INVALIDATION_LISTENER_ENABLED: "true"
+
+  trust-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}trust-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      GRPC_PORT: 9096
+      POSTGRES_DB: trust_service_db
+
+  anti-fraud-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}anti-fraud-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *postgres-env]
+      HTTP_PORT: 8096
+      POSTGRES_DB: anti_fraud_service_db
+      FRAUD_SHADOW_MODE: ${FRAUD_SHADOW_MODE:-true}
+
+  support-service:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}support-service:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: *common-env
+      SUPPORT_SERVICE_HTTP_PORT: 8100
+      SUPPORT_SERVICE_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-change-me-postgres-password}@postgres:5432/support_service_db?sslmode=disable
+      SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      SUPPORT_SERVICE_CHAT_SERVICE_URL: http://chat-service:8088
+      SUPPORT_SERVICE_CHAT_SUPPORT_SUBJECT: support
+      SUPPORT_SERVICE_NOTIFICATION_SERVICE_URL: http://notification-service:8097
+      SUPPORT_SERVICE_USER_SERVICE_URL: http://user-service:8084
+      SUPPORT_SERVICE_GUIDE_SERVICE_URL: http://guide-service:8085
+
+  admin-panel:
+    <<: *service-defaults
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}admin-panel:${IMAGE_TAG:-test-latest}
+    environment:
+      <<: [*common-env, *db-env]
+      HTTP_PORT: 8095
+      DB_NAME: admin_panel_db
+      COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-true}
+      SESSION_COOKIE_NAME: inflap_test_admin_session
+      CSRF_COOKIE_NAME: inflap_test_admin_csrf
+      EXCURSION_SERVICE_URL: http://excursion-service:8093
+      ACTIVITY_SERVICE_URL: http://activity-service:8086
+      GUIDE_SERVICE_URL: http://guide-service:8085
+      CHAT_SERVICE_URL: http://chat-service:8088
+      SUPPORT_SERVICE_URL: http://support-service:8100
+      FEED_SERVICE_URL: http://feed-service:8087
+      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      USER_SERVICE_GRPC_TARGET: user-service:9094
+      TRUST_SERVICE_GRPC_TARGET: trust-service:9096
+      ANTI_FRAUD_SERVICE_URL: http://anti-fraud-service:8096
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      PLACE_SERVICE_URL: http://place-service:8090
+      FILE_MANAGER_SERVICE_URL: http://file-manager-service:8083
+      FEATURE_FLAG_SERVICE_URL: http://switches-service:8096
+      TECH_BREAK_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      BOOTSTRAP_SUPERADMIN_EMAIL: ${BOOTSTRAP_SUPERADMIN_EMAIL:-}
+      BOOTSTRAP_SUPERADMIN_PASSWORD: ${BOOTSTRAP_SUPERADMIN_PASSWORD:-}
+
+  translation-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}translation-service:${IMAGE_TAG:-test-latest}
+    restart: unless-stopped
+    profiles:
+      - ml
+    networks:
+      - internal
+    environment:
+      APP_ENV: test
+    volumes:
+      - translation_models:/models
+
+networks:
+  public:
+  internal:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+  nats_data:
+  minio_data:
+  translation_models:
+  token_service_keys:

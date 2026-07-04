@@ -1,5 +1,8 @@
 FROM golang:1.26 AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 WORKDIR /app
 
 COPY ./proto /app/proto
@@ -9,8 +12,8 @@ COPY ./backend/services/user-service /app/backend/services/user-service
 WORKDIR /app/backend/services/user-service
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o user-service ./cmd
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o user-service-backfill-feed-social-outbox ./cmd/backfill-feed-social-outbox
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o user-service ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o user-service-backfill-feed-social-outbox ./cmd/backfill-feed-social-outbox
 
 FROM gcr.io/distroless/base-debian12
 

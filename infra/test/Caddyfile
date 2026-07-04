@@ -1,0 +1,25 @@
+{
+	email {$ACME_EMAIL:admin@example.com}
+}
+
+{$TEST_API_HOST:localhost} {
+	encode zstd gzip
+
+	log {
+		output stdout
+		format console
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+	}
+
+	reverse_proxy api-gateway:8080 {
+		health_uri /health
+		health_interval 30s
+		health_timeout 5s
+	}
+}
