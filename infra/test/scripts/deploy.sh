@@ -11,6 +11,7 @@ REQUESTED_IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
 REQUESTED_IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-}"
 REQUESTED_IMAGE_PREFIX="${IMAGE_PREFIX:-}"
 REQUESTED_IMAGE_TAG="${IMAGE_TAG:-}"
+REQUIRE_GHCR_AUTH="${REQUIRE_GHCR_AUTH:-false}"
 
 cd "${APP_DIR}"
 
@@ -44,6 +45,9 @@ umask 077
 if [[ -n "${GHCR_READ_TOKEN:-}" && -n "${GHCR_USERNAME:-}" ]]; then
   echo "Logging in to GHCR as ${GHCR_USERNAME}."
   printf '%s' "${GHCR_READ_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+elif [[ "${REQUIRE_GHCR_AUTH}" == "true" ]]; then
+  echo "Missing GHCR credentials. Set GHCR_USERNAME and GHCR_READ_TOKEN GitHub environment secrets, or create ${GHCR_ENV_FILE} on the server." >&2
+  exit 1
 elif [[ "${IMAGE_REGISTRY}" == "ghcr.io" ]]; then
   echo "GHCR credentials are not configured; pulling anonymously. Private GHCR images will fail." >&2
 fi
