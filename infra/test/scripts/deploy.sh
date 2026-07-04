@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/inflap}"
 ENV_FILE="${ENV_FILE:-${APP_DIR}/env/test.env}"
+GHCR_ENV_FILE="${GHCR_ENV_FILE:-${APP_DIR}/env/ghcr.env}"
 DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-${APP_DIR}/env/deploy.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${APP_DIR}/docker-compose.test.yml}"
 
@@ -21,6 +22,10 @@ fi
 set -a
 # shellcheck disable=SC1090
 . "${ENV_FILE}"
+if [[ -f "${GHCR_ENV_FILE}" ]]; then
+  # shellcheck disable=SC1090
+  . "${GHCR_ENV_FILE}"
+fi
 set +a
 
 IMAGE_REGISTRY="${REQUESTED_IMAGE_REGISTRY:-${IMAGE_REGISTRY:-ghcr.io}}"
@@ -37,7 +42,10 @@ umask 077
 } >"${DEPLOY_ENV_FILE}"
 
 if [[ -n "${GHCR_READ_TOKEN:-}" && -n "${GHCR_USERNAME:-}" ]]; then
+  echo "Logging in to GHCR as ${GHCR_USERNAME}."
   printf '%s' "${GHCR_READ_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+elif [[ "${IMAGE_REGISTRY}" == "ghcr.io" ]]; then
+  echo "GHCR credentials are not configured; pulling anonymously. Private GHCR images will fail." >&2
 fi
 
 if [[ -f "${DEPLOY_ENV_FILE}.previous" ]]; then
