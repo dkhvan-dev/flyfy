@@ -6,12 +6,17 @@ on:
       services:
         description: 'Comma-separated service names, "all", or "auto".'
         required: true
-        default: all
+        default: auto
       deploy:
         description: 'Deploy to the test VPS after building images.'
         type: boolean
         required: true
         default: true
+      run_tests:
+        description: 'Run Go service tests before building images.'
+        type: boolean
+        required: true
+        default: false
   push:
     branches:
       - develop
@@ -149,8 +154,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Set up Go
+        if: ${{ steps.detect.outputs.services != '[]' && github.event_name == 'workflow_dispatch' && inputs.run_tests }}
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            proto/go.sum
+            backend/pkg/**/go.sum
+            backend/services/*/go.sum
+
       - name: Run selected Go service tests
-        if: ${{ steps.detect.outputs.services != '[]' }}
+        if: ${{ steps.detect.outputs.services != '[]' && github.event_name == 'workflow_dispatch' && inputs.run_tests }}
         shell: bash
         env:
           SERVICES_JSON: ${{ steps.detect.outputs.services }}
@@ -165,11 +180,10 @@ jobs:
             fi
 
             echo "::group::Test ${service}"
-            docker run --rm \
-              -v "${PWD}:/workspace" \
-              -w "/workspace/backend/services/${service}" \
-              golang:1.26 \
-              go test ./...
+            (
+              cd "backend/services/${service}"
+              GOWORK=off go test ./...
+            )
             echo "::endgroup::"
           done
 
@@ -187,9 +201,12 @@ jobs:
           mapfile -t services < <(jq -r '.[]' <<<"${SERVICES_JSON}")
           for service in "${services[@]}"; do
             echo "::group::Build ${service}"
+            cache_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_PREFIX}${service}:buildcache"
             docker buildx build \
               --platform "${IMAGE_PLATFORM}" \
               --file "backend/services/${service}/Dockerfile" \
+              --cache-from "type=registry,ref=${cache_ref}" \
+              --cache-to "type=registry,ref=${cache_ref},mode=max" \
               --tag "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_PREFIX}${service}:${IMAGE_TAG}" \
               --tag "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_PREFIX}${service}:test-latest" \
               --push \
