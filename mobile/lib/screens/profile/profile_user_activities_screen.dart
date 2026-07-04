@@ -139,6 +139,7 @@ class _ProfileUserActivitiesScreenState
       backgroundColor: colors.transparent,
       builder: (sheetContext) {
         return AppModalSheetFrame(
+          onTapOutside: () => Navigator.of(context).maybePop(),
           safeAreaBottom: false,
           child: _ProfileActivityFiltersSheet(
             l10n: AppLocalizations.of(sheetContext)!,

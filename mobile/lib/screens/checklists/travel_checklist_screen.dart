@@ -2260,6 +2260,8 @@ class _RecentChecklistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final palette = _ChecklistAmber.of(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final routeArgs = entry.routeArgs;
     final destination = _destinationLabel(routeArgs, l10n);
     final dates = _dateRangeLabel(routeArgs.startAt, routeArgs.safeEndAt);
@@ -2272,8 +2274,14 @@ class _RecentChecklistTile extends StatelessWidget {
     );
 
     return Material(
-      color: _ChecklistAmber.of(context).itemSurface.withValues(alpha: 0.72),
-      borderRadius: AppBorderRadius.circular(8),
+      color: palette.itemSurface.withValues(alpha: 0.72),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppBorderRadius.circular(8),
+        side: BorderSide(
+          color: palette.border.withValues(alpha: isLight ? 0.74 : 0.42),
+          width: isLight ? 1.2 : 1,
+        ),
+      ),
       child: InkWell(
         key: ValueKey('travel-checklist-recent-${routeArgs.normalizedTripId}'),
         borderRadius: AppBorderRadius.circular(8),
@@ -2990,6 +2998,13 @@ class _MissingContextAlternativeActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ChecklistAmber.of(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final actionBackground = palette.amber.withValues(
+      alpha: isLight ? 0.10 : 0.14,
+    );
+    final actionBorder = palette.amber.withValues(alpha: isLight ? 0.58 : 0.36);
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -3004,9 +3019,10 @@ class _MissingContextAlternativeActions extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           style: FilledButton.styleFrom(
-            backgroundColor: _ChecklistAmber.of(context).surfaceElevated,
-            foregroundColor: _ChecklistAmber.of(context).amberSoft,
+            backgroundColor: actionBackground,
+            foregroundColor: palette.textPrimary,
             minimumSize: const Size(0, 44),
+            side: BorderSide(color: actionBorder, width: isLight ? 1.2 : 1),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
             ),
@@ -3022,11 +3038,10 @@ class _MissingContextAlternativeActions extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           style: OutlinedButton.styleFrom(
-            foregroundColor: _ChecklistAmber.of(context).amberSoft,
+            backgroundColor: actionBackground,
+            foregroundColor: palette.textPrimary,
             minimumSize: const Size(0, 44),
-            side: BorderSide(
-              color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.45),
-            ),
+            side: BorderSide(color: actionBorder, width: isLight ? 1.2 : 1),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
             ),
@@ -5175,12 +5190,16 @@ class _ChipLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ChecklistAmber.of(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: _ChecklistAmber.of(context).amber.withValues(alpha: 0.14),
+        color: palette.amber.withValues(alpha: isLight ? 0.10 : 0.14),
         borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
-          color: _ChecklistAmber.of(context).amberSoft.withValues(alpha: 0.28),
+          color: palette.amberSoft.withValues(alpha: isLight ? 0.48 : 0.30),
+          width: isLight ? 1.2 : 1,
         ),
       ),
       child: Padding(
@@ -5190,7 +5209,7 @@ class _ChipLabel extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
-            color: _ChecklistAmber.of(context).textPrimary,
+            color: palette.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,

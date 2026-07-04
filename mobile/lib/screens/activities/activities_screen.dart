@@ -1408,6 +1408,7 @@ class _DiscoverActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toString();
+    final colors = context.activitiesColors;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final compactMeta =
         MediaQuery.sizeOf(context).width < 360 || textScale > 1.04;
@@ -1586,22 +1587,16 @@ class _DiscoverActivityCard extends StatelessWidget {
                         Container(
                           width: avatarSize,
                           height: avatarSize,
-                          decoration: AppBoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: artSpec.colorsFor(context),
-                            ),
-                            border: Border.all(
-                              color: context.activitiesColors.white.withValues(
-                                alpha: 0.10,
-                              ),
-                            ),
+                          decoration: _activityCategoryAvatarDecoration(
+                            context,
+                            artSpec,
+                            colors,
                           ),
                           child: Icon(
                             artSpec.icon,
-                            color: context.activitiesColors.white.withValues(
-                              alpha: 0.92,
-                            ),
+                            color: colors.isLight
+                                ? colors.onSecondary
+                                : colors.white.withValues(alpha: 0.92),
                             size: avatarIcon,
                           ),
                         ),
@@ -1710,6 +1705,26 @@ class _DiscoverActivityCard extends StatelessWidget {
     }
     return l10n.activityJoinSession;
   }
+}
+
+AppBoxDecoration _activityCategoryAvatarDecoration(
+  BuildContext context,
+  ActivityCardArtSpec artSpec,
+  _ActivitiesColors colors,
+) {
+  if (colors.isLight) {
+    return AppBoxDecoration(
+      shape: BoxShape.circle,
+      color: colors.secondary,
+      border: Border.all(color: colors.borderSecondary),
+    );
+  }
+
+  return AppBoxDecoration(
+    shape: BoxShape.circle,
+    gradient: LinearGradient(colors: artSpec.colorsFor(context)),
+    border: Border.all(color: colors.white.withValues(alpha: 0.10)),
+  );
 }
 
 class _VisibilityBadgeStyle {
@@ -1907,14 +1922,13 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final draftFilters = _draftFilters();
     final count = widget.previewCountBuilder(draftFilters);
 
     return _RangeSheetScaffold(
       title: widget.l10n.activitiesFiltersTitle,
       maxHeightFactor: 0.9,
-      footerPadding: 18 + safeBottomInset,
+      footerPadding: 12,
       applyLabel: widget.l10n.activitiesShowResults(count),
       onClear: _clearAll,
       onApply: _handleApply,

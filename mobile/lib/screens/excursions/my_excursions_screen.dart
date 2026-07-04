@@ -52,6 +52,8 @@ final class _MyExcursionsColors {
   Color get textSecondary => colors.textSecondary;
   Color get textMuted => colors.textMuted;
   Color get border => colors.border;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
   Color get success => colors.success;
   Color get danger => colors.danger;
   Color get transparent => colors.transparent;
@@ -763,11 +765,13 @@ class _MyExcursionsTabSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.myExcursionsColors;
     return Container(
       padding: const AppEdgeInsets.all(6),
       decoration: AppBoxDecoration(
-        color: context.myExcursionsColors.warmSurface17,
+        color: colors.warmSurface17,
         borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: Row(
         children: [
@@ -805,19 +809,20 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.myExcursionsColors;
+
     return FilledButton(
       onPressed: onTap,
       style: FilledButton.styleFrom(
-        backgroundColor: active
-            ? context.myExcursionsColors.primary
-            : context.myExcursionsColors.transparent,
-        foregroundColor: active
-            ? context.myExcursionsColors.white
-            : context.myExcursionsColors.orangeSoft29,
+        backgroundColor: active ? colors.primary : colors.transparent,
+        foregroundColor: active ? colors.textPrimary : colors.orangeSoft29,
         minimumSize: const Size(0, 48),
         padding: const AppEdgeInsets.symmetric(horizontal: 10),
         shape: RoundedRectangleBorder(
           borderRadius: AppBorderRadius.circular(999),
+          side: BorderSide(
+            color: active ? colors.borderPrimary : colors.transparent,
+          ),
         ),
       ),
       child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)),
@@ -2409,6 +2414,7 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
     final showStatusFilter = widget.tab == MyExcursionsTab.booked;
 
     return AppModalSheetFrame(
+      onTapOutside: () => Navigator.of(context).maybePop(),
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
@@ -2633,20 +2639,25 @@ class _ChoicePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.myExcursionsColors;
+
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onTap(),
-      selectedColor: context.myExcursionsColors.primary,
-      backgroundColor: context.myExcursionsColors.surfaceHigh,
+      selectedColor: colors.primary,
+      backgroundColor: colors.surfaceRaised,
+      checkmarkColor: colors.textPrimary,
       labelStyle: AppTextStyle(
-        color: selected
-            ? context.myExcursionsColors.white
-            : context.myExcursionsColors.orangeLight20,
+        color: selected ? colors.textPrimary : colors.primary,
         fontWeight: FontWeight.w800,
       ),
       side: BorderSide(
-        color: context.myExcursionsColors.white.withValues(alpha: 0.06),
+        color: selected ? colors.borderPrimary : colors.borderSoft,
+        width: selected ? 1.4 : 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppBorderRadius.circular(999),
       ),
     );
   }

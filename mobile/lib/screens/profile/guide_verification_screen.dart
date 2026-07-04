@@ -39,6 +39,9 @@ final class _GuideVerificationColors {
   Color get primaryPressed => colors.primaryPressed;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get borderSecondary => colors.borderSecondary;
   Color get textPrimary => colors.textPrimary;
   Color get textSecondary => colors.textSecondary;
   Color get textMuted => colors.textMuted;
@@ -1740,17 +1743,15 @@ class _SectionTitle extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                context.guideColors.warning.withValues(alpha: 0.18),
-                context.guideColors.primary.withValues(alpha: 0.06),
+                context.guideColors.secondaryContainer,
+                context.guideColors.surfaceHigh,
               ],
             ),
-            border: Border.all(
-              color: context.guideColors.primary.withValues(alpha: 0.18),
-            ),
+            border: Border.all(color: context.guideColors.borderSecondary),
           ),
           child: Icon(
             icon,
-            color: context.guideColors.warning,
+            color: context.guideColors.secondary,
             size: profileScaled(context, 22, min: 19, max: 24),
           ),
         ),
@@ -2392,16 +2393,14 @@ class _NoticeCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            context.guideColors.primary.withValues(alpha: 0.14),
-            context.guideColors.primary.withValues(alpha: 0.04),
+            context.guideColors.secondaryContainer,
+            context.guideColors.surfaceRaised,
           ],
         ),
         borderRadius: AppBorderRadius.circular(
           profileScaled(context, 20, min: 18, max: 24),
         ),
-        border: Border.all(
-          color: context.guideColors.primary.withValues(alpha: 0.24),
-        ),
+        border: Border.all(color: context.guideColors.borderSecondary),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2410,13 +2409,11 @@ class _NoticeCard extends StatelessWidget {
             width: profileScaled(context, 40, min: 36, max: 44),
             height: profileScaled(context, 40, min: 36, max: 44),
             decoration: AppBoxDecoration(
-              color: context.guideColors.warning.withValues(alpha: 0.14),
+              color: context.guideColors.secondaryContainer,
               borderRadius: AppBorderRadius.circular(14),
-              border: Border.all(
-                color: context.guideColors.warning.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: context.guideColors.borderSecondary),
             ),
-            child: Icon(icon, color: context.guideColors.warning),
+            child: Icon(icon, color: context.guideColors.secondary),
           ),
           SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
           Expanded(
@@ -2570,10 +2567,10 @@ class _TipCard extends StatelessWidget {
             width: profileScaled(context, 48, min: 42, max: 52),
             height: profileScaled(context, 48, min: 42, max: 52),
             decoration: AppBoxDecoration(
-              color: context.guideColors.primary.withValues(alpha: 0.12),
+              color: context.guideColors.secondaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: context.guideColors.primary),
+            child: Icon(icon, color: context.guideColors.secondary),
           ),
           SizedBox(height: profileScaled(context, 16, min: 14, max: 18)),
           Text(
@@ -2968,12 +2965,15 @@ class _OptionalCertificateCard extends StatelessWidget {
                 width: profileScaled(context, 42, min: 38, max: 46),
                 height: profileScaled(context, 42, min: 38, max: 46),
                 decoration: AppBoxDecoration(
-                  color: context.guideColors.white.withValues(alpha: 0.06),
+                  color: context.guideColors.secondaryContainer,
                   borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 12, min: 10, max: 12),
                   ),
+                  border: Border.all(
+                    color: context.guideColors.borderSecondary,
+                  ),
                 ),
-                child: Icon(icon, color: context.guideColors.primary),
+                child: Icon(icon, color: context.guideColors.secondary),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
               Expanded(
@@ -3004,7 +3004,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                       Text(
                         l10n.guideVerificationVerifiedUpload,
                         style: AppTextStyle(
-                          color: context.guideColors.primary,
+                          color: context.guideColors.secondary,
                           fontSize: profileScaled(
                             context,
                             12,
@@ -3023,7 +3023,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
                 color: isUploaded
-                    ? context.guideColors.primary
+                    ? context.guideColors.secondary
                     : profileTextSoft,
                 size: profileScaled(context, 24, min: 22, max: 26),
               ),
@@ -3049,7 +3049,7 @@ class _TimelineCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.schedule_outlined, color: context.guideColors.primary),
+          Icon(Icons.schedule_outlined, color: context.guideColors.secondary),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
           Expanded(
             child: Column(
@@ -3105,14 +3105,15 @@ class _ReviewDocumentCard extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  context.guideColors.white.withValues(alpha: 0.09),
-                  context.guideColors.white.withValues(alpha: 0.02),
+                  context.guideColors.secondaryContainer,
+                  context.guideColors.surfaceHigh,
                 ],
               ),
+              border: Border.all(color: context.guideColors.borderSecondary),
             ),
             child: Icon(
               Icons.description_outlined,
-              color: context.guideColors.primary,
+              color: context.guideColors.secondary,
             ),
           ),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -3123,7 +3124,7 @@ class _ReviewDocumentCard extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyle(
-                    color: context.guideColors.primary,
+                    color: context.guideColors.secondary,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,

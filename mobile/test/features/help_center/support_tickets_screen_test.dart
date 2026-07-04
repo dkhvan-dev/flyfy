@@ -28,7 +28,49 @@ void main() {
     expect(source, contains('colors.screenGradientColors'));
     expect(source, contains('colors.surface'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondary'));
     expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('SupportTicketDetailScreen uses secondary for support info cues', () {
+    final source = File(
+      'lib/features/help_center/presentation/support_tickets_screen.dart',
+    ).readAsStringSync();
+
+    final headerStart = source.indexOf('class _HeaderShell');
+    final timelineStart = source.indexOf('class _SupportTimelineChip');
+    final eventBubbleStart = source.indexOf('class _SupportEventBubble');
+    final attachmentStart = source.indexOf(
+      'class _SupportBubbleAttachmentChips',
+    );
+    final statusStart = source.indexOf('class _StatusPill');
+    final statusEnd = source.indexOf('String supportTicketStatusLabel');
+    expect(headerStart, isNonNegative);
+    expect(timelineStart, greaterThan(headerStart));
+    expect(eventBubbleStart, greaterThan(timelineStart));
+    expect(attachmentStart, greaterThan(eventBubbleStart));
+    expect(statusStart, greaterThan(attachmentStart));
+    expect(statusEnd, greaterThan(statusStart));
+
+    final headerSource = source.substring(headerStart, timelineStart);
+    final timelineSource = source.substring(timelineStart, eventBubbleStart);
+    final eventBubbleSource = source.substring(
+      eventBubbleStart,
+      attachmentStart,
+    );
+    final attachmentSource = source.substring(attachmentStart, statusStart);
+    final statusSource = source.substring(statusStart, statusEnd);
+
+    expect(headerSource, contains('color: colors.secondary'));
+    expect(timelineSource, contains('colors.secondaryContainer'));
+    expect(timelineSource, contains('colors.borderSecondary'));
+    expect(timelineSource, contains('color: colors.secondary'));
+    expect(eventBubbleSource, contains(': colors.borderSecondary'));
+    expect(eventBubbleSource, contains(': colors.secondary'));
+    expect(attachmentSource, contains(': colors.secondary'));
+    expect(attachmentSource, contains(': colors.secondaryContainer'));
+    expect(statusSource, contains('colors.secondaryContainer'));
+    expect(statusSource, contains('colors.borderSecondary'));
   });
 
   testWidgets(

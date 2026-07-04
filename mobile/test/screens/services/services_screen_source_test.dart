@@ -31,4 +31,21 @@ void main() {
       ),
     );
   });
+
+  test('services screen header keeps title horizontally centered', () async {
+    final source = await File(
+      'lib/screens/services/services_screen.dart',
+    ).readAsString();
+
+    final headerStart = source.indexOf('class _ServicesHeader');
+    expect(headerStart, isNonNegative);
+
+    final headerSource = source.substring(headerStart);
+
+    expect(headerSource, contains('Stack('));
+    expect(headerSource, contains('alignment: Alignment.center'));
+    expect(headerSource, contains('Align('));
+    expect(headerSource, contains('alignment: Alignment.centerLeft'));
+    expect(headerSource, contains('textAlign: TextAlign.center'));
+  });
 }

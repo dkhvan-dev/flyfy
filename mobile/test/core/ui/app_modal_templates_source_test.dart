@@ -70,7 +70,11 @@ void main() {
       final sheetSource = source.substring(sheetStart, actionSheetStart);
       expect(
         sheetSource,
-        contains('SafeArea(\n          top: false,\n          bottom: false,'),
+        matches(RegExp(r'SafeArea\(\s*top:\s*false,\s*bottom:\s*false,')),
+      );
+      expect(
+        sheetSource,
+        matches(RegExp(r'AppModalSheetFrame\(\s*useSafeArea:\s*false,')),
       );
       expect(
         sheetSource,

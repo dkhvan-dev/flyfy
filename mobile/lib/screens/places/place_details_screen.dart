@@ -70,6 +70,7 @@ final class _PlaceDetailsColors {
   Color get textDisabled => colors.textDisabled;
   Color get border => colors.border;
   Color get borderSoft => colors.borderSoft;
+  Color get borderSecondary => colors.borderSecondary;
   Color get transparent => colors.transparent;
   Color get black => colors.black;
   Color get white => colors.white;
@@ -1165,12 +1166,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   width: a.scale(42, minFactor: 0.84),
                   height: a.scale(42, minFactor: 0.84),
                   decoration: AppBoxDecoration(
-                    color: context.placeColors.primary.withValues(alpha: 0.14),
+                    color: context.placeColors.secondaryContainer,
+                    border: Border.all(
+                      color: context.placeColors.borderSecondary,
+                    ),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.location_on_rounded,
-                    color: context.placeColors.primary,
+                    color: context.placeColors.secondary,
                     size: a.scale(21, minFactor: 0.86),
                   ),
                 ),
@@ -1196,7 +1200,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                       Text(
                         l10n.placeMapLink,
                         style: AppTextStyle(
-                          color: context.placeColors.primary,
+                          color: context.placeColors.secondary,
                           fontSize: a.scale(12, minFactor: 0.88),
                           fontWeight: FontWeight.w800,
                         ),
@@ -1211,7 +1215,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   width: a.scale(40, minFactor: 0.86),
                   height: a.scale(40, minFactor: 0.86),
                   decoration: AppBoxDecoration(
-                    color: context.placeColors.primary,
+                    color: context.placeColors.secondary,
                     shape: BoxShape.circle,
                   ),
                   child: _isBuildingRoute
@@ -2691,7 +2695,7 @@ class _AccessOptionCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.directions_car_rounded,
-                color: context.placeColors.primary,
+                color: context.placeColors.secondary,
                 size: adaptive.scale(18, minFactor: 0.82),
               ),
               SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
@@ -2715,7 +2719,7 @@ class _AccessOptionCard extends StatelessWidget {
                       Text(
                         facts.join(' · '),
                         style: AppTextStyle(
-                          color: context.placeColors.primary,
+                          color: context.placeColors.secondary,
                           fontSize: adaptive.scale(11.5, minFactor: 0.84),
                           fontWeight: FontWeight.w700,
                           height: 1.24,

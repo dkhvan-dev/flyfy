@@ -337,6 +337,50 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
   }
 }
 
+class _ActivityReviewCriteriaHint extends StatelessWidget {
+  const _ActivityReviewCriteriaHint({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: colors.secondaryContainer.withValues(
+          alpha: isLight ? 0.68 : 0.34,
+        ),
+        borderRadius: AppBorderRadius.circular(14),
+        border: Border.all(color: colors.borderSecondary),
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.fact_check_outlined, color: colors.secondary, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.myExcursionsReviewRating,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ActivityReviewEditor extends StatelessWidget {
   const _ActivityReviewEditor({
     required this.title,
@@ -390,6 +434,8 @@ class _ActivityReviewEditor extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _ActivityReviewCriteriaHint(l10n: l10n),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 2,
                     children: List.generate(5, (index) {

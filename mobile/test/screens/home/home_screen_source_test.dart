@@ -297,31 +297,57 @@ void main() {
     expect(panelSource, contains('ClipRRect('));
   });
 
-  test('home top destination price uses adaptive readable secondary', () async {
-    final source = await File(
-      'lib/screens/home/home_screen.dart',
-    ).readAsString();
+  test(
+    'home top destination price uses secondary and save affordance is secondary',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
 
-    final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
-    final destinationEnd = source.indexOf(
-      'class _DestinationBookmarkBadge',
-      destinationStart,
-    );
+      final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
+      final destinationEnd = source.indexOf(
+        'class _DestinationBookmarkBadge',
+        destinationStart,
+      );
 
-    expect(destinationStart, isNonNegative);
-    expect(destinationEnd, greaterThan(destinationStart));
+      expect(destinationStart, isNonNegative);
+      expect(destinationEnd, greaterThan(destinationStart));
 
-    final destinationSource = source.substring(
-      destinationStart,
-      destinationEnd,
-    );
+      final destinationSource = source.substring(
+        destinationStart,
+        destinationEnd,
+      );
+      final priceLabelStart = destinationSource.indexOf(
+        'formatPlacePriceLabel(',
+      );
+      final ratingStart = destinationSource.indexOf(
+        "'★ \${place.rating.toStringAsFixed(1)}'",
+        priceLabelStart,
+      );
+      expect(priceLabelStart, isNonNegative);
+      expect(ratingStart, greaterThan(priceLabelStart));
+      final priceLabelSource = destinationSource.substring(
+        priceLabelStart,
+        ratingStart,
+      );
 
-    expect(destinationSource, contains('color: context.appColors.secondary'));
-    expect(
-      destinationSource,
-      isNot(contains('color: AppPalette.secondarySoft')),
-    );
-  });
+      expect(priceLabelSource, contains('color: context.appColors.secondary'));
+      expect(priceLabelSource, isNot(contains('color: AppPalette.primary')));
+      expect(
+        destinationSource,
+        isNot(contains('color: AppPalette.secondarySoft')),
+      );
+
+      final bookmarkStart = source.indexOf('class _DestinationBookmarkBadge');
+      final tagStart = source.indexOf('class _DestinationTag', bookmarkStart);
+      expect(bookmarkStart, isNonNegative);
+      expect(tagStart, greaterThan(bookmarkStart));
+      final bookmarkSource = source.substring(bookmarkStart, tagStart);
+
+      expect(bookmarkSource, contains('AppPalette.secondary.withValues'));
+      expect(bookmarkSource, contains('color: AppPalette.secondarySoft'));
+    },
+  );
 
   test('home body does not draw a shadow overlay above bottom nav', () async {
     final source = await File(

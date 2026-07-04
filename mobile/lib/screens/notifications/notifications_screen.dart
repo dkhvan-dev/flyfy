@@ -889,7 +889,7 @@ class _NotificationTile extends StatelessWidget {
               decoration: AppBoxDecoration(
                 color: context.appColors.surface.withValues(alpha: 0.72),
                 borderRadius: AppBorderRadius.circular(16),
-                border: Border.all(color: context.appColors.borderPrimary),
+                border: Border.all(color: context.appColors.borderSecondary),
               ),
               child: Padding(
                 padding: const AppEdgeInsets.symmetric(
@@ -1292,7 +1292,7 @@ class _NotificationInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isAccent ? AppPalette.primary : context.appColors.textMuted;
+    final color = isAccent ? AppPalette.primary : context.appColors.secondary;
     return DecoratedBox(
       decoration: AppBoxDecoration(
         color: color.withValues(alpha: isAccent ? 0.14 : 0.08),
@@ -1333,18 +1333,18 @@ class _NotificationEventTimeBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.10),
+        color: context.appColors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(14),
-        border: Border.all(color: context.appColors.borderPrimary),
+        border: Border.all(color: context.appColors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.event_available_rounded,
-              color: AppPalette.primary,
+              color: context.appColors.secondary,
               size: 17,
             ),
             const SizedBox(width: 8),
@@ -1760,20 +1760,20 @@ _NotificationCategoryMeta _categoryMeta(
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategorySupport,
         icon: Icons.support_agent_rounded,
-        color: AppPalette.primary,
+        color: AppPalette.secondary,
       );
     case '':
     case 'general':
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryGeneral,
         icon: Icons.notifications_rounded,
-        color: AppPalette.primary,
+        color: AppPalette.secondary,
       );
     default:
       return _NotificationCategoryMeta(
         label: l10n.notificationsCategoryFallback(rawCategory),
         icon: Icons.notifications_rounded,
-        color: AppPalette.primary,
+        color: AppPalette.secondary,
       );
   }
 }

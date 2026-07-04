@@ -1318,12 +1318,12 @@ class _StoryMetaChip extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: colors.surfaceHigh.withValues(alpha: 0.72),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: colors.borderSoft),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: colors.primary, size: adaptive.scale(14)),
+          Icon(icon, color: colors.secondary, size: adaptive.scale(14)),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
@@ -1360,7 +1360,7 @@ class _FormatTag extends StatelessWidget {
         vertical: adaptive.scale(8),
       ),
       decoration: AppBoxDecoration(
-        color: colors.primary.withValues(alpha: 0.92),
+        color: colors.secondary.withValues(alpha: 0.92),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
       ),
       child: Text(
@@ -1395,14 +1395,14 @@ class _LocationTag extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: colors.surfaceHigh.withValues(alpha: 0.78),
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.place_outlined,
-            color: colors.textPrimary,
+            color: colors.secondary,
             size: adaptive.scale(13),
           ),
           SizedBox(width: adaptive.scale(7)),
@@ -1930,12 +1930,12 @@ class _ActiveFilterChip extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: colors.surfaceHigh,
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: colors.borderSoft),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: adaptive.scale(14), color: colors.primary),
+          Icon(icon, size: adaptive.scale(14), color: colors.secondary),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
@@ -1999,6 +1999,7 @@ class _FilterSheet extends StatelessWidget {
           ),
           child: SafeArea(
             top: false,
+            bottom: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

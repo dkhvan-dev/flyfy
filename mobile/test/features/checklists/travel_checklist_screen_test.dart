@@ -59,6 +59,92 @@ void main() {
     },
   );
 
+  test('saved checklist chips use visible V2 borders in light theme', () async {
+    final source = await File(
+      'lib/screens/checklists/travel_checklist_screen.dart',
+    ).readAsString();
+    final chipStart = source.indexOf('class _ChipLabel');
+    final panelStart = source.indexOf('class _SurfacePanel');
+
+    expect(chipStart, isNonNegative);
+    expect(panelStart, greaterThan(chipStart));
+
+    final chipSource = source.substring(chipStart, panelStart);
+
+    expect(
+      chipSource,
+      contains(
+        'final isLight = Theme.of(context).brightness == Brightness.light;',
+      ),
+    );
+    expect(chipSource, contains('alpha: isLight ? 0.48 : 0.30'));
+    expect(chipSource, contains('width: isLight ? 1.2 : 1'));
+  });
+
+  test(
+    'missing context action buttons use visible V2 borders in light theme',
+    () async {
+      final source = await File(
+        'lib/screens/checklists/travel_checklist_screen.dart',
+      ).readAsString();
+      final actionsStart = source.indexOf(
+        'class _MissingContextAlternativeActions',
+      );
+      final contextPanelStart = source.indexOf('class _TripContextPanel');
+
+      expect(actionsStart, isNonNegative);
+      expect(contextPanelStart, greaterThan(actionsStart));
+
+      final actionsSource = source.substring(actionsStart, contextPanelStart);
+
+      expect(
+        actionsSource,
+        contains('final palette = _ChecklistAmber.of(context);'),
+      );
+      expect(
+        actionsSource,
+        contains(
+          'final isLight = Theme.of(context).brightness == Brightness.light;',
+        ),
+      );
+      expect(actionsSource, contains('final actionBackground ='));
+      expect(actionsSource, contains('final actionBorder ='));
+      expect(actionsSource, contains('backgroundColor: actionBackground'));
+      expect(actionsSource, contains('foregroundColor: palette.textPrimary'));
+      expect(
+        actionsSource,
+        contains(
+          'side: BorderSide(color: actionBorder, width: isLight ? 1.2 : 1)',
+        ),
+      );
+    },
+  );
+
+  test('saved checklist cards use visible V2 borders in light theme', () async {
+    final source = await File(
+      'lib/screens/checklists/travel_checklist_screen.dart',
+    ).readAsString();
+    final tileStart = source.indexOf('class _RecentChecklistTile');
+    final autocompleteStart = source.indexOf(
+      'class _QuickPrepAutocompleteField',
+    );
+
+    expect(tileStart, isNonNegative);
+    expect(autocompleteStart, greaterThan(tileStart));
+
+    final tileSource = source.substring(tileStart, autocompleteStart);
+
+    expect(
+      tileSource,
+      contains(
+        'final isLight = Theme.of(context).brightness == Brightness.light;',
+      ),
+    );
+    expect(tileSource, contains('side: BorderSide('));
+    expect(tileSource, contains('alpha: isLight ? 0.74 : 0.42'));
+    expect(tileSource, contains('width: isLight ? 1.2 : 1'));
+  });
+
   testWidgets(
     'shows setup state instead of sample checklist when route args are missing',
     (tester) async {

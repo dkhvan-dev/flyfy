@@ -32,6 +32,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
       final isCompact = screenWidth < 375;
       final isShortLayout = screenHeight < 700 || textScale > 1.2;
       final bottomInset = mediaQuery.viewInsets.bottom;
+      final systemBottomPadding = mediaQuery.viewPadding.bottom;
       final maxSheetHeight = (screenHeight - mediaQuery.viewPadding.top - 12)
           .clamp(320.0, screenHeight)
           .toDouble();
@@ -52,6 +53,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
 
       return SafeArea(
         top: false,
+        bottom: false,
         child: Padding(
           padding: AppEdgeInsets.only(bottom: bottomInset),
           child: ConstrainedBox(
@@ -133,7 +135,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                             horizontalPadding,
                             topPadding,
                             horizontalPadding,
-                            bottomPadding,
+                            bottomPadding + systemBottomPadding,
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,

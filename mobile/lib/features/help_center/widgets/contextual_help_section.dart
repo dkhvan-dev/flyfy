@@ -106,12 +106,13 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                   width: 36,
                   height: 36,
                   decoration: AppBoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.16),
+                    color: colors.secondaryContainer,
                     borderRadius: AppBorderRadius.circular(12),
+                    border: Border.all(color: colors.borderSecondary),
                   ),
                   child: Icon(
                     Icons.help_outline_rounded,
-                    color: colors.primary,
+                    color: colors.secondary,
                     size: 20,
                   ),
                 ),
@@ -131,7 +132,9 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                 ),
                 TextButton(
                   onPressed: () => context.push('/help'),
-                  style: TextButton.styleFrom(foregroundColor: colors.primary),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.secondary,
+                  ),
                   child: Text(l10n.contextualHelpOpenAll),
                 ),
               ],

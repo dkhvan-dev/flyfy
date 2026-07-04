@@ -135,6 +135,69 @@ void main() {
     },
   );
 
+  test(
+    'my activities search field uses the same shared control as activities',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../core/ui/app_list_search_field.dart';"),
+      );
+
+      final searchStart = source.indexOf('class _MyActivitiesSearchField');
+      final nextWidgetStart = source.indexOf('class _MyActivitiesTabSwitcher');
+      expect(searchStart, isNonNegative);
+      expect(nextWidgetStart, greaterThan(searchStart));
+
+      final searchSource = source.substring(searchStart, nextWidgetStart);
+
+      expect(searchSource, contains('return AppListSearchField('));
+      expect(searchSource, contains('activeFilterCount: filterActiveCount'));
+      expect(searchSource, contains('showClearButton: true'));
+      expect(
+        searchSource,
+        contains('onTapOutside: (_) => FocusScope.of(context).unfocus()'),
+      );
+      expect(
+        searchSource,
+        contains(
+          "filterTooltip: AppLocalizations.of(context)!.myActivitiesFilterTitle",
+        ),
+      );
+      expect(searchSource, isNot(contains('TextField(')));
+      expect(searchSource, isNot(contains('gradient: LinearGradient(')));
+      expect(searchSource, isNot(contains('boxShadow: [')));
+    },
+  );
+
+  test('my activities tabs have visible V2 borders', () async {
+    final source = await File(
+      'lib/screens/activities/my_activities_screen.dart',
+    ).readAsString();
+
+    final switcherStart = source.indexOf('class _MyActivitiesTabSwitcher');
+    final segmentStart = source.indexOf('class _SegmentButton');
+    final cardStart = source.indexOf('class _MyActivitiesCard');
+    expect(switcherStart, isNonNegative);
+    expect(segmentStart, greaterThan(switcherStart));
+    expect(cardStart, greaterThan(segmentStart));
+
+    final switcherSource = source.substring(switcherStart, segmentStart);
+    final segmentSource = source.substring(segmentStart, cardStart);
+
+    expect(source, contains('Color get borderSoft => colors.borderSoft;'));
+    expect(
+      switcherSource,
+      contains('border: Border.all(color: palette.borderSoft)'),
+    );
+    expect(switcherSource, isNot(contains('white.withValues(alpha: 0.05)')));
+    expect(segmentSource, contains('border: Border.all('));
+    expect(segmentSource, contains('palette.borderPrimary'));
+  });
+
   test('my activities country changes reset city to all cities', () async {
     final source = await File(
       'lib/screens/activities/my_activities_screen.dart',
@@ -199,6 +262,56 @@ void main() {
       );
       expect(cardSource, contains('fallbackText: locationFallbackText'));
       expect(cardSource, isNot(contains('fallbackText: locationText')));
+    },
+  );
+
+  test(
+    'my activities cards reuse the discover activity card visual system',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains(
+          "import '../../features/activities/activity_category_art.dart';",
+        ),
+      );
+
+      final cardStart = source.indexOf('class _MyActivitiesCard');
+      final coverStart = source.indexOf('class _ActivityCover');
+      final fallbackStart = source.indexOf('class _ActivityCoverFallback');
+      final metaStart = source.indexOf('class _MetaItem');
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+      expect(fallbackStart, -1);
+      expect(metaStart, greaterThan(coverStart));
+
+      final cardSource = source.substring(cardStart, coverStart);
+      final coverSource = source.substring(coverStart, metaStart);
+
+      expect(
+        cardSource,
+        contains('final artSpec = activityCardArtForItem(item);'),
+      );
+      expect(cardSource, contains('_activityCategoryAvatarDecoration('));
+      expect(cardSource, contains('activityCardSurface'));
+      expect(cardSource, contains('activityCardBorder'));
+      expect(cardSource, isNot(contains('gradient: LinearGradient(')));
+      expect(
+        cardSource,
+        isNot(contains('_MyActivitiesPalette.of(context).card')),
+      );
+
+      expect(coverSource, contains('ActivityDecorativeCover('));
+      expect(coverSource, contains('spec: artSpec'));
+      expect(coverSource, contains('imageUrl: resolveActivityCoverUrl(item)'));
+      expect(coverSource, isNot(contains('Image.network(')));
+      expect(
+        coverSource,
+        isNot(contains('_ActivityCoverFallback(item: item)')),
+      );
     },
   );
 

@@ -31,4 +31,29 @@ void main() {
     expect(source, isNot(contains('profileBorder')));
     expect(source, isNot(contains('profileDisabled')));
   });
+
+  test('profile user activities filters close when tapping outside', () async {
+    final source = await File(
+      'lib/screens/profile/profile_user_activities_screen.dart',
+    ).readAsString();
+
+    final openFiltersStart = source.indexOf('Future<void> _openFilters()');
+    final buildOptionsStart = source.indexOf(
+      'List<_ProfileActivityCategoryOption> _buildCategoryOptions',
+    );
+
+    expect(openFiltersStart, isNonNegative);
+    expect(buildOptionsStart, greaterThan(openFiltersStart));
+
+    final openFiltersSource = source.substring(
+      openFiltersStart,
+      buildOptionsStart,
+    );
+
+    expect(openFiltersSource, contains('AppModalSheetFrame('));
+    expect(
+      openFiltersSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
+  });
 }

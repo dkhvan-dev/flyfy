@@ -3814,20 +3814,16 @@ class _Step2LocationMismatchNotice extends StatelessWidget {
       width: double.infinity,
       padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: AppBoxDecoration(
-        color: context.createActivityColors.warmSurface69,
+        color: context.createActivityColors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(
-          color: context.createActivityColors.amberSoft24.withValues(
-            alpha: 0.28,
-          ),
-        ),
+        border: Border.all(color: context.createActivityColors.borderSecondary),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.info_outline_rounded,
-            color: context.createActivityColors.amberSoft24,
+            color: context.createActivityColors.secondary,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -5149,7 +5145,7 @@ class _CoverUploadCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              context.createActivityColors.primary,
+                              context.createActivityColors.secondary,
                             ),
                           ),
                         ),
@@ -5161,8 +5157,7 @@ class _CoverUploadCard extends StatelessWidget {
                     painter: _DashedCoverBorderPainter(
                       color: hasError
                           ? context.createActivityColors.redSoft10
-                          : context.createActivityColors.amberMuted03
-                                .withValues(alpha: 0.62),
+                          : context.createActivityColors.secondary,
                       radius: radius,
                     ),
                   ),
@@ -5221,9 +5216,7 @@ class _CoverUploadCard extends StatelessWidget {
                   height: accentCircleSize,
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: context.createActivityColors.primary.withValues(
-                      alpha: 0.17,
-                    ),
+                    color: context.createActivityColors.secondaryContainer,
                   ),
                 ),
               ),
@@ -5248,20 +5241,14 @@ class _CoverUploadCard extends StatelessWidget {
                     height: actionCircleSize,
                     decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: context.createActivityColors.white.withValues(
-                        alpha: 0.08,
-                      ),
+                      color: context.createActivityColors.secondaryContainer,
                       border: Border.all(
-                        color: context.createActivityColors.white.withValues(
-                          alpha: 0.14,
-                        ),
+                        color: context.createActivityColors.borderSecondary,
                       ),
                     ),
                     child: Icon(
                       Icons.add_photo_alternate_rounded,
-                      color: context.createActivityColors.white.withValues(
-                        alpha: 0.92,
-                      ),
+                      color: context.createActivityColors.secondary,
                       size: actionCircleSize * 0.47,
                     ),
                   ),
@@ -5311,14 +5298,10 @@ class _CoverCardCopy extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: AppBoxDecoration(
-                  color: context.createActivityColors.primary.withValues(
-                    alpha: 0.18,
-                  ),
+                  color: context.createActivityColors.secondaryContainer,
                   borderRadius: AppBorderRadius.circular(999),
                   border: Border.all(
-                    color: context.createActivityColors.primary.withValues(
-                      alpha: 0.26,
-                    ),
+                    color: context.createActivityColors.borderSecondary,
                   ),
                 ),
                 child: Row(
@@ -5328,7 +5311,7 @@ class _CoverCardCopy extends StatelessWidget {
                       hasPreview
                           ? Icons.refresh_rounded
                           : Icons.file_upload_outlined,
-                      color: context.createActivityColors.primary,
+                      color: context.createActivityColors.secondary,
                       size: compact ? 14 : 15,
                     ),
                     const SizedBox(width: 6),
@@ -5338,7 +5321,7 @@ class _CoverCardCopy extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: context.createActivityColors.primary,
+                          color: context.createActivityColors.secondary,
                           fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w800,
                         ),

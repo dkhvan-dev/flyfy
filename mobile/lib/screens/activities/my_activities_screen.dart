@@ -10,12 +10,14 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/activity_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/time/app_time.dart';
 import '../../core/utils/pagination.dart';
+import '../../features/activities/activity_category_art.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
@@ -1218,25 +1220,18 @@ IconData _activityFormatIcon(String format) {
   }
 }
 
-IconData _activityCategoryIcon(ActivityListItemVm item) {
-  switch (item.format.toUpperCase()) {
-    case 'ONLINE':
-      return Icons.videocam_rounded;
-    case 'HYBRID':
-      return Icons.devices_rounded;
-    default:
-      return Icons.travel_explore_rounded;
-  }
-}
-
 final class _MyActivitiesPalette {
-  const _MyActivitiesPalette._(this.colors);
+  const _MyActivitiesPalette._(this.colors, {required this.isLight});
 
   final AppColors colors;
+  final bool isLight;
 
   static _MyActivitiesPalette of(BuildContext context) {
     final colors = AppDesignSystem.colorsFor(context);
-    return _MyActivitiesPalette._(colors);
+    return _MyActivitiesPalette._(
+      colors,
+      isLight: Theme.of(context).brightness == Brightness.light,
+    );
   }
 
   Color get backgroundTop => colors.backgroundDeep;
@@ -1247,12 +1242,25 @@ final class _MyActivitiesPalette {
   Color get surfaceSoft => colors.surfaceRaised;
   Color get surfaceHigh => colors.surfaceHigh;
   Color get surfaceWarm => colors.surfaceWarm;
+  Color get surfaceTeal => colors.surfaceTeal;
   Color get card => colors.surfaceRaised;
+  Color get activityCardSurface => colors.surfaceRaised;
+  Color get activityCardBorder => colors.border;
   Color get accent => colors.primary;
   Color get primary => colors.primary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
+  Color get secondaryText =>
+      isLight ? colors.secondaryPressed : colors.secondary;
+  Color get secondarySurface =>
+      isLight ? colors.secondaryContainer : colors.surfaceTeal;
+  Color get secondaryBorder =>
+      colors.secondary.withValues(alpha: isLight ? 0.22 : 0.30);
+  Color get onSecondary => colors.onSecondary;
+  Color get borderSoft => colors.borderSoft;
+  Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
   Color get text => colors.textPrimary;
   Color get textPrimary => colors.textPrimary;
   Color get textSecondary => colors.textSecondary;
@@ -1264,6 +1272,49 @@ final class _MyActivitiesPalette {
   Color get transparent => colors.transparent;
   Color get black => colors.black;
   Color get white => colors.white;
+}
+
+bool _isLightMyActivitiesTheme(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.light;
+}
+
+List<BoxShadow>? _myActivitiesDarkThemeShadow(
+  BuildContext context, {
+  required double alpha,
+  required double blurRadius,
+  required Offset offset,
+}) {
+  if (_isLightMyActivitiesTheme(context)) {
+    return null;
+  }
+
+  return [
+    BoxShadow(
+      color: _MyActivitiesPalette.of(context).black.withValues(alpha: alpha),
+      blurRadius: blurRadius,
+      offset: offset,
+    ),
+  ];
+}
+
+AppBoxDecoration _activityCategoryAvatarDecoration(
+  BuildContext context,
+  ActivityCardArtSpec artSpec,
+  _MyActivitiesPalette palette,
+) {
+  if (palette.isLight) {
+    return AppBoxDecoration(
+      shape: BoxShape.circle,
+      color: palette.secondary,
+      border: Border.all(color: palette.borderSecondary),
+    );
+  }
+
+  return AppBoxDecoration(
+    shape: BoxShape.circle,
+    gradient: LinearGradient(colors: artSpec.colorsFor(context)),
+    border: Border.all(color: palette.white.withValues(alpha: 0.10)),
+  );
 }
 
 class _MyActivitiesAdaptiveLayout {
@@ -1323,129 +1374,15 @@ class _MyActivitiesSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filterActive = filterActiveCount > 0;
-
-    return Container(
-      decoration: AppBoxDecoration(
-        borderRadius: AppBorderRadius.circular(999),
-        gradient: LinearGradient(
-          colors: [
-            _MyActivitiesPalette.of(context).white.withValues(alpha: 0.035),
-            _MyActivitiesPalette.of(context).white.withValues(alpha: 0.02),
-          ],
-        ),
-        border: Border.all(
-          color: _MyActivitiesPalette.of(
-            context,
-          ).primary.withValues(alpha: 0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _MyActivitiesPalette.of(
-              context,
-            ).black.withValues(alpha: 0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        style: AppTextStyle(
-          color: _MyActivitiesPalette.of(context).textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-        cursorColor: _MyActivitiesPalette.of(context).primary,
-        decoration: AppInputDecoration(
-          isDense: true,
-          hintText: hintText,
-          hintStyle: AppTextStyle(
-            color: _MyActivitiesPalette.of(context).textMuted,
-            fontSize: 14,
-          ),
-          border: InputBorder.none,
-          contentPadding: const AppEdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 14,
-          ),
-          prefixIcon: Padding(
-            padding: AppEdgeInsets.only(left: 12, right: 10),
-            child: Icon(
-              Icons.search_rounded,
-              color: _MyActivitiesPalette.of(context).primary,
-              size: 20,
-            ),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (controller.text.isNotEmpty)
-                IconButton(
-                  onPressed: controller.clear,
-                  splashRadius: 20,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: _MyActivitiesPalette.of(context).primary,
-                  ),
-                ),
-              Padding(
-                padding: const AppEdgeInsets.only(right: 6),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      tooltip: AppLocalizations.of(
-                        context,
-                      )!.myActivitiesFilterTitle,
-                      onPressed: onFilterTap,
-                      splashRadius: 20,
-                      icon: Icon(
-                        Icons.tune_rounded,
-                        color: _MyActivitiesPalette.of(context).primary,
-                        size: 20,
-                      ),
-                    ),
-                    if (filterActive)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          padding: const AppEdgeInsets.symmetric(horizontal: 4),
-                          decoration: AppBoxDecoration(
-                            color: _MyActivitiesPalette.of(context).accent,
-                            borderRadius: AppBorderRadius.circular(999),
-                            border: Border.all(width: 1.4),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$filterActiveCount',
-                            style: AppTextStyle(
-                              color: _MyActivitiesPalette.of(
-                                context,
-                              ).textPrimary,
-                              fontSize: 10,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          suffixIconConstraints: const BoxConstraints(minWidth: 0),
-        ),
-      ),
+    return AppListSearchField(
+      controller: controller,
+      focusNode: focusNode,
+      hintText: hintText,
+      filterTooltip: AppLocalizations.of(context)!.myActivitiesFilterTitle,
+      activeFilterCount: filterActiveCount,
+      showClearButton: true,
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+      onFilterTap: onFilterTap,
     );
   }
 }
@@ -1466,15 +1403,14 @@ class _MyActivitiesTabSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _MyActivitiesAdaptiveLayout.of(context);
+    final palette = _MyActivitiesPalette.of(context);
 
     return Container(
       padding: AppEdgeInsets.all(layout.isCompact ? 5 : 6),
       decoration: AppBoxDecoration(
-        color: _MyActivitiesPalette.of(context).surfaceSoft,
+        color: palette.surfaceSoft,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(
-          color: _MyActivitiesPalette.of(context).white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: palette.borderSoft),
       ),
       child: Row(
         children: [
@@ -1513,9 +1449,10 @@ class _SegmentButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _MyActivitiesAdaptiveLayout.of(context);
+    final palette = _MyActivitiesPalette.of(context);
 
     return Material(
-      color: _MyActivitiesPalette.of(context).transparent,
+      color: palette.transparent,
       child: InkWell(
         borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
@@ -1524,16 +1461,15 @@ class _SegmentButton extends StatelessWidget {
           curve: Curves.easeOut,
           height: layout.segmentHeight,
           decoration: AppBoxDecoration(
-            color: isActive
-                ? _MyActivitiesPalette.of(context).accent
-                : _MyActivitiesPalette.of(context).transparent,
+            color: isActive ? palette.accent : palette.transparent,
             borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: isActive ? palette.borderPrimary : palette.transparent,
+            ),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: _MyActivitiesPalette.of(
-                        context,
-                      ).accent.withValues(alpha: 0.25),
+                      color: palette.accent.withValues(alpha: 0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -1550,8 +1486,8 @@ class _SegmentButton extends StatelessWidget {
                   maxLines: 1,
                   style: AppTextStyle(
                     color: isActive
-                        ? _MyActivitiesPalette.of(context).textPrimary
-                        : _MyActivitiesPalette.of(context).textSecondary,
+                        ? palette.textPrimary
+                        : palette.textSecondary,
                     fontSize: layout.segmentFontSize,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1635,49 +1571,43 @@ class _MyActivitiesCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final palette = _MyActivitiesPalette.of(context);
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final compactCard = constraints.maxWidth < 340 || textScale > 1.1;
         final stackPrimaryActions =
             constraints.maxWidth < 330 || textScale > 1.18;
         final radius = compactCard ? 22.0 : 26.0;
         final contentPadding = compactCard ? 12.0 : 14.0;
+        final artSpec = activityCardArtForItem(item);
+        final categoryAvatarSize = compactCard ? 34.0 : 38.0;
+        final categoryIconSize = compactCard ? 16.0 : 18.0;
 
         return Material(
-          color: _MyActivitiesPalette.of(context).transparent,
+          color: palette.transparent,
           child: InkWell(
             borderRadius: AppBorderRadius.circular(radius),
             onTap: onCardTap,
-            child: Container(
-              clipBehavior: Clip.antiAlias,
+            child: Ink(
               decoration: AppBoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _MyActivitiesPalette.of(context).card,
-                    _MyActivitiesPalette.of(context).surface,
-                  ],
-                ),
+                color: palette.activityCardSurface,
                 borderRadius: AppBorderRadius.circular(radius),
-                border: Border.all(
-                  color: _MyActivitiesPalette.of(
-                    context,
-                  ).accent.withValues(alpha: 0.14),
+                border: Border.all(color: palette.activityCardBorder),
+                boxShadow: _myActivitiesDarkThemeShadow(
+                  context,
+                  alpha: 0.26,
+                  blurRadius: 44,
+                  offset: const Offset(0, 20),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _MyActivitiesPalette.of(
-                      context,
-                    ).black.withValues(alpha: 0.38),
-                    blurRadius: compactCard ? 28 : 40,
-                    offset: Offset(0, compactCard ? 12 : 18),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ActivityCover(item: item),
+                  ClipRRect(
+                    borderRadius: AppBorderRadius.vertical(
+                      top: AppRadiusValue.circular(radius),
+                    ),
+                    child: _ActivityCover(item: item, artSpec: artSpec),
+                  ),
                   Padding(
                     padding: AppEdgeInsets.fromLTRB(
                       contentPadding,
@@ -1692,25 +1622,19 @@ class _MyActivitiesCard extends StatelessWidget {
                           Row(
                             children: [
                               Container(
-                                width: compactCard ? 32 : 34,
-                                height: compactCard ? 32 : 34,
-                                decoration: AppBoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _MyActivitiesPalette.of(
-                                    context,
-                                  ).accent.withValues(alpha: 0.12),
-                                  border: Border.all(
-                                    color: _MyActivitiesPalette.of(
-                                      context,
-                                    ).white.withValues(alpha: 0.08),
-                                  ),
+                                width: categoryAvatarSize,
+                                height: categoryAvatarSize,
+                                decoration: _activityCategoryAvatarDecoration(
+                                  context,
+                                  artSpec,
+                                  palette,
                                 ),
                                 child: Icon(
-                                  _activityCategoryIcon(item),
-                                  color: _MyActivitiesPalette.of(
-                                    context,
-                                  ).accent,
-                                  size: compactCard ? 16 : 18,
+                                  artSpec.icon,
+                                  color: palette.isLight
+                                      ? palette.onSecondary
+                                      : palette.white.withValues(alpha: 0.92),
+                                  size: categoryIconSize,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1720,9 +1644,7 @@ class _MyActivitiesCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle(
-                                    color: _MyActivitiesPalette.of(
-                                      context,
-                                    ).primary,
+                                    color: palette.primary,
                                     fontSize: compactCard ? 10 : 11,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.4,
@@ -1739,10 +1661,10 @@ class _MyActivitiesCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: _MyActivitiesPalette.of(context).text,
+                              color: palette.primary,
                               fontSize: 17,
                               height: 1.1,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -1752,10 +1674,10 @@ class _MyActivitiesCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
-                              color: _MyActivitiesPalette.of(context).text,
+                              color: palette.primary,
                               fontSize: 19,
                               height: 1.08,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: -0.6,
                             ),
                           ),
@@ -1896,9 +1818,10 @@ class _MyActivitiesCard extends StatelessWidget {
 }
 
 class _ActivityCover extends StatelessWidget {
-  const _ActivityCover({required this.item});
+  const _ActivityCover({required this.item, required this.artSpec});
 
   final ActivityListItemVm item;
+  final ActivityCardArtSpec artSpec;
 
   @override
   Widget build(BuildContext context) {
@@ -1910,37 +1833,17 @@ class _ActivityCover extends StatelessWidget {
     final priceText = item.isFree
         ? l10n.createPriceFree
         : item.formattedPriceLabel(localeName);
-    final imageUrl = resolveActivityCoverUrl(item)?.trim() ?? '';
     final badgeMaxWidth = MediaQuery.sizeOf(context).width * 0.42;
+    final palette = _MyActivitiesPalette.of(context);
 
     return AspectRatio(
       aspectRatio: 1.55,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _ActivityCoverFallback(item: item),
-          if (imageUrl.isNotEmpty)
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  const SizedBox.shrink(),
-            ),
-          DecoratedBox(
-            decoration: AppBoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  _MyActivitiesPalette.of(
-                    context,
-                  ).black.withValues(alpha: 0.02),
-                  _MyActivitiesPalette.of(
-                    context,
-                  ).black.withValues(alpha: 0.18),
-                ],
-              ),
-            ),
+          ActivityDecorativeCover(
+            spec: artSpec,
+            imageUrl: resolveActivityCoverUrl(item),
           ),
           Positioned(
             top: 12,
@@ -1978,19 +1881,22 @@ class _ActivityCover extends StatelessWidget {
                 vertical: 7,
               ),
               decoration: AppBoxDecoration(
-                color: _MyActivitiesPalette.of(
-                  context,
-                ).black.withValues(alpha: 0.48),
+                color: item.isFree
+                    ? palette.secondarySurface
+                    : palette.black.withValues(alpha: 0.48),
                 borderRadius: AppBorderRadius.circular(999),
+                border: Border.all(
+                  color: item.isFree
+                      ? palette.secondaryBorder
+                      : palette.transparent,
+                ),
               ),
               child: Text(
                 priceText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
-                  color: item.isFree
-                      ? _MyActivitiesPalette.of(context).success
-                      : _MyActivitiesPalette.of(context).accent,
+                  color: item.isFree ? palette.secondaryText : palette.accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.1,
@@ -2029,87 +1935,6 @@ class _ActivityCover extends StatelessWidget {
   }
 }
 
-class _ActivityCoverFallback extends StatelessWidget {
-  const _ActivityCoverFallback({required this.item});
-
-  final ActivityListItemVm item;
-
-  @override
-  Widget build(BuildContext context) {
-    final cover = _coverPalette(context, item);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        DecoratedBox(
-          decoration: AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: cover,
-            ),
-          ),
-        ),
-        Center(
-          child: Icon(
-            _coverIcon(item),
-            size: 54,
-            color: _MyActivitiesPalette.of(
-              context,
-            ).white.withValues(alpha: 0.22),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Color> _coverPalette(BuildContext context, ActivityListItemVm item) {
-    switch (item.categorySlug) {
-      case 'adventure-sports':
-        return [
-          _MyActivitiesPalette.of(context).surfaceWarm,
-          _MyActivitiesPalette.of(context).primaryContainer,
-        ];
-      case 'social-nightlife':
-        return [
-          _MyActivitiesPalette.of(context).surfaceWarm,
-          _MyActivitiesPalette.of(context).danger,
-        ];
-      case 'health-wellness':
-        return [
-          _MyActivitiesPalette.of(context).surfaceHigh,
-          _MyActivitiesPalette.of(context).secondary,
-        ];
-      case 'workshops-learning':
-        return [
-          _MyActivitiesPalette.of(context).surfaceHigh,
-          _MyActivitiesPalette.of(context).secondary,
-        ];
-      default:
-        return item.format.toUpperCase() == 'ONLINE'
-            ? [
-                _MyActivitiesPalette.of(context).surfaceHigh,
-                _MyActivitiesPalette.of(context).secondary,
-              ]
-            : [
-                _MyActivitiesPalette.of(context).surfaceWarm,
-                _MyActivitiesPalette.of(context).primarySoft,
-              ];
-    }
-  }
-
-  IconData _coverIcon(ActivityListItemVm item) {
-    switch (item.format.toUpperCase()) {
-      case 'ONLINE':
-        return Icons.videocam_rounded;
-      case 'HYBRID':
-        return Icons.devices_rounded;
-      default:
-        return Icons.landscape_rounded;
-    }
-  }
-}
-
 class _MetaItem extends StatelessWidget {
   const _MetaItem({required this.icon, required this.label, this.labelBuilder});
 
@@ -2120,16 +1945,17 @@ class _MetaItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
+    final palette = _MyActivitiesPalette.of(context);
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: _MyActivitiesPalette.of(context).textMuted),
+        Icon(icon, size: 16, color: palette.secondaryText),
         const SizedBox(width: 6),
         Expanded(
           child: Builder(
             builder: (context) {
               final style = AppTextStyle(
-                color: _MyActivitiesPalette.of(context).textMuted,
+                color: palette.secondaryText,
                 fontSize: compact ? 12 : 13,
                 height: 1.25,
               );

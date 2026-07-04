@@ -37,6 +37,9 @@ final class _StoryDetailsColors {
 
   Color get primary => colors.primary;
   Color get primarySoft => colors.primarySoft;
+  Color get secondary => colors.secondary;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get borderSecondary => colors.borderSecondary;
   Color get textPrimary => colors.textPrimary;
   Color get textSecondary => colors.textSecondary;
   Color get textMuted => colors.textMuted;
@@ -1735,7 +1738,7 @@ class _StoryHero extends StatelessWidget {
                     width: adaptive.scale(4),
                     height: adaptive.scale(4),
                     decoration: AppBoxDecoration(
-                      color: _StoryDetailsColors.of(context).primary,
+                      color: _StoryDetailsColors.of(context).secondary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1743,7 +1746,7 @@ class _StoryHero extends StatelessWidget {
                   Text(
                     '${formatStoryCountCompact(story.stats.views)} ${AppLocalizations.of(context)!.storyViewsSuffix}',
                     style: AppTextStyle(
-                      color: _StoryDetailsColors.of(context).primary,
+                      color: _StoryDetailsColors.of(context).secondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -1816,11 +1819,11 @@ class _HeroChip extends StatelessWidget {
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
         color: accent
-            ? _StoryDetailsColors.of(context).primary.withValues(alpha: 0.12)
+            ? _StoryDetailsColors.of(context).secondaryContainer
             : _StoryDetailsColors.of(context).white.withValues(alpha: 0.08),
         border: Border.all(
           color: accent
-              ? _StoryDetailsColors.of(context).primary.withValues(alpha: 0.3)
+              ? _StoryDetailsColors.of(context).borderSecondary
               : _StoryDetailsColors.of(context).white.withValues(alpha: 0.14),
         ),
       ),
@@ -1828,7 +1831,7 @@ class _HeroChip extends StatelessWidget {
         label,
         style: AppTextStyle(
           color: accent
-              ? _StoryDetailsColors.of(context).primary
+              ? _StoryDetailsColors.of(context).secondary
               : _StoryDetailsColors.of(context).white.withValues(alpha: 0.9),
           fontSize: adaptive.scale(9),
           fontWeight: FontWeight.w800,
@@ -2196,21 +2199,15 @@ class _StoryArticle extends StatelessWidget {
                     borderRadius: AppBorderRadius.circular(
                       adaptive.radius(999),
                     ),
-                    color: _StoryDetailsColors.of(
-                      context,
-                    ).white.withValues(alpha: 0.05),
+                    color: _StoryDetailsColors.of(context).secondaryContainer,
                     border: Border.all(
-                      color: _StoryDetailsColors.of(
-                        context,
-                      ).white.withValues(alpha: 0.06),
+                      color: _StoryDetailsColors.of(context).borderSecondary,
                     ),
                   ),
                   child: Text(
                     tag,
                     style: AppTextStyle(
-                      color: _StoryDetailsColors.of(
-                        context,
-                      ).white.withValues(alpha: 0.72),
+                      color: _StoryDetailsColors.of(context).secondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w600,
                     ),

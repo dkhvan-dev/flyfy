@@ -648,7 +648,8 @@ class _NoticeText extends StatelessWidget {
         vertical: authScaled(context, 10, min: 8, max: 10),
       ),
       decoration: AppBoxDecoration(
-        color: AppPalette.primary.withValues(alpha: 0.14),
+        color: context.appColors.secondaryContainer,
+        border: Border.all(color: context.appColors.borderSecondary),
         borderRadius: AppBorderRadius.circular(
           authScaled(context, 12, min: 10, max: 12),
         ),

@@ -1597,6 +1597,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     final visibleLanguages = _visibleLanguages(l10n);
 
     return AppModalSheetFrame(
+      onTapOutside: () => Navigator.of(context).maybePop(),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.86,

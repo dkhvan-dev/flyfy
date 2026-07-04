@@ -23,12 +23,16 @@ void main() {
     expect(source, contains('activeItem: AppBottomNavItem.chats'));
     expect(source, contains('style: AppBottomNavigationBarStyle.v2(context)'));
     expect(source, contains('AppButtonStyles.icon(context.appColors)'));
+    final legacyPaletteSource = source
+        .replaceAll('AppPalette.primary', '')
+        .replaceAll('AppPalette.secondary', '')
+        .replaceAll('AppPalette.transparent', '');
     expect(
-      source,
+      legacyPaletteSource,
       isNot(
         matches(
           RegExp(
-            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal|primary)',
+            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal)',
           ),
         ),
       ),

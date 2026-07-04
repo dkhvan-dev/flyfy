@@ -62,6 +62,28 @@ void main() {
   });
 
   test(
+    'guide calendar empty availability metadata uses secondary accents',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/widgets/guide_calendar_timeline.dart',
+      ).readAsString();
+      final emptyStart = source.indexOf('if (slots.isEmpty)');
+      final listStart = source.indexOf(
+        'return SliverList.separated',
+        emptyStart,
+      );
+
+      expect(emptyStart, isNonNegative);
+      expect(listStart, greaterThan(emptyStart));
+
+      final emptySource = source.substring(emptyStart, listStart);
+      expect(emptySource, contains('colors.secondaryContainer'));
+      expect(emptySource, contains('colors.borderSecondary'));
+      expect(emptySource, contains('color: colors.secondary'));
+    },
+  );
+
+  test(
     'guide schedule slot sheet supports recurrence and conflict actions',
     () async {
       final source = await File(

@@ -4774,7 +4774,7 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              context.createExcursionColors.primary,
+                              context.createExcursionColors.secondary,
                             ),
                           ),
                         ),
@@ -4788,9 +4788,7 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                           ? context.createExcursionColors.danger.withValues(
                               alpha: 0.74,
                             )
-                          : context.createExcursionColors.primary.withValues(
-                              alpha: 0.45,
-                            ),
+                          : context.createExcursionColors.secondary,
                       radius: radius,
                     ),
                   ),
@@ -4843,9 +4841,7 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
               height: 138,
               decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: context.createExcursionColors.primary.withValues(
-                  alpha: 0.17,
-                ),
+                color: context.createExcursionColors.secondaryContainer,
               ),
             ),
           ),
@@ -4870,20 +4866,14 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                 height: 68,
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: context.createExcursionColors.white.withValues(
-                    alpha: 0.08,
-                  ),
+                  color: context.createExcursionColors.secondaryContainer,
                   border: Border.all(
-                    color: context.createExcursionColors.white.withValues(
-                      alpha: 0.14,
-                    ),
+                    color: context.createExcursionColors.borderSecondary,
                   ),
                 ),
                 child: Icon(
                   Icons.add_photo_alternate_rounded,
-                  color: context.createExcursionColors.white.withValues(
-                    alpha: 0.92,
-                  ),
+                  color: context.createExcursionColors.secondary,
                   size: 32,
                 ),
               ),
@@ -4918,14 +4908,10 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
         Container(
           padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: AppBoxDecoration(
-            color: context.createExcursionColors.primary.withValues(
-              alpha: 0.18,
-            ),
+            color: context.createExcursionColors.secondaryContainer,
             borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
-              color: context.createExcursionColors.primary.withValues(
-                alpha: 0.26,
-              ),
+              color: context.createExcursionColors.borderSecondary,
             ),
           ),
           child: Row(
@@ -4933,14 +4919,14 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
             children: [
               Icon(
                 hasPreview ? Icons.refresh_rounded : Icons.file_upload_outlined,
-                color: context.createExcursionColors.primary,
+                color: context.createExcursionColors.secondary,
                 size: compact ? 14 : 15,
               ),
               const SizedBox(width: 6),
               Text(
                 title,
                 style: AppTextStyle(
-                  color: context.createExcursionColors.primary,
+                  color: context.createExcursionColors.secondary,
                   fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w800,
                 ),
@@ -5027,7 +5013,7 @@ class _ItineraryEmptyState extends StatelessWidget {
             borderRadius: AppBorderRadius.circular(20),
             border: Border.all(
               color: errorText == null
-                  ? context.createExcursionColors.white.withValues(alpha: 0.08)
+                  ? context.createExcursionColors.borderSecondary
                   : context.createExcursionColors.danger,
             ),
           ),
@@ -5041,14 +5027,12 @@ class _ItineraryEmptyState extends StatelessWidget {
                   height: 38,
                   alignment: Alignment.center,
                   decoration: AppBoxDecoration(
-                    color: context.createExcursionColors.primary.withValues(
-                      alpha: 0.18,
-                    ),
+                    color: context.createExcursionColors.secondaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.route_rounded,
-                    color: context.createExcursionColors.primary,
+                    color: context.createExcursionColors.secondary,
                     size: 20,
                   ),
                 ),
@@ -5057,7 +5041,7 @@ class _ItineraryEmptyState extends StatelessWidget {
                   child: Text(
                     message,
                     style: AppTextStyle(
-                      color: context.createExcursionColors.primary,
+                      color: context.createExcursionColors.secondary,
                       fontSize: 14,
                       height: 1.35,
                       fontWeight: FontWeight.w700,

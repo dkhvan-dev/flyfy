@@ -278,13 +278,18 @@ class _FeedbackActions extends StatelessWidget {
 
   ButtonStyle _feedbackButtonStyle(BuildContext context, bool selected) {
     final colors = AppDesignSystem.colorsFor(context);
-    final background = selected ? colors.primary : colors.surfaceHigh;
-    final foreground = colors.textPrimary;
+    final background = selected
+        ? colors.secondaryContainer
+        : colors.surfaceHigh;
+    final foreground = selected ? colors.secondary : colors.textPrimary;
     return IconButton.styleFrom(
       backgroundColor: background,
       foregroundColor: foreground,
-      disabledBackgroundColor: selected ? colors.primary : colors.surface,
-      disabledForegroundColor: selected ? colors.textPrimary : colors.textMuted,
+      disabledBackgroundColor: selected
+          ? colors.secondaryContainer
+          : colors.surface,
+      disabledForegroundColor: selected ? colors.secondary : colors.textMuted,
+      side: selected ? BorderSide(color: colors.borderSecondary) : null,
     );
   }
 }

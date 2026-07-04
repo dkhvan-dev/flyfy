@@ -1765,6 +1765,7 @@ class _GuideDashboardStatusFiltersSheetState
           ),
           child: SafeArea(
             top: false,
+            bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1860,9 +1861,7 @@ class _GuideDashboardStatusFiltersSheetState
                         ),
                       ),
                     ),
-                    color: context.guideDashboardColors.black.withValues(
-                      alpha: 0.06,
-                    ),
+                    color: context.guideDashboardColors.transparent,
                   ),
                   child: AppFilterApplyButton(
                     label:

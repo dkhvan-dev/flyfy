@@ -440,7 +440,7 @@ class _TrimRangeSelector extends StatelessWidget {
       decoration: AppBoxDecoration(
         color: colors.scrim.withValues(alpha: 0.48),
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: colors.white.withValues(alpha: 0.14)),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.fromLTRB(14, 10, 14, 8),
@@ -453,7 +453,7 @@ class _TrimRangeSelector extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyle(
-                    color: colors.white,
+                    color: colors.secondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -463,7 +463,7 @@ class _TrimRangeSelector extends StatelessWidget {
                 Text(
                   '${_formatReviewDuration(start)} - ${_formatReviewDuration(end)}',
                   style: AppTextStyle(
-                    color: colors.white.withValues(alpha: 0.76),
+                    color: colors.secondary.withValues(alpha: 0.86),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,

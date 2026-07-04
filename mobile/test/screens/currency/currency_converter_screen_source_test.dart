@@ -71,6 +71,9 @@ void main() {
     final uiSource = source.substring(0, flagStart);
 
     expect(uiSource, contains('AppDesignSystem.colorsFor(context)'));
+    expect(uiSource, contains('colors.secondary'));
+    expect(uiSource, contains('colors.secondaryContainer'));
+    expect(uiSource, contains('colors.borderSecondary'));
     expect(
       uiSource,
       contains("import 'package:inflap/core/ui/app_design_system.dart';"),

@@ -41,12 +41,13 @@ class FeedConversionCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: AppBoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.14),
+                    color: colors.secondaryContainer,
                     borderRadius: AppBorderRadius.circular(8),
+                    border: Border.all(color: colors.borderSecondary),
                   ),
                   child: Padding(
                     padding: const AppEdgeInsets.all(10),
-                    child: Icon(icon, color: colors.primary, size: 22),
+                    child: Icon(icon, color: colors.secondary, size: 22),
                   ),
                 ),
                 const SizedBox(width: 12),

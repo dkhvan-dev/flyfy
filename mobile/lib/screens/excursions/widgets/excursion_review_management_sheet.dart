@@ -151,6 +151,50 @@ class _ReviewActionTile extends StatelessWidget {
   }
 }
 
+class _ExcursionReviewMetadataHint extends StatelessWidget {
+  const _ExcursionReviewMetadataHint({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: colors.secondaryContainer.withValues(
+          alpha: isLight ? 0.68 : 0.34,
+        ),
+        borderRadius: AppBorderRadius.circular(14),
+        border: Border.all(color: colors.borderSecondary),
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.rate_review_outlined, color: colors.secondary, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.myExcursionsReviewRating,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ExcursionReviewEditSheet extends StatefulWidget {
   const _ExcursionReviewEditSheet({required this.review});
 
@@ -218,7 +262,9 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+              _ExcursionReviewMetadataHint(l10n: l10n),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 2,
                 children: List.generate(5, (index) {

@@ -54,6 +54,35 @@ void main() {
   );
 
   test(
+    'discover activities filter keeps the footer close to the bottom safe area',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activities_screen.dart',
+      ).readAsString();
+      final sheetStart = source.indexOf('class _DiscoverFiltersSheetState');
+      final sheetEnd = source.indexOf(
+        'Widget _buildCountrySection()',
+        sheetStart,
+      );
+
+      expect(sheetStart, isNonNegative);
+      expect(sheetEnd, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, sheetEnd);
+
+      expect(sheetSource, contains('footerPadding: 12,'));
+      expect(
+        sheetSource,
+        isNot(contains('footerPadding: 18 + safeBottomInset')),
+      );
+      expect(
+        sheetSource,
+        isNot(contains('MediaQuery.paddingOf(context).bottom')),
+      );
+    },
+  );
+
+  test(
     'discover activities filter uses searchable country before city',
     () async {
       final source = await File(

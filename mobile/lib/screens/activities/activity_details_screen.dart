@@ -1762,22 +1762,16 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       : 326.0;
                   final compact = width < 360;
 
-                  return RefreshIndicator(
-                    onRefresh: _refreshScreen,
-                    color: context.activityDetailsColors.primary,
-                    backgroundColor: context.activityDetailsColors.sheet,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: AppEdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        10,
-                        horizontalPadding,
-                        132 + MediaQuery.paddingOf(context).bottom,
-                      ),
-                      children: [
-                        _DetailsTopBar(
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: AppEdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          10,
+                          horizontalPadding,
+                          0,
+                        ),
+                        child: _DetailsTopBar(
                           title: l10n.activityDetailsTitle,
                           status: formatActivityDisplayStatus(activity, l10n),
                           statusColor: _activityStatusColor(
@@ -1791,202 +1785,229 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             l10n.activityDetailsLinkCopied,
                           ),
                         ),
-                        SizedBox(height: compact ? 12 : 14),
-                        _DetailsHero(
-                          height: heroHeight,
-                          categorySlug: activity.categorySlug,
-                          categoryLabel: categoryLabel,
-                          contextLabel: _resolveHeroContextLabel(
-                            activity: activity,
-                            l10n: l10n,
-                            isOwner: isOwner,
-                            isJoined: isJoined,
-                            occupyingCount: occupyingCount,
-                          ),
-                          imageUrl: resolveActivityCoverUrl(activity),
-                        ),
-                        SizedBox(height: compact ? 14 : 16),
-                        _HeadingSection(
-                          title: activity.title,
-                          description: activity.description,
-                          compact: compact,
-                        ),
-                        if (lifecycleReason.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          _LifecycleReasonCard(
-                            title: lifecycleReasonTitle,
-                            reason: lifecycleReason,
-                            icon: lifecycleReasonIcon,
-                            accentColor: lifecycleReasonColor,
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        _HostCard(
-                          hostName: hostName,
-                          avatarUrl: hostAvatarUrl,
-                          avatarFallbackText: hostAvatarFallback,
-                          activityRating: activity.hostActivityRating,
-                          subtitle: _resolveHostSubtitle(
-                            activity: activity,
-                            l10n: l10n,
-                          ),
-                          onTap: () {
-                            if (isOwner) {
-                              context.push('/profile');
-                              return;
-                            }
-                            final hostUserId = activity.hostUserId.trim();
-                            if (hostUserId.isEmpty) {
-                              unawaited(
-                                showErrorDialog(
-                                  context,
-                                  title: l10n.error,
-                                  message: l10n.profileNotAvailable,
+                      ),
+                      SizedBox(height: compact ? 12 : 14),
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _refreshScreen,
+                          color: context.activityDetailsColors.primary,
+                          backgroundColor: context.activityDetailsColors.sheet,
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            padding: AppEdgeInsets.fromLTRB(
+                              horizontalPadding,
+                              0,
+                              horizontalPadding,
+                              132 + MediaQuery.paddingOf(context).bottom,
+                            ),
+                            children: [
+                              _DetailsHero(
+                                height: heroHeight,
+                                categorySlug: activity.categorySlug,
+                                categoryLabel: categoryLabel,
+                                contextLabel: _resolveHeroContextLabel(
+                                  activity: activity,
+                                  l10n: l10n,
+                                  isOwner: isOwner,
+                                  isJoined: isJoined,
+                                  occupyingCount: occupyingCount,
                                 ),
-                              );
-                              return;
-                            }
-                            context.push(
-                              '/users/$hostUserId/profile',
-                              extra: _resolvedProfiles[hostUserId],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 22),
-                        _ActivityScheduleCard(
-                          activity: activity,
-                          l10n: l10n,
-                          compact: compact,
-                          userTimezone: scheduleUserTimezone,
-                        ),
-                        SizedBox(height: compact ? 10 : 12),
-                        _StatsGrid(
-                          activity: activity,
-                          l10n: l10n,
-                          compact: compact,
-                        ),
-                        if (canPrepareTrip) ...[
-                          const SizedBox(height: 22),
-                          TripPreparationCta(
-                            title: l10n.travelChecklistCtaTitle,
-                            subtitle: l10n.travelChecklistCtaSubtitle,
-                            actionLabel: l10n.travelChecklistOpen,
-                            onTap: () => context.push(
-                              '/travel-checklist',
-                              extra: _activityChecklistRouteArgs(activity),
-                            ),
+                                imageUrl: resolveActivityCoverUrl(activity),
+                              ),
+                              SizedBox(height: compact ? 14 : 16),
+                              _HeadingSection(
+                                title: activity.title,
+                                description: activity.description,
+                                compact: compact,
+                              ),
+                              if (lifecycleReason.isNotEmpty) ...[
+                                const SizedBox(height: 14),
+                                _LifecycleReasonCard(
+                                  title: lifecycleReasonTitle,
+                                  reason: lifecycleReason,
+                                  icon: lifecycleReasonIcon,
+                                  accentColor: lifecycleReasonColor,
+                                ),
+                              ],
+                              const SizedBox(height: 20),
+                              _HostCard(
+                                hostName: hostName,
+                                avatarUrl: hostAvatarUrl,
+                                avatarFallbackText: hostAvatarFallback,
+                                activityRating: activity.hostActivityRating,
+                                subtitle: _resolveHostSubtitle(
+                                  activity: activity,
+                                  l10n: l10n,
+                                ),
+                                onTap: () {
+                                  if (isOwner) {
+                                    context.push('/profile');
+                                    return;
+                                  }
+                                  final hostUserId = activity.hostUserId.trim();
+                                  if (hostUserId.isEmpty) {
+                                    unawaited(
+                                      showErrorDialog(
+                                        context,
+                                        title: l10n.error,
+                                        message: l10n.profileNotAvailable,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  context.push(
+                                    '/users/$hostUserId/profile',
+                                    extra: _resolvedProfiles[hostUserId],
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 22),
+                              _ActivityScheduleCard(
+                                activity: activity,
+                                l10n: l10n,
+                                compact: compact,
+                                userTimezone: scheduleUserTimezone,
+                              ),
+                              SizedBox(height: compact ? 10 : 12),
+                              _StatsGrid(
+                                activity: activity,
+                                l10n: l10n,
+                                compact: compact,
+                              ),
+                              if (canPrepareTrip) ...[
+                                const SizedBox(height: 22),
+                                TripPreparationCta(
+                                  title: l10n.travelChecklistCtaTitle,
+                                  subtitle: l10n.travelChecklistCtaSubtitle,
+                                  actionLabel: l10n.travelChecklistOpen,
+                                  onTap: () => context.push(
+                                    '/travel-checklist',
+                                    extra: _activityChecklistRouteArgs(
+                                      activity,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 22),
+                              ContextualHelpSection(
+                                surface: HelpCenterSurface.activityDetails,
+                                tags: [
+                                  'activities',
+                                  if (activity.isFree) 'rules' else 'payments',
+                                  if (status == 'CANCELLED') 'refunds',
+                                  if (activity.categorySlug.trim().isNotEmpty)
+                                    activity.categorySlug,
+                                ],
+                                userState: isOwner
+                                    ? 'organizer'
+                                    : isJoined
+                                    ? 'joined'
+                                    : 'guest',
+                                supportContext: {
+                                  'activity_id': widget.activityId,
+                                },
+                                onActionSelected: _handleContextualHelpAction,
+                              ),
+                              const SizedBox(height: 22),
+                              _ParticipantsSection(
+                                l10n: l10n,
+                                participants: activeParticipants,
+                                resolvedProfiles: _resolvedProfiles,
+                                currentProfile: session.profile,
+                                compact: compact,
+                                isLoading: _participantsLoading,
+                                loadFailed: _participantsError != null,
+                                onViewAll: activeParticipants.isNotEmpty
+                                    ? () => _showParticipantsSheet(
+                                        activeParticipants,
+                                        l10n,
+                                        activity.hostUserId,
+                                        canInviteFriends,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(height: 8),
+                              _MeetingSection(
+                                activity: activity,
+                                l10n: l10n,
+                                isJoined: isJoined,
+                                isOwner: isOwner,
+                                canShowAttendanceQr: canShowAttendanceQr,
+                                canLeaveActivity: canLeaveActivity,
+                                canCancelActivity: canCancelActivity,
+                                canExtendActivity: canExtendActivity,
+                                canCompleteActivity: canCompleteActivity,
+                                isLeaving:
+                                    provider.actionState ==
+                                        ActivityActionState.loading &&
+                                    _pendingAction == _FooterAction.leave,
+                                isExtending30:
+                                    provider.actionState ==
+                                        ActivityActionState.loading &&
+                                    _pendingAction == _FooterAction.extend30,
+                                isExtending60:
+                                    provider.actionState ==
+                                        ActivityActionState.loading &&
+                                    _pendingAction == _FooterAction.extend60,
+                                isCompleting:
+                                    provider.actionState ==
+                                        ActivityActionState.loading &&
+                                    _pendingAction == _FooterAction.complete,
+                                isCancelling:
+                                    provider.actionState ==
+                                        ActivityActionState.loading &&
+                                    _pendingAction == _FooterAction.cancel,
+                                isBuildingRoute: _isBuildingMeetingRoute,
+                                onLeaveTap: _handleLeave,
+                                onExtend30Tap: () => _handleExtend(30),
+                                onExtend60Tap: () => _handleExtend(60),
+                                onCompleteTap: () =>
+                                    _handleCompleteNow(activity),
+                                onCancelTap: _handleCancel,
+                                onShowAttendanceQrTap: () {
+                                  context.push(
+                                    '/activities/${activity.id}/attendance-qr',
+                                  );
+                                },
+                                onActionTap: () => unawaited(
+                                  _handleMeetingAction(
+                                    activity,
+                                    canUseMeetingLink: isJoined || isOwner,
+                                  ),
+                                ),
+                              ),
+                              if (showReviewsSection) ...[
+                                const SizedBox(height: 22),
+                                _ActivityReviewsSection(
+                                  activityReviews: _activityReviews,
+                                  organizerReviews: _organizerReviews,
+                                  isLoading: _reviewsLoading,
+                                  loadFailed: _reviewsError != null,
+                                  canWriteReview: canWriteActivityReview,
+                                  isSavingReview: _isSavingReviews,
+                                  hasMyReview:
+                                      _myActivityReview(currentUserId) !=
+                                          null ||
+                                      _myOrganizerReview(currentUserId) != null,
+                                  onWriteReviewTap: canWriteActivityReview
+                                      ? () => _openActivityReviewsSheet(
+                                          activity: activity,
+                                          currentUserId: currentUserId,
+                                          canWriteReview:
+                                              canWriteActivityReview,
+                                          allowOrganizerReview:
+                                              canWriteOrganizerReview,
+                                        )
+                                      : null,
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                        const SizedBox(height: 22),
-                        ContextualHelpSection(
-                          surface: HelpCenterSurface.activityDetails,
-                          tags: [
-                            'activities',
-                            if (activity.isFree) 'rules' else 'payments',
-                            if (status == 'CANCELLED') 'refunds',
-                            if (activity.categorySlug.trim().isNotEmpty)
-                              activity.categorySlug,
-                          ],
-                          userState: isOwner
-                              ? 'organizer'
-                              : isJoined
-                              ? 'joined'
-                              : 'guest',
-                          supportContext: {'activity_id': widget.activityId},
-                          onActionSelected: _handleContextualHelpAction,
                         ),
-                        const SizedBox(height: 22),
-                        _ParticipantsSection(
-                          l10n: l10n,
-                          participants: activeParticipants,
-                          resolvedProfiles: _resolvedProfiles,
-                          currentProfile: session.profile,
-                          compact: compact,
-                          isLoading: _participantsLoading,
-                          loadFailed: _participantsError != null,
-                          onViewAll: activeParticipants.isNotEmpty
-                              ? () => _showParticipantsSheet(
-                                  activeParticipants,
-                                  l10n,
-                                  activity.hostUserId,
-                                  canInviteFriends,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 8),
-                        _MeetingSection(
-                          activity: activity,
-                          l10n: l10n,
-                          isJoined: isJoined,
-                          isOwner: isOwner,
-                          canShowAttendanceQr: canShowAttendanceQr,
-                          canLeaveActivity: canLeaveActivity,
-                          canCancelActivity: canCancelActivity,
-                          canExtendActivity: canExtendActivity,
-                          canCompleteActivity: canCompleteActivity,
-                          isLeaving:
-                              provider.actionState ==
-                                  ActivityActionState.loading &&
-                              _pendingAction == _FooterAction.leave,
-                          isExtending30:
-                              provider.actionState ==
-                                  ActivityActionState.loading &&
-                              _pendingAction == _FooterAction.extend30,
-                          isExtending60:
-                              provider.actionState ==
-                                  ActivityActionState.loading &&
-                              _pendingAction == _FooterAction.extend60,
-                          isCompleting:
-                              provider.actionState ==
-                                  ActivityActionState.loading &&
-                              _pendingAction == _FooterAction.complete,
-                          isCancelling:
-                              provider.actionState ==
-                                  ActivityActionState.loading &&
-                              _pendingAction == _FooterAction.cancel,
-                          isBuildingRoute: _isBuildingMeetingRoute,
-                          onLeaveTap: _handleLeave,
-                          onExtend30Tap: () => _handleExtend(30),
-                          onExtend60Tap: () => _handleExtend(60),
-                          onCompleteTap: () => _handleCompleteNow(activity),
-                          onCancelTap: _handleCancel,
-                          onShowAttendanceQrTap: () {
-                            context.push(
-                              '/activities/${activity.id}/attendance-qr',
-                            );
-                          },
-                          onActionTap: () => unawaited(
-                            _handleMeetingAction(
-                              activity,
-                              canUseMeetingLink: isJoined || isOwner,
-                            ),
-                          ),
-                        ),
-                        if (showReviewsSection) ...[
-                          const SizedBox(height: 22),
-                          _ActivityReviewsSection(
-                            activityReviews: _activityReviews,
-                            organizerReviews: _organizerReviews,
-                            isLoading: _reviewsLoading,
-                            loadFailed: _reviewsError != null,
-                            canWriteReview: canWriteActivityReview,
-                            isSavingReview: _isSavingReviews,
-                            hasMyReview:
-                                _myActivityReview(currentUserId) != null ||
-                                _myOrganizerReview(currentUserId) != null,
-                            onWriteReviewTap: canWriteActivityReview
-                                ? () => _openActivityReviewsSheet(
-                                    activity: activity,
-                                    currentUserId: currentUserId,
-                                    canWriteReview: canWriteActivityReview,
-                                    allowOrganizerReview:
-                                        canWriteOrganizerReview,
-                                  )
-                                : null,
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -6576,25 +6597,8 @@ class _DetailsActionBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Container(
+      child: Padding(
         padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 10),
-        decoration: AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              context.activityDetailsColors.surfaceWarm,
-              context.activityDetailsColors.background,
-            ],
-          ),
-          border: Border(
-            top: BorderSide(
-              color: context.activityDetailsColors.white.withValues(
-                alpha: 0.08,
-              ),
-            ),
-          ),
-        ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final stackVertically =

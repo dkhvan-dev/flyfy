@@ -222,7 +222,7 @@ class _UserRouteCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.route_rounded, color: colors.primary),
+                  Icon(Icons.route_rounded, color: colors.secondary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -412,9 +412,9 @@ class _VisibilityBadge extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.primarySoft,
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: colors.borderPrimary),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -423,7 +423,7 @@ class _VisibilityBadge extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: colors.primary,
+            color: colors.secondary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -444,23 +444,23 @@ class _RouteMetaChip extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.surfaceRaised,
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: colors.borderSoft),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: colors.primary),
+            Icon(icon, size: 15, color: colors.secondary),
             const SizedBox(width: 5),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: colors.textSecondary,
+                color: colors.secondary,
                 fontWeight: FontWeight.w700,
               ),
             ),

@@ -179,7 +179,7 @@ class _BlockOptionTile extends StatelessWidget {
           decoration: AppBoxDecoration(
             color: colors.surfaceRaised,
             borderRadius: radius,
-            border: Border.all(color: colors.borderPrimary),
+            border: Border.all(color: colors.borderSecondary),
           ),
           child: Padding(
             padding: AppEdgeInsets.symmetric(
@@ -193,12 +193,12 @@ class _BlockOptionTile extends StatelessWidget {
                   height: adaptive.scale(42),
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: colors.primary.withValues(alpha: 0.13),
-                    border: Border.all(color: colors.borderPrimary),
+                    color: colors.secondaryContainer,
+                    border: Border.all(color: colors.borderSecondary),
                   ),
                   child: Icon(
                     option.icon,
-                    color: colors.primary,
+                    color: colors.secondary,
                     size: adaptive.scale(21),
                   ),
                 ),

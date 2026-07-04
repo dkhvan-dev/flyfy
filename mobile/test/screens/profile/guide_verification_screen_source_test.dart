@@ -12,6 +12,9 @@ void main() {
     expect(source, contains('app_design_system.dart'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('guideColors.primary'));
+    expect(source, contains('guideColors.secondary'));
+    expect(source, contains('guideColors.secondaryContainer'));
+    expect(source, contains('guideColors.borderSecondary'));
     expect(source, contains('guideColors.textPrimary'));
     expect(source, isNot(contains('AppPalette.')));
   });
@@ -171,7 +174,10 @@ void main() {
         checkoutEnd,
       );
 
-      expect(checkoutSource, contains('backgroundColor: AppPalette.primary'));
+      expect(
+        checkoutSource,
+        contains('backgroundColor: context.excursionDetailsColors.primary'),
+      );
       expect(source, contains('excursionAmberStatusGradientColors'));
       expect(
         source,

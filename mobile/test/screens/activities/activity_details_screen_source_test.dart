@@ -224,6 +224,33 @@ void main() {
     expect(sectionSource, contains('BoxShadow('));
   });
 
+  test(
+    'activity details header stays outside scroll content like excursion details',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final bodyStart = source.indexOf(
+        'bottomNavigationBar: _DetailsActionBar',
+      );
+      final topBarStart = source.indexOf('_DetailsTopBar(', bodyStart);
+      final refreshStart = source.indexOf('RefreshIndicator(', bodyStart);
+      final listViewStart = source.indexOf('ListView(', bodyStart);
+      final heroStart = source.indexOf('_DetailsHero(', bodyStart);
+
+      expect(bodyStart, isNonNegative);
+      expect(topBarStart, greaterThan(bodyStart));
+      expect(refreshStart, greaterThan(bodyStart));
+      expect(listViewStart, greaterThan(refreshStart));
+      expect(heroStart, greaterThan(listViewStart));
+      expect(topBarStart, lessThan(refreshStart));
+
+      final scrollIntro = source.substring(listViewStart, heroStart);
+      expect(scrollIntro, isNot(contains('_DetailsTopBar(')));
+    },
+  );
+
   test('details screen does not look up providers from dispose', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',
@@ -429,6 +456,32 @@ void main() {
       isNot(contains('activity.isFree\n        ? l10n.freeLabel')),
     );
   });
+
+  test(
+    'details footer leaves page content visible behind edit action',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final actionBarStart = source.indexOf('class _DetailsActionBar');
+      final priceBlockStart = source.indexOf('class _FooterPriceBlock');
+      expect(actionBarStart, isNonNegative);
+      expect(priceBlockStart, greaterThan(actionBarStart));
+
+      final actionBarSource = source.substring(actionBarStart, priceBlockStart);
+
+      expect(actionBarSource, contains('return SafeArea('));
+      expect(actionBarSource, contains('child: Padding('));
+      expect(
+        actionBarSource,
+        contains('padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 10)'),
+      );
+      expect(actionBarSource, isNot(contains('child: Container(')));
+      expect(actionBarSource, isNot(contains('gradient: LinearGradient(')));
+      expect(actionBarSource, isNot(contains('border: Border(')));
+    },
+  );
 
   test(
     'details screen shows reviews section only for completed activities',

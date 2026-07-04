@@ -1201,6 +1201,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
     final colors = AppDesignSystem.colorsFor(context);
 
     return AppModalSheetFrame(
+      onTapOutside: () => Navigator.of(context).maybePop(),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.82,
@@ -1626,6 +1627,7 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
     final colors = AppDesignSystem.colorsFor(context);
 
     return AppModalSheetFrame(
+      onTapOutside: () => Navigator.of(context).maybePop(),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.72,

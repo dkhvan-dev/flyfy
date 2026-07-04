@@ -160,9 +160,9 @@ class _TrustStatusBannerColors {
         foreground: colors.textSecondary,
       ),
       TrustStatusBannerKind.pendingAppeal => _TrustStatusBannerColors(
-        background: colors.primary.withValues(alpha: 0.12),
-        border: colors.primary.withValues(alpha: 0.42),
-        foreground: colors.primary,
+        background: colors.secondaryContainer,
+        border: colors.borderSecondary,
+        foreground: colors.secondary,
       ),
       TrustStatusBannerKind.rejected => _TrustStatusBannerColors(
         background: colors.warning.withValues(alpha: 0.12),

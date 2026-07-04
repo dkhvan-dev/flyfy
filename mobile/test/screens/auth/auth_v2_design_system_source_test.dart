@@ -59,6 +59,41 @@ void main() {
     expect(buttonSource, contains('color: contentColor'));
   });
 
+  test('auth neutral and oauth surfaces use secondary v2 accents', () async {
+    final loginSource = await File(
+      'lib/screens/auth/login_screen.dart',
+    ).readAsString();
+    final resetSource = await File(
+      'lib/screens/auth/password_reset_screen.dart',
+    ).readAsString();
+
+    final oauthStart = loginSource.indexOf('class _OAuthButton');
+    expect(oauthStart, isNonNegative);
+    final oauthSource = loginSource.substring(oauthStart);
+
+    expect(
+      oauthSource,
+      contains('AppPalette.secondary.withValues(alpha: 0.32)'),
+    );
+    expect(oauthSource, contains('Icon(icon, color: AppPalette.secondary'));
+    expect(
+      oauthSource,
+      matches(
+        RegExp(r'AlwaysStoppedAnimation<Color>\([\s\S]*?AppPalette\.secondary'),
+      ),
+    );
+
+    final noticeStart = resetSource.indexOf('class _NoticeText');
+    final fieldStart = resetSource.indexOf('class _ResetTextField');
+    expect(noticeStart, isNonNegative);
+    expect(fieldStart, greaterThan(noticeStart));
+    final noticeSource = resetSource.substring(noticeStart, fieldStart);
+
+    expect(noticeSource, contains('context.appColors.secondaryContainer'));
+    expect(noticeSource, contains('context.appColors.borderSecondary'));
+    expect(noticeSource, isNot(contains('AppPalette.primary.withValues')));
+  });
+
   test('auth background keeps a scenic image under the v2 overlay', () async {
     final source = await File(
       'lib/screens/auth/login_screen.dart',

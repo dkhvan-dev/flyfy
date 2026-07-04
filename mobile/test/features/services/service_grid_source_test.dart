@@ -68,6 +68,23 @@ void main() {
     expect(source, isNot(contains('? style.highlightColor')));
   });
 
+  test('service tiles do not render secondary availability dots', () async {
+    final source = await File(
+      'lib/features/services/widgets/service_grid.dart',
+    ).readAsString();
+
+    final tileStart = source.indexOf('class _ServiceTile');
+    expect(tileStart, isNonNegative);
+
+    final tileSource = source.substring(tileStart);
+
+    expect(source, isNot(contains('availableStatusColor')));
+    expect(source, isNot(contains('availableStatusBackgroundColor')));
+    expect(tileSource, isNot(contains('BoxShape.circle')));
+    expect(tileSource, isNot(contains('Positioned(')));
+    expect(tileSource, isNot(contains('style.availableStatusColor')));
+  });
+
   test(
     'service grid defaults to adaptive v2 colors without legacy palette',
     () async {

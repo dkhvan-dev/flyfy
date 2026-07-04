@@ -89,6 +89,57 @@ void main() {
   );
 
   test(
+    'place details uses secondary accents for map, route, and distance metadata',
+    () async {
+      final source = await File(
+        'lib/screens/places/place_details_screen.dart',
+      ).readAsString();
+
+      final locationStart = source.indexOf('Widget _buildLocationBlock');
+      final statsStart = source.indexOf('Widget _buildStats');
+      final accessOptionStart = source.indexOf('class _AccessOptionCard');
+      final accessOptionEnd = source.indexOf(
+        'class _RecommendedItemChip',
+        accessOptionStart,
+      );
+      final ctaStart = source.indexOf('Widget _buildBottomCta');
+
+      expect(locationStart, isNonNegative);
+      expect(statsStart, greaterThan(locationStart));
+      expect(accessOptionStart, isNonNegative);
+      expect(accessOptionEnd, greaterThan(accessOptionStart));
+      expect(ctaStart, isNonNegative);
+
+      final locationSource = source.substring(locationStart, statsStart);
+      final accessOptionSource = source.substring(
+        accessOptionStart,
+        accessOptionEnd,
+      );
+      final ctaSource = source.substring(ctaStart);
+
+      expect(
+        locationSource,
+        contains('context.placeColors.secondaryContainer'),
+      );
+      expect(locationSource, contains('context.placeColors.secondary'));
+      expect(locationSource, contains('context.placeColors.borderSecondary'));
+      expect(
+        locationSource,
+        isNot(contains('context.placeColors.primary.withValues(alpha: 0.14)')),
+      );
+      expect(accessOptionSource, contains('context.placeColors.secondary'));
+      expect(
+        accessOptionSource,
+        isNot(contains('color: context.placeColors.primary,')),
+      );
+      expect(
+        ctaSource,
+        contains('backgroundColor: context.placeColors.primary'),
+      );
+    },
+  );
+
+  test(
     'place details content starts with a visible divider after hero',
     () async {
       final source = await File(

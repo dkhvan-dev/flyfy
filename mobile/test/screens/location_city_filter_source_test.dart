@@ -20,6 +20,34 @@ void main() {
   );
 
   test(
+    'shared country and city filters use secondary for neutral location context',
+    () async {
+      final source = await File(
+        'lib/shared/widgets/app_city_filter_section.dart',
+      ).readAsString();
+
+      final countryStart = source.indexOf('class AppCountryFilterSection');
+      final cityStart = source.indexOf('class AppCityFilterSection');
+      final optionRowsStart = source.indexOf('class _CountryOptionRow');
+
+      expect(countryStart, isNonNegative);
+      expect(cityStart, greaterThan(countryStart));
+      expect(optionRowsStart, greaterThan(cityStart));
+
+      final countrySource = source.substring(countryStart, cityStart);
+      final citySource = source.substring(cityStart, optionRowsStart);
+
+      expect(countrySource, contains('Icons.flag_rounded'));
+      expect(countrySource, contains('color: colors.secondary'));
+      expect(countrySource, contains('colors.borderSecondary'));
+      expect(citySource, contains('Icons.location_city_rounded'));
+      expect(citySource, contains('color: colors.secondary'));
+      expect(citySource, contains('colors.borderSecondary'));
+      expect(citySource, contains('color: colors.primary'));
+    },
+  );
+
+  test(
     'discover filters default to effective or selected current location city',
     () async {
       final files = {

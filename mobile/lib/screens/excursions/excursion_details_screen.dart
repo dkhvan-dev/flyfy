@@ -131,6 +131,45 @@ extension _ExcursionDetailsColorContext on BuildContext {
       _ExcursionDetailsColors.of(this);
 }
 
+double _excursionDetailsUiScale(BuildContext context) {
+  final mediaQuery = MediaQuery.of(context);
+  final shortSide = mediaQuery.size.shortestSide;
+  final height = mediaQuery.size.height;
+
+  double scale;
+  if (shortSide <= 320) {
+    scale = 0.82;
+  } else if (shortSide <= 360) {
+    scale = 0.86;
+  } else if (shortSide <= 390) {
+    scale = 0.9;
+  } else if (shortSide >= 430) {
+    scale = 0.96;
+  } else {
+    scale = 0.93;
+  }
+
+  if (height < 700) {
+    scale *= 0.96;
+  } else if (height > 920) {
+    scale *= 1.02;
+  }
+
+  return scale.clamp(0.8, 1.0);
+}
+
+double _excursionDetailsScaled(
+  BuildContext context,
+  double value, {
+  double? min,
+  double? max,
+}) {
+  final scaled = value * _excursionDetailsUiScale(context);
+  final lower = min ?? 0;
+  final upper = max ?? double.infinity;
+  return scaled.clamp(lower, upper);
+}
+
 class ExcursionDetailsScreen extends StatefulWidget {
   const ExcursionDetailsScreen({
     super.key,
@@ -1025,120 +1064,139 @@ class ExcursionDetailsContent extends StatelessWidget {
           ],
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          SafeArea(
-            bottom: false,
-            child: _ExcursionDetailsTopBar(
-              onBackTap: onBackTap,
-              onNotificationsTap: onNotificationsTap,
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const AppEdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ExcursionHero(
-                    excursion: excursion,
-                    selectedOffer: activeSelectedOffer,
-                    localizedLandmark: localizedLandmark,
+          Column(
+            children: [
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const AppEdgeInsets.fromLTRB(24, 10, 24, 0),
+                  child: _ExcursionDetailsTopBar(
+                    onBackTap: onBackTap,
+                    onNotificationsTap: onNotificationsTap,
                   ),
-                  Padding(
-                    padding: const AppEdgeInsets.fromLTRB(24, 26, 24, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _ExcursionStatsGrid(
-                          excursion: excursion,
-                          selectedOffer: activeSelectedOffer,
-                        ),
-                        const SizedBox(height: 24),
-                        TripPreparationCta(
-                          title: l10n.travelChecklistCtaTitle,
-                          subtitle: l10n.travelChecklistCtaSubtitle,
-                          actionLabel: activeChecklistBooking == null
-                              ? l10n.travelChecklistPreviewAction
-                              : l10n.travelChecklistOpen,
-                          onTap: activeChecklistBooking == null
-                              ? (onChecklistPreviewTap ?? onBookTap)
-                              : (onFullChecklistTap ?? onBookTap),
-                        ),
-                        if (helpCenterApi != null) ...[
-                          const SizedBox(height: 24),
-                          ContextualHelpSection(
-                            api: helpCenterApi,
-                            surface: HelpCenterSurface.excursionDetails,
-                            tags: [
-                              'excursions',
-                              'guides',
-                              if (showCheckoutPrice) 'payments',
-                              if ((excursion.categorySlug ?? '')
-                                  .trim()
-                                  .isNotEmpty)
-                                excursion.categorySlug!.trim(),
-                            ],
-                            userState: showMessageGuide ? 'traveler' : 'guide',
-                            supportContext: {'excursion_id': excursion.id},
-                            onActionSelected: onHelpActionSelected,
-                          ),
-                        ],
-                        const SizedBox(height: 40),
-                        _ExcursionExperienceSection(
-                          excursion: excursion,
-                          localizedLandmark: localizedLandmark,
-                        ),
-                        const SizedBox(height: 44),
-                        _ExcursionOffersSection(
-                          excursion: excursion,
-                          offers: visibleOffers,
-                          selectedOffer: selectedOffer,
-                          currentUserId: currentUserId,
-                          isCurrentUserGuide: isCurrentUserGuide,
-                          enableRemoteOffers: enableRemoteOffers,
-                          offerProfiles: offerProfiles,
-                          showMessageGuide: showMessageGuide,
-                          isMessageGuideLoading: isMessageGuideLoading,
-                          onOfferSelected: onOfferSelected,
-                          onOfferProfileTap: onOfferProfileTap,
-                          onMessageGuideTap: onMessageGuideTap,
-                          onOffersChanged: onOffersChanged,
-                        ),
-                        if (activeSelectedOffer != null &&
-                            activeSelectedOffer.includedItems.isNotEmpty) ...[
-                          const SizedBox(height: 44),
-                          _ExcursionSelectedOfferIncludedSection(
-                            selectedOffer: activeSelectedOffer,
-                          ),
-                        ],
-                        const SizedBox(height: 44),
-                        _ExcursionMapPreview(
-                          excursion: excursion,
-                          isBuildingRoute: isBuildingRoute,
-                          onRoutePreviewTap: onRoutePreviewTap,
-                        ),
-                        const SizedBox(height: 44),
-                        _ExcursionItinerarySection(
-                          excursion: excursion,
-                          localizedLandmark: localizedLandmark,
-                        ),
-                        if (excursionReviews.isNotEmpty) ...[
-                          const SizedBox(height: 44),
-                          _ExcursionReviewsSection(
-                            reviews: excursionReviews,
-                            currentUserId: currentUserId,
-                            onReviewLongPress: onReviewLongPress,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              SizedBox(
+                height: _excursionDetailsScaled(context, 14, min: 12, max: 16),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: AppEdgeInsets.only(
+                    bottom: bottomAction == null
+                        ? 24
+                        : 132 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ExcursionHero(
+                        excursion: excursion,
+                        selectedOffer: activeSelectedOffer,
+                        localizedLandmark: localizedLandmark,
+                      ),
+                      Padding(
+                        padding: const AppEdgeInsets.fromLTRB(24, 26, 24, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _ExcursionStatsGrid(
+                              excursion: excursion,
+                              selectedOffer: activeSelectedOffer,
+                            ),
+                            const SizedBox(height: 24),
+                            TripPreparationCta(
+                              title: l10n.travelChecklistCtaTitle,
+                              subtitle: l10n.travelChecklistCtaSubtitle,
+                              actionLabel: activeChecklistBooking == null
+                                  ? l10n.travelChecklistPreviewAction
+                                  : l10n.travelChecklistOpen,
+                              onTap: activeChecklistBooking == null
+                                  ? (onChecklistPreviewTap ?? onBookTap)
+                                  : (onFullChecklistTap ?? onBookTap),
+                            ),
+                            if (helpCenterApi != null) ...[
+                              const SizedBox(height: 24),
+                              ContextualHelpSection(
+                                api: helpCenterApi,
+                                surface: HelpCenterSurface.excursionDetails,
+                                tags: [
+                                  'excursions',
+                                  'guides',
+                                  if (showCheckoutPrice) 'payments',
+                                  if ((excursion.categorySlug ?? '')
+                                      .trim()
+                                      .isNotEmpty)
+                                    excursion.categorySlug!.trim(),
+                                ],
+                                userState: showMessageGuide
+                                    ? 'traveler'
+                                    : 'guide',
+                                supportContext: {'excursion_id': excursion.id},
+                                onActionSelected: onHelpActionSelected,
+                              ),
+                            ],
+                            const SizedBox(height: 40),
+                            _ExcursionExperienceSection(
+                              excursion: excursion,
+                              localizedLandmark: localizedLandmark,
+                            ),
+                            const SizedBox(height: 44),
+                            _ExcursionOffersSection(
+                              excursion: excursion,
+                              offers: visibleOffers,
+                              selectedOffer: selectedOffer,
+                              currentUserId: currentUserId,
+                              isCurrentUserGuide: isCurrentUserGuide,
+                              enableRemoteOffers: enableRemoteOffers,
+                              offerProfiles: offerProfiles,
+                              showMessageGuide: showMessageGuide,
+                              isMessageGuideLoading: isMessageGuideLoading,
+                              onOfferSelected: onOfferSelected,
+                              onOfferProfileTap: onOfferProfileTap,
+                              onMessageGuideTap: onMessageGuideTap,
+                              onOffersChanged: onOffersChanged,
+                            ),
+                            if (activeSelectedOffer != null &&
+                                activeSelectedOffer
+                                    .includedItems
+                                    .isNotEmpty) ...[
+                              const SizedBox(height: 44),
+                              _ExcursionSelectedOfferIncludedSection(
+                                selectedOffer: activeSelectedOffer,
+                              ),
+                            ],
+                            const SizedBox(height: 44),
+                            _ExcursionMapPreview(
+                              excursion: excursion,
+                              isBuildingRoute: isBuildingRoute,
+                              onRoutePreviewTap: onRoutePreviewTap,
+                            ),
+                            const SizedBox(height: 44),
+                            _ExcursionItinerarySection(
+                              excursion: excursion,
+                              localizedLandmark: localizedLandmark,
+                            ),
+                            if (excursionReviews.isNotEmpty) ...[
+                              const SizedBox(height: 44),
+                              _ExcursionReviewsSection(
+                                reviews: excursionReviews,
+                                currentUserId: currentUserId,
+                                onReviewLongPress: onReviewLongPress,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          ?bottomAction,
+          if (bottomAction != null)
+            Positioned(left: 0, right: 0, bottom: 0, child: bottomAction),
         ],
       ),
     );
@@ -1164,46 +1222,53 @@ class _ExcursionDetailsTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 360;
+    final sideSpacing = _excursionDetailsScaled(
+      context,
+      compact ? 10 : 12,
+      min: 8,
+    );
+    final titleFontSize =
+        (compact ? 16 : 18) * _excursionDetailsUiScale(context);
+    final actionSide = _excursionDetailsScaled(context, 40, min: 36, max: 44);
+    final actionIconSize = _excursionDetailsScaled(
+      context,
+      20,
+      min: 18,
+      max: 22,
+    );
 
-    return DecoratedBox(
-      decoration: AppBoxDecoration(
-        color: context.excursionDetailsColors.warmInk60.withValues(alpha: 0.96),
-      ),
-      child: SizedBox(
-        height: 62,
-        child: Padding(
-          padding: const AppEdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              _CircleIconButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onTap: onBackTap,
-              ),
-              Expanded(
-                child: Text(
-                  l10n.excursionDetailsTitle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyle(
-                    color: context.excursionDetailsColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-              AppNotificationHeaderButton(
-                tooltip: l10n.placeNotificationsTooltip,
-                onTap: onNotificationsTap,
-                size: 48,
-                iconSize: 21,
-              ),
-            ],
+    return Row(
+      children: [
+        _CircleIconButton(
+          icon: Icons.arrow_back_ios_new_rounded,
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onTap: onBackTap,
+        ),
+        SizedBox(width: sideSpacing),
+        Expanded(
+          child: Text(
+            l10n.excursionDetailsTitle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.textPrimary,
+              fontSize: titleFontSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
           ),
         ),
-      ),
+        SizedBox(width: sideSpacing),
+        AppNotificationHeaderButton(
+          tooltip: l10n.placeNotificationsTooltip,
+          onTap: onNotificationsTap,
+          size: actionSide,
+          iconSize: actionIconSize,
+        ),
+      ],
     );
   }
 }
@@ -1221,6 +1286,9 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final side = _excursionDetailsScaled(context, 40, min: 36, max: 44);
+    final iconSize = _excursionDetailsScaled(context, 20, min: 18, max: 22);
+
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -1229,16 +1297,13 @@ class _CircleIconButton extends StatelessWidget {
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Ink(
-            width: 48,
-            height: 48,
-            decoration: AppBoxDecoration(
-              color: context.excursionDetailsColors.transparent,
-              shape: BoxShape.circle,
-            ),
+            width: side,
+            height: side,
+            decoration: AppBoxDecoration(shape: BoxShape.circle),
             child: Icon(
               icon,
               color: context.excursionDetailsColors.textPrimary,
-              size: 21,
+              size: iconSize,
             ),
           ),
         ),
@@ -4619,106 +4684,94 @@ class _ExcursionCheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
 
-    return DecoratedBox(
-      decoration: AppBoxDecoration(
-        color: context.excursionDetailsColors.warmInk59.withValues(alpha: 0.97),
-        border: Border(
-          top: BorderSide(
-            color: context.excursionDetailsColors.white.withValues(alpha: 0.06),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: AppEdgeInsets.fromLTRB(14, 13, 14, math.max(13, safeBottom)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  if (showPrice) ...[
-                    SizedBox(
-                      width: 96,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.excursionDetailsTotal.toUpperCase(),
-                            style: AppTextStyle(
-                              color:
-                                  context.excursionDetailsColors.orangeSoft10,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
-                            ),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const AppEdgeInsets.fromLTRB(14, 13, 14, 13),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                if (showPrice) ...[
+                  SizedBox(
+                    width: 96,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.excursionDetailsTotal.toUpperCase(),
+                          style: AppTextStyle(
+                            color: context.excursionDetailsColors.orangeSoft10,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatPrice(context, excursion),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyle(
-                              color: context.excursionDetailsColors.primary,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                              height: 1,
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatPrice(context, excursion),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyle(
+                            color: context.excursionDetailsColors.primary,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                  ],
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: onTap,
-                      iconAlignment: IconAlignment.end,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(58),
-                        backgroundColor: context.excursionDetailsColors.primary,
-                        foregroundColor:
-                            context.excursionDetailsColors.textPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppBorderRadius.circular(15),
                         ),
-                      ),
-                      icon: Icon(icon, size: 16),
-                      label: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 18),
                 ],
-              ),
-              if ((helperText ?? '').trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    helperText!,
-                    textAlign: TextAlign.right,
-                    maxLines: 3,
-                    style: AppTextStyle(
-                      color: context.excursionDetailsColors.orangeSoft10,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onTap,
+                    iconAlignment: IconAlignment.end,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(58),
+                      backgroundColor: context.excursionDetailsColors.primary,
+                      foregroundColor:
+                          context.excursionDetailsColors.textPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppBorderRadius.circular(15),
+                      ),
+                    ),
+                    icon: Icon(icon, size: 16),
+                    label: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
               ],
+            ),
+            if ((helperText ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  helperText!,
+                  textAlign: TextAlign.right,
+                  maxLines: 3,
+                  style: AppTextStyle(
+                    color: context.excursionDetailsColors.orangeSoft10,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

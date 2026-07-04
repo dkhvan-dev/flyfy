@@ -376,7 +376,7 @@ class _GuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: colors.primary.withValues(alpha: 0.16),
+                backgroundColor: colors.secondaryContainer,
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
@@ -384,7 +384,7 @@ class _GuideReviewCard extends StatelessWidget {
                     ? Text(
                         _reviewInitial(authorName),
                         style: AppTextStyle(
-                          color: colors.primary,
+                          color: colors.secondary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -411,7 +411,7 @@ class _GuideReviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
-                        color: colors.textSecondary,
+                        color: colors.secondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -437,14 +437,7 @@ class _GuideReviewCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          Text(
-            dateText,
-            style: AppTextStyle(
-              color: colors.textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          _GuideReviewDateChip(label: dateText),
         ],
       ),
     );
@@ -483,7 +476,7 @@ class _DirectGuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: colors.primary.withValues(alpha: 0.16),
+                backgroundColor: colors.secondaryContainer,
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
@@ -491,7 +484,7 @@ class _DirectGuideReviewCard extends StatelessWidget {
                     ? Text(
                         _reviewInitial(authorName),
                         style: AppTextStyle(
-                          color: colors.primary,
+                          color: colors.secondary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -528,15 +521,42 @@ class _DirectGuideReviewCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          Text(
-            dateText,
-            style: AppTextStyle(
-              color: colors.textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          _GuideReviewDateChip(label: dateText),
         ],
+      ),
+    );
+  }
+}
+
+class _GuideReviewDateChip extends StatelessWidget {
+  const _GuideReviewDateChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: Color.alphaBlend(
+          colors.secondaryContainer.withValues(alpha: isLight ? 0.44 : 0.22),
+          colors.surface,
+        ),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.borderSecondary),
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        child: Text(
+          label,
+          style: AppTextStyle(
+            color: colors.secondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
   }
@@ -600,7 +620,7 @@ class _GuideReviewsInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: colors.primary, size: 30),
+          Icon(icon, color: colors.secondary, size: 30),
           const SizedBox(height: 12),
           Text(
             title,

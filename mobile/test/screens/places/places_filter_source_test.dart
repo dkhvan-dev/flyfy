@@ -113,6 +113,47 @@ void main() {
     expect(sheetSource, isNot(contains('RangeValues(2.0, 8.0)')));
   });
 
+  test(
+    'places filter range hints use secondary while selected controls stay primary',
+    () async {
+      final sheetSource = await File(
+        'lib/screens/places/places_filter_sheet.dart',
+      ).readAsString();
+
+      final rangeStart = sheetSource.indexOf('Widget _buildRangeSection');
+      final priceStart = sheetSource.indexOf('Widget _buildPriceSection');
+      final chipStart = sheetSource.indexOf('class _PillChip');
+      final ratingStart = sheetSource.indexOf('class _RatingPill');
+
+      expect(rangeStart, isNonNegative);
+      expect(priceStart, greaterThan(rangeStart));
+      expect(chipStart, greaterThan(priceStart));
+      expect(ratingStart, greaterThan(chipStart));
+
+      final rangeSource = sheetSource.substring(rangeStart, priceStart);
+      final selectedChipSource = sheetSource.substring(chipStart, ratingStart);
+
+      expect(
+        rangeSource,
+        contains('color: AppDesignSystem.colorsFor(context).secondary'),
+      );
+      expect(
+        rangeSource,
+        contains(
+          'activeTrackColor: AppDesignSystem.colorsFor(context).primary',
+        ),
+      );
+      expect(
+        rangeSource,
+        contains('thumbColor: AppDesignSystem.colorsFor(context).primary'),
+      );
+      expect(
+        selectedChipSource,
+        contains('color: selected ? colors.primary : colors.surfaceRaised'),
+      );
+    },
+  );
+
   test('places filter sheet uses full-width mobile chrome', () async {
     final sheetSource = await File(
       'lib/screens/places/places_filter_sheet.dart',
@@ -122,6 +163,28 @@ void main() {
     expect(sheetSource, contains('BoxConstraints(maxWidth: 520)'));
     expect(sheetSource, isNot(contains('BoxConstraints(maxWidth: 393)')));
     expect(sheetSource, isNot(contains('horizontal: sideInset')));
+  });
+
+  test('places filter sheet closes when tapping outside', () async {
+    final sheetSource = await File(
+      'lib/screens/places/places_filter_sheet.dart',
+    ).readAsString();
+
+    final frameStart = sheetSource.indexOf('AppModalSheetFrame(');
+    final paddingStart = sheetSource.indexOf(
+      'child: AnimatedPadding(',
+      frameStart,
+    );
+
+    expect(frameStart, isNonNegative);
+    expect(paddingStart, greaterThan(frameStart));
+
+    final frameSource = sheetSource.substring(frameStart, paddingStart);
+
+    expect(
+      frameSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
   });
 
   test(

@@ -69,6 +69,34 @@ void main() {
     },
   );
 
+  test('my excursions tabs have visible V2 borders', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
+
+    final switcherStart = source.indexOf('class _MyExcursionsTabSwitcher');
+    final segmentStart = source.indexOf('class _SegmentButton');
+    final cardStart = source.indexOf('class _MyExcursionBookingCard');
+    expect(switcherStart, isNonNegative);
+    expect(segmentStart, greaterThan(switcherStart));
+    expect(cardStart, greaterThan(segmentStart));
+
+    final switcherSource = source.substring(switcherStart, segmentStart);
+    final segmentSource = source.substring(segmentStart, cardStart);
+
+    expect(source, contains('Color get borderSoft => colors.borderSoft;'));
+    expect(
+      source,
+      contains('Color get borderPrimary => colors.borderPrimary;'),
+    );
+    expect(
+      switcherSource,
+      contains('border: Border.all(color: colors.borderSoft)'),
+    );
+    expect(segmentSource, contains('side: BorderSide('));
+    expect(segmentSource, contains('colors.borderPrimary'));
+  });
+
   test('my excursions screen does not duplicate guide offer drafts', () async {
     final source = await File(
       'lib/screens/excursions/my_excursions_screen.dart',
@@ -239,6 +267,34 @@ void main() {
   );
 
   test(
+    'my excursions filter pills keep visible selected and unselected borders',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      final pillStart = source.indexOf('class _ChoicePill');
+      final dateFieldStart = source.indexOf('class _FilterDateField');
+      expect(pillStart, isNonNegative);
+      expect(dateFieldStart, greaterThan(pillStart));
+
+      final pillSource = source.substring(pillStart, dateFieldStart);
+
+      expect(
+        pillSource,
+        contains('final colors = context.myExcursionsColors;'),
+      );
+      expect(pillSource, contains('selectedColor: colors.primary'));
+      expect(pillSource, contains('backgroundColor: colors.surfaceRaised'));
+      expect(pillSource, contains('checkmarkColor: colors.textPrimary'));
+      expect(pillSource, contains('color: selected ? colors.textPrimary'));
+      expect(pillSource, contains('color: selected ? colors.borderPrimary'));
+      expect(pillSource, contains('width: selected ? 1.4 : 1'));
+      expect(pillSource, isNot(contains('white.withValues(alpha: 0.06)')));
+    },
+  );
+
+  test(
     'my excursions filter starts with current-location city filter',
     () async {
       final source = await File(
@@ -366,6 +422,25 @@ void main() {
     expect(sheetSource, contains('keyboardInset -'));
     expect(sheetSource, contains('final maxHeight = math.min('));
     expect(sheetSource, contains('AnimatedPadding('));
+  });
+
+  test('my excursions filter sheet closes when tapping outside', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
+    final sheetStart = source.indexOf('class _MyExcursionsFilterSheetState');
+    final sectionTitleStart = source.indexOf('class _FilterSectionTitle');
+
+    expect(sheetStart, isNonNegative);
+    expect(sectionTitleStart, greaterThan(sheetStart));
+
+    final sheetSource = source.substring(sheetStart, sectionTitleStart);
+
+    expect(sheetSource, contains('AppModalSheetFrame('));
+    expect(
+      sheetSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
   });
 
   test(

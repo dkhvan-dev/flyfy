@@ -1143,11 +1143,11 @@ class _RouteStopTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 15,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.secondaryContainer,
               child: Text(
                 order.toString(),
                 style: AppTextStyle(
-                  color: colors.textPrimary,
+                  color: colors.secondary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1173,9 +1173,9 @@ class _RouteStopTile extends StatelessWidget {
                     '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colors.secondary),
                   ),
                 ],
               ),
@@ -1216,20 +1216,21 @@ class _SmallAmberChip extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.primary.withValues(alpha: 0.14),
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: colors.primary),
+            Icon(icon, size: 14, color: colors.secondary),
             const SizedBox(width: 5),
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: colors.primary,
+                color: colors.secondary,
                 fontWeight: FontWeight.w900,
               ),
             ),

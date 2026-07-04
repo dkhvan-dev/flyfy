@@ -106,12 +106,13 @@ class _SystemPostPreviewCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: AppBoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.18),
+                  color: colors.secondaryContainer,
                   shape: BoxShape.circle,
+                  border: Border.all(color: colors.borderSecondary),
                 ),
                 child: Icon(
                   Icons.verified_rounded,
-                  color: colors.primary,
+                  color: colors.secondary,
                   size: 20,
                 ),
               ),
@@ -148,7 +149,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colors.primary,
+                          color: colors.secondary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

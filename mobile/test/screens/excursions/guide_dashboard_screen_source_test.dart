@@ -338,6 +338,53 @@ void main() {
     },
   );
 
+  test(
+    'guide dashboard filter footer is transparent and close to bottom edge',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf(
+        'class _GuideDashboardStatusFiltersSheetState',
+      );
+      final chipStart = source.indexOf(
+        'class _GuideStatusFilterChip',
+        sheetStart,
+      );
+
+      expect(sheetStart, isNonNegative);
+      expect(chipStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, chipStart);
+      final footerStart = sheetSource.indexOf(
+        'Container(\n                  padding: AppEdgeInsets.fromLTRB(',
+      );
+      final buttonStart = sheetSource.indexOf(
+        'child: AppFilterApplyButton(',
+        footerStart,
+      );
+
+      expect(footerStart, isNonNegative);
+      expect(buttonStart, greaterThan(footerStart));
+
+      final footerSource = sheetSource.substring(footerStart, buttonStart);
+
+      expect(
+        sheetSource,
+        contains(
+          'SafeArea(\n            top: false,\n            bottom: false,',
+        ),
+      );
+      expect(
+        footerSource,
+        contains('color: context.guideDashboardColors.transparent'),
+      );
+      expect(footerSource, contains('14 + mediaQuery.padding.bottom'));
+      expect(footerSource, isNot(contains('guideDashboardColors.black')));
+    },
+  );
+
   test('edit excursion screen keeps the existing cover visible', () async {
     final source = await File(
       'lib/screens/excursions/create_excursion_screen.dart',

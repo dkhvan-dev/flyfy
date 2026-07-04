@@ -96,37 +96,45 @@ class _ServicesHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
 
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-              return;
-            }
-            context.go('/');
-          },
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          style: AppButtonStyles.icon(context.appColors),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyle(
-              color: context.appColors.textPrimary,
-              fontSize: isCompact ? 28 : 32,
-              height: 1.1,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
+    return SizedBox(
+      height: isCompact ? 48 : 52,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                  return;
+                }
+                context.go('/');
+              },
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              style: AppButtonStyles.icon(context.appColors),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             ),
           ),
-        ),
-      ],
+          Padding(
+            padding: const AppEdgeInsets.symmetric(horizontal: 58),
+            child: Text(
+              title,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyle(
+                color: context.appColors.textPrimary,
+                fontSize: isCompact ? 28 : 32,
+                height: 1.1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

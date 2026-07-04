@@ -286,6 +286,7 @@ class AppModalSheetFrame extends StatelessWidget {
     this.useSafeArea = true,
     this.safeAreaTop = false,
     this.safeAreaBottom = false,
+    this.onTapOutside,
   });
 
   final Widget child;
@@ -293,13 +294,29 @@ class AppModalSheetFrame extends StatelessWidget {
   final bool useSafeArea;
   final bool safeAreaTop;
   final bool safeAreaBottom;
+  final VoidCallback? onTapOutside;
 
   @override
   Widget build(BuildContext context) {
-    final content = SizedBox(
-      width: double.infinity,
-      child: Align(alignment: alignment, child: child),
-    );
+    final alignedChild = Align(alignment: alignment, child: child);
+    final content = onTapOutside == null
+        ? SizedBox(width: double.infinity, child: alignedChild)
+        : SizedBox(
+            width: double.infinity,
+            height: MediaQuery.sizeOf(context).height,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onTapOutside,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                alignedChild,
+              ],
+            ),
+          );
 
     if (!useSafeArea) return content;
 
@@ -503,36 +520,42 @@ Future<T?> showAppModalBottomSheet<T>({
         );
       }
 
-      return Padding(
-        padding: AppEdgeInsets.only(bottom: keyboardInset),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: initialChildSize,
-            minChildSize: minChildSize,
-            maxChildSize: maxChildSize,
-            builder: (context, scrollController) {
-              return Align(
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: AppModalScaffold<T>(
-                    title: title,
-                    subtitle: subtitle,
-                    icon: icon,
-                    actions: actions,
-                    scrollController: scrollController,
-                    showDragHandle: showDragHandle ?? true,
-                    showCloseButton: showCloseButton,
-                    maxWidth: double.infinity,
-                    surfaceBorderRadius: AppRadius.sheetTop,
-                    child: content ?? const SizedBox.shrink(),
+      return AppModalSheetFrame(
+        useSafeArea: false,
+        onTapOutside: isDismissible
+            ? () => Navigator.of(context).maybePop()
+            : null,
+        child: Padding(
+          padding: AppEdgeInsets.only(bottom: keyboardInset),
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: initialChildSize,
+              minChildSize: minChildSize,
+              maxChildSize: maxChildSize,
+              builder: (context, scrollController) {
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: AppModalScaffold<T>(
+                      title: title,
+                      subtitle: subtitle,
+                      icon: icon,
+                      actions: actions,
+                      scrollController: scrollController,
+                      showDragHandle: showDragHandle ?? true,
+                      showCloseButton: showCloseButton,
+                      maxWidth: double.infinity,
+                      surfaceBorderRadius: AppRadius.sheetTop,
+                      child: content ?? const SizedBox.shrink(),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       );
@@ -639,13 +662,13 @@ class _AppModalIcon extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.primary.withValues(alpha: 0.14),
+        color: colors.secondaryContainer,
         shape: BoxShape.circle,
-        border: Border.all(color: colors.borderPrimary),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: SizedBox.square(
         dimension: AppSizes.minTapTarget,
-        child: Icon(icon, color: colors.primary, size: AppSizes.iconMd),
+        child: Icon(icon, color: colors.secondary, size: AppSizes.iconMd),
       ),
     );
   }

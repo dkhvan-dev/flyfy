@@ -1588,7 +1588,7 @@ class _ProfileAvatar extends StatelessWidget {
                 width: badgeSize,
                 height: badgeSize,
                 decoration: AppBoxDecoration(
-                  color: context.profileColors.primary,
+                  color: context.profileColors.secondary,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: profileBgTop,
@@ -1596,7 +1596,7 @@ class _ProfileAvatar extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: context.profileColors.primary.withValues(
+                      color: context.profileColors.secondary.withValues(
                         alpha: 0.3,
                       ),
                       blurRadius: profileScaled(context, 14, min: 10, max: 16),
@@ -3804,7 +3804,9 @@ class _ProfileMenuTile extends StatelessWidget {
                 SizedBox(width: profileScaled(context, 6, min: 4, max: 6)),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: effectiveDisabled ? profileDisabled : profileTextMuted,
+                  color: effectiveDisabled
+                      ? profileDisabled
+                      : context.profileColors.primary,
                 ),
               ],
             ),

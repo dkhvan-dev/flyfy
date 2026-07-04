@@ -51,7 +51,34 @@ void main() {
     expect(source, contains('colors.screenGradientColors'));
     expect(source, contains('colors.surface'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, isNot(contains('AppPalette.')));
   });
+
+  test(
+    'guide review metadata uses secondary while ratings remain primary',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_reviews_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class _GuideReviewCard');
+      final ratingStart = source.indexOf('class _GuideReviewRating');
+
+      expect(cardStart, isNonNegative);
+      expect(ratingStart, greaterThan(cardStart));
+
+      final cardsSource = source.substring(cardStart, ratingStart);
+      final ratingSource = source.substring(ratingStart);
+
+      expect(cardsSource, contains('colors.secondaryContainer'));
+      expect(cardsSource, contains('colors.borderSecondary'));
+      expect(cardsSource, contains('color: colors.secondary'));
+      expect(cardsSource, contains('dateText'));
+      expect(ratingSource, contains('color: colors.primary'));
+      expect(ratingSource, contains('Icon(Icons.star_rounded'));
+    },
+  );
 }

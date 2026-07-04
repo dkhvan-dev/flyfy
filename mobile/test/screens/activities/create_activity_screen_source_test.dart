@@ -730,6 +730,58 @@ void main() {
   );
 
   test(
+    'create activity helper notices and upload hints use secondary accents',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final noticeStart = source.indexOf('class _Step2LocationMismatchNotice');
+      final uploadStart = source.indexOf('class _CoverUploadCard');
+      final uploadEnd = source.indexOf(
+        'class _DashedCoverBorderPainter',
+        uploadStart,
+      );
+      final actionBarStart = source.indexOf('class _Step3ActionBar');
+
+      expect(noticeStart, isNonNegative);
+      expect(uploadStart, isNonNegative);
+      expect(uploadEnd, greaterThan(uploadStart));
+      expect(actionBarStart, isNonNegative);
+
+      final noticeSource = source.substring(noticeStart, uploadStart);
+      final uploadSource = source.substring(uploadStart, uploadEnd);
+      final actionBarSource = source.substring(actionBarStart);
+
+      expect(
+        noticeSource,
+        contains('context.createActivityColors.secondaryContainer'),
+      );
+      expect(
+        noticeSource,
+        contains('context.createActivityColors.borderSecondary'),
+      );
+      expect(noticeSource, contains('context.createActivityColors.secondary'));
+      expect(noticeSource, isNot(contains('amberSoft24')));
+
+      expect(uploadSource, contains('context.createActivityColors.secondary'));
+      expect(
+        uploadSource,
+        contains('context.createActivityColors.secondaryContainer'),
+      );
+      expect(
+        uploadSource,
+        isNot(contains('context.createActivityColors.primary.withValues')),
+      );
+
+      expect(
+        actionBarSource,
+        contains('backgroundColor: context.createActivityColors.primary'),
+      );
+    },
+  );
+
+  test(
     'create activity participant limit fields use a single V2 input surface',
     () async {
       final source = await File(

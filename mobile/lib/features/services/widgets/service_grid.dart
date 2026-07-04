@@ -28,19 +28,6 @@ class ServiceGridStyle {
   final Color splashColor;
   final Color highlightColor;
 
-  static const _v2Dark = ServiceGridStyle(
-    availableBackgroundColor: AppPalette.surfaceRaised,
-    availableForegroundColor: AppPalette.primary,
-    availableTextColor: AppPalette.textPrimary,
-    availableBorderColor: AppPalette.borderSoft,
-    unavailableBackgroundColor: AppPalette.surface,
-    unavailableForegroundColor: AppPalette.textDisabled,
-    unavailableTextColor: AppPalette.textMuted,
-    unavailableBorderColor: AppPalette.border,
-    splashColor: AppPalette.borderPrimary,
-    highlightColor: AppPalette.transparent,
-  );
-
   static ServiceGridStyle v2(BuildContext context) {
     final colors = AppDesignSystem.colorsFor(context);
     return ServiceGridStyle(
@@ -56,8 +43,6 @@ class ServiceGridStyle {
       highlightColor: colors.transparent,
     );
   }
-
-  static ServiceGridStyle v2Dark() => _v2Dark;
 }
 
 class ServiceGrid extends StatelessWidget {

@@ -54,6 +54,7 @@ final class _MapColors {
   Color get textMuted => colors.textMuted;
   Color get border => colors.border;
   Color get borderPrimary => colors.borderPrimary;
+  Color get borderSecondary => colors.borderSecondary;
   Color get success => colors.success;
   Color get danger => colors.danger;
   Color get transparent => colors.transparent;
@@ -119,7 +120,7 @@ class MapActivityTarget {
     required this.priceLabel,
     this.avatarLabel,
     this.icon = Icons.event_available_rounded,
-    this.accentColor = AppPalette.primarySoft,
+    this.accentColor,
   });
 
   final String id;
@@ -133,7 +134,7 @@ class MapActivityTarget {
   final String priceLabel;
   final String? avatarLabel;
   final IconData icon;
-  final Color accentColor;
+  final Color? accentColor;
 
   LatLng get point => LatLng(latitude, longitude);
 }
@@ -1319,7 +1320,7 @@ class _MapScreenState extends State<MapScreen> {
           ..add(
             PolylineLayer(
               polylines: [routeFeature],
-              color: context.mapColors.primary,
+              color: context.mapColors.secondary,
               width: 5,
             ),
           );
@@ -1334,9 +1335,9 @@ class _MapScreenState extends State<MapScreen> {
                 for (final stop in stops) _pointFeature(stop.id, stop.point),
               ],
               radius: 11,
-              color: context.mapColors.amberWash07,
+              color: context.mapColors.secondaryContainer,
               strokeWidth: 3,
-              strokeColor: context.mapColors.primary,
+              strokeColor: context.mapColors.secondary,
             ),
           )
           ..add(
@@ -1346,7 +1347,7 @@ class _MapScreenState extends State<MapScreen> {
                   _pointFeature('${stop.id}:core', stop.point),
               ],
               radius: 5,
-              color: context.mapColors.primary,
+              color: context.mapColors.secondary,
               strokeWidth: 1,
               strokeColor: context.mapColors.warmSurface48,
             ),
@@ -1366,9 +1367,9 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature(stop.id, stop.point),
             ],
             radius: 11,
-            color: context.mapColors.amberWash07,
+            color: context.mapColors.secondaryContainer,
             strokeWidth: 3,
-            strokeColor: context.mapColors.primary,
+            strokeColor: context.mapColors.secondary,
           ),
         )
         ..add(
@@ -1378,7 +1379,7 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature('${stop.id}:core', stop.point),
             ],
             radius: 5,
-            color: context.mapColors.primary,
+            color: context.mapColors.secondary,
             strokeWidth: 1,
             strokeColor: context.mapColors.warmSurface48,
           ),
@@ -2863,9 +2864,7 @@ class _RouteBuilderPanel extends StatelessWidget {
         decoration: AppBoxDecoration(
           color: context.mapColors.warmInk104.withValues(alpha: 0.96),
           borderRadius: AppBorderRadius.circular(8),
-          border: Border.all(
-            color: context.mapColors.primary.withValues(alpha: 0.36),
-          ),
+          border: Border.all(color: context.mapColors.borderSecondary),
           boxShadow: [
             BoxShadow(
               color: context.mapColors.black.withValues(alpha: 0.24),
@@ -2887,15 +2886,15 @@ class _RouteBuilderPanel extends StatelessWidget {
                     width: _mapScaled(context, 40, min: 36, max: 42),
                     height: _mapScaled(context, 40, min: 36, max: 42),
                     decoration: AppBoxDecoration(
-                      color: context.mapColors.primary.withValues(alpha: 0.18),
+                      color: context.mapColors.secondaryContainer,
                       borderRadius: AppBorderRadius.circular(8),
                       border: Border.all(
-                        color: context.mapColors.primary.withValues(alpha: 0.4),
+                        color: context.mapColors.borderSecondary,
                       ),
                     ),
                     child: Icon(
                       Icons.alt_route_rounded,
-                      color: context.mapColors.primary,
+                      color: context.mapColors.secondary,
                       size: _mapScaled(context, 21, min: 18, max: 22),
                     ),
                   ),
@@ -2921,7 +2920,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: context.mapColors.primary,
+                            color: context.mapColors.secondary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -3100,13 +3099,11 @@ class _RouteBuilderPanel extends StatelessWidget {
 
   ButtonStyle _routeBuilderSecondaryButtonStyle(BuildContext context) {
     return OutlinedButton.styleFrom(
-      foregroundColor: context.mapColors.amberLight09,
-      disabledForegroundColor: context.mapColors.amberLight09.withValues(
+      foregroundColor: context.mapColors.secondary,
+      disabledForegroundColor: context.mapColors.secondary.withValues(
         alpha: 0.38,
       ),
-      side: BorderSide(
-        color: context.mapColors.primary.withValues(alpha: 0.42),
-      ),
+      side: BorderSide(color: context.mapColors.borderSecondary),
       padding: AppEdgeInsets.symmetric(
         horizontal: _mapScaled(context, 12, min: 10, max: 14),
         vertical: _mapScaled(context, 11, min: 9, max: 12),
@@ -3344,17 +3341,17 @@ Color _mapOverlaySurfaceColor(BuildContext context) {
 Color _mapOverlayAccentSurfaceColor(BuildContext context) {
   final colors = context.mapColors;
   if (_isLightMapTheme(context)) {
-    return colors.primaryContainer.withValues(alpha: 0.94);
+    return colors.secondaryContainer.withValues(alpha: 0.94);
   }
-  return colors.primary.withValues(alpha: 0.18);
+  return colors.secondary.withValues(alpha: 0.18);
 }
 
 Color _mapOverlayBorderColor(BuildContext context) {
   final colors = context.mapColors;
   if (_isLightMapTheme(context)) {
-    return colors.border;
+    return colors.borderSecondary;
   }
-  return colors.primary.withValues(alpha: 0.38);
+  return colors.borderSecondary;
 }
 
 List<BoxShadow> _mapOverlayShadow(BuildContext context) {
@@ -3474,7 +3471,7 @@ class _MapInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = accent
-        ? context.mapColors.primary
+        ? context.mapColors.secondary
         : context.mapColors.textPrimary;
     final backgroundColor = accent
         ? _mapOverlayAccentSurfaceColor(context)

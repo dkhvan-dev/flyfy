@@ -274,7 +274,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
           decoration: AppBoxDecoration(
             color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: colors.border),
+            border: Border.all(color: colors.borderSecondary),
           ),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(
@@ -283,7 +283,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
             ),
             child: Row(
               children: [
-                Icon(Icons.flag_rounded, color: colors.primary, size: 21),
+                Icon(Icons.flag_rounded, color: colors.secondary, size: 21),
                 const SizedBox(width: 10),
                 Expanded(
                   child: selectedCountry == null
@@ -384,7 +384,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
               children: [
                 Icon(
                   Icons.flag_circle_rounded,
-                  color: colors.primary,
+                  color: colors.secondary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -392,7 +392,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                   child: Text(
                     widget.noResultsText,
                     style: AppTextStyle(
-                      color: colors.primary,
+                      color: colors.secondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -571,7 +571,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
           decoration: AppBoxDecoration(
             color: colors.surfaceRaised,
             borderRadius: AppBorderRadius.circular(18),
-            border: Border.all(color: colors.border),
+            border: Border.all(color: colors.borderSecondary),
           ),
           child: Padding(
             padding: const AppEdgeInsets.symmetric(
@@ -582,7 +582,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
               children: [
                 Icon(
                   Icons.location_city_rounded,
-                  color: colors.primary,
+                  color: colors.secondary,
                   size: 21,
                 ),
                 const SizedBox(width: 10),
@@ -685,7 +685,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
               children: [
                 Icon(
                   Icons.location_off_rounded,
-                  color: colors.primary,
+                  color: colors.secondary,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -693,7 +693,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                   child: Text(
                     widget.noResultsText,
                     style: AppTextStyle(
-                      color: colors.primary,
+                      color: colors.secondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

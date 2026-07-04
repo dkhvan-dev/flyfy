@@ -45,6 +45,9 @@ void main() {
     expect(source, contains('_activityReviewEditorDecoration('));
     expect(source, contains('_activityReviewInputDecoration('));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, contains('colors.textSecondary'));
     expect(source, contains('colors.danger'));
@@ -90,6 +93,34 @@ void main() {
       expect(switchStart, isNonNegative);
       expect(materialStart, lessThan(switchStart));
       expect(editorSource, contains('color: colors.transparent'));
+    },
+  );
+
+  test(
+    'activity review sheet uses secondary only for neutral criteria hints',
+    () async {
+      final source = await File(
+        'lib/screens/activities/widgets/activity_review_sheet.dart',
+      ).readAsString();
+      final helperStart = source.indexOf('class _ActivityReviewCriteriaHint');
+      final editorStart = source.indexOf('class _ActivityReviewEditor');
+      final inputStart = source.indexOf(
+        'InputDecoration _activityReviewInputDecoration',
+      );
+
+      expect(helperStart, isNonNegative);
+      expect(editorStart, isNonNegative);
+      expect(inputStart, isNonNegative);
+
+      final helperSource = source.substring(helperStart, editorStart);
+      final editorSource = source.substring(editorStart, inputStart);
+
+      expect(helperSource, contains('colors.secondaryContainer'));
+      expect(helperSource, contains('colors.borderSecondary'));
+      expect(helperSource, contains('color: colors.secondary'));
+      expect(helperSource, contains('l10n.myExcursionsReviewRating'));
+      expect(editorSource, contains('_ActivityReviewCriteriaHint('));
+      expect(editorSource, contains('color: colors.primary'));
     },
   );
 }

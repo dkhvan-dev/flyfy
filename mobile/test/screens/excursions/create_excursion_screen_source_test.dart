@@ -752,6 +752,57 @@ void main() {
   );
 
   test(
+    'create excursion helper route and cover upload hints use secondary accents',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final coverStart = source.indexOf('class _ExcursionCoverUploadCard');
+      final coverEnd = source.indexOf(
+        'class _DashedExcursionCoverBorderPainter',
+        coverStart,
+      );
+      final emptyStart = source.indexOf('class _ItineraryEmptyState');
+      final emptyEnd = source.indexOf('class _ItinerarySlotCard', emptyStart);
+      final actionBarStart = source.indexOf('class _ExcursionBottomActionBar');
+
+      expect(coverStart, isNonNegative);
+      expect(coverEnd, greaterThan(coverStart));
+      expect(emptyStart, isNonNegative);
+      expect(emptyEnd, greaterThan(emptyStart));
+      expect(actionBarStart, isNonNegative);
+
+      final coverSource = source.substring(coverStart, coverEnd);
+      final emptySource = source.substring(emptyStart, emptyEnd);
+      final actionBarSource = source.substring(actionBarStart);
+
+      expect(coverSource, contains('context.createExcursionColors.secondary'));
+      expect(
+        coverSource,
+        contains('context.createExcursionColors.secondaryContainer'),
+      );
+      expect(
+        coverSource,
+        isNot(contains('context.createExcursionColors.primary.withValues')),
+      );
+      expect(emptySource, contains('context.createExcursionColors.secondary'));
+      expect(
+        emptySource,
+        contains('context.createExcursionColors.secondaryContainer'),
+      );
+      expect(
+        emptySource,
+        isNot(contains('color: context.createExcursionColors.primary')),
+      );
+      expect(
+        actionBarSource,
+        contains('backgroundColor: context.createExcursionColors.primary'),
+      );
+    },
+  );
+
+  test(
     'create excursion replaces custom cover when place is selected',
     () async {
       final source = await File(

@@ -234,10 +234,10 @@ class _ParticipantsHeader extends StatelessWidget {
                       height: 11,
                       decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: colors.primary,
+                        color: colors.secondary,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withValues(alpha: 0.12),
+                            color: colors.secondary.withValues(alpha: 0.12),
                             blurRadius: 0,
                             spreadRadius: 5,
                           ),
@@ -251,7 +251,7 @@ class _ParticipantsHeader extends StatelessWidget {
                         fontSize: 18,
                         height: 1.25,
                         fontWeight: FontWeight.w500,
-                        color: colors.primary,
+                        color: colors.secondary,
                       ),
                     ),
                   ],
@@ -324,6 +324,7 @@ class _OrganizerCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = AppDesignSystem.colorsFor(context);
     final isDarkV2 = Theme.of(context).brightness == Brightness.dark;
+    final isLightV2 = !isDarkV2;
 
     return GestureDetector(
       onTap: onTap,
@@ -336,8 +337,13 @@ class _OrganizerCard extends StatelessWidget {
         ),
         decoration: AppBoxDecoration(
           borderRadius: AppBorderRadius.circular(28),
-          color: colors.surfaceRaised,
-          border: Border.all(color: colors.borderPrimary),
+          color: Color.alphaBlend(
+            colors.secondaryContainer.withValues(
+              alpha: isLightV2 ? 0.14 : 0.10,
+            ),
+            colors.surfaceRaised,
+          ),
+          border: Border.all(color: colors.borderSecondary),
           boxShadow: isDarkV2
               ? [
                   BoxShadow(
@@ -449,7 +455,7 @@ class _ParticipantText extends StatelessWidget {
                 height: 8,
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.primary,
+                  color: colors.secondary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -464,7 +470,7 @@ class _ParticipantText extends StatelessWidget {
                   height: 1.3,
                   fontWeight: FontWeight.w400,
                   letterSpacing: 0.72,
-                  color: online ? colors.primary : colors.textSecondary,
+                  color: online ? colors.secondary : colors.textSecondary,
                 ),
               ),
             ),
@@ -500,11 +506,11 @@ class _ParticipantAvatar extends StatelessWidget {
       padding: AppEdgeInsets.all(highlighted ? 4 : 0),
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: highlighted ? colors.primary : colors.transparent,
+        color: highlighted ? colors.secondary : colors.transparent,
         boxShadow: highlighted
             ? [
                 BoxShadow(
-                  color: colors.primary.withValues(
+                  color: colors.secondary.withValues(
                     alpha: isDarkV2 ? 0.18 : 0.10,
                   ),
                   blurRadius: isDarkV2 ? 30 : 18,

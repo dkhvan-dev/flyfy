@@ -1640,9 +1640,8 @@ func (u *PostUseCase) LikePost(ctx context.Context, subject string, postID uuid.
 		return 0, fmt.Errorf("like post: %w", err)
 	}
 	if changed {
-		if err = u.trackPostPositiveFeedSignal(ctx, viewerUserID, post, model.FeedEventTypeLike); err != nil {
-			return 0, err
-		}
+		// Feed ranking signals are secondary; the user-facing like has already succeeded.
+		_ = u.trackPostPositiveFeedSignal(ctx, viewerUserID, post, model.FeedEventTypeLike)
 		u.notifyPostLiked(ctx, post, viewerUserID)
 	}
 

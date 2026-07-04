@@ -40,7 +40,9 @@ void main() {
 
       expect(summarySource, contains('app_design_system.dart'));
       expect(summarySource, contains('AppDesignSystem.colorsFor(context)'));
-      expect(summarySource, contains('colors.primary'));
+      expect(summarySource, contains('colors.secondaryContainer'));
+      expect(summarySource, contains('colors.borderSecondary'));
+      expect(summarySource, contains('colors.secondary'));
       expect(summarySource, contains('Icons.route_rounded'));
       expect(summarySource, contains('routeSummaryTitle'));
       expect(summarySource, contains('routeSummaryDistance'));

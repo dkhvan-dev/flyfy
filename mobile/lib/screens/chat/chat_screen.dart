@@ -2237,10 +2237,10 @@ class _DirectTopBarContent extends StatelessWidget {
                           height: _scale(context, 9),
                           decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: context.chatColors.primary,
+                            color: context.chatColors.secondary,
                             boxShadow: [
                               BoxShadow(
-                                color: context.chatColors.primary.withValues(
+                                color: context.chatColors.secondary.withValues(
                                   alpha: 0.28,
                                 ),
                                 blurRadius: 10,
@@ -2261,7 +2261,7 @@ class _DirectTopBarContent extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
                             color: isOnline
-                                ? context.chatColors.primary
+                                ? context.chatColors.secondary
                                 : context.chatColors.white.withValues(
                                     alpha: 0.56,
                                   ),
@@ -3293,12 +3293,12 @@ class _StatusMetricCard extends StatelessWidget {
           height: _scale(context, 30),
           decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: context.chatColors.primary.withValues(alpha: 0.16),
+            color: context.chatColors.secondaryContainer,
           ),
           child: Icon(
             icon,
             size: _scale(context, 16),
-            color: context.chatColors.primary,
+            color: context.chatColors.secondary,
           ),
         ),
         SizedBox(width: _scale(context, 10)),
@@ -3310,7 +3310,7 @@ class _StatusMetricCard extends StatelessWidget {
             style: AppTextStyle(
               fontSize: _scale(context, 13),
               fontWeight: FontWeight.w800,
-              color: context.chatColors.primary,
+              color: context.chatColors.secondary,
             ),
           ),
         ),
@@ -3429,7 +3429,7 @@ class _ReadReceiptSummary extends StatelessWidget {
             Icon(
               Icons.done_all_rounded,
               size: _scale(context, 17),
-              color: context.chatColors.primary,
+              color: context.chatColors.secondary,
             ),
             SizedBox(width: _scale(context, 8)),
             Expanded(
@@ -3440,7 +3440,7 @@ class _ReadReceiptSummary extends StatelessWidget {
                 style: AppTextStyle(
                   fontSize: _scale(context, 13),
                   fontWeight: FontWeight.w800,
-                  color: context.chatColors.primary,
+                  color: context.chatColors.secondary,
                 ),
               ),
             ),
@@ -4369,7 +4369,7 @@ class _MessageBubble extends StatelessWidget {
                                 fontSize: _scale(context, 13),
                                 fontWeight: FontWeight.w800,
                                 color: readByOthers
-                                    ? context.chatColors.primary
+                                    ? context.chatColors.secondary
                                     : context.chatColors.white.withValues(
                                         alpha: 0.35,
                                       ),

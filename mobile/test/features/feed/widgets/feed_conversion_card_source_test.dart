@@ -10,6 +10,12 @@ void main() {
 
     expect(source, contains('app_design_system.dart'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('color: colors.secondaryContainer'));
+    expect(
+      source,
+      contains('border: Border.all(color: colors.borderSecondary)'),
+    );
+    expect(source, contains('Icon(icon, color: colors.secondary'));
     expect(source, contains('AppButtonStyles.primary(colors)'));
     expect(source, isNot(contains('AppPalette.')));
   });

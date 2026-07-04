@@ -1146,7 +1146,7 @@ class _SubscriptionPill extends StatelessWidget {
                         community: community,
                         resolver: locationLabelResolver,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
+                          color: colors.secondary,
                           height: 1.14,
                         ),
                       ),
@@ -1223,7 +1223,7 @@ class _CommunitySubscriptionList extends StatelessWidget {
             includeCountry: true,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.textSecondary,
+              color: colors.secondary,
               height: 1.14,
             ),
           ),

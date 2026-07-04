@@ -119,10 +119,10 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
           ];
     final topCircleColor = isDark
         ? colors.white.withValues(alpha: 0.12)
-        : colors.white.withValues(alpha: 0.64);
+        : colors.secondaryContainer.withValues(alpha: 0.28);
     final bottomCircleColor = isDark
         ? colors.black.withValues(alpha: 0.14)
-        : colors.primaryContainer.withValues(alpha: 0.62);
+        : colors.secondary.withValues(alpha: 0.10);
     return LayoutBuilder(
       builder: (context, constraints) {
         final fallbackSide = MediaQuery.sizeOf(context).shortestSide * 0.28;

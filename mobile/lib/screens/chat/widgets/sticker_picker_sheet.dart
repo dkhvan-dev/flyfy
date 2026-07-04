@@ -640,7 +640,17 @@ class _StickerMessageState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 34, color: colors.textDisabled),
+            DecoratedBox(
+              decoration: AppBoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.secondaryContainer,
+                border: Border.all(color: colors.borderSecondary),
+              ),
+              child: Padding(
+                padding: const AppEdgeInsets.all(14),
+                child: Icon(icon, size: 30, color: colors.secondary),
+              ),
+            ),
             const SizedBox(height: 10),
             Text(
               title,

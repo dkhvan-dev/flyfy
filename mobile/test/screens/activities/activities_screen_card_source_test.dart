@@ -295,6 +295,40 @@ void main() {
     expect(cardSource, isNot(contains('context.activitiesColors.black')));
   });
 
+  test('activities category avatar avoids white halo in light theme', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+
+    final helperStart = source.indexOf(
+      'AppBoxDecoration _activityCategoryAvatarDecoration',
+    );
+    final nextClassStart = source.indexOf(
+      'class _VisibilityBadgeStyle',
+      helperStart,
+    );
+
+    expect(helperStart, isNonNegative);
+    expect(nextClassStart, greaterThan(helperStart));
+
+    final helperSource = source.substring(helperStart, nextClassStart);
+    final lightStart = helperSource.indexOf('if (colors.isLight)');
+    final darkStart = helperSource.indexOf(
+      '\n\n  return AppBoxDecoration(',
+      lightStart,
+    );
+
+    expect(lightStart, isNonNegative);
+    expect(darkStart, greaterThan(lightStart));
+
+    final lightSource = helperSource.substring(lightStart, darkStart);
+
+    expect(lightSource, contains('color: colors.secondary'));
+    expect(lightSource, contains('colors.borderSecondary'));
+    expect(lightSource, isNot(contains('LinearGradient(')));
+    expect(lightSource, isNot(contains('colors.white.withValues')));
+  });
+
   test('activities card shell uses visible light-theme border', () async {
     final source = await File(
       'lib/screens/activities/activities_screen.dart',
@@ -387,7 +421,16 @@ void main() {
       expect(painterSource, isNot(contains('greenOverlayMuted01')));
 
       expect(fallbackSource, contains('final backgroundColors = isDark'));
+      expect(fallbackSource, contains('final topCircleColor = isDark'));
       expect(fallbackSource, contains('final bottomCircleColor = isDark'));
+      expect(
+        fallbackSource,
+        isNot(contains(': colors.white.withValues(alpha:')),
+      );
+      expect(
+        fallbackSource,
+        isNot(contains(': colors.primaryContainer.withValues(alpha:')),
+      );
       expect(
         fallbackSource,
         isNot(contains('colors.black.withValues(alpha: isDark ? 0.14 : 0.08)')),

@@ -12,6 +12,12 @@ void main() {
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('color: colors.textPrimary'));
     expect(source, contains('foregroundColor: colors.primary'));
+    expect(source, contains('color: colors.secondaryContainer'));
+    expect(
+      source,
+      contains('border: Border.all(color: colors.borderSecondary)'),
+    );
+    expect(source, contains('color: colors.secondary'));
     expect(source, isNot(contains('AppPalette.')));
   });
 }

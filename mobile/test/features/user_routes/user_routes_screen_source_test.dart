@@ -44,8 +44,10 @@ void main() {
     expect(source, contains('_userRouteCardDecoration('));
     expect(source, contains('AppColors colors'));
     expect(source, contains('colors.surface'));
-    expect(source, contains('colors.surfaceRaised'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
+    expect(source, contains('colors.secondary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, contains('colors.textSecondary'));
     expect(source, isNot(contains('AppPalette.')));

@@ -2195,6 +2195,46 @@ func TestLikePostTracksPositiveFeedSignalOnFirstLike(t *testing.T) {
 	}
 }
 
+func TestLikePostDoesNotFailWhenPositiveFeedSignalTrackingFails(t *testing.T) {
+	postID := uuid.New()
+	authorID := uuid.New()
+	viewerID := uuid.New()
+	publishedAt := postUseCaseNow()
+	repo := &postUseCaseRepositoryStub{
+		existing: &model.Post{
+			ID:               postID,
+			AuthorUserID:     authorID,
+			Title:            "Useful local note",
+			Status:           enum.PostStatusPublished,
+			ModerationStatus: enum.ModerationStatusApproved,
+			PostProfileKey:   enum.PostProfileQuickPostV1,
+			PublishedAt:      &publishedAt,
+		},
+		likePostChangedSet:  true,
+		likePostChanged:     true,
+		createFeedEventsErr: errors.New("feed event store unavailable"),
+	}
+	notifications := newPostNotificationGatewayStub()
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithPostNotificationGateway(notifications)
+
+	count, err := useCase.LikePost(context.Background(), "subject", postID)
+	if err != nil {
+		t.Fatalf("LikePost returned error: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("LikePost count = %d, want 1", count)
+	}
+	if len(repo.trackedFeedEvents) != 0 {
+		t.Fatalf("tracked feed events = %d, want failed tracking to remain secondary", len(repo.trackedFeedEvents))
+	}
+
+	notification := notifications.take(t)
+	if notification.PostID != postID || notification.ActorUserID != viewerID {
+		t.Fatalf("notification = %+v, want like notification after secondary tracking failure", notification)
+	}
+}
+
 func TestCreateCommentDelegatesRateLimitToRepository(t *testing.T) {
 	authorID := uuid.New()
 	postID := uuid.New()
@@ -3032,6 +3072,7 @@ type postUseCaseRepositoryStub struct {
 	softDeletedPostID             uuid.UUID
 	softDeletedAuthorID           uuid.UUID
 	trackedFeedEvents             []model.FeedEvent
+	createFeedEventsErr           error
 	mutedCommunityID              uuid.UUID
 	mutedUserID                   uuid.UUID
 	muted                         bool
@@ -3141,6 +3182,9 @@ func (r *postUseCaseRepositoryStub) CreateCommunityReport(_ context.Context, rep
 }
 
 func (r *postUseCaseRepositoryStub) CreateFeedEvents(_ context.Context, events []model.FeedEvent) error {
+	if r.createFeedEventsErr != nil {
+		return r.createFeedEventsErr
+	}
 	r.trackedFeedEvents = append(r.trackedFeedEvents, events...)
 	return nil
 }

@@ -65,9 +65,31 @@ void main() {
     expect(reviewSource, contains('colors.backgroundDeep'));
     expect(reviewSource, contains('colors.scrim'));
     expect(reviewSource, contains('colors.primary'));
+    expect(reviewSource, contains('colors.secondary'));
+    expect(reviewSource, contains('colors.borderSecondary'));
     expect(reviewSource, contains('colors.white'));
     expect(reviewSource, isNot(contains('AppPalette.')));
   });
+
+  test(
+    'recorded video trim metadata uses secondary without recoloring media controls',
+    () async {
+      final reviewSource = await File(
+        'lib/screens/chat/chat_recorded_video_review_screen.dart',
+      ).readAsString();
+      final trimStart = reviewSource.indexOf('class _TrimRangeSelector');
+      final buttonStart = reviewSource.indexOf('class _ReviewIconButton');
+
+      expect(trimStart, isNonNegative);
+      expect(buttonStart, greaterThan(trimStart));
+
+      final trimSource = reviewSource.substring(trimStart, buttonStart);
+      expect(trimSource, contains('colors.borderSecondary'));
+      expect(trimSource, contains('color: colors.secondary'));
+      expect(trimSource, contains('activeColor: colors.primary'));
+      expect(trimSource, contains('inactiveColor: colors.white'));
+    },
+  );
 
   test('chat camera screen uses adaptive V2 colors directly', () async {
     final source = await File(

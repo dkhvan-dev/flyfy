@@ -145,7 +145,9 @@ void main() {
     expect(helperSource, contains('Color _mapOverlayBorderColor'));
     expect(helperSource, contains('List<BoxShadow> _mapOverlayShadow'));
     expect(helperSource, contains('surfaceRaised.withValues(alpha: 0.96)'));
-    expect(helperSource, contains('primary.withValues(alpha: 0.38)'));
+    expect(helperSource, contains('colors.borderSecondary'));
+    expect(helperSource, contains('colors.secondaryContainer'));
+    expect(helperSource, contains('colors.secondary.withValues(alpha: 0.18)'));
 
     expect(headerSource, contains('_mapOverlaySurfaceColor(context)'));
     expect(headerSource, contains('_mapOverlayBorderColor(context)'));
@@ -156,8 +158,44 @@ void main() {
     expect(chipSource, contains('_mapOverlaySurfaceColor(context)'));
     expect(chipSource, contains('_mapOverlayBorderColor(context)'));
     expect(chipSource, contains('backgroundColor = accent'));
+    expect(chipSource, contains('? context.mapColors.secondary'));
     expect(chipSource, isNot(contains('LinearGradient(')));
     expect(chipSource, isNot(contains('warmInk90.withValues(alpha: 0.66)')));
+  });
+
+  test('map route layers and builder context use secondary accents', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+    final layersStart = mapSource.indexOf(
+      'List<Layer> _buildStableAnnotationLayers',
+    );
+    final featureStart = mapSource.indexOf(
+      'Feature<LineString>? _routePolylineFeature',
+    );
+    final builderPanelStart = mapSource.indexOf('class _RouteBuilderPanel');
+    final previewPanelStart = mapSource.indexOf('class _RoutePreviewPanel');
+
+    expect(layersStart, isNonNegative);
+    expect(featureStart, greaterThan(layersStart));
+    expect(builderPanelStart, greaterThan(featureStart));
+    expect(previewPanelStart, greaterThan(builderPanelStart));
+
+    final layersSource = mapSource.substring(layersStart, featureStart);
+    final builderPanelSource = mapSource.substring(
+      builderPanelStart,
+      previewPanelStart,
+    );
+
+    expect(layersSource, contains('color: context.mapColors.secondary'));
+    expect(layersSource, contains('context.mapColors.secondaryContainer'));
+    expect(layersSource, contains('strokeColor: context.mapColors.secondary'));
+    expect(
+      builderPanelSource,
+      contains('context.mapColors.secondaryContainer'),
+    );
+    expect(builderPanelSource, contains('context.mapColors.borderSecondary'));
+    expect(builderPanelSource, contains('color: context.mapColors.secondary'));
   });
 
   test('map place overlay cards use solid readable V2 surfaces', () async {

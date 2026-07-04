@@ -43,6 +43,9 @@ final class _StoryEditorColors {
   Color get primary => colors.primary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
+  Color get secondary => colors.secondary;
+  Color get secondaryContainer => colors.secondaryContainer;
+  Color get borderSecondary => colors.borderSecondary;
   Color get surface => colors.surface;
   Color get surfaceRaised => colors.surfaceRaised;
   Color get surfaceHigh => colors.surfaceHigh;
@@ -2004,7 +2007,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
             color: context.storyEditorColors.warmSurface28,
             borderRadius: radius,
             border: Border.all(
-              color: context.storyEditorColors.primary.withValues(alpha: 0.13),
+              color: context.storyEditorColors.borderSecondary,
             ),
           ),
           child: Padding(
@@ -2019,18 +2022,14 @@ class _RouteReferencePickerTile extends StatelessWidget {
                   height: adaptive.scale(42),
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: context.storyEditorColors.primary.withValues(
-                      alpha: 0.13,
-                    ),
+                    color: context.storyEditorColors.secondaryContainer,
                     border: Border.all(
-                      color: context.storyEditorColors.primary.withValues(
-                        alpha: 0.22,
-                      ),
+                      color: context.storyEditorColors.borderSecondary,
                     ),
                   ),
                   child: Icon(
                     Icons.route_rounded,
-                    color: context.storyEditorColors.primary,
+                    color: context.storyEditorColors.secondary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -2123,8 +2122,9 @@ class _RoutePickerMetricChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: context.storyEditorColors.primary.withValues(alpha: 0.12),
+        color: context.storyEditorColors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: context.storyEditorColors.borderSecondary),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(
@@ -2136,14 +2136,14 @@ class _RoutePickerMetricChip extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: context.storyEditorColors.primary,
+              color: context.storyEditorColors.secondary,
               size: adaptive.scale(13),
             ),
             SizedBox(width: adaptive.scale(5)),
             Text(
               label,
               style: AppTextStyle(
-                color: context.storyEditorColors.amberLight16,
+                color: context.storyEditorColors.secondary,
                 fontSize: adaptive.scale(11),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -3277,9 +3277,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
                   decoration: AppBoxDecoration(
                     color: StoryPalette.surfaceRaised,
                     border: Border.all(
-                      color: context.storyEditorColors.primary.withValues(
-                        alpha: 0.14,
-                      ),
+                      color: context.storyEditorColors.borderSecondary,
                     ),
                   ),
                   child: coverImage == null
@@ -3362,11 +3360,9 @@ class _PreviewMetaChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: context.storyEditorColors.primary.withValues(alpha: 0.12),
+        color: context.storyEditorColors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(
-          color: context.storyEditorColors.primary.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: context.storyEditorColors.borderSecondary),
       ),
       child: Padding(
         padding: AppEdgeInsets.symmetric(
@@ -3379,7 +3375,7 @@ class _PreviewMetaChip extends StatelessWidget {
             Icon(
               icon,
               size: adaptive.scale(15),
-              color: context.storyEditorColors.primary,
+              color: context.storyEditorColors.secondary,
             ),
             SizedBox(width: adaptive.scale(6)),
             Text(
@@ -3387,7 +3383,7 @@ class _PreviewMetaChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: StoryPalette.text,
+                color: context.storyEditorColors.secondary,
                 fontSize: adaptive.scale(12),
                 fontWeight: FontWeight.w800,
               ),

@@ -229,6 +229,9 @@ void main() {
     expect(screen, contains('app_design_system.dart'));
     expect(screen, contains('AppDesignSystem.colorsFor(context)'));
     expect(screen, contains('storyEditorColors.primary'));
+    expect(screen, contains('storyEditorColors.secondary'));
+    expect(screen, contains('storyEditorColors.secondaryContainer'));
+    expect(screen, contains('storyEditorColors.borderSecondary'));
     expect(screen, isNot(contains('AppPalette.')));
     for (final source in [
       style,
@@ -242,6 +245,11 @@ void main() {
     ]) {
       expect(source, contains('app_design_system.dart'));
       expect(source, contains('AppDesignSystem.colorsFor(context)'));
+      if (identical(source, addSheet)) {
+        expect(source, contains('colors.secondaryContainer'));
+        expect(source, contains('colors.borderSecondary'));
+        expect(source, contains('colors.secondary'));
+      }
       expect(source, isNot(contains('AppPalette.')));
       expect(source, isNot(contains('colorScheme.primary')));
     }

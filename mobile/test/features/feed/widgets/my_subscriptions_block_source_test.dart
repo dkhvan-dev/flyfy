@@ -44,6 +44,8 @@ void main() {
       );
       expect(pillSource, contains('width: 1.2,'));
       expect(pillSource, contains('clipBehavior: Clip.antiAlias'));
+      expect(pillSource, contains('FeedCommunityLocationText('));
+      expect(pillSource, contains('color: colors.secondary'));
     },
   );
 }

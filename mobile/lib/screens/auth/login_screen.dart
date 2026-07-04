@@ -1120,7 +1120,7 @@ class _OAuthButton extends StatelessWidget {
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppPalette.primary,
+                          AppPalette.secondary,
                         ),
                       ),
                     )

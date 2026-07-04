@@ -400,6 +400,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
                 .toDouble();
 
             return AppModalSheetFrame(
+              onTapOutside: () => Navigator.of(context).maybePop(),
               child: AnimatedPadding(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
@@ -664,7 +665,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
                   Text(
                     l10n.placeFilterRangeMinTick.toUpperCase(),
                     style: AppTextStyle(
-                      color: AppDesignSystem.colorsFor(context).textSecondary,
+                      color: AppDesignSystem.colorsFor(context).secondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,
@@ -673,7 +674,7 @@ class _PlacesFilterSheetState extends State<PlacesFilterSheet> {
                   Text(
                     l10n.placeFilterRangeMaxTick.toUpperCase(),
                     style: AppTextStyle(
-                      color: AppDesignSystem.colorsFor(context).textSecondary,
+                      color: AppDesignSystem.colorsFor(context).secondary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,

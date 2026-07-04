@@ -65,8 +65,26 @@ void main() {
     expect(source, contains('colors.background'));
     expect(source, contains('colors.surfaceHigh'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('sticker picker neutral states use secondary accents', () async {
+    final source = await File(
+      'lib/screens/chat/widgets/sticker_picker_sheet.dart',
+    ).readAsString();
+    final stateStart = source.indexOf('class _StickerMessageState');
+
+    expect(stateStart, isNonNegative);
+
+    final stateSource = source.substring(stateStart);
+    expect(stateSource, contains('colors.secondaryContainer'));
+    expect(stateSource, contains('colors.borderSecondary'));
+    expect(stateSource, contains('color: colors.secondary'));
+    expect(stateSource, contains('style: AppTextStyle(color: colors.primary'));
   });
 }
 

@@ -36,6 +36,54 @@ void main() {
   });
 
   test(
+    'excursion details header follows activity details top bar chrome',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      final headerStart = source.indexOf('class _ExcursionDetailsTopBar');
+      final buttonStart = source.indexOf(
+        'class _CircleIconButton',
+        headerStart,
+      );
+      final buttonEnd = source.indexOf('class _ExcursionHero', buttonStart);
+
+      expect(headerStart, isNonNegative);
+      expect(buttonStart, greaterThan(headerStart));
+      expect(buttonEnd, greaterThan(buttonStart));
+
+      final headerSource = source.substring(headerStart, buttonStart);
+      final buttonSource = source.substring(buttonStart, buttonEnd);
+
+      expect(headerSource, isNot(contains('DecoratedBox(')));
+      expect(headerSource, isNot(contains('SizedBox(\n        height: 62,')));
+      expect(headerSource, isNot(contains('warmInk60.withValues')));
+      expect(headerSource, contains('_excursionDetailsScaled('));
+      expect(headerSource, contains('sideSpacing'));
+      expect(headerSource, contains('AppNotificationHeaderButton('));
+      expect(headerSource, contains('size: actionSide'));
+      expect(headerSource, contains('iconSize: actionIconSize'));
+      expect(source, contains('height: _excursionDetailsScaled(context, 14'));
+      expect(
+        source.indexOf('child: _ExcursionDetailsTopBar('),
+        lessThan(source.indexOf('height: _excursionDetailsScaled(context, 14')),
+      );
+      expect(
+        source.indexOf('height: _excursionDetailsScaled(context, 14'),
+        lessThan(source.indexOf('SingleChildScrollView(')),
+      );
+      expect(buttonSource, contains('_excursionDetailsScaled(context, 40'));
+      expect(buttonSource, contains('min: 36'));
+      expect(buttonSource, contains('max: 44'));
+      expect(
+        buttonSource,
+        contains('color: context.excursionDetailsColors.textPrimary'),
+      );
+    },
+  );
+
+  test(
     'router exposes public excursion details without opening create route',
     () async {
       final routerSource = await File(
@@ -520,6 +568,73 @@ void main() {
       expect(source, contains('required this.showPrice'));
       expect(source, contains('final bool showPrice'));
       expect(source, contains('if (showPrice) ...['));
+    },
+  );
+
+  test(
+    'excursion checkout bar leaves page content visible behind footer',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      final checkoutStart = source.indexOf('class _ExcursionCheckoutBar');
+      final loadingStart = source.indexOf(
+        'class _ExcursionDetailsLoading',
+        checkoutStart,
+      );
+
+      expect(checkoutStart, isNonNegative);
+      expect(loadingStart, greaterThan(checkoutStart));
+
+      final checkoutSource = source.substring(checkoutStart, loadingStart);
+
+      expect(checkoutSource, isNot(contains('gradient: LinearGradient(')));
+      expect(checkoutSource, isNot(contains('child: DecoratedBox(')));
+      expect(checkoutSource, isNot(contains('border: Border(')));
+      final safeAreaStart = checkoutSource.indexOf('return SafeArea(');
+      final paddingStart = checkoutSource.indexOf('child: Padding(');
+
+      expect(safeAreaStart, isNonNegative);
+      expect(paddingStart, greaterThan(safeAreaStart));
+      expect(checkoutSource, isNot(contains('math.max(13, safeBottom)')));
+      expect(
+        checkoutSource,
+        contains('padding: const AppEdgeInsets.fromLTRB(14, 13, 14, 13)'),
+      );
+    },
+  );
+
+  test(
+    'excursion details overlays checkout bar above scroll content',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      final contentStart = source.indexOf('class ExcursionDetailsContent');
+      final topBarStart = source.indexOf(
+        'class _ExcursionDetailsTopBar',
+        contentStart,
+      );
+
+      expect(contentStart, isNonNegative);
+      expect(topBarStart, greaterThan(contentStart));
+
+      final contentSource = source.substring(contentStart, topBarStart);
+
+      expect(contentSource, contains('child: Stack('));
+      expect(contentSource, contains('SingleChildScrollView('));
+      expect(
+        contentSource,
+        contains('132 + MediaQuery.paddingOf(context).bottom'),
+      );
+      expect(contentSource, contains('if (bottomAction != null)'));
+      expect(contentSource, contains('Positioned('));
+      expect(contentSource, contains('left: 0'));
+      expect(contentSource, contains('right: 0'));
+      expect(contentSource, contains('bottom: 0'));
+      expect(contentSource, isNot(contains('          ?bottomAction,')));
     },
   );
 

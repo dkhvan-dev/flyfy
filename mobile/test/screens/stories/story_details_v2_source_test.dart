@@ -12,6 +12,9 @@ void main() {
     expect(source, contains('AppDesignSystem.themeFor(context)'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, isNot(contains('AppPalette.')));
   });

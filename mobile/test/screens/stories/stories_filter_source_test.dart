@@ -135,4 +135,29 @@ void main() {
       expect(filterSheetSource, contains('formatStoryCategory(l10n, option)'));
     },
   );
+
+  test(
+    'stories filter sheet keeps apply footer close to screen bottom',
+    () async {
+      final source = await File(
+        'lib/screens/stories/stories_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('class _FilterSheet');
+      final nextClassStart = source.indexOf('class _FilterFormatGrid');
+      expect(sheetStart, isNonNegative);
+      expect(nextClassStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, nextClassStart);
+
+      expect(sheetSource, contains('final safeBottomInset ='));
+      expect(
+        sheetSource,
+        contains(
+          'SafeArea(\n            top: false,\n            bottom: false,',
+        ),
+      );
+      expect(sheetSource, contains('adaptive.scale(14) + safeBottomInset'));
+    },
+  );
 }

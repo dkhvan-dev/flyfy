@@ -1290,7 +1290,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.location_on_outlined,
-                              color: colors.primary.withValues(alpha: 0.9),
+                              color: colors.secondary,
                               size: 18,
                             ),
                             const SizedBox(width: 6),

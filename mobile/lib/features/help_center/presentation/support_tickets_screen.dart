@@ -1399,7 +1399,7 @@ class _HeaderShell extends StatelessWidget {
                 Text(
                   supportNote!,
                   style: AppTextStyle(
-                    color: colors.primary,
+                    color: colors.secondary,
                     fontSize: 13,
                     height: 1.28,
                     fontWeight: FontWeight.w700,
@@ -1460,16 +1460,16 @@ class _SupportTimelineChip extends StatelessWidget {
     return Center(
       child: DecoratedBox(
         decoration: AppBoxDecoration(
-          color: colors.primary.withValues(alpha: 0.14),
+          color: colors.secondaryContainer,
           borderRadius: AppBorderRadius.circular(999),
-          border: Border.all(color: colors.primary.withValues(alpha: 0.24)),
+          border: Border.all(color: colors.borderSecondary),
         ),
         child: Padding(
           padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: colors.primary, size: 15),
+              Icon(icon, color: colors.secondary, size: 15),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -1528,7 +1528,7 @@ class _SupportEventBubble extends StatelessWidget {
             border: Border.all(
               color: isUser
                   ? colors.primary.withValues(alpha: 0.48)
-                  : colors.borderPrimary,
+                  : colors.borderSecondary,
             ),
             boxShadow: [
               BoxShadow(
@@ -1549,7 +1549,7 @@ class _SupportEventBubble extends StatelessWidget {
                 Text(
                   supportEventActorLabel(l10n, event),
                   style: AppTextStyle(
-                    color: isUser ? colors.textPrimary : colors.primary,
+                    color: isUser ? colors.textPrimary : colors.secondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1707,11 +1707,11 @@ class _SupportBubbleAttachmentChips extends StatelessWidget {
   Widget build(BuildContext context) {
     if (labels.isEmpty) return const SizedBox.shrink();
     final colors = AppDesignSystem.colorsFor(context);
-    final foreground = isUser ? colors.textPrimary : colors.primary;
+    final foreground = isUser ? colors.textPrimary : colors.secondary;
     final borderColor = foreground.withValues(alpha: isUser ? 0.28 : 0.32);
     final background = isUser
         ? colors.textPrimary.withValues(alpha: 0.12)
-        : colors.primary.withValues(alpha: 0.12);
+        : colors.secondaryContainer;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -2292,9 +2292,9 @@ class _StatusPill extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.primary.withValues(alpha: 0.18),
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.38)),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),

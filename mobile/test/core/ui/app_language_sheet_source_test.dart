@@ -17,6 +17,22 @@ void main() {
     expect(source, contains('ScrollViewKeyboardDismissBehavior.onDrag'));
   });
 
+  test(
+    'app language sheet background stays attached to phone bottom',
+    () async {
+      final source = await File(
+        'lib/core/ui/app_language_sheet.dart',
+      ).readAsString();
+
+      expect(source, contains('final systemBottomPadding ='));
+      expect(
+        source,
+        contains('SafeArea(\n        top: false,\n        bottom: false,'),
+      );
+      expect(source, contains('bottomPadding + systemBottomPadding'));
+    },
+  );
+
   test('app language sheet options expose selected semantic buttons', () async {
     final source = await File(
       'lib/core/ui/app_language_sheet.dart',

@@ -23,10 +23,10 @@ class RouteSummaryCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.surfaceRaised, colors.surfaceWarm],
+          colors: [colors.surfaceRaised, colors.secondaryContainer],
         ),
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: colors.borderPrimary),
+        border: Border.all(color: colors.borderSecondary),
         boxShadow: isDark
             ? [
                 BoxShadow(
@@ -50,13 +50,13 @@ class RouteSummaryCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: AppBoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.16),
+                    color: colors.secondaryContainer,
                     borderRadius: AppBorderRadius.circular(8),
-                    border: Border.all(color: colors.borderPrimary),
+                    border: Border.all(color: colors.borderSecondary),
                   ),
                   child: Icon(
                     Icons.route_rounded,
-                    color: colors.primary,
+                    color: colors.secondary,
                     size: 21,
                   ),
                 ),
@@ -200,15 +200,15 @@ class _RouteMetricTile extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.primaryContainer.withValues(alpha: 0.72),
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(8),
-        border: Border.all(color: colors.borderPrimary),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 9),
         child: Row(
           children: [
-            Icon(metric.icon, color: colors.primary, size: 18),
+            Icon(metric.icon, color: colors.secondary, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Column(

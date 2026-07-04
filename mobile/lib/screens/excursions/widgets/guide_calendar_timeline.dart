@@ -21,6 +21,7 @@ class GuideCalendarTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = AppDesignSystem.colorsFor(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
     if (isLoading && slots.isEmpty) {
       return SliverList.separated(
         itemCount: 4,
@@ -39,13 +40,18 @@ class GuideCalendarTimeline extends StatelessWidget {
           child: Container(
             padding: const AppEdgeInsets.all(18),
             decoration: AppBoxDecoration(
-              color: colors.surface,
+              color: Color.alphaBlend(
+                colors.secondaryContainer.withValues(
+                  alpha: isLight ? 0.48 : 0.24,
+                ),
+                colors.surface,
+              ),
               borderRadius: AppBorderRadius.circular(8),
-              border: Border.all(color: colors.border),
+              border: Border.all(color: colors.borderSecondary),
             ),
             child: Row(
               children: [
-                Icon(Icons.event_available_rounded, color: colors.primary),
+                Icon(Icons.event_available_rounded, color: colors.secondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

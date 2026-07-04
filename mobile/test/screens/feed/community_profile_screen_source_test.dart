@@ -148,4 +148,20 @@ void main() {
       );
     },
   );
+
+  test('community profile location cue uses secondary V2 accent', () async {
+    final source = await File(
+      'lib/features/feed/presentation/community_profile_screen.dart',
+    ).readAsString();
+
+    final locationIconStart = source.indexOf('Icons.location_on_outlined');
+    expect(locationIconStart, isNonNegative);
+    final locationSource = source.substring(
+      locationIconStart,
+      source.indexOf('AppLocalizedLocationText(', locationIconStart),
+    );
+
+    expect(locationSource, contains('color: colors.secondary'));
+    expect(locationSource, isNot(contains('colors.primary')));
+  });
 }

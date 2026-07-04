@@ -758,7 +758,7 @@ class _RateStatusRow extends StatelessWidget {
         final leading = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.info_outline_rounded, color: colors.primary, size: 18),
+            Icon(Icons.info_outline_rounded, color: colors.secondary, size: 18),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
@@ -785,7 +785,7 @@ class _RateStatusRow extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: colors.primary,
+                    color: colors.secondary,
                   ),
                 )
               : Text(
@@ -795,7 +795,7 @@ class _RateStatusRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
                   style: AppTextStyle(
-                    color: colors.textMuted,
+                    color: colors.secondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -964,7 +964,7 @@ class _QuickSwitchTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: colors.textSecondary,
+                            color: colors.secondary,
                             fontSize: 12,
                             height: 1.2,
                             letterSpacing: 0,
@@ -996,16 +996,16 @@ class _NoticePanel extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppBoxDecoration(
-        color: colors.surface,
+        color: colors.secondaryContainer,
         borderRadius: AppBorderRadius.circular(18),
-        border: Border.all(color: colors.borderSoft),
+        border: Border.all(color: colors.borderSecondary),
       ),
       child: Padding(
         padding: const AppEdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.shield_outlined, color: colors.primary, size: 20),
+            Icon(Icons.shield_outlined, color: colors.secondary, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

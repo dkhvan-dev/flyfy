@@ -40,12 +40,17 @@ void main() {
     expect(source, contains('AppPalette.secondary'));
     expect(source, contains('AppButtonStyles.icon(context.appColors)'));
     expect(source, contains('AppButtonStyles.primary(context.appColors)'));
+    final legacyPaletteSource = source
+        .replaceAll('AppPalette.primary', '')
+        .replaceAll('AppPalette.secondary', '')
+        .replaceAll('AppPalette.transparent', '')
+        .replaceAll('AppPalette.black', '');
     expect(
-      source,
+      legacyPaletteSource,
       isNot(
         matches(
           RegExp(
-            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal|primary|white|black|background|surface|text)',
+            r'AppPalette\.(warm|orange|amber|violet|pink|blue|green|teal|white|background|surface|text)',
           ),
         ),
       ),
@@ -75,6 +80,48 @@ void main() {
     expect(panelSource, contains('? ['));
     expect(panelSource, contains(': null'));
   });
+
+  test(
+    'notification neutral status and support cues use secondary V2 accent',
+    () async {
+      final source = await File(
+        'lib/screens/notifications/notifications_screen.dart',
+      ).readAsString();
+
+      final infoChipStart = source.indexOf('class _NotificationInfoChip');
+      final eventBlockStart = source.indexOf(
+        'class _NotificationEventTimeBlock',
+      );
+      final interactivePanelStart = source.indexOf('class _InteractivePanel');
+      final metaStart = source.indexOf(
+        '_NotificationCategoryMeta _categoryMeta',
+      );
+      expect(infoChipStart, isNonNegative);
+      expect(eventBlockStart, greaterThan(infoChipStart));
+      expect(interactivePanelStart, greaterThan(eventBlockStart));
+      expect(metaStart, greaterThan(interactivePanelStart));
+
+      final infoChipSource = source.substring(infoChipStart, eventBlockStart);
+      final eventBlockSource = source.substring(
+        eventBlockStart,
+        interactivePanelStart,
+      );
+      final metaSource = source.substring(metaStart);
+
+      expect(
+        infoChipSource,
+        contains('isAccent ? AppPalette.primary : context.appColors.secondary'),
+      );
+      expect(
+        eventBlockSource,
+        contains('context.appColors.secondaryContainer'),
+      );
+      expect(eventBlockSource, contains('context.appColors.borderSecondary'));
+      expect(eventBlockSource, contains('color: context.appColors.secondary'));
+      expect(metaSource, contains('color: AppPalette.secondary'));
+      expect(metaSource, contains("case 'support':"));
+    },
+  );
 
   testWidgets('localizes latest category preview text', (tester) async {
     final latest = _storyLikeNotification();

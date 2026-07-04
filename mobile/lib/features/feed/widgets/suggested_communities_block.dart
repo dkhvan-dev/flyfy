@@ -243,7 +243,7 @@ class _SuggestedCommunityPill extends StatelessWidget {
             community: community,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.textSecondary,
+              color: colors.secondary,
               height: 1.12,
             ),
           ),

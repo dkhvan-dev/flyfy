@@ -38,6 +38,8 @@ void main() {
       contains('color: colors.primary.withValues(alpha: 0.42),'),
     );
     expect(pillSource, contains('width: 1.2,'));
+    expect(pillSource, contains('FeedCommunityLocationText('));
+    expect(pillSource, contains('color: colors.secondary'));
     expect(pillSource, isNot(contains('color: colors.surface,')));
     expect(pillSource, isNot(contains('color: colors.surfaceRaised,')));
   });

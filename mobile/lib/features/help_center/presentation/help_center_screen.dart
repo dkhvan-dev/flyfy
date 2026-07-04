@@ -324,10 +324,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppDesignSystem.colorsFor(context).transparent,
-      builder: (context) => _HelpCenterCategorySheet(
-        title: l10n.helpCenterCategoriesTitle,
-        categories: categories,
-        selectedId: _selectedCategoryId,
+      builder: (context) => AppModalSheetFrame(
+        onTapOutside: () => Navigator.of(context).maybePop(),
+        child: _HelpCenterCategorySheet(
+          title: l10n.helpCenterCategoriesTitle,
+          categories: categories,
+          selectedId: _selectedCategoryId,
+        ),
       ),
     );
     if (!mounted || selectedCategoryId == null) return;
@@ -514,16 +517,16 @@ class _HelpCenterSectionHeading extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: AppBoxDecoration(
-            color: colors.primaryContainer,
+            color: colors.secondaryContainer,
             borderRadius: AppBorderRadius.circular(12),
-            border: Border.all(color: colors.borderPrimary),
+            border: Border.all(color: colors.borderSecondary),
           ),
           child: SizedBox(
             width: 38,
             height: 38,
             child: Icon(
               Icons.auto_awesome_rounded,
-              color: colors.primary,
+              color: colors.secondary,
               size: 19,
             ),
           ),
@@ -1202,12 +1205,13 @@ class _HelpCenterStateMessage extends StatelessWidget {
           children: [
             DecoratedBox(
               decoration: AppBoxDecoration(
-                color: colors.primaryContainer,
+                color: colors.secondaryContainer,
                 borderRadius: AppBorderRadius.circular(14),
+                border: Border.all(color: colors.borderSecondary),
               ),
               child: Padding(
                 padding: const AppEdgeInsets.all(10),
-                child: Icon(icon, color: colors.primary, size: 28),
+                child: Icon(icon, color: colors.secondary, size: 28),
               ),
             ),
             const SizedBox(height: 12),

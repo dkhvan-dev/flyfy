@@ -331,12 +331,14 @@ void main() {
       expect(source, isNot(contains('StoryPalette.')));
     }
     expect(metaSource, contains('colors.surfaceHigh'));
-    expect(metaSource, contains('colors.primary'));
+    expect(metaSource, contains('colors.secondary'));
+    expect(metaSource, contains('colors.borderSecondary'));
     expect(metaSource, contains('colors.textMuted'));
-    expect(tagSource, contains('color: colors.primary'));
+    expect(tagSource, contains('color: colors.secondary'));
     expect(tagSource, contains('color: colors.textPrimary'));
     expect(locationSource, contains('colors.surfaceHigh'));
-    expect(locationSource, contains('colors.border'));
+    expect(locationSource, contains('colors.borderSecondary'));
+    expect(locationSource, contains('colors.secondary'));
     expect(locationSource, contains('colors.textPrimary'));
   });
 

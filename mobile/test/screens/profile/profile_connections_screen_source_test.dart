@@ -131,4 +131,29 @@ void main() {
     expect(ruSource, contains('"profileFriendRequestAcceptAction"'));
     expect(ruSource, contains('"profileFriendRequestDeclineAction"'));
   });
+
+  test('profile connections modal sheets close when tapping outside', () async {
+    final source = await File(
+      'lib/screens/profile/profile_connections_screen.dart',
+    ).readAsString();
+
+    final requestsStart = source.indexOf('class _FriendRequestsSheetState');
+    final filtersStart = source.indexOf('class _ConnectionFiltersSheetState');
+    expect(requestsStart, isNonNegative);
+    expect(filtersStart, greaterThan(requestsStart));
+
+    final requestsSource = source.substring(requestsStart, filtersStart);
+    final filtersSource = source.substring(filtersStart);
+
+    expect(requestsSource, contains('AppModalSheetFrame('));
+    expect(filtersSource, contains('AppModalSheetFrame('));
+    expect(
+      requestsSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
+    expect(
+      filtersSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
+  });
 }

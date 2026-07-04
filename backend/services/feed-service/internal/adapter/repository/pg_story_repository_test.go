@@ -674,6 +674,50 @@ func TestFeedEventsMigrationCreatesIdempotentAppendOnlyLog(t *testing.T) {
 	}
 }
 
+func TestFeedEventTypesRepairMigrationExtendsExistingConstraint(t *testing.T) {
+	up, err := os.ReadFile("../../../migrations/002_extend_post_feed_event_types.up.sql")
+	if err != nil {
+		t.Fatalf("read feed event types repair migration: %v", err)
+	}
+	migration := string(up)
+	for _, needle := range []string{
+		"ALTER TABLE post_feed_events",
+		"DROP CONSTRAINT IF EXISTS post_feed_events_event_type_check",
+		"ADD CONSTRAINT post_feed_events_event_type_check",
+		"'impression'::text",
+		"'click'::text",
+		"'dwell'::text",
+		"'like'::text",
+		"'comment'::text",
+		"'share'::text",
+		"'subscribe'::text",
+		"'hide'::text",
+		"'not_interested'::text",
+		"'report'::text",
+	} {
+		if !strings.Contains(migration, needle) {
+			t.Fatalf("feed event types repair migration must contain %q", needle)
+		}
+	}
+
+	down, err := os.ReadFile("../../../migrations/002_extend_post_feed_event_types.down.sql")
+	if err != nil {
+		t.Fatalf("read feed event types repair rollback migration: %v", err)
+	}
+	rollback := string(down)
+	for _, needle := range []string{
+		"DROP CONSTRAINT IF EXISTS post_feed_events_event_type_check",
+		"ADD CONSTRAINT post_feed_events_event_type_check",
+		"'impression'::text",
+		"'click'::text",
+		"'dwell'::text",
+	} {
+		if !strings.Contains(rollback, needle) {
+			t.Fatalf("feed event types repair rollback migration must contain %q", needle)
+		}
+	}
+}
+
 func TestFeedEntityConversionBlockTypesMigrationExtendsConstraint(t *testing.T) {
 	up, err := os.ReadFile("../../../migrations/001_init.up.sql")
 	if err != nil {

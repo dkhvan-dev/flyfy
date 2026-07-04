@@ -266,6 +266,25 @@ void main() {
     expect(gridSource, isNot(contains('mainAxisExtent: 48')));
   });
 
+  test('guide filters sheet closes when tapping outside the sheet', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+    final sheetStart = source.indexOf('class _GuidesFiltersSheetState');
+    final sectionStart = source.indexOf('class _GuideFilterSection');
+
+    expect(sheetStart, isNonNegative);
+    expect(sectionStart, greaterThan(sheetStart));
+
+    final sheetSource = source.substring(sheetStart, sectionStart);
+
+    expect(sheetSource, contains('AppModalSheetFrame('));
+    expect(
+      sheetSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
+  });
+
   test('guide list avoids stale loads and exposes recovery actions', () async {
     final source = await File(
       'lib/screens/guides/guides_screen.dart',

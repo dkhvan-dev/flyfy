@@ -17,6 +17,9 @@ void main() {
 
     expect(source, contains('app_design_system.dart'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
+    expect(source, contains('colors.secondary'));
     expect(source, isNot(contains('AppPalette.')));
   });
 
@@ -27,6 +30,9 @@ void main() {
 
     expect(source, contains('app_design_system.dart'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
+    expect(source, contains('colors.secondary'));
     expect(source, isNot(contains('AppPalette.')));
   });
 
@@ -40,7 +46,30 @@ void main() {
     expect(source, contains('colors.screenGradientColors'));
     expect(source, contains('colors.surface'));
     expect(source, contains('colors.primary'));
+    expect(source, contains('colors.secondaryContainer'));
+    expect(source, contains('colors.borderSecondary'));
+    expect(source, contains('colors.secondary'));
     expect(source, isNot(contains('AppPalette.')));
+  });
+
+  test('HelpCenterScreen category picker closes when tapping outside', () {
+    final source = File(
+      'lib/features/help_center/presentation/help_center_screen.dart',
+    ).readAsStringSync();
+
+    final pickerStart = source.indexOf('Future<void> _openCategoryPicker');
+    final contentStart = source.indexOf('Widget _buildContent');
+
+    expect(pickerStart, isNonNegative);
+    expect(contentStart, greaterThan(pickerStart));
+
+    final pickerSource = source.substring(pickerStart, contentStart);
+
+    expect(pickerSource, contains('AppModalSheetFrame('));
+    expect(
+      pickerSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+    );
   });
 
   testWidgets(

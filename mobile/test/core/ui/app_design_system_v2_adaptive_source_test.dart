@@ -105,4 +105,17 @@ void main() {
       expect(source, isNot(contains('AppPalette.')), reason: path);
     }
   });
+
+  test(
+    'common modal header icon uses secondary informational accent',
+    () async {
+      final source = await File(
+        'lib/core/ui/app_modal_templates.dart',
+      ).readAsString();
+
+      expect(source, contains('color: colors.secondaryContainer'));
+      expect(source, contains('Border.all(color: colors.borderSecondary)'));
+      expect(source, contains('Icon(icon, color: colors.secondary'));
+    },
+  );
 }
