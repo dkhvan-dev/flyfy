@@ -238,7 +238,6 @@ services:
     environment:
       <<: [*common-env, *pg-env]
       HTTP_PORT: 8082
-      GRPC_PORT: 50052
       PG_DBNAME: auth_db
       REDIS_ADDR: redis:6379
       REDIS_DB: 1
