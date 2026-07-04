@@ -271,6 +271,7 @@ jobs:
           chmod 600 ~/.ssh/inflap_test_deploy_key
           printf '%s\n' "${TEST_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
 
+          control_path="${HOME}/.ssh/inflap_test_deploy_mux"
           ssh_opts=(
             -i ~/.ssh/inflap_test_deploy_key
             -o BatchMode=yes
@@ -279,15 +280,17 @@ jobs:
             -o "Port=${TEST_DEPLOY_PORT}"
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=2
+            -o ControlMaster=auto
+            -o "ControlPath=${control_path}"
+            -o ControlPersist=5m
           )
 
-          echo "Checking SSH reachability for deploy host on port ${TEST_DEPLOY_PORT}..."
-          if ! ssh-keyscan -T 20 -p "${TEST_DEPLOY_PORT}" "${TEST_DEPLOY_HOST}" >/tmp/inflap_deploy_host_keys 2>/tmp/inflap_ssh_keyscan_error; then
-            echo "Could not reach deploy host on port ${TEST_DEPLOY_PORT} from the GitHub runner." >&2
-            echo "Check TEST_DEPLOY_HOST, VPS firewall rules, netcup firewall settings, and whether sshd is listening on the configured port." >&2
-            cat /tmp/inflap_ssh_keyscan_error >&2
-            exit 1
-          fi
+          echo "Opening SSH control connection for deploy host on port ${TEST_DEPLOY_PORT}..."
+          ssh "${ssh_opts[@]}" -Nf "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}"
+          cleanup_ssh_control() {
+            ssh "${ssh_opts[@]}" -O exit "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" >/dev/null 2>&1 || true
+          }
+          trap cleanup_ssh_control EXIT
 
           scp "${ssh_opts[@]}" /tmp/inflap-test-infra.tgz \
             "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}:/tmp/inflap-test-infra.tgz"
