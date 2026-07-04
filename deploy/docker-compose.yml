@@ -856,12 +856,10 @@ services:
       OTP_LENGTH: 6
       OTP_TTL: 5m
       OTP_MAX_ATTEMPTS: 5
-      EMAIL_OTP_FROM_ADDRESS: "Inflap <dkhvan.developer@gmail.com>"
-      EMAIL_SMTP_HOST: smtp.gmail.com
-      EMAIL_SMTP_PORT: 587
-      EMAIL_SMTP_USERNAME: dkhvan.developer@gmail.com
-      EMAIL_SMTP_PASSWORD: ${AUTH_EMAIL_SMTP_PASSWORD:-}
-      EMAIL_SMTP_TIMEOUT: 8s
+      EMAIL_OTP_FROM_ADDRESS: "${EMAIL_OTP_FROM_ADDRESS:-Inflap <onboarding@resend.dev>}"
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_BASE_URL: ${RESEND_BASE_URL:-https://api.resend.com}
+      RESEND_TIMEOUT: ${RESEND_TIMEOUT:-8s}
 
       ANTI_FRAUD_ENABLED: "true"
       ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096

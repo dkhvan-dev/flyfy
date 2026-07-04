@@ -89,12 +89,10 @@ type OTPConfig struct {
 }
 
 type EmailConfig struct {
-	OTPFromAddress string        `env:"EMAIL_OTP_FROM_ADDRESS, default=dkhvan.developer@gmail.com"`
-	SMTPHost       string        `env:"EMAIL_SMTP_HOST, default="`
-	SMTPPort       int           `env:"EMAIL_SMTP_PORT, default=587"`
-	SMTPUsername   string        `env:"EMAIL_SMTP_USERNAME, default="`
-	SMTPPassword   string        `env:"EMAIL_SMTP_PASSWORD, default="`
-	SMTPTimeout    time.Duration `env:"EMAIL_SMTP_TIMEOUT, default=8s"`
+	OTPFromAddress string        `env:"EMAIL_OTP_FROM_ADDRESS, default=Inflap <onboarding@resend.dev>"`
+	ResendAPIKey   string        `env:"RESEND_API_KEY, default="`
+	ResendBaseURL  string        `env:"RESEND_BASE_URL, default=https://api.resend.com"`
+	ResendTimeout  time.Duration `env:"RESEND_TIMEOUT, default=8s"`
 }
 
 type AuthSecurityConfig struct {

@@ -139,12 +139,10 @@ func main() {
 		logger,
 	)
 	authUC.SetEmailOTPSender(otp.NewEmailOTPSender(otp.EmailSenderConfig{
-		FromAddress:  cfg.Email.OTPFromAddress,
-		SMTPHost:     cfg.Email.SMTPHost,
-		SMTPPort:     cfg.Email.SMTPPort,
-		SMTPUsername: cfg.Email.SMTPUsername,
-		SMTPPassword: cfg.Email.SMTPPassword,
-		SMTPTimeout:  cfg.Email.SMTPTimeout,
+		FromAddress:   cfg.Email.OTPFromAddress,
+		ResendAPIKey:  cfg.Email.ResendAPIKey,
+		ResendBaseURL: cfg.Email.ResendBaseURL,
+		ResendTimeout: cfg.Email.ResendTimeout,
 	}, logger))
 	authUC.SetNicknameResolver(nicknameResolver)
 	if switchesClient := newSwitchesClient(cfg, logger); switchesClient != nil {

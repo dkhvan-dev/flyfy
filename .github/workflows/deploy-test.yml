@@ -281,11 +281,9 @@ jobs:
           IMAGE_PREFIX: ${{ needs.build.outputs.image_prefix }}
           IMAGE_TAG: test-latest
           EMAIL_OTP_FROM_ADDRESS: ${{ vars.EMAIL_OTP_FROM_ADDRESS || secrets.EMAIL_OTP_FROM_ADDRESS }}
-          EMAIL_SMTP_HOST: ${{ vars.EMAIL_SMTP_HOST || secrets.EMAIL_SMTP_HOST }}
-          EMAIL_SMTP_PORT: ${{ vars.EMAIL_SMTP_PORT || secrets.EMAIL_SMTP_PORT }}
-          EMAIL_SMTP_USERNAME: ${{ vars.EMAIL_SMTP_USERNAME || secrets.EMAIL_SMTP_USERNAME }}
-          EMAIL_SMTP_PASSWORD: ${{ secrets.EMAIL_SMTP_PASSWORD }}
-          EMAIL_SMTP_TIMEOUT: ${{ vars.EMAIL_SMTP_TIMEOUT || secrets.EMAIL_SMTP_TIMEOUT }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_BASE_URL: ${{ vars.RESEND_BASE_URL || secrets.RESEND_BASE_URL }}
+          RESEND_TIMEOUT: ${{ vars.RESEND_TIMEOUT || secrets.RESEND_TIMEOUT }}
         run: |
           set -euo pipefail
 
@@ -330,11 +328,9 @@ jobs:
           runtime_env_file="$(mktemp)"
           for name in \
             EMAIL_OTP_FROM_ADDRESS \
-            EMAIL_SMTP_HOST \
-            EMAIL_SMTP_PORT \
-            EMAIL_SMTP_USERNAME \
-            EMAIL_SMTP_PASSWORD \
-            EMAIL_SMTP_TIMEOUT
+            RESEND_API_KEY \
+            RESEND_BASE_URL \
+            RESEND_TIMEOUT
           do
             value="${!name:-}"
             if [[ -z "${value}" ]]; then

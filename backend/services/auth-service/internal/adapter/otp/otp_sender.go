@@ -3,12 +3,11 @@ package otp
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
+	"encoding/json"
 	"fmt"
-	"net"
+	"io"
+	"net/http"
 	"net/mail"
-	"net/smtp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,8 +16,9 @@ import (
 	"kz/inflap/backend/services/auth-service/internal/domain/port"
 )
 
-const DefaultDevEmailOTPSenderAddress = "dkhvan.developer@gmail.com"
-const defaultEmailSMTPTimeout = 8 * time.Second
+const DefaultDevEmailOTPSenderAddress = "Inflap <onboarding@resend.dev>"
+const defaultEmailProviderTimeout = 8 * time.Second
+const defaultResendBaseURL = "https://api.resend.com"
 
 // LogOTPSender implements port.OTPSender by logging the code.
 // This is used in development mode. In production, replace with
@@ -43,37 +43,30 @@ func (s *LogOTPSender) Send(_ context.Context, phone, code string) error {
 }
 
 // LogEmailOTPSender implements email OTP delivery for development. It keeps
-// the use-case wired through a sender port while real SMTP/provider credentials
-// are still intentionally kept out of source code.
+// the use-case wired through a sender port while real provider credentials are
+// still intentionally kept out of source code.
 type LogEmailOTPSender struct {
 	from   string
 	logger zerolog.Logger
 }
 
 type EmailSenderConfig struct {
-	FromAddress  string
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUsername string
-	SMTPPassword string
-	SMTPTimeout  time.Duration
+	FromAddress   string
+	ResendAPIKey  string
+	ResendBaseURL string
+	ResendTimeout time.Duration
 }
 
 func NewEmailOTPSender(cfg EmailSenderConfig, logger zerolog.Logger) port.EmailOTPSender {
-	if cfg.SMTPPort == 0 {
-		cfg.SMTPPort = 587
-	}
-	if cfg.SMTPTimeout <= 0 {
-		cfg.SMTPTimeout = defaultEmailSMTPTimeout
+	if cfg.ResendTimeout <= 0 {
+		cfg.ResendTimeout = defaultEmailProviderTimeout
 	}
 
-	if strings.TrimSpace(cfg.SMTPHost) == "" ||
-		strings.TrimSpace(cfg.SMTPUsername) == "" ||
-		strings.TrimSpace(cfg.SMTPPassword) == "" {
+	if strings.TrimSpace(cfg.ResendAPIKey) == "" {
 		return NewLogEmailOTPSender(cfg.FromAddress, logger)
 	}
 
-	return NewSMTPEmailOTPSender(cfg, logger)
+	return NewResendEmailOTPSender(cfg, logger)
 }
 
 func NewLogEmailOTPSender(from string, logger zerolog.Logger) *LogEmailOTPSender {
@@ -96,41 +89,39 @@ func (s *LogEmailOTPSender) SendEmailOTP(_ context.Context, email, code string) 
 	return nil
 }
 
-type SMTPEmailOTPSender struct {
-	from     string
-	host     string
-	port     int
-	username string
-	password string
-	timeout  time.Duration
-	logger   zerolog.Logger
+type ResendEmailOTPSender struct {
+	from       string
+	apiKey     string
+	baseURL    string
+	timeout    time.Duration
+	httpClient *http.Client
+	logger     zerolog.Logger
 }
 
-func NewSMTPEmailOTPSender(cfg EmailSenderConfig, logger zerolog.Logger) *SMTPEmailOTPSender {
+func NewResendEmailOTPSender(cfg EmailSenderConfig, logger zerolog.Logger) *ResendEmailOTPSender {
 	from := strings.TrimSpace(cfg.FromAddress)
 	if from == "" {
 		from = DefaultDevEmailOTPSenderAddress
 	}
-	port := cfg.SMTPPort
-	if port == 0 {
-		port = 587
+	baseURL := strings.TrimSpace(cfg.ResendBaseURL)
+	if baseURL == "" {
+		baseURL = defaultResendBaseURL
 	}
-	timeout := cfg.SMTPTimeout
+	timeout := cfg.ResendTimeout
 	if timeout <= 0 {
-		timeout = defaultEmailSMTPTimeout
+		timeout = defaultEmailProviderTimeout
 	}
-	return &SMTPEmailOTPSender{
-		from:     from,
-		host:     strings.TrimSpace(cfg.SMTPHost),
-		port:     port,
-		username: strings.TrimSpace(cfg.SMTPUsername),
-		password: strings.TrimSpace(cfg.SMTPPassword),
-		timeout:  timeout,
-		logger:   logger.With().Str("component", "email_otp_sender").Logger(),
+	return &ResendEmailOTPSender{
+		from:       from,
+		apiKey:     strings.TrimSpace(cfg.ResendAPIKey),
+		baseURL:    strings.TrimRight(baseURL, "/"),
+		timeout:    timeout,
+		httpClient: &http.Client{Timeout: timeout},
+		logger:     logger.With().Str("component", "email_otp_sender").Str("provider", "resend").Logger(),
 	}
 }
 
-func (s *SMTPEmailOTPSender) SendEmailOTP(ctx context.Context, email, code string) error {
+func (s *ResendEmailOTPSender) SendEmailOTP(ctx context.Context, email, code string) error {
 	from, err := mail.ParseAddress(s.from)
 	if err != nil {
 		return fmt.Errorf("parsing sender address: %w", err)
@@ -143,77 +134,65 @@ func (s *SMTPEmailOTPSender) SendEmailOTP(ctx context.Context, email, code strin
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
-	addr := net.JoinHostPort(s.host, strconv.Itoa(s.port))
-	dialer := net.Dialer{Timeout: s.timeout}
-	conn, err := dialer.DialContext(ctx, "tcp", addr)
-	if err != nil {
-		return fmt.Errorf("connecting to SMTP server: %w", err)
+	payload := resendSendEmailRequest{
+		From:    strings.TrimSpace(s.from),
+		To:      []string{to.Address},
+		Subject: "Inflap verification code",
+		Text:    buildEmailOTPText(code),
 	}
-	defer conn.Close()
-	if deadline, ok := ctx.Deadline(); ok {
-		if err := conn.SetDeadline(deadline); err != nil {
-			return fmt.Errorf("setting SMTP connection deadline: %w", err)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("encoding Resend email payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseURL+"/emails", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("creating Resend email request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending email via Resend: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		responseText := strings.TrimSpace(string(responseBody))
+		if responseText == "" {
+			responseText = http.StatusText(resp.StatusCode)
 		}
+		return fmt.Errorf("sending email via Resend: status %d: %s", resp.StatusCode, responseText)
 	}
 
-	client, err := smtp.NewClient(conn, s.host)
-	if err != nil {
-		return fmt.Errorf("creating SMTP client: %w", err)
+	var sent struct {
+		ID string `json:"id"`
 	}
-	defer client.Close()
-
-	if ok, _ := client.Extension("STARTTLS"); ok {
-		tlsConfig := &tls.Config{ServerName: s.host, MinVersion: tls.VersionTLS12}
-		if err := client.StartTLS(tlsConfig); err != nil {
-			return fmt.Errorf("starting SMTP TLS: %w", err)
-		}
-	}
-
-	auth := smtp.PlainAuth("", s.username, s.password, s.host)
-	if err := client.Auth(auth); err != nil {
-		return fmt.Errorf("authenticating SMTP client: %w", err)
-	}
-	if err := client.Mail(from.Address); err != nil {
-		return fmt.Errorf("setting SMTP sender: %w", err)
-	}
-	if err := client.Rcpt(to.Address); err != nil {
-		return fmt.Errorf("setting SMTP recipient: %w", err)
-	}
-
-	writer, err := client.Data()
-	if err != nil {
-		return fmt.Errorf("opening SMTP data writer: %w", err)
-	}
-	if _, err := writer.Write(buildEmailOTPMessage(from.String(), to.String(), code)); err != nil {
-		_ = writer.Close()
-		return fmt.Errorf("writing SMTP message: %w", err)
-	}
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("closing SMTP message writer: %w", err)
-	}
-	if err := client.Quit(); err != nil {
-		return fmt.Errorf("quitting SMTP client: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(&sent); err != nil && err != io.EOF {
+		return fmt.Errorf("decoding Resend email response: %w", err)
 	}
 
 	s.logger.Info().
 		Str("from", from.Address).
 		Str("email", maskEmailForLog(to.Address)).
+		Str("message_id", sent.ID).
 		Msg("email OTP sent")
 	return nil
 }
 
-func buildEmailOTPMessage(from, to, code string) []byte {
-	var buf bytes.Buffer
-	buf.WriteString("From: " + from + "\r\n")
-	buf.WriteString("To: " + to + "\r\n")
-	buf.WriteString("Subject: Inflap verification code\r\n")
-	buf.WriteString("MIME-Version: 1.0\r\n")
-	buf.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
-	buf.WriteString("\r\n")
-	buf.WriteString("Your Inflap verification code: " + strings.TrimSpace(code) + "\r\n")
-	buf.WriteString("\r\n")
-	buf.WriteString("If you did not request this code, you can ignore this email.\r\n")
-	return buf.Bytes()
+type resendSendEmailRequest struct {
+	From    string   `json:"from"`
+	To      []string `json:"to"`
+	Subject string   `json:"subject"`
+	Text    string   `json:"text"`
+}
+
+func buildEmailOTPText(code string) string {
+	return "Your Inflap verification code: " + strings.TrimSpace(code) + "\n\n" +
+		"If you did not request this code, you can ignore this email.\n"
 }
 
 func maskEmailForLog(email string) string {
