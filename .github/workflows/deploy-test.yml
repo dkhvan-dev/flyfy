@@ -19,6 +19,7 @@ on:
       - 'backend/services/**'
       - 'backend/pkg/**'
       - 'proto/**'
+      - 'deploy/init-scripts/**'
       - 'infra/test/**'
       - '.github/workflows/deploy-test.yml'
 
@@ -227,7 +228,22 @@ jobs:
       - name: Package infra files
         shell: bash
         run: |
-          tar -czf /tmp/inflap-test-infra.tgz -C infra/test .
+          set -euo pipefail
+
+          package_dir="$(mktemp -d)"
+          cp -R infra/test/. "${package_dir}/"
+          mkdir -p "${package_dir}/migrations"
+          mkdir -p "${package_dir}/migration-scripts"
+
+          for migrations_dir in backend/services/*/migrations; do
+            service="$(basename "$(dirname "${migrations_dir}")")"
+            mkdir -p "${package_dir}/migrations/${service}"
+            cp -R "${migrations_dir}/." "${package_dir}/migrations/${service}/"
+          done
+
+          cp deploy/init-scripts/*_migrate.sh "${package_dir}/migration-scripts/"
+
+          tar -czf /tmp/inflap-test-infra.tgz -C "${package_dir}" .
 
       - name: Upload infra and run deploy
         shell: bash
