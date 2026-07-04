@@ -1678,8 +1678,8 @@ services:
   # ============================================
   switches-service:
     build:
-      context: ../backend/services/switches-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: ./backend/services/switches-service/Dockerfile
     container_name: switches-service
     depends_on:
       switches-postgres:
