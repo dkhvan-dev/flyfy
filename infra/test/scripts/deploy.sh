@@ -76,8 +76,25 @@ docker compose \
   ps
 
 if command -v curl >/dev/null 2>&1 && [[ -n "${TEST_API_HOST:-}" ]]; then
-  echo "Checking public gateway health: https://${TEST_API_HOST}/health"
-  curl -fsS --retry 12 --retry-delay 5 "https://${TEST_API_HOST}/health" >/dev/null
+  health_url="https://${TEST_API_HOST}/health"
+  health_retries="${HEALTHCHECK_RETRIES:-36}"
+  health_delay_seconds="${HEALTHCHECK_RETRY_DELAY_SECONDS:-5}"
+
+  echo "Checking public gateway health: ${health_url}"
+  for ((attempt = 1; attempt <= health_retries; attempt++)); do
+    if curl -fsS "${health_url}" >/dev/null; then
+      echo "Public gateway health check passed."
+      break
+    fi
+
+    if ((attempt == health_retries)); then
+      echo "Public gateway health check failed after ${health_retries} attempts." >&2
+      exit 1
+    fi
+
+    echo "Public gateway health check failed; retrying in ${health_delay_seconds}s (${attempt}/${health_retries})."
+    sleep "${health_delay_seconds}"
+  done
 fi
 
 echo "Deploy completed for ${IMAGE_NAMESPACE}/${IMAGE_PREFIX:-inflap-}*:${IMAGE_TAG}"
