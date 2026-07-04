@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import 'debug_network_inspector.dart';
 
 class ReferenceApi {
   ReferenceApi()
@@ -12,7 +13,9 @@ class ReferenceApi {
           contentType: 'application/json',
           responseType: ResponseType.json,
         ),
-      );
+      ) {
+    DebugNetworkInspector.attachToDio(_dio);
+  }
 
   final Dio _dio;
 

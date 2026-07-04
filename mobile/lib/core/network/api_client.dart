@@ -5,6 +5,7 @@ import '../auth/auth_session_events.dart';
 import '../config/app_config.dart';
 import '../models/auth_result.dart';
 import '../storage/secure_storage.dart';
+import 'debug_network_inspector.dart';
 
 class _CompactNetworkLogInterceptor extends Interceptor {
   @override
@@ -52,8 +53,13 @@ class ApiClient {
     SecureStorage? secureStorage,
     Dio? dio,
     AuthSessionEvents? authSessionEvents,
+    bool? enableDebugNetworkInspector,
+    DebugNetworkInspectorFactory? debugNetworkInspectorFactory,
   }) : _secureStorage = secureStorage ?? SecureStorage(),
        _authSessionEvents = authSessionEvents ?? AuthSessionEvents.instance,
+       _enableDebugNetworkInspector =
+           enableDebugNetworkInspector ??
+           (dio == null && DebugNetworkInspector.isEnabled),
        _dio =
            dio ??
            Dio(
@@ -66,12 +72,13 @@ class ApiClient {
                responseType: ResponseType.json,
              ),
            ) {
-    _configureInterceptors();
+    _configureInterceptors(debugNetworkInspectorFactory);
   }
 
   final Dio _dio;
   final SecureStorage _secureStorage;
   final AuthSessionEvents _authSessionEvents;
+  final bool _enableDebugNetworkInspector;
 
   // SecureStorage is shared app-wide, so refresh must be serialized app-wide too.
   static Future<void>? _sharedRefreshFuture;
@@ -83,7 +90,15 @@ class ApiClient {
     _appLocaleCode = _normalizeLocaleCode(code);
   }
 
-  void _configureInterceptors() {
+  void _configureInterceptors(
+    DebugNetworkInspectorFactory? debugNetworkInspectorFactory,
+  ) {
+    DebugNetworkInspector.attachToDio(
+      _dio,
+      enabled: _enableDebugNetworkInspector,
+      factory: debugNetworkInspectorFactory,
+    );
+
     if (kDebugMode) {
       _dio.interceptors.add(_CompactNetworkLogInterceptor());
     }

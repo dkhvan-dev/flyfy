@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Inflap test PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=inflap-test-postgres-backup.service
+
+[Install]
+WantedBy=timers.target

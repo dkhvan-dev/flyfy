@@ -66,6 +66,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   maplibre: ^0.3.5
   lottie: ^3.3.3
+  chucker_flutter: ^1.9.2
 
 dev_dependencies:
   flutter_test:

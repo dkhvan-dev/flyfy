@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/device/device_context_service.dart';
+import '../../core/network/debug_network_inspector.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/routing/models/routing_models.dart';
 import '../../features/routing/widgets/route_mode_selector.dart';
@@ -4423,7 +4424,9 @@ class _NearbyPlacesApi {
             'User-Agent': 'Inflap/1.0 (nearby places)',
           },
         ),
-      );
+      ) {
+    DebugNetworkInspector.attachToDio(_dio);
+  }
 
   final Dio _dio;
   static const int _nearbyPlacesPrimaryLimit = 160;

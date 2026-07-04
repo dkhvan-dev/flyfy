@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../network/debug_network_inspector.dart';
 import '../navigation/android_back_swipe_scope.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
@@ -74,6 +75,7 @@ import '../../screens/services/services_screen.dart';
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
     return GoRouter(
+      navigatorKey: DebugNetworkInspector.navigatorKey,
       initialLocation: '/',
       refreshListenable: authProvider,
       observers: [KeyboardDismissRouteObserver()],

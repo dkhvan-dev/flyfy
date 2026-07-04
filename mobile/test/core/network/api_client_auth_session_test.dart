@@ -257,7 +257,49 @@ void main() {
     expect(adapter.requests.single.headers['Accept-Language'], 'kk');
     expect(adapter.requests.single.headers['X-Language'], 'kk');
   });
+
+  test('attaches debug network inspector only when enabled', () {
+    final enabledDio = Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'));
+    final disabledDio = Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'));
+
+    ApiClient(
+      dio: enabledDio,
+      secureStorage: _MemorySecureStorage(),
+      authSessionEvents: AuthSessionEvents(),
+      enableDebugNetworkInspector: true,
+      debugNetworkInspectorFactory: _FakeNetworkInspector.new,
+    );
+    ApiClient(
+      dio: disabledDio,
+      secureStorage: _MemorySecureStorage(),
+      authSessionEvents: AuthSessionEvents(),
+      enableDebugNetworkInspector: false,
+      debugNetworkInspectorFactory: _FakeNetworkInspector.new,
+    );
+
+    expect(
+      enabledDio.interceptors.whereType<_FakeNetworkInspector>(),
+      hasLength(1),
+    );
+    expect(
+      disabledDio.interceptors.whereType<_FakeNetworkInspector>(),
+      isEmpty,
+    );
+  });
+
+  test('keeps debug network inspector off by default in tests', () {
+    final client = ApiClient(
+      baseUrl: 'http://backend.test/api/v1',
+      secureStorage: _MemorySecureStorage(),
+      authSessionEvents: AuthSessionEvents(),
+      debugNetworkInspectorFactory: _FakeNetworkInspector.new,
+    );
+
+    expect(client.dio.interceptors.whereType<_FakeNetworkInspector>(), isEmpty);
+  });
 }
+
+class _FakeNetworkInspector extends Interceptor {}
 
 class _MemorySecureStorage extends SecureStorage {
   _MemorySecureStorage({this.accessToken, this.refreshToken});

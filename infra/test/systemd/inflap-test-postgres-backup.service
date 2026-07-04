@@ -1,0 +1,15 @@
+[Unit]
+Description=Inflap test PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/inflap
+Environment=APP_DIR=/opt/inflap
+Environment=RETENTION_DAYS=14
+ExecStart=/opt/inflap/scripts/backup-postgres.sh
+StandardOutput=append:/var/log/inflap/postgres-backup.log
+StandardError=append:/var/log/inflap/postgres-backup.log
