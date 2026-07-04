@@ -15,7 +15,7 @@ final class AppConfig {
       return _normalize(_baseUrlFromDefine);
     }
 
-    return 'https://api-dev.inflap.app/api/v1';
+    return '$_baseUrlFromDefine/api/v1';
   }
 
   static String get mapStyleUrl {
