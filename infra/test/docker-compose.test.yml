@@ -232,6 +232,9 @@ services:
   auth-service:
     <<: *service-defaults
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}auth-service:${IMAGE_TAG:-test-latest}
+    networks:
+      - internal
+      - egress
     environment:
       <<: [*common-env, *pg-env]
       HTTP_PORT: 8082
@@ -577,6 +580,7 @@ services:
 
 networks:
   public:
+  egress:
   internal:
     internal: true
 
