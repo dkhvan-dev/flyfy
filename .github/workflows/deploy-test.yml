@@ -280,6 +280,12 @@ jobs:
           IMAGE_NAMESPACE: ${{ needs.build.outputs.image_namespace }}
           IMAGE_PREFIX: ${{ needs.build.outputs.image_prefix }}
           IMAGE_TAG: test-latest
+          EMAIL_OTP_FROM_ADDRESS: ${{ vars.EMAIL_OTP_FROM_ADDRESS || secrets.EMAIL_OTP_FROM_ADDRESS }}
+          EMAIL_SMTP_HOST: ${{ vars.EMAIL_SMTP_HOST || secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ vars.EMAIL_SMTP_PORT || secrets.EMAIL_SMTP_PORT }}
+          EMAIL_SMTP_USERNAME: ${{ vars.EMAIL_SMTP_USERNAME || secrets.EMAIL_SMTP_USERNAME }}
+          EMAIL_SMTP_PASSWORD: ${{ secrets.EMAIL_SMTP_PASSWORD }}
+          EMAIL_SMTP_TIMEOUT: ${{ vars.EMAIL_SMTP_TIMEOUT || secrets.EMAIL_SMTP_TIMEOUT }}
         run: |
           set -euo pipefail
 
@@ -319,6 +325,33 @@ jobs:
             printf 'GHCR_USERNAME=%s\nGHCR_READ_TOKEN=%s\n' "${GHCR_USERNAME}" "${GHCR_READ_TOKEN}" | \
               ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
               "mkdir -p /opt/inflap/env && umask 077 && cat > /opt/inflap/env/ghcr.env"
+          fi
+
+          runtime_env_file="$(mktemp)"
+          for name in \
+            EMAIL_OTP_FROM_ADDRESS \
+            EMAIL_SMTP_HOST \
+            EMAIL_SMTP_PORT \
+            EMAIL_SMTP_USERNAME \
+            EMAIL_SMTP_PASSWORD \
+            EMAIL_SMTP_TIMEOUT
+          do
+            value="${!name:-}"
+            if [[ -z "${value}" ]]; then
+              continue
+            fi
+            if [[ "${value}" == *$'\n'* ]]; then
+              echo "${name} must be a single-line value." >&2
+              exit 1
+            fi
+            printf '%s=%s\n' "${name}" "${value}" >>"${runtime_env_file}"
+          done
+
+          if [[ -s "${runtime_env_file}" ]]; then
+            scp "${ssh_opts[@]}" "${runtime_env_file}" \
+              "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}:/tmp/inflap-test-runtime.env"
+            ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+              "mkdir -p /opt/inflap/env && umask 077 && mv /tmp/inflap-test-runtime.env /opt/inflap/env/runtime.env"
           fi
 
           ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \

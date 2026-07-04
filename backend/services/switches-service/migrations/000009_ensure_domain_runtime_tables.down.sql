@@ -1,0 +1,2 @@
+-- Intentionally left blank.
+-- The up migration only creates missing per-domain runtime tables with IF NOT EXISTS semantics.

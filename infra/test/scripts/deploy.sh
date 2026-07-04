@@ -4,6 +4,7 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/inflap}"
 ENV_FILE="${ENV_FILE:-${APP_DIR}/env/test.env}"
 GHCR_ENV_FILE="${GHCR_ENV_FILE:-${APP_DIR}/env/ghcr.env}"
+RUNTIME_ENV_FILE="${RUNTIME_ENV_FILE:-${APP_DIR}/env/runtime.env}"
 DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-${APP_DIR}/env/deploy.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${APP_DIR}/docker-compose.test.yml}"
 
@@ -26,6 +27,10 @@ set -a
 if [[ -f "${GHCR_ENV_FILE}" ]]; then
   # shellcheck disable=SC1090
   . "${GHCR_ENV_FILE}"
+fi
+if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
+  # shellcheck disable=SC1090
+  . "${RUNTIME_ENV_FILE}"
 fi
 set +a
 
@@ -57,9 +62,14 @@ if [[ -f "${DEPLOY_ENV_FILE}.previous" ]]; then
 fi
 cp "${DEPLOY_ENV_FILE}" "${DEPLOY_ENV_FILE}.previous"
 
+compose_env_args=(--env-file "${ENV_FILE}")
+if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
+  compose_env_args+=(--env-file "${RUNTIME_ENV_FILE}")
+fi
+compose_env_args+=(--env-file "${DEPLOY_ENV_FILE}")
+
 docker compose \
-  --env-file "${ENV_FILE}" \
-  --env-file "${DEPLOY_ENV_FILE}" \
+  "${compose_env_args[@]}" \
   -f "${COMPOSE_FILE}" \
   pull
 
@@ -74,14 +84,12 @@ else
 fi
 
 docker compose \
-  --env-file "${ENV_FILE}" \
-  --env-file "${DEPLOY_ENV_FILE}" \
+  "${compose_env_args[@]}" \
   -f "${COMPOSE_FILE}" \
   up -d --remove-orphans
 
 docker compose \
-  --env-file "${ENV_FILE}" \
-  --env-file "${DEPLOY_ENV_FILE}" \
+  "${compose_env_args[@]}" \
   -f "${COMPOSE_FILE}" \
   ps
 

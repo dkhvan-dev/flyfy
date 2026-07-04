@@ -266,7 +266,19 @@ func (r *PGRepository) ExistsByName(ctx context.Context, name string, domainCode
 }
 
 func (r *PGRepository) HasActive(ctx context.Context, request app.TechBreakCheckRequest) (bool, error) {
-	table := techBreakTable(request.DomainCode)
+	tableName := techBreakTableName(request.DomainCode)
+	if tableName == "_tech_breaks" {
+		return false, nil
+	}
+	tableExists, err := r.tableExists(ctx, tableName)
+	if err != nil {
+		return false, err
+	}
+	if !tableExists {
+		return false, nil
+	}
+
+	table := rawIdentifier(tableName)
 	query := fmt.Sprintf(`
 		SELECT EXISTS(
 			SELECT 1
@@ -291,6 +303,14 @@ func (r *PGRepository) HasActive(ctx context.Context, request app.TechBreakCheck
 	`, table)
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, request.ScopeCodes, strings.TrimSpace(request.Email), strings.TrimSpace(request.Nickname)).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (r *PGRepository) tableExists(ctx context.Context, tableName string) (bool, error) {
+	var exists bool
+	if err := r.db.QueryRow(ctx, `SELECT to_regclass($1::text) IS NOT NULL`, "public."+tableName).Scan(&exists); err != nil {
 		return false, err
 	}
 	return exists, nil
@@ -796,7 +816,11 @@ func pageOf[T any](items []T, page int, size int, total int64) app.Page[T] {
 }
 
 func techBreakTable(domainCode string) string {
-	return rawIdentifier(strings.ToLower(strings.TrimSpace(domainCode)) + "_tech_breaks")
+	return rawIdentifier(techBreakTableName(domainCode))
+}
+
+func techBreakTableName(domainCode string) string {
+	return strings.ToLower(strings.TrimSpace(domainCode)) + "_tech_breaks"
 }
 
 func rawIdentifier(value string) string {
