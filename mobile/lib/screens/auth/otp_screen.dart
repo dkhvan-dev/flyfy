@@ -478,7 +478,8 @@ class _OtpScreenState extends State<OtpScreen> {
                                                       alignment:
                                                           Alignment.center,
                                                       decoration: AppBoxDecoration(
-                                                        color: AppPalette
+                                                        color: context
+                                                            .appColors
                                                             .primary
                                                             .withValues(
                                                               alpha: 0.05,
@@ -489,9 +490,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                                             ),
                                                         border: Border.all(
                                                           color: isFocused
-                                                              ? AppPalette
+                                                              ? context
+                                                                    .appColors
                                                                     .primary
-                                                              : AppPalette
+                                                              : context
+                                                                    .appColors
                                                                     .primary
                                                                     .withValues(
                                                                       alpha:
@@ -509,9 +512,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           color: char.isEmpty
-                                                              ? AppPalette
+                                                              ? context
+                                                                    .appColors
                                                                     .textMuted
-                                                              : AppPalette
+                                                              : context
+                                                                    .appColors
                                                                     .textPrimary,
                                                         ),
                                                       ),
@@ -798,6 +803,22 @@ class _OtpScreenState extends State<OtpScreen> {
                                                         ),
                                                   ),
                                                 ),
+                                                side:
+                                                    WidgetStateProperty.resolveWith<
+                                                      BorderSide
+                                                    >((states) {
+                                                      if (states.contains(
+                                                        WidgetState.disabled,
+                                                      )) {
+                                                        return BorderSide(
+                                                          color: context
+                                                              .appColors
+                                                              .border,
+                                                          width: 1.2,
+                                                        );
+                                                      }
+                                                      return BorderSide.none;
+                                                    }),
                                               ),
                                           child: Row(
                                             mainAxisAlignment:
@@ -817,7 +838,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                                       ? context
                                                             .appColors
                                                             .textPrimary
-                                                      : AppPalette.textDisabled,
+                                                      : context
+                                                            .appColors
+                                                            .textDisabled,
                                                 ),
                                               ),
                                               SizedBox(

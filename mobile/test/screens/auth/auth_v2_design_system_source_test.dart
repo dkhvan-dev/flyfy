@@ -153,9 +153,68 @@ void main() {
       source,
       matches(
         RegExp(
-          r'l10n\.verifyAndLogin[\s\S]*?color:\s*canSubmit\s*\?\s*context\s*\.\s*appColors\s*\.\s*textPrimary\s*:\s*AppPalette\s*\.\s*textDisabled',
+          r'l10n\.verifyAndLogin[\s\S]*?color:\s*canSubmit\s*\?\s*context\s*\.\s*appColors\s*\.\s*textPrimary\s*:\s*context\s*\.\s*appColors\s*\.\s*textDisabled',
         ),
       ),
+    );
+  });
+
+  test(
+    'otp code boxes use adaptive text colors for light theme contrast',
+    () async {
+      final source = await File(
+        'lib/screens/auth/otp_screen.dart',
+      ).readAsString();
+      final boxesStart = source.indexOf(
+        'for (\n                                                var index = 0;',
+      );
+      final hiddenFieldStart = source.indexOf('Positioned.fill(', boxesStart);
+
+      expect(boxesStart, isNonNegative);
+      expect(hiddenFieldStart, greaterThan(boxesStart));
+
+      final boxesSource = source.substring(boxesStart, hiddenFieldStart);
+
+      expect(
+        boxesSource,
+        matches(RegExp(r'context\s*\.\s*appColors\s*\.\s*textPrimary')),
+      );
+      expect(
+        boxesSource,
+        matches(RegExp(r'context\s*\.\s*appColors\s*\.\s*textMuted')),
+      );
+      expect(boxesSource, isNot(contains('AppPalette.textPrimary')));
+      expect(boxesSource, isNot(contains('AppPalette.textMuted')));
+    },
+  );
+
+  test('otp disabled submit button keeps a visible adaptive outline', () async {
+    final source = await File(
+      'lib/screens/auth/otp_screen.dart',
+    ).readAsString();
+    final buttonStart = source.indexOf('return FilledButton(');
+    final buttonChildStart = source.indexOf('child: Row(', buttonStart);
+
+    expect(buttonStart, isNonNegative);
+    expect(buttonChildStart, greaterThan(buttonStart));
+
+    final buttonStyleSource = source.substring(buttonStart, buttonChildStart);
+
+    expect(
+      buttonStyleSource,
+      matches(
+        RegExp(
+          r'side:\s*WidgetStateProperty\.resolveWith\s*<\s*BorderSide\s*>\s*\(',
+        ),
+      ),
+    );
+    expect(
+      buttonStyleSource,
+      matches(RegExp(r'states\.contains\s*\(\s*WidgetState\.disabled')),
+    );
+    expect(
+      buttonStyleSource,
+      matches(RegExp(r'context\s*\.\s*appColors\s*\.\s*border')),
     );
   });
 }

@@ -1703,17 +1703,24 @@ class _ProfileBanner extends StatelessWidget {
                     height: 1.45,
                   ),
                 ),
+                if (onTap != null) ...[
+                  SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton(
+                      onPressed: onTap,
+                      child: Text(
+                        AppLocalizations.of(context)!.editProfileButton,
+                        style: AppTextStyle(
+                          color: context.profileColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          if (onTap != null)
-            TextButton(
-              onPressed: onTap,
-              child: Text(
-                AppLocalizations.of(context)!.editProfileButton,
-                style: AppTextStyle(color: context.profileColors.primary),
-              ),
-            ),
         ],
       ),
     );

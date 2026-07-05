@@ -277,6 +277,32 @@ void main() {
   });
 
   test(
+    'profile completion banner keeps edit action inside flexible text column',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final bannerStart = source.indexOf('class _ProfileBanner');
+      final nextClassStart = source.indexOf('class ', bannerStart + 1);
+
+      expect(bannerStart, isNonNegative);
+      expect(nextClassStart, greaterThan(bannerStart));
+
+      final bannerSource = source.substring(bannerStart, nextClassStart);
+      final expandedStart = bannerSource.indexOf('Expanded(');
+      final buttonStart = bannerSource.indexOf('TextButton(');
+      final rowSiblingButtonStart = bannerSource.indexOf(
+        'if (onTap != null)\n            TextButton(',
+      );
+
+      expect(expandedStart, isNonNegative);
+      expect(buttonStart, greaterThan(expandedStart));
+      expect(rowSiblingButtonStart, isNegative);
+      expect(bannerSource, contains('AlignmentDirectional.centerStart'));
+    },
+  );
+
+  test(
     'connections preview exposes any incoming request from first item',
     () async {
       final source = await File(
