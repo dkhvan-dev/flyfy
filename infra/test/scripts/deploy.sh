@@ -28,11 +28,11 @@ if [[ -f "${GHCR_ENV_FILE}" ]]; then
   # shellcheck disable=SC1090
   . "${GHCR_ENV_FILE}"
 fi
-if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
-  # shellcheck disable=SC1090
-  . "${RUNTIME_ENV_FILE}"
-fi
 set +a
+
+# runtime.env is a Docker Compose env-file, not a shell script.
+# Values such as "Inflap <otp@send.inflap.app>" are valid for Compose
+# but invalid when executed through `source`, so keep it out of shell loading.
 
 IMAGE_REGISTRY="${REQUESTED_IMAGE_REGISTRY:-${IMAGE_REGISTRY:-ghcr.io}}"
 IMAGE_NAMESPACE="${REQUESTED_IMAGE_NAMESPACE:-${IMAGE_NAMESPACE:-}}"
