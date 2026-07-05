@@ -27,7 +27,13 @@ final class DebugNetworkInspector {
     dio.interceptors.add((factory ?? ChuckerDioInterceptor.new)());
   }
 
+  static void open() {
+    if (!isEnabled) return;
+    _configure();
+    ChuckerFlutter.showChuckerScreen();
+  }
+
   static void _configure() {
-    ChuckerFlutter.configure(showOnRelease: false, showNotification: true);
+    ChuckerFlutter.configure(showOnRelease: false, showNotification: false);
   }
 }

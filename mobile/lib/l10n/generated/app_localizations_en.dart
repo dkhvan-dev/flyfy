@@ -1751,6 +1751,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSettingsPageTitle => 'Settings';
 
   @override
+  String get profileDebugNetworkInspectorTitle => 'Network inspector';
+
+  @override
+  String get profileDebugNetworkInspectorSubtitle =>
+      'Open Chucker requests and responses';
+
+  @override
   String get profileSaveChangesButton => 'Save changes';
 
   @override

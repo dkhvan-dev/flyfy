@@ -3280,6 +3280,18 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get profileSettingsPageTitle;
 
+  /// No description provided for @profileDebugNetworkInspectorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network inspector'**
+  String get profileDebugNetworkInspectorTitle;
+
+  /// No description provided for @profileDebugNetworkInspectorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Chucker requests and responses'**
+  String get profileDebugNetworkInspectorSubtitle;
+
   /// No description provided for @profileSaveChangesButton.
   ///
   /// In en, this message translates to:

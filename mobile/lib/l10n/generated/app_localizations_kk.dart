@@ -1759,6 +1759,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileSettingsPageTitle => 'Баптаулар';
 
   @override
+  String get profileDebugNetworkInspectorTitle => 'Желі инспекторы';
+
+  @override
+  String get profileDebugNetworkInspectorSubtitle =>
+      'Chucker сұраулары мен жауаптарын ашу';
+
+  @override
   String get profileSaveChangesButton => 'Өзгерістерді сақтау';
 
   @override

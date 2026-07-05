@@ -622,6 +622,8 @@
   "profileMessageAction": "Написать",
   "profileMessageOpenFailed": "Не удалось открыть чат. Попробуйте еще раз.",
   "profileSettingsPageTitle": "Настройки",
+  "profileDebugNetworkInspectorTitle": "Инспектор сети",
+  "profileDebugNetworkInspectorSubtitle": "Открыть запросы и ответы Chucker",
   "profileSaveChangesButton": "Сохранить изменения",
   "profileDeactivateAccountLabel": "Деактивировать аккаунт",
   "profileSettingsAvatarDisabledHint": "Изменение фото профиля появится в одном из следующих обновлений.",

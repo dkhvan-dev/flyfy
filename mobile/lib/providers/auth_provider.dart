@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../core/auth/auth_session_events.dart';
+import '../core/auth/google_auth_service.dart';
 import '../core/network/api_client.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../core/storage/secure_storage.dart';
@@ -15,16 +16,19 @@ class AuthProvider extends ChangeNotifier {
     ApiClient? apiClient,
     SecureStorage? secureStorage,
     AuthSessionEvents? authSessionEvents,
+    GoogleAuthTokenProvider? googleAuthTokenProvider,
   }) : this._(
          apiClient: apiClient,
          secureStorage: secureStorage ?? SecureStorage(),
          authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
+         googleAuthTokenProvider: googleAuthTokenProvider,
        );
 
   AuthProvider._({
     required ApiClient? apiClient,
     required SecureStorage secureStorage,
     required AuthSessionEvents authSessionEvents,
+    required GoogleAuthTokenProvider? googleAuthTokenProvider,
   }) : _apiClient =
            apiClient ??
            ApiClient(
@@ -32,7 +36,9 @@ class AuthProvider extends ChangeNotifier {
              authSessionEvents: authSessionEvents,
            ),
        _secureStorage = secureStorage,
-       _authSessionEvents = authSessionEvents {
+       _authSessionEvents = authSessionEvents,
+       _googleAuthTokenProvider =
+           googleAuthTokenProvider ?? GoogleAuthService() {
     _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
       unawaited(_handleSessionExpired());
     });
@@ -41,6 +47,7 @@ class AuthProvider extends ChangeNotifier {
   final ApiClient _apiClient;
   final SecureStorage _secureStorage;
   final AuthSessionEvents _authSessionEvents;
+  final GoogleAuthTokenProvider _googleAuthTokenProvider;
   late final StreamSubscription<void> _sessionExpiredSubscription;
 
   AuthState _state = AuthState.initial;
@@ -57,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isPasswordChangeLoading = false;
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
+  bool _wasLastOAuthCancelled = false;
 
   AuthState get state => _state;
   String? get errorMessage => _errorMessage;
@@ -70,6 +78,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isPasswordChangeLoading => _isPasswordChangeLoading;
   bool get isGoogleLoading => _isGoogleLoading;
   bool get isAppleLoading => _isAppleLoading;
+  bool get wasLastOAuthCancelled => _wasLastOAuthCancelled;
 
   Future<void> checkAuthStatus() async {
     try {
@@ -338,12 +347,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithGoogle(String idToken) async {
+  Future<bool> loginWithGoogle() async {
     _isGoogleLoading = true;
     _errorMessage = null;
+    _wasLastOAuthCancelled = false;
     notifyListeners();
 
     try {
+      final idToken = await _googleAuthTokenProvider.requestIdToken();
+      if (idToken == null) {
+        _wasLastOAuthCancelled = true;
+        return false;
+      }
+
       final result = await _apiClient.loginWithGoogle(idToken);
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
@@ -357,6 +373,9 @@ class AuthProvider extends ChangeNotifier {
 
       _state = AuthState.authenticated;
       return true;
+    } on GoogleAuthException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
       return false;
@@ -371,6 +390,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> loginWithApple(String idToken) async {
     _isAppleLoading = true;
     _errorMessage = null;
+    _wasLastOAuthCancelled = false;
     notifyListeners();
 
     try {

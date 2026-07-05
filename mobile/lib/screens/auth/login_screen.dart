@@ -700,12 +700,15 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(ctx)!;
     final authProvider = ctx.read<AuthProvider>();
     final success = provider == _OAuthProvider.google
-        ? await authProvider.loginWithGoogle('mock_google_token')
+        ? await authProvider.loginWithGoogle()
         : await authProvider.loginWithApple('mock_apple_token');
 
     if (!ctx.mounted) return;
     if (success) {
       await _completeAuthenticatedEntry(ctx, authProvider);
+      return;
+    }
+    if (authProvider.wasLastOAuthCancelled) {
       return;
     }
 
@@ -890,6 +893,7 @@ class _AuthModeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final modeTextColor = context.appColors.textPrimary;
     return SegmentedButton<_AuthEntryMode>(
       segments: [
         ButtonSegment<_AuthEntryMode>(
@@ -907,8 +911,9 @@ class _AuthModeSwitch extends StatelessWidget {
       showSelectedIcon: false,
       onSelectionChanged: (selection) => onChanged(selection.first),
       style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.all(context.appColors.textPrimary),
-        iconColor: WidgetStateProperty.all(context.appColors.textPrimary),
+        foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary),
+        iconColor: WidgetStateProperty.all(AppPalette.textPrimary),
+        textStyle: WidgetStateProperty.all(AppTextStyle(color: modeTextColor)),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppPalette.primary

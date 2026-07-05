@@ -622,6 +622,8 @@
   "profileMessageAction": "Жазу",
   "profileMessageOpenFailed": "Чатты ашу мүмкін болмады. Қайта көріңіз.",
   "profileSettingsPageTitle": "Баптаулар",
+  "profileDebugNetworkInspectorTitle": "Желі инспекторы",
+  "profileDebugNetworkInspectorSubtitle": "Chucker сұраулары мен жауаптарын ашу",
   "profileSaveChangesButton": "Өзгерістерді сақтау",
   "profileDeactivateAccountLabel": "Аккаунтты өшіру",
   "profileSettingsAvatarDisabledHint": "Профиль суретін өзгерту келесі жаңартулардың бірінде қосылады.",

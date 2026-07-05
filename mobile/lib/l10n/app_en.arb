@@ -622,6 +622,8 @@
   "profileMessageAction": "Message",
   "profileMessageOpenFailed": "Failed to open chat. Please try again.",
   "profileSettingsPageTitle": "Settings",
+  "profileDebugNetworkInspectorTitle": "Network inspector",
+  "profileDebugNetworkInspectorSubtitle": "Open Chucker requests and responses",
   "profileSaveChangesButton": "Save changes",
   "profileDeactivateAccountLabel": "Deactivate account",
   "profileSettingsAvatarDisabledHint": "Profile photo editing will be available in a future update.",

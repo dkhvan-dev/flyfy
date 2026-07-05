@@ -1758,6 +1758,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSettingsPageTitle => 'Настройки';
 
   @override
+  String get profileDebugNetworkInspectorTitle => 'Инспектор сети';
+
+  @override
+  String get profileDebugNetworkInspectorSubtitle =>
+      'Открыть запросы и ответы Chucker';
+
+  @override
   String get profileSaveChangesButton => 'Сохранить изменения';
 
   @override

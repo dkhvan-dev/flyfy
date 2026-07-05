@@ -297,6 +297,74 @@ void main() {
     expect(dialogSource, contains('SafeArea('));
     expect(dialogSource, contains('ConstrainedBox('));
   });
+
+  test('profile settings exposes debug network inspector below logout', () async {
+    final source = await File(
+      'lib/screens/profile/profile_settings_screen.dart',
+    ).readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(
+      source,
+      contains("import '../../core/network/debug_network_inspector.dart';"),
+    );
+    expect(source, contains('void _openDebugNetworkInspector()'));
+    expect(source, contains('DebugNetworkInspector.open();'));
+
+    final logoutButton = source.indexOf('l10n.logoutButton');
+    final debugGate = source.indexOf(
+      'if (DebugNetworkInspector.isEnabled)',
+      logoutButton,
+    );
+    final debugIcon = source.indexOf('Icons.bug_report_outlined', debugGate);
+    final debugTitle = source.indexOf(
+      'l10n.profileDebugNetworkInspectorTitle',
+      debugIcon,
+    );
+    final debugAction = source.indexOf(
+      'onPressed: _openDebugNetworkInspector',
+      debugGate,
+    );
+
+    expect(logoutButton, isNonNegative);
+    expect(debugGate, greaterThan(logoutButton));
+    expect(debugIcon, greaterThan(debugGate));
+    expect(debugTitle, greaterThan(debugIcon));
+    expect(debugAction, greaterThan(debugGate));
+
+    expect(
+      enArb,
+      contains('"profileDebugNetworkInspectorTitle": "Network inspector"'),
+    );
+    expect(
+      enArb,
+      contains(
+        '"profileDebugNetworkInspectorSubtitle": "Open Chucker requests and responses"',
+      ),
+    );
+    expect(
+      ruArb,
+      contains('"profileDebugNetworkInspectorTitle": "Инспектор сети"'),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"profileDebugNetworkInspectorSubtitle": "Открыть запросы и ответы Chucker"',
+      ),
+    );
+    expect(
+      kkArb,
+      contains('"profileDebugNetworkInspectorTitle": "Желі инспекторы"'),
+    );
+    expect(
+      kkArb,
+      contains(
+        '"profileDebugNetworkInspectorSubtitle": "Chucker сұраулары мен жауаптарын ашу"',
+      ),
+    );
+  });
 }
 
 int _headingIndex(String source, String titleExpression) {

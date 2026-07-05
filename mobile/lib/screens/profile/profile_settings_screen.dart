@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
+import '../../core/network/debug_network_inspector.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
@@ -224,6 +225,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     };
   }
 
+  void _openDebugNetworkInspector() {
+    DebugNetworkInspector.open();
+  }
+
   Future<void> _confirmLogout() async {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.read<AuthProvider>();
@@ -409,6 +414,129 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         ),
                       ),
                     ),
+                    if (DebugNetworkInspector.isEnabled) ...[
+                      SizedBox(
+                        height: profileScaled(context, 12, min: 10, max: 14),
+                      ),
+                      OutlinedButton(
+                        onPressed: _openDebugNetworkInspector,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.textPrimary,
+                          side: BorderSide(color: colors.borderPrimary),
+                          minimumSize: Size(
+                            double.infinity,
+                            profileScaled(context, 66, min: 58, max: 72),
+                          ),
+                          padding: AppEdgeInsets.symmetric(
+                            horizontal: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                            vertical: profileScaled(
+                              context,
+                              12,
+                              min: 10,
+                              max: 14,
+                            ),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppBorderRadius.circular(
+                              profileScaled(context, 20, min: 18, max: 22),
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.bug_report_outlined,
+                              color: colors.primary,
+                              size: profileScaled(
+                                context,
+                                22,
+                                min: 20,
+                                max: 24,
+                              ),
+                            ),
+                            SizedBox(
+                              width: profileScaled(
+                                context,
+                                12,
+                                min: 10,
+                                max: 14,
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.profileDebugNetworkInspectorTitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyle(
+                                      color: colors.textPrimary,
+                                      fontSize: profileScaled(
+                                        context,
+                                        15,
+                                        min: 14,
+                                        max: 16,
+                                      ),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: profileScaled(
+                                      context,
+                                      4,
+                                      min: 3,
+                                      max: 5,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.profileDebugNetworkInspectorSubtitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyle(
+                                      color: colors.textMuted,
+                                      fontSize: profileScaled(
+                                        context,
+                                        12,
+                                        min: 11,
+                                        max: 13,
+                                      ),
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              width: profileScaled(
+                                context,
+                                10,
+                                min: 8,
+                                max: 12,
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: colors.textMuted,
+                              size: profileScaled(
+                                context,
+                                22,
+                                min: 20,
+                                max: 24,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
