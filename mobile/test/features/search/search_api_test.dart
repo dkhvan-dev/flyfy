@@ -45,6 +45,18 @@ void main() {
           'guides': {'items': [], 'hasMore': false},
           'communities': {'items': [], 'hasMore': false},
           'users': {'items': [], 'hasMore': false},
+          'helpArticles': {
+            'items': [
+              {
+                'domain': 'help_article',
+                'entityId': 'help-1',
+                'title': 'Как найти экскурсию',
+                'deepLink': '/help?article=help-1',
+                'score': 0.8,
+              },
+            ],
+            'hasMore': false,
+          },
         },
         'nextPageToken': 'next',
       });
@@ -84,6 +96,10 @@ void main() {
       expect(page.groups.places.items.single.title, 'Алматы');
       expect(page.groups.places.nextPageToken, 'places-next');
       expect(page.groups.places.hasMore, isTrue);
+      expect(
+        page.groups.helpArticles.items.single.domain,
+        SearchDomain.helpArticle,
+      );
       expect(page.nextPageToken, 'next');
     },
   );
@@ -99,6 +115,7 @@ void main() {
         'guides': {'items': [], 'hasMore': false},
         'communities': {'items': [], 'hasMore': false},
         'users': {'items': [], 'hasMore': false},
+        'helpArticles': {'items': [], 'hasMore': false},
       },
     });
     final api = SearchApi(

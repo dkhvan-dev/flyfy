@@ -70,6 +70,7 @@ class SearchGroups {
     this.guides = const SearchGroupPage(),
     this.communities = const SearchGroupPage(),
     this.users = const SearchGroupPage(),
+    this.helpArticles = const SearchGroupPage(),
   });
 
   final SearchGroupPage places;
@@ -78,6 +79,7 @@ class SearchGroups {
   final SearchGroupPage guides;
   final SearchGroupPage communities;
   final SearchGroupPage users;
+  final SearchGroupPage helpArticles;
 
   factory SearchGroups.fromJson(Map<String, dynamic>? json) {
     return SearchGroups(
@@ -87,6 +89,7 @@ class SearchGroups {
       guides: SearchGroupPage.fromJson(json?['guides']),
       communities: SearchGroupPage.fromJson(json?['communities']),
       users: SearchGroupPage.fromJson(json?['users']),
+      helpArticles: SearchGroupPage.fromJson(json?['helpArticles']),
     );
   }
 
@@ -98,6 +101,7 @@ class SearchGroups {
       SearchDomain.guide => guides,
       SearchDomain.community => communities,
       SearchDomain.user => users,
+      SearchDomain.helpArticle => helpArticles,
     };
   }
 
@@ -110,6 +114,7 @@ class SearchGroups {
         guides: guides,
         communities: communities,
         users: users,
+        helpArticles: helpArticles,
       ),
       SearchDomain.excursion => SearchGroups(
         places: places,
@@ -118,6 +123,7 @@ class SearchGroups {
         guides: guides,
         communities: communities,
         users: users,
+        helpArticles: helpArticles,
       ),
       SearchDomain.place => SearchGroups(
         places: page,
@@ -126,6 +132,7 @@ class SearchGroups {
         guides: guides,
         communities: communities,
         users: users,
+        helpArticles: helpArticles,
       ),
       SearchDomain.guide => SearchGroups(
         places: places,
@@ -134,6 +141,7 @@ class SearchGroups {
         guides: page,
         communities: communities,
         users: users,
+        helpArticles: helpArticles,
       ),
       SearchDomain.community => SearchGroups(
         places: places,
@@ -142,6 +150,7 @@ class SearchGroups {
         guides: guides,
         communities: page,
         users: users,
+        helpArticles: helpArticles,
       ),
       SearchDomain.user => SearchGroups(
         places: places,
@@ -150,6 +159,16 @@ class SearchGroups {
         guides: guides,
         communities: communities,
         users: page,
+        helpArticles: helpArticles,
+      ),
+      SearchDomain.helpArticle => SearchGroups(
+        places: places,
+        activities: activities,
+        excursions: excursions,
+        guides: guides,
+        communities: communities,
+        users: users,
+        helpArticles: page,
       ),
     };
   }

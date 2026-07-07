@@ -4951,7 +4951,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchIdleMessage.
   ///
   /// In en, this message translates to:
-  /// **'Find activities, places, excursions, guides, communities, and people.'**
+  /// **'Find activities, places, excursions, guides, communities, help articles, and people.'**
   String get searchIdleMessage;
 
   /// No description provided for @searchNoResultsTitle.
@@ -5020,6 +5020,12 @@ abstract class AppLocalizations {
   /// **'People'**
   String get searchUsersTitle;
 
+  /// No description provided for @searchHelpArticlesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help center'**
+  String get searchHelpArticlesTitle;
+
   /// No description provided for @searchDomainActivity.
   ///
   /// In en, this message translates to:
@@ -5055,6 +5061,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Person'**
   String get searchDomainUser;
+
+  /// No description provided for @searchDomainHelpArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help article'**
+  String get searchDomainHelpArticle;
 
   /// No description provided for @homeSearchHint.
   ///

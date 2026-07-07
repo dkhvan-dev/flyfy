@@ -394,12 +394,13 @@ type searchResponse struct {
 }
 
 type searchGroupsResponse struct {
-	Places      searchGroupResponse `json:"places"`
-	Activities  searchGroupResponse `json:"activities"`
-	Excursions  searchGroupResponse `json:"excursions"`
-	Guides      searchGroupResponse `json:"guides"`
-	Communities searchGroupResponse `json:"communities"`
-	Users       searchGroupResponse `json:"users"`
+	Places       searchGroupResponse `json:"places"`
+	Activities   searchGroupResponse `json:"activities"`
+	Excursions   searchGroupResponse `json:"excursions"`
+	Guides       searchGroupResponse `json:"guides"`
+	Communities  searchGroupResponse `json:"communities"`
+	Users        searchGroupResponse `json:"users"`
+	HelpArticles searchGroupResponse `json:"helpArticles"`
 }
 
 type searchGroupResponse struct {
@@ -511,6 +512,8 @@ func searchResponseFromPage(input app.SearchInput, page app.SearchPage) searchRe
 			resp.Groups.Communities.Items = append(resp.Groups.Communities.Items, mapped)
 		case model.DomainUser:
 			resp.Groups.Users.Items = append(resp.Groups.Users.Items, mapped)
+		case model.DomainHelpArticle:
+			resp.Groups.HelpArticles.Items = append(resp.Groups.HelpArticles.Items, mapped)
 		}
 	}
 
@@ -520,6 +523,7 @@ func searchResponseFromPage(input app.SearchInput, page app.SearchPage) searchRe
 	resp.Groups.Guides.Items = ensureSlice(resp.Groups.Guides.Items)
 	resp.Groups.Communities.Items = ensureSlice(resp.Groups.Communities.Items)
 	resp.Groups.Users.Items = ensureSlice(resp.Groups.Users.Items)
+	resp.Groups.HelpArticles.Items = ensureSlice(resp.Groups.HelpArticles.Items)
 
 	return resp
 }
@@ -532,6 +536,7 @@ func searchResponseFromGroupedPage(input app.SearchInput, page app.GroupedSearch
 	resp.Groups.Guides = searchGroupResponseFromPage(page.Groups[model.DomainGuide])
 	resp.Groups.Communities = searchGroupResponseFromPage(page.Groups[model.DomainCommunity])
 	resp.Groups.Users = searchGroupResponseFromPage(page.Groups[model.DomainUser])
+	resp.Groups.HelpArticles = searchGroupResponseFromPage(page.Groups[model.DomainHelpArticle])
 	return resp
 }
 

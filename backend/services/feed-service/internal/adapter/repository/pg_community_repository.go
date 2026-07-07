@@ -20,8 +20,11 @@ const maxCommunityPlatformPaginationLimit = 500
 
 func (r *PGPostRepository) ListCommunities(ctx context.Context, filter model.CommunityListFilter) ([]*model.Community, error) {
 	args := make([]any, 0, 8)
-	clauses := []string{"deleted_at IS NULL"}
+	clauses := make([]string, 0, 8)
 
+	if !filter.IncludeDeleted {
+		clauses = append(clauses, "deleted_at IS NULL")
+	}
 	if filter.PublicOnly {
 		clauses = append(clauses, "status = 'ACTIVE'", "visibility = 'PUBLIC'")
 	}
@@ -102,7 +105,7 @@ func (r *PGPostRepository) ListCommunities(ctx context.Context, filter model.Com
 		WHERE %s
 		ORDER BY follower_count DESC, title ASC
 		LIMIT $%d OFFSET $%d
-	`, strings.Join(clauses, " AND "), limitPos, offsetPos)
+	`, communityWhereClause(clauses), limitPos, offsetPos)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -119,6 +122,13 @@ func (r *PGPostRepository) ListCommunities(ctx context.Context, filter model.Com
 		items = append(items, item)
 	}
 	return items, rows.Err()
+}
+
+func communityWhereClause(clauses []string) string {
+	if len(clauses) == 0 {
+		return "TRUE"
+	}
+	return strings.Join(clauses, " AND ")
 }
 
 func (r *PGPostRepository) CreateCommunity(ctx context.Context, community *model.Community) error {

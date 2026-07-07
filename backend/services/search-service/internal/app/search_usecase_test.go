@@ -214,8 +214,8 @@ func TestSearchGroupedFetchesDomainGroupsConcurrently(t *testing.T) {
 	if elapsed >= 250*time.Millisecond {
 		t.Fatalf("SearchGrouped elapsed = %s, want grouped repository calls to run concurrently", elapsed)
 	}
-	if repo.searchCalls != 7 {
-		t.Fatalf("repository calls = %d, want top results + 6 domain groups", repo.searchCalls)
+	if repo.searchCalls != 8 {
+		t.Fatalf("repository calls = %d, want top results + 7 domain groups", repo.searchCalls)
 	}
 }
 

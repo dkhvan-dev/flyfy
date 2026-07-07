@@ -14,13 +14,16 @@ COPY ./backend/services/feed-service /app/backend/services/feed-service
 WORKDIR /app/backend/services/feed-service
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o feed-service ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -o feed-service ./cmd && \
+    go build -o feed-service-backfill-search-index ./cmd/backfill-search-index
 
 FROM gcr.io/distroless/base-debian12:latest
 
 WORKDIR /opt/app
 
 COPY --from=builder /app/backend/services/feed-service/feed-service /opt/app/feed-service
+COPY --from=builder /app/backend/services/feed-service/feed-service-backfill-search-index /opt/app/feed-service-backfill-search-index
 
 EXPOSE 8087
 

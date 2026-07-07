@@ -11,18 +11,21 @@ import (
 )
 
 type Config struct {
-	App          AppConfig
-	HTTP         HTTPConfig
-	DB           DBConfig
-	Chat         ChatConfig
-	Notification NotificationConfig
-	UserContext  UserContextConfig
-	Security     SecurityConfig
-	MTLS         transportauth.EnvConfig
+	App           AppConfig
+	HTTP          HTTPConfig
+	DB            DBConfig
+	Chat          ChatConfig
+	Notification  NotificationConfig
+	UserContext   UserContextConfig
+	SearchService SearchServiceConfig
+	TokenService  TokenServiceConfig
+	Security      SecurityConfig
+	MTLS          transportauth.EnvConfig
 }
 
 type AppConfig struct {
 	Name string
+	Env  string
 }
 
 type HTTPConfig struct {
@@ -57,6 +60,19 @@ type UserContextConfig struct {
 	SegmentRefreshInterval time.Duration
 }
 
+type SearchServiceConfig struct {
+	Enabled bool
+	HTTPURL string
+	Timeout time.Duration
+}
+
+type TokenServiceConfig struct {
+	Target        string
+	ServiceID     string
+	ServiceSecret string
+	CallTimeout   time.Duration
+}
+
 type SecurityConfig struct {
 	InternalServiceToken string
 }
@@ -79,6 +95,16 @@ func (c NotificationConfig) OperatorAlertsEnabled() bool {
 
 func (c UserContextConfig) Enabled() bool {
 	return strings.TrimSpace(c.UserServiceURL) != ""
+}
+
+func (c TokenServiceConfig) Enabled() bool {
+	return strings.TrimSpace(c.Target) != "" &&
+		strings.TrimSpace(c.ServiceID) != "" &&
+		strings.TrimSpace(c.ServiceSecret) != ""
+}
+
+func (a AppConfig) IsProduction() bool {
+	return strings.EqualFold(a.Env, "production")
 }
 
 func (c HTTPConfig) Address() string {
@@ -131,9 +157,21 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	searchIndexingEnabled, err := envBool("SUPPORT_SERVICE_SEARCH_INDEXING_ENABLED", false)
+	if err != nil {
+		return Config{}, err
+	}
+	searchServiceTimeout, err := envDuration("SEARCH_SERVICE_TIMEOUT", 800*time.Millisecond)
+	if err != nil {
+		return Config{}, err
+	}
+	tokenServiceCallTimeout, err := envDuration("TOKEN_SERVICE_CALL_TIMEOUT", 3*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
 
 	return Config{
-		App: AppConfig{Name: "support-service"},
+		App: AppConfig{Name: "support-service", Env: envString("APP_ENV", "development")},
 		HTTP: HTTPConfig{
 			Port:            port,
 			InternalTLSPort: internalTLSPort,
@@ -158,6 +196,17 @@ func Load() (Config, error) {
 			GuideServiceURL:        os.Getenv("SUPPORT_SERVICE_GUIDE_SERVICE_URL"),
 			Timeout:                userContextTimeout,
 			SegmentRefreshInterval: segmentRefreshInterval,
+		},
+		SearchService: SearchServiceConfig{
+			Enabled: searchIndexingEnabled,
+			HTTPURL: envString("SEARCH_SERVICE_HTTP_URL", "http://search-service:8101"),
+			Timeout: searchServiceTimeout,
+		},
+		TokenService: TokenServiceConfig{
+			Target:        envString("TOKEN_SERVICE_GRPC_TARGET", "dns:///token-service:50051"),
+			ServiceID:     envString("TOKEN_SERVICE_ID", "support-service"),
+			ServiceSecret: os.Getenv("TOKEN_SERVICE_SECRET"),
+			CallTimeout:   tokenServiceCallTimeout,
 		},
 		Security: SecurityConfig{
 			InternalServiceToken: os.Getenv("SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN"),
@@ -195,6 +244,18 @@ func envInt(name string, fallback int) (int, error) {
 	parsed, err := strconv.Atoi(value)
 	if err != nil || parsed <= 0 || parsed > 65535 {
 		return 0, fmt.Errorf("invalid %s", name)
+	}
+	return parsed, nil
+}
+
+func envBool(name string, fallback bool) (bool, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback, nil
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("invalid %s", name)
 	}
 	return parsed, nil
 }

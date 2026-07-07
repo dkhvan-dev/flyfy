@@ -2675,7 +2675,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchIdleMessage =>
-      'Find activities, places, excursions, guides, communities, and people.';
+      'Find activities, places, excursions, guides, communities, help articles, and people.';
 
   @override
   String get searchNoResultsTitle => 'Nothing found';
@@ -2712,6 +2712,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchUsersTitle => 'People';
 
   @override
+  String get searchHelpArticlesTitle => 'Help center';
+
+  @override
   String get searchDomainActivity => 'Activity';
 
   @override
@@ -2728,6 +2731,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchDomainUser => 'Person';
+
+  @override
+  String get searchDomainHelpArticle => 'Help article';
 
   @override
   String get homeSearchHint => 'Activities, places, excursions...';

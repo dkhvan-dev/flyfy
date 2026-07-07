@@ -2693,7 +2693,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get searchIdleMessage =>
-      'Белсенділіктерді, орындарды, экскурсияларды, гидтерді, қауымдастықтарды және адамдарды іздеңіз.';
+      'Белсенділіктерді, орындарды, экскурсияларды, гидтерді, қауымдастықтарды, көмек мақалаларын және адамдарды іздеңіз.';
 
   @override
   String get searchNoResultsTitle => 'Ештеңе табылмады';
@@ -2730,6 +2730,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get searchUsersTitle => 'Адамдар';
 
   @override
+  String get searchHelpArticlesTitle => 'Көмек орталығы';
+
+  @override
   String get searchDomainActivity => 'Белсенділік';
 
   @override
@@ -2746,6 +2749,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get searchDomainUser => 'Адам';
+
+  @override
+  String get searchDomainHelpArticle => 'Көмек мақаласы';
 
   @override
   String get homeSearchHint => 'Белсенділіктер, орындар, экскурсиялар...';

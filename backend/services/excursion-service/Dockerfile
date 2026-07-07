@@ -25,6 +25,7 @@ COPY backend/services/excursion-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /bin/excursion-service ./cmd && \
+    go build -ldflags="-s -w" -o /bin/excursion-service-backfill-search-index ./cmd/backfill-search-index && \
     go build -ldflags="-s -w" -o /bin/recalculate-guide-ratings ./cmd/recalculate-guide-ratings && \
     go build -ldflags="-s -w" -o /bin/backfill-guide-search-snapshot ./cmd/backfill-guide-search-snapshot
 
@@ -37,6 +38,7 @@ RUN apk add --no-cache ca-certificates tzdata wget \
 WORKDIR /app
 
 COPY --from=builder /bin/excursion-service /app/excursion-service
+COPY --from=builder /bin/excursion-service-backfill-search-index /app/excursion-service-backfill-search-index
 COPY --from=builder /bin/recalculate-guide-ratings /app/recalculate-guide-ratings
 COPY --from=builder /bin/backfill-guide-search-snapshot /app/backfill-guide-search-snapshot
 COPY --from=builder /app/backend/services/excursion-service/migrations /app/migrations

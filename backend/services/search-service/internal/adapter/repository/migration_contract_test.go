@@ -189,6 +189,24 @@ func TestSearchCandidateSelectionMigrationDefinesKNNAndTrendingIndexes(t *testin
 	}
 }
 
+func TestHelpArticleSearchDomainMigrationExtendsDomainConstraint(t *testing.T) {
+	up := readMigration(t, "006_add_help_article_search_domain.up.sql")
+	down := readMigration(t, "006_add_help_article_search_domain.down.sql")
+
+	for _, fragment := range []string{
+		"DROP CONSTRAINT IF EXISTS search_documents_domain_check",
+		"'help_article'",
+		"VALIDATE CONSTRAINT search_documents_domain_check",
+	} {
+		if !strings.Contains(up, fragment) {
+			t.Fatalf("help article domain migration missing %q", fragment)
+		}
+	}
+	if strings.Contains(down, "'help_article'") && !strings.Contains(down, "DELETE FROM search_documents") {
+		t.Fatalf("help article down migration must clean derived help documents before restoring constraint")
+	}
+}
+
 func TestSearchRepositorySQLIncludesGeoBoostContract(t *testing.T) {
 	source := readRepositorySource(t, "pg_search_repository.go")
 

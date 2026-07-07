@@ -267,5 +267,6 @@ bool _hasResults(SearchPage page) {
       groups.places.items.isNotEmpty ||
       groups.guides.items.isNotEmpty ||
       groups.communities.items.isNotEmpty ||
-      groups.users.items.isNotEmpty;
+      groups.users.items.isNotEmpty ||
+      groups.helpArticles.items.isNotEmpty;
 }

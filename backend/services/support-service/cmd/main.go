@@ -12,10 +12,12 @@ import (
 	"syscall"
 	"time"
 
+	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/transportauth"
 	chatadapter "kz/inflap/backend/services/support-service/internal/adapter/chat"
 	httpadapter "kz/inflap/backend/services/support-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/support-service/internal/adapter/notification"
+	searchindexadapter "kz/inflap/backend/services/support-service/internal/adapter/searchindex"
 	usercontextadapter "kz/inflap/backend/services/support-service/internal/adapter/usercontext"
 	"kz/inflap/backend/services/support-service/internal/app"
 	"kz/inflap/backend/services/support-service/internal/config"
@@ -38,6 +40,20 @@ func main() {
 	defer cleanupRepo()
 
 	uc := app.NewHelpUseCase(repo, func() time.Time { return time.Now().UTC() })
+	if cfg.SearchService.Enabled {
+		searchIndexOptions, closeSearchIndexAuth, err := newSearchIndexOptions(cfg)
+		if err != nil {
+			slog.Error("initialize support search indexing", "error", err)
+			os.Exit(1)
+		}
+		defer closeSearchIndexAuth()
+		uc.SetHelpSearchIndexer(searchindexadapter.New(
+			cfg.SearchService.HTTPURL,
+			cfg.Security.InternalServiceToken,
+			cfg.SearchService.Timeout,
+			searchIndexOptions...,
+		))
+	}
 	if cfg.UserContext.Enabled() {
 		userContextHTTPClient, err := newUserContextHTTPClient(cfg.UserContext, cfg.MTLS)
 		if err != nil {
@@ -188,6 +204,45 @@ func newUserContextHTTPClient(userContextCfg config.UserContextConfig, mtls tran
 		return nil, fmt.Errorf("initialize support user-context mTLS transport: %w", err)
 	}
 	return client, nil
+}
+
+func newSearchIndexOptions(cfg config.Config) ([]searchindexadapter.Option, func(), error) {
+	searchHTTPClient, err := newSearchIndexHTTPClient(cfg)
+	if err != nil {
+		return nil, func() {}, err
+	}
+	options := []searchindexadapter.Option{searchindexadapter.WithHTTPClient(searchHTTPClient)}
+
+	if !cfg.TokenService.Enabled() {
+		if cfg.App.IsProduction() {
+			return nil, func() {}, fmt.Errorf("TOKEN_SERVICE_SECRET is required when support search indexing is enabled in production")
+		}
+		slog.Warn("support search indexing service JWT auth disabled; falling back to legacy internal token")
+		return options, func() {}, nil
+	}
+	source, err := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+		Target:        cfg.TokenService.Target,
+		ServiceID:     cfg.TokenService.ServiceID,
+		ServiceSecret: cfg.TokenService.ServiceSecret,
+		CallTimeout:   cfg.TokenService.CallTimeout,
+		TransportAuth: cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+	})
+	if err != nil {
+		return nil, func() {}, err
+	}
+	options = append(options, searchindexadapter.WithServiceTokenSource(source))
+	return options, func() {
+		if err := source.Close(); err != nil {
+			slog.Warn("close support search indexing token source", "error", err)
+		}
+	}, nil
+}
+
+func newSearchIndexHTTPClient(cfg config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.SearchService.HTTPURL)),
+		cfg.SearchService.Timeout,
+	)
 }
 
 func validateSupportServiceMTLSPort(cfg config.Config, tlsConfig *tls.Config) error {

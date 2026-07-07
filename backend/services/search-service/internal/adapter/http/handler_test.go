@@ -194,8 +194,9 @@ func TestTrendingUsesGlobalScopeByDefault(t *testing.T) {
 		t.Fatal("repository queries = 0, want top-level search query")
 	}
 	hasGlobalQuery := false
+	searchableDomains := model.AllSearchableDomains()
 	for _, query := range queries {
-		if len(query.Domains) == 6 {
+		if len(query.Domains) == len(searchableDomains) {
 			hasGlobalQuery = true
 			break
 		}

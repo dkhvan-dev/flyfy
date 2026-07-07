@@ -9,24 +9,26 @@ import (
 type Domain string
 
 const (
-	DomainActivity  Domain = "activity"
-	DomainExcursion Domain = "excursion"
-	DomainPlace     Domain = "place"
-	DomainGuide     Domain = "guide"
-	DomainCommunity Domain = "community"
-	DomainUser      Domain = "user"
+	DomainActivity    Domain = "activity"
+	DomainExcursion   Domain = "excursion"
+	DomainPlace       Domain = "place"
+	DomainGuide       Domain = "guide"
+	DomainCommunity   Domain = "community"
+	DomainUser        Domain = "user"
+	DomainHelpArticle Domain = "help_article"
 )
 
 type Scope string
 
 const (
-	ScopeGlobal    Scope = "global"
-	ScopeActivity  Scope = "activity"
-	ScopeExcursion Scope = "excursion"
-	ScopePlace     Scope = "place"
-	ScopeGuide     Scope = "guide"
-	ScopeCommunity Scope = "community"
-	ScopeUser      Scope = "user"
+	ScopeGlobal      Scope = "global"
+	ScopeActivity    Scope = "activity"
+	ScopeExcursion   Scope = "excursion"
+	ScopePlace       Scope = "place"
+	ScopeGuide       Scope = "guide"
+	ScopeCommunity   Scope = "community"
+	ScopeUser        Scope = "user"
+	ScopeHelpArticle Scope = "help_article"
 )
 
 var (
@@ -43,13 +45,14 @@ func AllSearchableDomains() []Domain {
 		DomainGuide,
 		DomainCommunity,
 		DomainUser,
+		DomainHelpArticle,
 	}
 }
 
 func ParseDomain(raw string) (Domain, error) {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	switch Domain(value) {
-	case DomainActivity, DomainExcursion, DomainPlace, DomainGuide, DomainCommunity, DomainUser:
+	case DomainActivity, DomainExcursion, DomainPlace, DomainGuide, DomainCommunity, DomainUser, DomainHelpArticle:
 		return Domain(value), nil
 	default:
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedDomain, value)
@@ -63,7 +66,7 @@ func ParseScope(raw string) (Scope, error) {
 	}
 
 	switch Scope(value) {
-	case ScopeGlobal, ScopeActivity, ScopeExcursion, ScopePlace, ScopeGuide, ScopeCommunity, ScopeUser:
+	case ScopeGlobal, ScopeActivity, ScopeExcursion, ScopePlace, ScopeGuide, ScopeCommunity, ScopeUser, ScopeHelpArticle:
 		return Scope(value), nil
 	default:
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedScope, value)
@@ -108,6 +111,8 @@ func scopeDomain(scope Scope) (Domain, error) {
 		return DomainCommunity, nil
 	case ScopeUser:
 		return DomainUser, nil
+	case ScopeHelpArticle:
+		return DomainHelpArticle, nil
 	default:
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedScope, scope)
 	}

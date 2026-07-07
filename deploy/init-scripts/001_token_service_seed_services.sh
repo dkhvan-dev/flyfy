@@ -18,6 +18,7 @@ for name in \
   FEED_SERVICE_TOKEN_SERVICE_SECRET \
   GUIDE_SERVICE_TOKEN_SERVICE_SECRET \
   PLACE_SERVICE_TOKEN_SERVICE_SECRET \
+  SUPPORT_SERVICE_TOKEN_SERVICE_SECRET \
   USER_SERVICE_TOKEN_SERVICE_SECRET
 do
   required_env "$name"
@@ -48,6 +49,7 @@ psql \
   -v feed_service_secret="$FEED_SERVICE_TOKEN_SERVICE_SECRET" \
   -v guide_service_secret="$GUIDE_SERVICE_TOKEN_SERVICE_SECRET" \
   -v place_service_secret="$PLACE_SERVICE_TOKEN_SERVICE_SECRET" \
+  -v support_service_secret="$SUPPORT_SERVICE_TOKEN_SERVICE_SECRET" \
   -v user_service_secret="$USER_SERVICE_TOKEN_SERVICE_SECRET" <<'SQL'
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -60,6 +62,7 @@ WITH desired(service_id, plain_secret, display_name) AS (
     ('feed-service', :'feed_service_secret', 'Feed Service'),
     ('guide-service', :'guide_service_secret', 'Guide Service'),
     ('place-service', :'place_service_secret', 'Place Service'),
+    ('support-service', :'support_service_secret', 'Support Service'),
     ('user-service', :'user_service_secret', 'User Service')
 )
 INSERT INTO service_accounts (id, service_id, service_secret, display_name, is_active)
@@ -83,6 +86,7 @@ WITH desired(service_id, role) AS (
     ('feed-service', 'search:index'),
     ('guide-service', 'search:index'),
     ('place-service', 'search:index'),
+    ('support-service', 'search:index'),
     ('user-service', 'search:index')
 )
 DELETE FROM service_roles sr
@@ -97,6 +101,7 @@ WHERE sr.account_id = sa.id
     'feed-service',
     'guide-service',
     'place-service',
+    'support-service',
     'user-service'
   )
   AND NOT EXISTS (
@@ -117,6 +122,7 @@ WITH desired(service_id, role) AS (
     ('feed-service', 'search:index'),
     ('guide-service', 'search:index'),
     ('place-service', 'search:index'),
+    ('support-service', 'search:index'),
     ('user-service', 'search:index')
 )
 INSERT INTO service_roles (account_id, role)

@@ -579,6 +579,12 @@ List<_SearchResultGroup> _resultGroups(
       title: l10n.searchUsersTitle,
       page: page.groups.users,
     ),
+    _SearchResultGroup(
+      isTopResults: false,
+      domain: SearchDomain.helpArticle,
+      title: l10n.searchHelpArticlesTitle,
+      page: page.groups.helpArticles,
+    ),
   ]);
 
   return groups
@@ -595,6 +601,7 @@ SearchGroupPage _resultsForScope(SearchGroups groups, SearchScope scope) {
     SearchScope.guide => groups.guides,
     SearchScope.community => groups.communities,
     SearchScope.user => groups.users,
+    SearchScope.helpArticle => groups.helpArticles,
   };
 }
 
@@ -607,6 +614,7 @@ String _scopeTitle(AppLocalizations l10n, SearchScope scope) {
     SearchScope.guide => l10n.searchGuidesTitle,
     SearchScope.community => l10n.searchCommunitiesTitle,
     SearchScope.user => l10n.searchUsersTitle,
+    SearchScope.helpArticle => l10n.searchHelpArticlesTitle,
   };
 }
 
@@ -618,6 +626,7 @@ String _domainLabel(AppLocalizations l10n, SearchDomain domain) {
     SearchDomain.guide => l10n.searchDomainGuide,
     SearchDomain.community => l10n.searchDomainCommunity,
     SearchDomain.user => l10n.searchDomainUser,
+    SearchDomain.helpArticle => l10n.searchDomainHelpArticle,
   };
 }
 
@@ -629,6 +638,7 @@ IconData _domainIcon(SearchDomain domain) {
     SearchDomain.guide => Icons.badge_rounded,
     SearchDomain.community => Icons.groups_rounded,
     SearchDomain.user => Icons.person_rounded,
+    SearchDomain.helpArticle => Icons.help_center_rounded,
   };
 }
 

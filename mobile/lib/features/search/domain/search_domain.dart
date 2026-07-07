@@ -4,7 +4,8 @@ enum SearchDomain {
   place('place'),
   guide('guide'),
   community('community'),
-  user('user');
+  user('user'),
+  helpArticle('help_article');
 
   const SearchDomain(this.apiValue);
 
@@ -26,7 +27,8 @@ enum SearchScope {
   place('place'),
   guide('guide'),
   community('community'),
-  user('user');
+  user('user'),
+  helpArticle('help_article');
 
   const SearchScope(this.apiValue);
 
@@ -49,6 +51,7 @@ enum SearchScope {
       SearchScope.guide => SearchDomain.guide,
       SearchScope.community => SearchDomain.community,
       SearchScope.user => SearchDomain.user,
+      SearchScope.helpArticle => SearchDomain.helpArticle,
     };
   }
 }

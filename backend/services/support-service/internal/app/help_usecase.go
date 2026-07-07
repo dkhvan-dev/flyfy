@@ -581,6 +581,7 @@ type HelpUseCase struct {
 	operatorNotifier SupportOperatorNotifier
 	userNotifier     SupportUserNotifier
 	segmentResolver  SupportUserSegmentResolver
+	searchIndexer    HelpSearchIndexer
 }
 
 func NewHelpUseCase(repo HelpRepository, now func() time.Time) *HelpUseCase {
@@ -922,6 +923,7 @@ func (uc *HelpUseCase) UpsertHelpArticle(ctx context.Context, input UpsertHelpAr
 	if err := uc.repo.UpsertArticle(ctx, article, event); err != nil {
 		return HelpArticle{}, ErrRepositoryFailed
 	}
+	uc.syncHelpArticleSearchDocument(ctx, article)
 	return article, nil
 }
 
@@ -940,6 +942,7 @@ func (uc *HelpUseCase) SubmitHelpArticleForReview(ctx context.Context, articleID
 	if err := uc.repo.UpsertArticle(ctx, article, event); err != nil {
 		return HelpArticle{}, ErrRepositoryFailed
 	}
+	uc.syncHelpArticleSearchDocument(ctx, article)
 	return article, nil
 }
 
@@ -961,6 +964,7 @@ func (uc *HelpUseCase) PublishHelpArticle(ctx context.Context, articleID string,
 	if err := uc.repo.UpsertArticle(ctx, article, event); err != nil {
 		return HelpArticle{}, ErrRepositoryFailed
 	}
+	uc.syncHelpArticleSearchDocument(ctx, article)
 	return article, nil
 }
 
@@ -976,6 +980,7 @@ func (uc *HelpUseCase) ArchiveHelpArticle(ctx context.Context, articleID string,
 	if err := uc.repo.UpsertArticle(ctx, article, event); err != nil {
 		return HelpArticle{}, ErrRepositoryFailed
 	}
+	uc.syncHelpArticleSearchDocument(ctx, article)
 	return article, nil
 }
 

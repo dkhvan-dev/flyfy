@@ -18,6 +18,7 @@ func TestDomainsForScopeGlobalAllowsOnlySearchableDomains(t *testing.T) {
 		DomainGuide,
 		DomainCommunity,
 		DomainUser,
+		DomainHelpArticle,
 	}
 	if len(domains) != len(want) {
 		t.Fatalf("domains length = %d, want %d: %#v", len(domains), len(want), domains)
@@ -50,12 +51,12 @@ func TestDomainsForScopeEntityScopeRejectsOtherDomains(t *testing.T) {
 }
 
 func TestDomainsForScopeEntityScopeDefaultsToItsDomain(t *testing.T) {
-	domains, err := DomainsForScope(ScopeGuide, nil)
+	domains, err := DomainsForScope(ScopeHelpArticle, nil)
 	if err != nil {
 		t.Fatalf("DomainsForScope returned error: %v", err)
 	}
-	if len(domains) != 1 || domains[0] != DomainGuide {
-		t.Fatalf("domains = %#v, want guide only", domains)
+	if len(domains) != 1 || domains[0] != DomainHelpArticle {
+		t.Fatalf("domains = %#v, want help_article only", domains)
 	}
 }
 

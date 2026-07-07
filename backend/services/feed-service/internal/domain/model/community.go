@@ -92,6 +92,7 @@ type CommunityListFilter struct {
 	CityID                  string
 	Search                  string
 	PublicOnly              bool
+	IncludeDeleted          bool
 	OnlyFollowedByUserID    *uuid.UUID
 	ExcludeFollowedByUserID *uuid.UUID
 	Limit                   int

@@ -1,0 +1,166 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
+
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
+)
+
+const defaultSearchIndexBackfillBatchSize = 100
+const maxSearchIndexBackfillBatchSize = 500
+
+var (
+	ErrSearchBackfillRepositoryRequired = errors.New("search backfill repository is required")
+	ErrSearchBackfillIndexerRequired    = errors.New("search backfill indexer is required")
+)
+
+type ExcursionSearchBackfillRepository interface {
+	ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*model.Excursion, error)
+	LoadExcursionRelations(ctx context.Context, excursionID uuid.UUID) (port.ExcursionRelations, error)
+}
+
+type SearchIndexBackfillOptions struct {
+	BatchSize   int
+	Limit       int
+	DryRun      bool
+	DeleteStale bool
+}
+
+type SearchIndexBackfillStats struct {
+	Scanned  int
+	Upserted int
+	Deleted  int
+	Skipped  int
+	Failed   int
+}
+
+func BackfillExcursionSearchIndex(
+	ctx context.Context,
+	repo ExcursionSearchBackfillRepository,
+	indexer ExcursionSearchIndexer,
+	options SearchIndexBackfillOptions,
+) (SearchIndexBackfillStats, error) {
+	if repo == nil {
+		return SearchIndexBackfillStats{}, ErrSearchBackfillRepositoryRequired
+	}
+	if indexer == nil && !options.DryRun {
+		return SearchIndexBackfillStats{}, ErrSearchBackfillIndexerRequired
+	}
+
+	options = normalizeSearchIndexBackfillOptions(options)
+	var stats SearchIndexBackfillStats
+	offset := 0
+
+	for {
+		limit := nextSearchIndexBackfillLimit(options, stats.Scanned)
+		if limit <= 0 {
+			return stats, nil
+		}
+
+		items, err := repo.ListExcursions(ctx, port.ExcursionFilter{
+			Limit:  limit,
+			Offset: offset,
+		})
+		if err != nil {
+			stats.Failed++
+			return stats, fmt.Errorf("list excursions for search backfill: %w", err)
+		}
+		if len(items) == 0 {
+			return stats, nil
+		}
+
+		for _, item := range items {
+			if item == nil {
+				stats.Skipped++
+				continue
+			}
+			stats.Scanned++
+			if err = backfillExcursionSearchDocument(ctx, repo, indexer, options, item, &stats); err != nil {
+				return stats, err
+			}
+			if options.Limit > 0 && stats.Scanned >= options.Limit {
+				return stats, nil
+			}
+		}
+
+		offset += len(items)
+		if len(items) < limit {
+			return stats, nil
+		}
+	}
+}
+
+func backfillExcursionSearchDocument(
+	ctx context.Context,
+	repo ExcursionSearchBackfillRepository,
+	indexer ExcursionSearchIndexer,
+	options SearchIndexBackfillOptions,
+	item *model.Excursion,
+	stats *SearchIndexBackfillStats,
+) error {
+	if isExcursionSearchIndexable(item) {
+		relations, err := repo.LoadExcursionRelations(ctx, item.ID)
+		if err != nil {
+			stats.Failed++
+			return fmt.Errorf("load excursion relations for search backfill: %w", err)
+		}
+		if !options.DryRun {
+			if err = indexer.UpsertSearchDocument(ctx, excursionSearchDocument(item, relations)); err != nil {
+				stats.Failed++
+				return fmt.Errorf("upsert excursion search document: %w", err)
+			}
+		}
+		stats.Upserted++
+		return nil
+	}
+
+	if !options.DeleteStale {
+		stats.Skipped++
+		return nil
+	}
+
+	if !options.DryRun {
+		if err := indexer.DeleteSearchDocument(ctx, SearchIndexDelete{
+			Domain:   "excursion",
+			EntityID: item.ID.String(),
+			Locale:   fallbackExcursionLocale,
+		}); err != nil {
+			stats.Failed++
+			return fmt.Errorf("delete stale excursion search document: %w", err)
+		}
+	}
+	stats.Deleted++
+	return nil
+}
+
+func normalizeSearchIndexBackfillOptions(options SearchIndexBackfillOptions) SearchIndexBackfillOptions {
+	if options.BatchSize <= 0 {
+		options.BatchSize = defaultSearchIndexBackfillBatchSize
+	}
+	if options.BatchSize > maxSearchIndexBackfillBatchSize {
+		options.BatchSize = maxSearchIndexBackfillBatchSize
+	}
+	if options.Limit < 0 {
+		options.Limit = 0
+	}
+	return options
+}
+
+func nextSearchIndexBackfillLimit(options SearchIndexBackfillOptions, scanned int) int {
+	limit := options.BatchSize
+	if options.Limit > 0 {
+		remaining := options.Limit - scanned
+		if remaining <= 0 {
+			return 0
+		}
+		if remaining < limit {
+			limit = remaining
+		}
+	}
+	return limit
+}

@@ -2681,7 +2681,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get searchIdleMessage =>
-      'Ищите активности, места, экскурсии, гидов, сообщества и людей.';
+      'Ищите активности, места, экскурсии, гидов, сообщества, статьи помощи и людей.';
 
   @override
   String get searchNoResultsTitle => 'Ничего не найдено';
@@ -2719,6 +2719,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get searchUsersTitle => 'Люди';
 
   @override
+  String get searchHelpArticlesTitle => 'Центр помощи';
+
+  @override
   String get searchDomainActivity => 'Активность';
 
   @override
@@ -2735,6 +2738,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get searchDomainUser => 'Пользователь';
+
+  @override
+  String get searchDomainHelpArticle => 'Статья помощи';
 
   @override
   String get homeSearchHint => 'Активности, места, экскурсии...';

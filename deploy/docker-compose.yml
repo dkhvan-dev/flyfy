@@ -69,6 +69,7 @@ services:
       FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
       GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
       PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      SUPPORT_SERVICE_TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
       USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     ports:
       - "5432:5432"
@@ -102,6 +103,7 @@ services:
       FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
       GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
       PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      SUPPORT_SERVICE_TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
       USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     volumes:
       - ./init-scripts/001_token_service_migrate.sh:/usr/local/bin/001_token_service_migrate.sh:ro
@@ -870,8 +872,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/token-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/token-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/token-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,user-service}
 
       JWT_ISSUER: tourism-inflap/token-service
       JWT_ACCESS_TTL: 30m
@@ -1647,6 +1649,55 @@ services:
     networks:
       - inflap-network
 
+  excursion-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/excursion-service/Dockerfile
+    container_name: excursion-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      excursion-postgres:
+        condition: service_healthy
+      excursion-postgres-migrator:
+        condition: service_completed_successfully
+      search-service:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    entrypoint: ["/app/excursion-service-backfill-search-index"]
+    environment:
+      APP_NAME: excursion-search-backfill
+      APP_ENV: development
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      DB_HOST: excursion-postgres
+      DB_PORT: 5432
+      DB_NAME: excursion_service_db
+      DB_USER: excursion_service
+      DB_PASSWORD: excursion_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 15m
+      DB_MAX_CONN_LIFETIME: 1h
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${EXCURSION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/excursion-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/excursion-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/excursion-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: excursion-service
+      TOKEN_SERVICE_SECRET: ${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:-excursion-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-excursion-service-volumes
+    restart: "no"
+    networks:
+      - inflap-network
+
   # ============================================
   # Admin Panel
   # ============================================
@@ -1831,6 +1882,52 @@ services:
       FEED_STORY_SHARE_BASE_URL: https://inflap.app/stories
     volumes: *mtls-feed-service-volumes
     restart: unless-stopped
+    networks:
+      - inflap-network
+
+  feed-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/feed-service/Dockerfile
+    container_name: feed-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      feed-postgres:
+        condition: service_healthy
+      feed-postgres-migrator:
+        condition: service_completed_successfully
+      search-service:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    entrypoint: ["/opt/app/feed-service-backfill-search-index"]
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      POSTGRES_HOST: feed-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: feed_service
+      POSTGRES_PASSWORD: feed_secret_dev
+      POSTGRES_DB: feed_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${FEED_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/feed-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: feed-service
+      TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-feed-service-volumes
+    restart: "no"
     networks:
       - inflap-network
 
@@ -2057,6 +2154,10 @@ services:
         condition: service_started
       guide-service:
         condition: service_started
+      search-service:
+        condition: service_healthy
+      token-service:
+        condition: service_started
     ports:
       - "8100:8100"
     expose:
@@ -2083,6 +2184,13 @@ services:
       SUPPORT_SERVICE_USER_CONTEXT_TIMEOUT: 3s
       SUPPORT_SERVICE_SEGMENT_REFRESH_INTERVAL: 5m
       SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SUPPORT_SERVICE_SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: support-service
+      TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
       MTLS_MODE: ${SUPPORT_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/support-service/ca.crt
@@ -2096,6 +2204,46 @@ services:
       LOG_LEVEL: debug
     volumes: *mtls-support-service-volumes
     restart: unless-stopped
+    networks:
+      - inflap-network
+
+  support-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/support-service/Dockerfile
+    container_name: support-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      support-postgres:
+        condition: service_healthy
+      support-postgres-migrator:
+        condition: service_completed_successfully
+      search-service:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    entrypoint: ["/app/support-service-backfill-search-index"]
+    environment:
+      APP_NAME: support-search-backfill
+      APP_ENV: development
+      LOG_LEVEL: info
+      SUPPORT_SERVICE_DATABASE_URL: postgres://support_service:support_secret_dev@support-postgres:5432/support_service_db?sslmode=disable
+      SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SUPPORT_SERVICE_SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${SUPPORT_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/support-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/support-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/support-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: support-service
+      TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-support-service-volumes
+    restart: "no"
     networks:
       - inflap-network
 
@@ -3204,8 +3352,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/search-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/search-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/search-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,support-service,user-service}
       SERVICE_AUTH_ISSUER: tourism-inflap/token-service
       SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
       SERVICE_AUTH_JWKS_CACHE_TTL: 5m

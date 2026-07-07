@@ -52,6 +52,13 @@ func TestLoadParsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("SUPPORT_SERVICE_GUIDE_SERVICE_URL", "http://guide-service:8085")
 	t.Setenv("SUPPORT_SERVICE_USER_CONTEXT_TIMEOUT", "1500ms")
 	t.Setenv("SUPPORT_SERVICE_SEGMENT_REFRESH_INTERVAL", "2m")
+	t.Setenv("SUPPORT_SERVICE_SEARCH_INDEXING_ENABLED", "true")
+	t.Setenv("SEARCH_SERVICE_HTTP_URL", "http://search-service:8101")
+	t.Setenv("SEARCH_SERVICE_TIMEOUT", "900ms")
+	t.Setenv("TOKEN_SERVICE_GRPC_TARGET", "dns:///token-service:50051")
+	t.Setenv("TOKEN_SERVICE_ID", "support-service")
+	t.Setenv("TOKEN_SERVICE_SECRET", "support-secret")
+	t.Setenv("TOKEN_SERVICE_CALL_TIMEOUT", "2500ms")
 
 	cfg, err := Load()
 	if err != nil {
@@ -100,6 +107,18 @@ func TestLoadParsesEnvironmentOverrides(t *testing.T) {
 		cfg.UserContext.Timeout != 1500*time.Millisecond ||
 		cfg.UserContext.SegmentRefreshInterval != 2*time.Minute {
 		t.Fatalf("user context config = %#v", cfg.UserContext)
+	}
+	if !cfg.SearchService.Enabled ||
+		cfg.SearchService.HTTPURL != "http://search-service:8101" ||
+		cfg.SearchService.Timeout != 900*time.Millisecond {
+		t.Fatalf("search service config = %#v", cfg.SearchService)
+	}
+	if !cfg.TokenService.Enabled() ||
+		cfg.TokenService.Target != "dns:///token-service:50051" ||
+		cfg.TokenService.ServiceID != "support-service" ||
+		cfg.TokenService.ServiceSecret != "support-secret" ||
+		cfg.TokenService.CallTimeout != 2500*time.Millisecond {
+		t.Fatalf("token service config = %#v", cfg.TokenService)
 	}
 }
 
