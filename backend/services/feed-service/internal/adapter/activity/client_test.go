@@ -145,6 +145,22 @@ func TestClientPublishesActivityIntentWithInternalHeaders(t *testing.T) {
 	}
 }
 
+func TestNewUsesInjectedHTTPClient(t *testing.T) {
+	customClient := &http.Client{Timeout: 123 * time.Millisecond}
+
+	client := New(
+		"http://activity-service.test",
+		"internal-token",
+		"feed-service",
+		time.Second,
+		WithHTTPClient(customClient),
+	)
+
+	if client.httpClient != customClient {
+		t.Fatalf("httpClient = %#v, want injected client %#v", client.httpClient, customClient)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {

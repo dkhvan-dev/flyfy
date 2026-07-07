@@ -7,6 +7,10 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
+
+	"kz/inflap/backend/pkg/transportauth"
+	"kz/inflap/backend/services/sticker-service/internal/config"
 )
 
 type lottieTestAnimation struct {
@@ -90,6 +94,43 @@ func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 		if _, ok := seen[key]; !ok {
 			t.Fatalf("expected official lottie sticker %q", key)
 		}
+	}
+}
+
+func TestNewSeederFileManagerClientKeepsPlainClientWhenMTLSDisabled(t *testing.T) {
+	t.Parallel()
+
+	client, err := newSeederFileManagerClient(&config.Config{
+		Security: config.SecurityConfig{InternalServiceToken: "internal-token"},
+		FileManager: config.FileManagerConfig{
+			BaseURL: "http://file-manager-service:8083",
+			Timeout: 800 * time.Millisecond,
+		},
+	})
+	if err != nil {
+		t.Fatalf("newSeederFileManagerClient() error = %v", err)
+	}
+	if client == nil {
+		t.Fatal("newSeederFileManagerClient() = nil, want client")
+	}
+}
+
+func TestNewSeederFileManagerClientFailsFastWhenMTLSEnabledWithoutCA(t *testing.T) {
+	t.Parallel()
+
+	_, err := newSeederFileManagerClient(&config.Config{
+		Security: config.SecurityConfig{InternalServiceToken: "internal-token"},
+		FileManager: config.FileManagerConfig{
+			BaseURL: "https://file-manager-service:9443",
+			Timeout: 800 * time.Millisecond,
+		},
+		MTLS: transportauth.EnvConfig{Mode: "enforce"},
+	})
+	if err == nil {
+		t.Fatal("newSeederFileManagerClient() error = nil, want missing CA error")
+	}
+	if !strings.Contains(err.Error(), "initialize file-manager mTLS transport") {
+		t.Fatalf("error = %q, want file-manager mTLS context", err)
 	}
 }
 

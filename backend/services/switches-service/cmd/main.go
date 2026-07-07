@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -85,15 +87,26 @@ func main() {
 		TrustedGatewayHeaderSub:    cfg.Security.TrustedGatewayHeaderSub,
 	}
 	techMiddleware := techhttp.MiddlewareConfig(middleware)
+	handler := featurehttp.Chain(middleware, techhttp.Chain(techMiddleware, mux))
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      featurehttp.Chain(middleware, techhttp.Chain(techMiddleware, mux)),
+		Handler:      handler,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
-	errCh := make(chan error, 1)
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	tlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure switches-service mTLS")
+	}
+	if err := validateSwitchesServiceMTLSPort(cfg, tlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid switches-service mTLS listener configuration")
+	}
+	internalMTLSServer := newInternalSwitchesMTLSServer(cfg, handler, tlsConfig)
+
+	errCh := make(chan error, 2)
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.Port).Msg("HTTP server started")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -102,6 +115,16 @@ func main() {
 		}
 		errCh <- nil
 	}()
+	if internalMTLSServer != nil {
+		go func() {
+			log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.InternalTLSPort).Msg("internal mTLS HTTP server started")
+			if err := internalMTLSServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				errCh <- fmt.Errorf("internal mTLS HTTP serve: %w", err)
+				return
+			}
+			errCh <- nil
+		}()
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -121,7 +144,39 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("HTTP shutdown failed")
 	}
+	if internalMTLSServer != nil {
+		if err := internalMTLSServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS HTTP shutdown failed")
+		}
+	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func newInternalSwitchesMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func validateSwitchesServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when switches-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
 }
 
 func configureLogger(cfg *config.Config) {

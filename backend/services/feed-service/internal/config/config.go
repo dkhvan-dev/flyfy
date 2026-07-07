@@ -7,23 +7,28 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
-	App          AppConfig
-	HTTP         HTTPConfig
-	Postgres     PostgresConfig
-	Redis        RedisConfig
-	Log          LogConfig
-	Security     SecurityConfig
-	UserService  UserServiceConfig
-	FileManager  FileManagerConfig
-	Notification NotificationServiceConfig
-	Activity     ActivityServiceConfig
-	UserRoute    UserRouteServiceConfig
-	Switches     SwitchesServiceConfig
-	Public       PublicConfig
-	Feed         FeedConfig
+	App           AppConfig
+	HTTP          HTTPConfig
+	Postgres      PostgresConfig
+	Redis         RedisConfig
+	Log           LogConfig
+	Security      SecurityConfig
+	UserService   UserServiceConfig
+	FileManager   FileManagerConfig
+	Notification  NotificationServiceConfig
+	Activity      ActivityServiceConfig
+	UserRoute     UserRouteServiceConfig
+	Switches      SwitchesServiceConfig
+	TokenService  TokenServiceConfig
+	SearchService SearchServiceConfig
+	Public        PublicConfig
+	Feed          FeedConfig
+	MTLS          transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -35,14 +40,19 @@ func (a AppConfig) IsProduction() bool {
 }
 
 type HTTPConfig struct {
-	Port         int           `env:"HTTP_PORT, default=8087"`
-	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
-	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
-	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
+	Port            int           `env:"HTTP_PORT, default=8087"`
+	InternalTLSPort int           `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
+	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
 }
 
 func (h HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", h.Port)
+}
+
+func (h HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", h.InternalTLSPort)
 }
 
 type PostgresConfig struct {
@@ -136,6 +146,25 @@ type SwitchesServiceConfig struct {
 	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
 	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
 	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
+}
+
+type SearchServiceConfig struct {
+	Enabled bool          `env:"SEARCH_INDEXING_ENABLED, default=false"`
+	HTTPURL string        `env:"SEARCH_SERVICE_HTTP_URL, default=http://search-service:8101"`
+	Timeout time.Duration `env:"SEARCH_SERVICE_TIMEOUT, default=800ms"`
+}
+
+type TokenServiceConfig struct {
+	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:50051"`
+	ServiceID     string        `env:"TOKEN_SERVICE_ID, default=feed-service"`
+	ServiceSecret string        `env:"TOKEN_SERVICE_SECRET"`
+	CallTimeout   time.Duration `env:"TOKEN_SERVICE_CALL_TIMEOUT, default=3s"`
+}
+
+func (c TokenServiceConfig) Enabled() bool {
+	return strings.TrimSpace(c.Target) != "" &&
+		strings.TrimSpace(c.ServiceID) != "" &&
+		strings.TrimSpace(c.ServiceSecret) != ""
 }
 
 type PublicConfig struct {

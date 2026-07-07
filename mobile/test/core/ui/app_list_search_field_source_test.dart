@@ -154,4 +154,19 @@ void main() {
       expect(source, contains('AppListSearchField('), reason: path);
     }
   });
+
+  test('entity list searches stay on their own screen', () async {
+    for (final path in [
+      'lib/screens/activities/activities_screen.dart',
+      'lib/screens/excursions/excursions_screen.dart',
+      'lib/screens/places/places_screen.dart',
+      'lib/screens/guides/guides_screen.dart',
+      'lib/features/feed/presentation/community_discovery_screen.dart',
+    ]) {
+      final source = await File(path).readAsString();
+      expect(source, isNot(contains('SearchRouteConfig(')), reason: path);
+      expect(source, isNot(contains("path: '/search'")), reason: path);
+      expect(source, isNot(contains('.location()')), reason: path);
+    }
+  });
 }

@@ -39,6 +39,7 @@ func TestLoadUsesProductionSafeDefaults(t *testing.T) {
 
 func TestLoadParsesEnvironmentOverrides(t *testing.T) {
 	t.Setenv("SUPPORT_SERVICE_HTTP_PORT", "8197")
+	t.Setenv("INTERNAL_HTTP_TLS_PORT", "9197")
 	t.Setenv("SUPPORT_SERVICE_HTTP_READ_TIMEOUT", "3s")
 	t.Setenv("SUPPORT_SERVICE_HTTP_WRITE_TIMEOUT", "4s")
 	t.Setenv("SUPPORT_SERVICE_HTTP_IDLE_TIMEOUT", "30s")
@@ -59,6 +60,12 @@ func TestLoadParsesEnvironmentOverrides(t *testing.T) {
 
 	if cfg.HTTP.Port != 8197 {
 		t.Fatalf("port = %d, want 8197", cfg.HTTP.Port)
+	}
+	if cfg.HTTP.InternalTLSPort != 9197 {
+		t.Fatalf("internal TLS port = %d, want 9197", cfg.HTTP.InternalTLSPort)
+	}
+	if cfg.HTTP.InternalTLSAddress() != ":9197" {
+		t.Fatalf("internal TLS address = %q, want :9197", cfg.HTTP.InternalTLSAddress())
 	}
 	if cfg.HTTP.ReadTimeout != 3*time.Second {
 		t.Fatalf("read timeout = %s, want 3s", cfg.HTTP.ReadTimeout)
@@ -116,5 +123,18 @@ func TestLoadRejectsInvalidPort(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected invalid port error")
+	}
+}
+
+func TestLoadAllowsDisabledInternalTLSPort(t *testing.T) {
+	t.Setenv("INTERNAL_HTTP_TLS_PORT", "0")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.HTTP.InternalTLSPort != 0 {
+		t.Fatalf("internal TLS port = %d, want 0", cfg.HTTP.InternalTLSPort)
 	}
 }

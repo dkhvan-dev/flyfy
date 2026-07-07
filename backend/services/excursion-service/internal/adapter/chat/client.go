@@ -19,15 +19,29 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-func New(baseURL string, internalToken string, timeout time.Duration) *Client {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func New(baseURL string, internalToken string, timeout time.Duration, options ...Option) *Client {
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		internalToken: strings.TrimSpace(internalToken),
 		httpClient:    &http.Client{Timeout: timeout},
 	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (c *Client) SyncExcursionScheduleSlotConversation(

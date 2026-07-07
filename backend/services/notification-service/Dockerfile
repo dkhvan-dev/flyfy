@@ -8,10 +8,12 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/notification-service/go.mod backend/services/notification-service/go.sum* ./backend/services/notification-service/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 
 WORKDIR /app/backend/services/notification-service
 RUN go mod download
 
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/notification-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

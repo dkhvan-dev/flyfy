@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
@@ -40,9 +41,16 @@ func newUserServiceUserIDResolver(cfg *config.Config) (*userServiceUserIDResolve
 	if baseURL == "" {
 		return nil, errors.New("user-service url is empty")
 	}
+	client, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(baseURL)),
+		3*time.Second,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS client: %w", err)
+	}
 	return &userServiceUserIDResolver{
 		cfg:      cfg,
-		client:   &nethttp.Client{Timeout: 3 * time.Second},
+		client:   client,
 		endpoint: baseURL + "/v1/users/me/init",
 		now:      time.Now,
 	}, nil

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"kz/inflap/backend/pkg/transportauth"
 
 	grpcadapter "kz/inflap/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guide"
@@ -53,14 +54,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	guideClient, err := guideadapter.New(
-		cfg.GuideService.Target,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-		)),
-	)
+	guideClient, err := newGuideServiceClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("dial guide-service")
 	}
@@ -73,6 +67,23 @@ func main() {
 		Int("failedGuideUsers", failed).
 		Bool("dryRun", *dryRun).
 		Msg("guide search snapshot backfill finished")
+}
+
+func newGuideServiceClient(cfg *config.Config) (*guideadapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.GuideService.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize guide-service mTLS transport: %w", err)
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	return guideadapter.New(cfg.GuideService.Target, grpcOptions...)
 }
 
 func backfill(

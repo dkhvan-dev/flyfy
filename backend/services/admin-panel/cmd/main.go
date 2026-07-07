@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +17,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"kz/inflap/backend/pkg/switches"
+	"kz/inflap/backend/pkg/transportauth"
 	activityadapter "kz/inflap/backend/services/admin-panel/internal/adapter/activity"
 	antifraudadapter "kz/inflap/backend/services/admin-panel/internal/adapter/antifraud"
 	chatadapter "kz/inflap/backend/services/admin-panel/internal/adapter/chat"
@@ -48,6 +51,11 @@ func main() {
 	if err = validateConfig(cfg); err != nil {
 		log.Fatal().Err(err).Msg("invalid admin-panel config")
 	}
+	defaultHTTPTransport, err := newAdminPanelDefaultHTTPTransport(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize admin-panel default mTLS transport")
+	}
+	http.DefaultTransport = defaultHTTPTransport
 
 	pool, err := connectPostgres(ctx, cfg)
 	if err != nil {
@@ -97,22 +105,12 @@ func main() {
 		cfg.UserRoute.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
-	userClient, err := useradapter.New(
-		cfg.User.Target,
-		cfg.Security.TrustedInternalToken,
-		cfg.App.Name,
-		cfg.User.Timeout,
-	)
+	userClient, err := newUserClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize user-service client")
 	}
 	defer userClient.Close()
-	trustClient, err := trustadapter.New(
-		cfg.Trust.Target,
-		cfg.Security.TrustedInternalToken,
-		cfg.App.Name,
-		cfg.Trust.Timeout,
-	)
+	trustClient, err := newTrustClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize trust-service client")
 	}
@@ -145,11 +143,19 @@ func main() {
 	var notificationClient *notificationadapter.Client
 	if strings.TrimSpace(cfg.Notification.HTTPURL) != "" &&
 		strings.TrimSpace(cfg.Security.TrustedInternalToken) != "" {
+		notificationHTTPClient, err := transportauth.NewHTTPClient(
+			cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notification.HTTPURL)),
+			cfg.Notification.RequestTimeout,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to initialize notification-service mTLS transport")
+		}
 		notificationClient = notificationadapter.New(
 			cfg.Notification.HTTPURL,
 			cfg.Security.TrustedInternalToken,
 			cfg.App.Name,
 			cfg.Notification.RequestTimeout,
+			notificationadapter.WithHTTPClient(notificationHTTPClient),
 		)
 		log.Info().
 			Str("url", cfg.Notification.HTTPURL).
@@ -221,14 +227,24 @@ func main() {
 
 	go restrictionOutboxWorker.Start(ctx)
 
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	adminPanelTLSConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize admin-panel mTLS server config")
+	}
+	if err = validateAdminPanelMTLSPort(cfg, adminPanelTLSConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid admin-panel mTLS listener config")
+	}
+	adminHandler := withTechBreakMaintenance(adminServer.Handler(), cfg.Switches, cfg.MTLS, cfg.Security.TrustedInternalToken, "ADMIN", "/admin/static/")
 	server := &http.Server{
 		Addr:              cfg.HTTP.Address(),
-		Handler:           withTechBreakMaintenance(adminServer.Handler(), cfg.Switches, cfg.Security.TrustedInternalToken, "ADMIN", "/admin/static/"),
+		Handler:           adminHandler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		WriteTimeout:      cfg.HTTP.WriteTimeout,
 		IdleTimeout:       cfg.HTTP.IdleTimeout,
 	}
+	internalServer := newInternalAdminPanelMTLSServer(cfg, adminHandler, adminPanelTLSConfig)
 
 	go func() {
 		<-ctx.Done()
@@ -237,7 +253,22 @@ func main() {
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("admin-panel graceful shutdown failed")
 		}
+		if internalServer != nil {
+			if err := internalServer.Shutdown(shutdownCtx); err != nil {
+				log.Error().Err(err).Msg("admin-panel internal mTLS graceful shutdown failed")
+			}
+		}
 	}()
+	if internalServer != nil {
+		go func() {
+			log.Info().
+				Str("addr", cfg.HTTP.InternalTLSAddress()).
+				Msg("admin-panel internal mTLS listener started")
+			if err := internalServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatal().Err(err).Msg("admin-panel internal mTLS listener failed")
+			}
+		}()
+	}
 
 	log.Info().
 		Str("addr", cfg.HTTP.Address()).
@@ -248,9 +279,46 @@ func main() {
 	}
 }
 
+func validateAdminPanelMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when admin-panel mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalAdminPanelMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:              cfg.HTTP.InternalTLSAddress(),
+		Handler:           handler,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       cfg.HTTP.ReadTimeout,
+		WriteTimeout:      cfg.HTTP.WriteTimeout,
+		IdleTimeout:       cfg.HTTP.IdleTimeout,
+	}
+}
+
+func newAdminPanelDefaultHTTPTransport(cfg *config.Config) (*http.Transport, error) {
+	transport, err := transportauth.NewHTTPTransport(cfg.MTLS.ClientConfig(""), nil)
+	if err != nil {
+		return nil, fmt.Errorf("initialize admin-panel default mTLS transport: %w", err)
+	}
+	return transport, nil
+}
+
 func withTechBreakMaintenance(
 	next http.Handler,
 	cfg config.SwitchesServiceConfig,
+	mtls transportauth.EnvConfig,
 	fallbackToken string,
 	domainCode string,
 	skipPathPrefixes ...string,
@@ -261,6 +329,7 @@ func withTechBreakMaintenance(
 			BaseURL:              cfg.HTTPURL,
 			InternalServiceToken: token,
 			Timeout:              cfg.RequestTimeout,
+			TransportAuth:        mtls.ClientConfig(transportauth.ServerNameFromTarget(cfg.HTTPURL)),
 		},
 		switches.MaintenanceMiddlewareConfig{
 			DomainCode:       domainCode,
@@ -302,6 +371,32 @@ func validateConfig(cfg *config.Config) error {
 		return errors.New("BOOTSTRAP_SUPERADMIN_PASSWORD is required when BOOTSTRAP_SUPERADMIN_EMAIL is set")
 	}
 	return nil
+}
+
+func newTrustClient(cfg *config.Config) (*trustadapter.Client, error) {
+	return trustadapter.NewWithTransportAuth(
+		cfg.Trust.Target,
+		cfg.Security.TrustedInternalToken,
+		cfg.App.Name,
+		cfg.Trust.Timeout,
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Trust.Target)),
+	)
+}
+
+func newUserClient(cfg *config.Config) (*useradapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.User.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS transport: %w", err)
+	}
+	return useradapter.New(
+		cfg.User.Target,
+		cfg.Security.TrustedInternalToken,
+		cfg.App.Name,
+		cfg.User.Timeout,
+		grpcOptions...,
+	)
 }
 
 func connectPostgres(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

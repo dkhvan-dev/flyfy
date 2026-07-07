@@ -56,4 +56,9 @@ for file in /migrations/token-service/*.up.sql; do
   mark_applied "$filename"
 done
 
+if [ "${SEED_TOKEN_SERVICE_ACCOUNTS:-true}" = "true" ] && [ -f /usr/local/bin/001_token_service_seed_services.sh ]; then
+  echo "Seeding token-service service accounts..."
+  /bin/sh /usr/local/bin/001_token_service_seed_services.sh
+fi
+
 echo "Pending token-service migrations applied"

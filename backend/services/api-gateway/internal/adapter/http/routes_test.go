@@ -119,6 +119,70 @@ func TestChecklistCarryItemsSearchIsPublic(t *testing.T) {
 	assertRouteLimit(t, policy, 180)
 }
 
+func TestSmartSearchRoutesProxyToSearchServicePublicly(t *testing.T) {
+	tests := map[string]struct {
+		method        string
+		path          string
+		name          string
+		rewritePrefix string
+		rateLimit     int
+	}{
+		"full search": {
+			method:        "GET",
+			path:          "/api/v1/search?q=almaty&scope=global",
+			name:          "smart-search",
+			rewritePrefix: "/v1/search",
+			rateLimit:     180,
+		},
+		"suggestions": {
+			method:        "GET",
+			path:          "/api/v1/search/suggest?q=alm&scope=place",
+			name:          "smart-search-suggest",
+			rewritePrefix: "/v1/search/suggest",
+			rateLimit:     180,
+		},
+		"trending": {
+			method:        "GET",
+			path:          "/api/v1/search/trending?scope=global",
+			name:          "smart-search-trending",
+			rewritePrefix: "/v1/search/trending",
+			rateLimit:     180,
+		},
+		"events": {
+			method:        "POST",
+			path:          "/api/v1/search/events",
+			name:          "smart-search-events",
+			rewritePrefix: "/v1/search/events",
+			rateLimit:     60,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected smart search route policy")
+			}
+			if policy.Name != tc.name {
+				t.Fatalf("name = %q, want %q", policy.Name, tc.name)
+			}
+			if policy.Upstream != "search" {
+				t.Fatalf("upstream = %q, want search", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthPublic {
+				t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+			}
+			if policy.RewritePrefix != tc.rewritePrefix {
+				t.Fatalf("rewrite prefix = %q, want %q", policy.RewritePrefix, tc.rewritePrefix)
+			}
+			if policy.Cacheable {
+				t.Fatal("smart search routes must not be gateway-cacheable")
+			}
+			assertRouteLimit(t, policy, tc.rateLimit)
+		})
+	}
+}
+
 func TestContentFeedRoutesProxyToFeedServicePublicly(t *testing.T) {
 	feedPolicy := matchRoutePolicyForMethod("GET", "/api/v1/feed?surface=home", "/api/v1")
 	if feedPolicy == nil {

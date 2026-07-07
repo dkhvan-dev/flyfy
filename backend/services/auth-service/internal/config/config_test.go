@@ -57,6 +57,48 @@ func TestLoadAcceptsResendEmailOverrides(t *testing.T) {
 	}
 }
 
+func TestLoadMTLSConfigFromEnvironment(t *testing.T) {
+	t.Setenv("MTLS_MODE", "enforce")
+	t.Setenv("MTLS_CA_CERT_PATH", "/run/mtls/ca.pem")
+	t.Setenv("MTLS_CLIENT_CERT_PATH", "/run/mtls/auth-service/client.pem")
+	t.Setenv("MTLS_CLIENT_KEY_PATH", "/run/mtls/auth-service/client-key.pem")
+	t.Setenv("MTLS_SERVER_CERT_PATH", "/run/mtls/auth-service/server.pem")
+	t.Setenv("MTLS_SERVER_KEY_PATH", "/run/mtls/auth-service/server-key.pem")
+	t.Setenv("MTLS_ALLOWED_SPIFFE_IDS", "spiffe://inflap/test/api-gateway")
+	t.Setenv("MTLS_ALLOWED_DNS_NAMES", "api-gateway")
+	t.Setenv("INTERNAL_HTTP_TLS_PORT", "9482")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	transport := cfg.MTLS.ClientConfig("user-service")
+	if transport.Mode != "enforce" ||
+		transport.CACertPath != "/run/mtls/ca.pem" ||
+		transport.ClientCertPath != "/run/mtls/auth-service/client.pem" ||
+		transport.ClientKeyPath != "/run/mtls/auth-service/client-key.pem" ||
+		transport.ServerName != "user-service" {
+		t.Fatalf("mTLS transport config = %+v", transport)
+	}
+
+	serverTransport := cfg.MTLS.ServerConfig()
+	if serverTransport.ServerCertPath != "/run/mtls/auth-service/server.pem" ||
+		serverTransport.ServerKeyPath != "/run/mtls/auth-service/server-key.pem" ||
+		len(serverTransport.AllowedSPIFFEIDs) != 1 ||
+		serverTransport.AllowedSPIFFEIDs[0] != "spiffe://inflap/test/api-gateway" ||
+		len(serverTransport.AllowedDNSNames) != 1 ||
+		serverTransport.AllowedDNSNames[0] != "api-gateway" {
+		t.Fatalf("mTLS server config = %+v", serverTransport)
+	}
+	if cfg.InternalHTTPTLSPort != 9482 {
+		t.Fatalf("InternalHTTPTLSPort = %d, want 9482", cfg.InternalHTTPTLSPort)
+	}
+	if cfg.InternalHTTPAddress() != ":9482" {
+		t.Fatalf("InternalHTTPAddress() = %q, want :9482", cfg.InternalHTTPAddress())
+	}
+}
+
 func unsetEnvForTest(t *testing.T, key string) {
 	t.Helper()
 

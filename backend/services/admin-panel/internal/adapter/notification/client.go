@@ -22,16 +22,32 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-func New(baseURL string, internalToken string, serviceName string, timeout time.Duration) *Client {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func New(baseURL string, internalToken string, serviceName string, timeout time.Duration, opts ...Option) *Client {
 	if timeout <= 0 {
 		timeout = 3 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		internalToken: strings.TrimSpace(internalToken),
 		serviceName:   strings.TrimSpace(serviceName),
 		httpClient:    &http.Client{Timeout: timeout},
 	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(client)
+		}
+	}
+	return client
 }
 
 func (c *Client) SendUserNotification(ctx context.Context, input port.UserNotificationInput) error {

@@ -8,6 +8,7 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY proto ./proto
+COPY backend/pkg/transportauth ./backend/pkg/transportauth
 COPY backend/services/trust-service ./backend/services/trust-service
 
 WORKDIR /app/backend/services/trust-service

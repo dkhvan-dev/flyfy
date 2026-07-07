@@ -26,6 +26,8 @@ type activityRepoStub struct {
 	getActivityOrganizerRatingByHostUserID       func(ctx context.Context, hostUserID uuid.UUID) (float64, error)
 	createActivity                               func(ctx context.Context, item *model.Activity) error
 	updateActivity                               func(ctx context.Context, item *model.Activity) error
+	listTagsByActivityID                         func(ctx context.Context, activityID uuid.UUID) ([]string, error)
+	replaceTags                                  func(ctx context.Context, activityID uuid.UUID, tags []string) error
 	createParticipant                            func(ctx context.Context, item *model.ActivityParticipant) error
 	listParticipantsByActivityID                 func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 	countActivityCompletionStatsByUserID         func(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error)
@@ -94,10 +96,16 @@ func (s *activityRepoStub) CreateActivityEvent(ctx context.Context, item *model.
 }
 
 func (s *activityRepoStub) ListTagsByActivityID(ctx context.Context, activityID uuid.UUID) ([]string, error) {
+	if s.listTagsByActivityID != nil {
+		return s.listTagsByActivityID(ctx, activityID)
+	}
 	return nil, nil
 }
 
 func (s *activityRepoStub) ReplaceTags(ctx context.Context, activityID uuid.UUID, tags []string) error {
+	if s.replaceTags != nil {
+		return s.replaceTags(ctx, activityID, tags)
+	}
 	return nil
 }
 

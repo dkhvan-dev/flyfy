@@ -106,6 +106,7 @@ func (u *PostUseCase) CreateCommunity(ctx context.Context, input CreateCommunity
 	if err = u.repo.CreateCommunity(ctx, community); err != nil {
 		return nil, err
 	}
+	u.syncCommunitySearchDocument(ctx, community)
 
 	return &CommunityView{
 		Community:         community,
@@ -155,6 +156,7 @@ func (u *PostUseCase) UpdateCommunity(ctx context.Context, input UpdateCommunity
 	if err = u.repo.UpdateCommunity(ctx, community); err != nil {
 		return nil, err
 	}
+	u.syncCommunitySearchDocument(ctx, community)
 	return &CommunityView{
 		Community:         community,
 		FollowedByViewer:  false,

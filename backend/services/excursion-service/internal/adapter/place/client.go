@@ -23,12 +23,26 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-func NewClient(baseURL string, internalToken string) *Client {
-	return &Client{
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func NewClient(baseURL string, internalToken string, options ...Option) *Client {
+	client := &Client{
 		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		internalToken: strings.TrimSpace(internalToken),
 		httpClient:    &http.Client{Timeout: recalculateRatingTimeout},
 	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (c *Client) ApplyPlaceRatingSnapshot(ctx context.Context, snapshot port.PlaceRatingSnapshot) error {

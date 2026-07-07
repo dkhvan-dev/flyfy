@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/sticker-service/internal/config"
 )
 
@@ -149,18 +150,33 @@ func main() {
 	}
 	defer pool.Close()
 
+	fileManagerClient, err := newSeederFileManagerClient(cfg)
+	if err != nil {
+		log.Fatalf("initialize file-manager client: %v", err)
+	}
 	s := &seeder{
-		db: pool,
-		files: &fileManagerClient{
-			baseURL:       strings.TrimRight(cfg.FileManager.BaseURL, "/"),
-			internalToken: cfg.FileManager.EffectiveInternalServiceToken(cfg.Security.InternalServiceToken),
-			httpClient:    &http.Client{Timeout: cfg.FileManager.Timeout},
-		},
+		db:    pool,
+		files: fileManagerClient,
 	}
 
 	if err = s.run(ctx); err != nil {
 		log.Fatalf("seed default stickers: %v", err)
 	}
+}
+
+func newSeederFileManagerClient(cfg *config.Config) (*fileManagerClient, error) {
+	httpClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.FileManager.BaseURL)),
+		cfg.FileManager.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize file-manager mTLS transport: %w", err)
+	}
+	return &fileManagerClient{
+		baseURL:       strings.TrimRight(cfg.FileManager.BaseURL, "/"),
+		internalToken: cfg.FileManager.EffectiveInternalServiceToken(cfg.Security.InternalServiceToken),
+		httpClient:    httpClient,
+	}, nil
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

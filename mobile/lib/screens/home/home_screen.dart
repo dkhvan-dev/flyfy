@@ -220,6 +220,10 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/activities');
   }
 
+  void _openSearch() {
+    context.push('/search');
+  }
+
   void _openFeed() {
     context.push('/feed');
   }
@@ -794,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         children: [
                                           _SearchBar(
                                             hint: l10n.homeSearchHint,
-                                            onTap: _openActivities,
+                                            onTap: _openSearch,
                                           ),
                                           if (isLoggedIn) ...[
                                             const SizedBox(height: 16),

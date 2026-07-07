@@ -2,14 +2,24 @@ package http
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/app"
 	"kz/inflap/backend/services/api-gateway/internal/config"
 )
@@ -96,7 +106,7 @@ func TestDispatchProxiesAdminPanelRoute(t *testing.T) {
 }
 
 func TestSingleHostProxyOverwritesInternalServiceToken(t *testing.T) {
-	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", nil)
 	if err != nil {
 		t.Fatalf("newSingleHostProxy returned error: %v", err)
 	}
@@ -110,8 +120,68 @@ func TestSingleHostProxyOverwritesInternalServiceToken(t *testing.T) {
 	}
 }
 
+func TestSingleHostProxyStripsInternalServiceTokenWhenServiceJWTConfigured(t *testing.T) {
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", staticTokenSource("service-jwt"))
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/test", nil)
+	req.Header.Set("X-Internal-Service-Token", "client-supplied")
+	proxy.Director(req)
+
+	if got := req.Header.Get("X-Internal-Service-Token"); got != "" {
+		t.Fatalf("X-Internal-Service-Token = %q, want stripped header", got)
+	}
+}
+
+func TestGatewayDownstreamProxyBuildsMTLSTransportPerTarget(t *testing.T) {
+	caPath := writeTestCA(t)
+
+	proxy, err := newGatewayDownstreamProxy(
+		"search",
+		"https://search-service:8443",
+		"gateway-secret",
+		nil,
+		transportauth.EnvConfig{
+			Mode:       string(transportauth.ModeEnforce),
+			CACertPath: caPath,
+		},
+	)
+	if err != nil {
+		t.Fatalf("newGatewayDownstreamProxy returned error: %v", err)
+	}
+
+	transport, ok := proxy.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("proxy transport type = %T, want *http.Transport", proxy.Transport)
+	}
+	if transport.TLSClientConfig == nil {
+		t.Fatal("TLSClientConfig is nil, want mTLS client config")
+	}
+	if got := transport.TLSClientConfig.ServerName; got != "search-service" {
+		t.Fatalf("TLS server name = %q, want search-service", got)
+	}
+}
+
+func TestGatewayDownstreamProxyFailsFastWhenMTLSEnforceConfigInvalid(t *testing.T) {
+	_, err := newGatewayDownstreamProxy(
+		"search",
+		"https://search-service:8443",
+		"gateway-secret",
+		staticTokenSource("service-jwt"),
+		transportauth.EnvConfig{Mode: string(transportauth.ModeEnforce)},
+	)
+	if err == nil {
+		t.Fatal("newGatewayDownstreamProxy error = nil, want invalid mTLS config error")
+	}
+	if !strings.Contains(err.Error(), "initialize search downstream mTLS transport") {
+		t.Fatalf("error = %q, want downstream mTLS context", err)
+	}
+}
+
 func TestSingleHostProxyLocalizesDownstreamBusinessError(t *testing.T) {
-	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", nil)
 	if err != nil {
 		t.Fatalf("newSingleHostProxy returned error: %v", err)
 	}
@@ -141,8 +211,14 @@ func TestSingleHostProxyLocalizesDownstreamBusinessError(t *testing.T) {
 	}
 }
 
+type staticTokenSource string
+
+func (s staticTokenSource) Token(context.Context) (string, error) {
+	return string(s), nil
+}
+
 func TestSingleHostProxyPreservesDownstreamMaintenanceError(t *testing.T) {
-	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", nil)
 	if err != nil {
 		t.Fatalf("newSingleHostProxy returned error: %v", err)
 	}
@@ -177,7 +253,7 @@ func TestSingleHostProxyPreservesDownstreamMaintenanceError(t *testing.T) {
 }
 
 func TestSingleHostProxyPreservesKnownDownstreamBusinessErrorOnServiceUnavailable(t *testing.T) {
-	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", nil)
 	if err != nil {
 		t.Fatalf("newSingleHostProxy returned error: %v", err)
 	}
@@ -212,7 +288,7 @@ func TestSingleHostProxyPreservesKnownDownstreamBusinessErrorOnServiceUnavailabl
 }
 
 func TestSingleHostProxyMasksUnknownDownstreamBusinessErrorOnServerError(t *testing.T) {
-	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret", nil)
 	if err != nil {
 		t.Fatalf("newSingleHostProxy returned error: %v", err)
 	}
@@ -247,4 +323,33 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
+}
+
+func writeTestCA(t *testing.T) string {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate CA key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Inflap Test CA"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("create CA certificate: %v", err)
+	}
+
+	path := filepath.Join(t.TempDir(), "ca.pem")
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	if err := os.WriteFile(path, pemBytes, 0o600); err != nil {
+		t.Fatalf("write CA certificate: %v", err)
+	}
+	return path
 }

@@ -3,6 +3,7 @@ package grpcclient
 import (
 	"context"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/pkg/trustpolicy"
 	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
@@ -106,6 +108,24 @@ func TestClientCheckActionPolicyDefaultsUnspecifiedDecisionToAllow(t *testing.T)
 	}
 	if result.Decision != trustpolicy.DecisionAllow {
 		t.Fatalf("Decision = %q, want %q", result.Decision, trustpolicy.DecisionAllow)
+	}
+}
+
+func TestNewWithTransportAuthFailsFastWhenMTLSConfigInvalid(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewWithTransportAuth(
+		"trust-service:9096",
+		"internal-token",
+		"activity-service",
+		time.Second,
+		transportauth.Config{Mode: transportauth.ModeEnforce},
+	)
+	if err == nil {
+		t.Fatal("NewWithTransportAuth error = nil, want invalid mTLS config error")
+	}
+	if !strings.Contains(err.Error(), "initialize trustpolicy mTLS transport") {
+		t.Fatalf("error = %q, want trustpolicy mTLS context", err)
 	}
 }
 

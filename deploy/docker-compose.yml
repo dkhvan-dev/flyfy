@@ -1,3 +1,56 @@
+x-mtls-admin-panel-volumes: &mtls-admin-panel-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/admin-panel:/opt/inflap/secrets/mtls/admin-panel:ro
+x-mtls-anti-fraud-service-volumes: &mtls-anti-fraud-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/anti-fraud-service:/opt/inflap/secrets/mtls/anti-fraud-service:ro
+x-mtls-api-gateway-volumes: &mtls-api-gateway-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/api-gateway:/opt/inflap/secrets/mtls/api-gateway:ro
+x-mtls-activity-service-volumes: &mtls-activity-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/activity-service:/opt/inflap/secrets/mtls/activity-service:ro
+x-mtls-auth-service-volumes: &mtls-auth-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/auth-service:/opt/inflap/secrets/mtls/auth-service:ro
+x-mtls-chat-service-volumes: &mtls-chat-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/chat-service:/opt/inflap/secrets/mtls/chat-service:ro
+x-mtls-checklist-service-volumes: &mtls-checklist-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/checklist-service:/opt/inflap/secrets/mtls/checklist-service:ro
+x-mtls-currency-service-volumes: &mtls-currency-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/currency-service:/opt/inflap/secrets/mtls/currency-service:ro
+x-mtls-excursion-service-volumes: &mtls-excursion-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/excursion-service:/opt/inflap/secrets/mtls/excursion-service:ro
+x-mtls-feed-service-volumes: &mtls-feed-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/feed-service:/opt/inflap/secrets/mtls/feed-service:ro
+x-mtls-file-manager-service-volumes: &mtls-file-manager-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/file-manager-service:/opt/inflap/secrets/mtls/file-manager-service:ro
+x-mtls-guide-service-volumes: &mtls-guide-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/guide-service:/opt/inflap/secrets/mtls/guide-service:ro
+x-mtls-notification-service-volumes: &mtls-notification-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
+x-mtls-payment-service-volumes: &mtls-payment-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/payment-service:/opt/inflap/secrets/mtls/payment-service:ro
+x-mtls-place-service-volumes: &mtls-place-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/place-service:/opt/inflap/secrets/mtls/place-service:ro
+x-mtls-reference-service-volumes: &mtls-reference-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/reference-service:/opt/inflap/secrets/mtls/reference-service:ro
+x-mtls-routing-service-volumes: &mtls-routing-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/routing-service:/opt/inflap/secrets/mtls/routing-service:ro
+x-mtls-search-service-volumes: &mtls-search-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/search-service:/opt/inflap/secrets/mtls/search-service:ro
+x-mtls-sticker-service-volumes: &mtls-sticker-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/sticker-service:/opt/inflap/secrets/mtls/sticker-service:ro
+x-mtls-support-service-volumes: &mtls-support-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/support-service:/opt/inflap/secrets/mtls/support-service:ro
+x-mtls-switches-service-volumes: &mtls-switches-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/switches-service:/opt/inflap/secrets/mtls/switches-service:ro
+x-mtls-token-service-volumes: &mtls-token-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
+x-mtls-translation-service-volumes: &mtls-translation-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
+x-mtls-trust-service-volumes: &mtls-trust-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/trust-service:/opt/inflap/secrets/mtls/trust-service:ro
+x-mtls-user-route-service-volumes: &mtls-user-route-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/user-route-service:/opt/inflap/secrets/mtls/user-route-service:ro
+x-mtls-user-service-volumes: &mtls-user-service-volumes
+  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/user-service:/opt/inflap/secrets/mtls/user-service:ro
+
 services:
   # ============================================
   # Token Service PostgreSQL
@@ -9,6 +62,14 @@ services:
       POSTGRES_DB: token_service
       POSTGRES_USER: token_service
       POSTGRES_PASSWORD: token_secret_dev
+      AUTH_SERVICE_TOKEN_SERVICE_SECRET: ${AUTH_SERVICE_TOKEN_SERVICE_SECRET:-auth-service-secret}
+      API_GATEWAY_TOKEN_SERVICE_SECRET: ${API_GATEWAY_TOKEN_SERVICE_SECRET:-api-gateway-secret}
+      ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:-activity-service-secret}
+      EXCURSION_SERVICE_TOKEN_SERVICE_SECRET: ${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:-excursion-service-secret}
+      FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
+      GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
+      PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     ports:
       - "5432:5432"
     volumes:
@@ -34,8 +95,17 @@ services:
       POSTGRES_DB: token_service
       POSTGRES_USER: token_service
       POSTGRES_PASSWORD: token_secret_dev
+      AUTH_SERVICE_TOKEN_SERVICE_SECRET: ${AUTH_SERVICE_TOKEN_SERVICE_SECRET:-auth-service-secret}
+      API_GATEWAY_TOKEN_SERVICE_SECRET: ${API_GATEWAY_TOKEN_SERVICE_SECRET:-api-gateway-secret}
+      ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:-activity-service-secret}
+      EXCURSION_SERVICE_TOKEN_SERVICE_SECRET: ${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:-excursion-service-secret}
+      FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
+      GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
+      PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     volumes:
       - ./init-scripts/001_token_service_migrate.sh:/usr/local/bin/001_token_service_migrate.sh:ro
+      - ./init-scripts/001_token_service_seed_services.sh:/usr/local/bin/001_token_service_seed_services.sh:ro
       - ../backend/services/token-service/migrations:/migrations/token-service:ro
     entrypoint: ["/bin/sh", "/usr/local/bin/001_token_service_migrate.sh"]
     depends_on:
@@ -791,6 +861,17 @@ services:
       APP_ENV: development
       GRPC_PORT: 50051
       HTTP_PORT: 8081
+      INTERNAL_GRPC_TLS_PORT: ${TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      MTLS_MODE: ${TOKEN_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/token-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/token-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/token-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/token-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/token-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,user-service}
 
       JWT_ISSUER: tourism-inflap/token-service
       JWT_ACCESS_TTL: 30m
@@ -807,11 +888,12 @@ services:
 
       REDIS_ADDR: redis:6379
 
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       NOTIFICATION_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       NOTIFICATION_SERVICE_TIMEOUT: 2s
     volumes:
       - token_service_keys:/var/lib/inflap/token-service
+      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
     depends_on:
       token-postgres:
         condition: service_healthy
@@ -834,10 +916,13 @@ services:
     ports:
       - "50052:50052"
       - "8082:8082"
+    expose:
+      - "${AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT:-9482}"
     environment:
       APP_ENV: development
       GRPC_PORT: 50052
       HTTP_PORT: 8082
+      INTERNAL_HTTP_TLS_PORT: ${AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
 
       PG_HOST: auth-postgres
       PG_PORT: 5432
@@ -849,9 +934,9 @@ services:
       REDIS_ADDR: redis:6379
       REDIS_DB: 1
 
-      TOKEN_SERVICE_ADDR: token-service:50051
+      TOKEN_SERVICE_ADDR: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: auth-service
-      TOKEN_SERVICE_SECRET: auth-service-secret
+      TOKEN_SERVICE_SECRET: ${AUTH_SERVICE_TOKEN_SERVICE_SECRET:-auth-service-secret}
 
       OTP_LENGTH: 6
       OTP_TTL: 5m
@@ -862,18 +947,28 @@ services:
       RESEND_TIMEOUT: ${RESEND_TIMEOUT:-8s}
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
 
-      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
       USER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       USER_SERVICE_CALLER_NAME: auth-service
+      MTLS_MODE: ${AUTH_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/auth-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/auth-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/auth-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/auth-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/auth-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
 
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+    volumes: *mtls-auth-service-volumes
     depends_on:
       auth-postgres:
         condition: service_healthy
@@ -915,6 +1010,8 @@ services:
     ports:
       - "8083:8083"
       - "9093:9093"
+    expose:
+      - "${FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT:-9483}"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health >/dev/null 2>&1 || exit 1"]
       interval: 10s
@@ -924,6 +1021,8 @@ services:
       APP_ENV: development
       HTTP_PORT: 8083
       GRPC_PORT: 9093
+      INTERNAL_HTTP_TLS_PORT: ${FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_GRPC_TLS_PORT: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
 
       POSTGRES_HOST: file-manager-postgres
       POSTGRES_PORT: 5432
@@ -956,18 +1055,28 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
 
       TRUST_POLICY_ENABLED: "true"
-      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
       TRUST_SERVICE_TIMEOUT: 250ms
+      MTLS_MODE: ${FILE_MANAGER_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/file-manager-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/file-manager-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/file-manager-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/file-manager-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/file-manager-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/sticker-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service}
 
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+    volumes: *mtls-file-manager-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -989,9 +1098,12 @@ services:
         condition: service_started
       switches-service:
         condition: service_healthy
+      search-service:
+        condition: service_healthy
     ports:
       - "8084:8084"
       - "9094:9094"
+      - "${USER_SERVICE_INTERNAL_HTTP_TLS_PORT:-9484}"
     environment:
       APP_ENV: development
       HTTP_PORT: 8084
@@ -999,6 +1111,8 @@ services:
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
       GRPC_PORT: 9094
+      INTERNAL_HTTP_TLS_PORT: ${USER_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_GRPC_TLS_PORT: ${USER_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
 
       POSTGRES_HOST: user-postgres
       POSTGRES_PORT: 5432
@@ -1028,11 +1142,27 @@ services:
       PHONE_VERIFICATION_RESEND_COOLDOWN: 1m
       PHONE_VERIFICATION_MAX_VERIFY_ATTEMPTS: 5
 
-      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
-      FEED_SERVICE_HTTP_URL: http://feed-service:8087
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
+      FEED_SERVICE_HTTP_URL: ${FEED_SERVICE_INTERNAL_HTTP_URL:-http://feed-service:8087}
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${USER_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/user-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/user-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/user-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/user-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/user-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${USER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,activity-service,api-gateway,auth-service,chat-service,excursion-service,feed-service,guide-service,place-service,support-service}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: user-service
+      TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
       USER_SOCIAL_OUTBOX_WORKER_ENABLED: "true"
       USER_SOCIAL_OUTBOX_WORKER_POLL_INTERVAL: 5s
       USER_SOCIAL_OUTBOX_WORKER_BATCH_SIZE: 50
@@ -1041,7 +1171,54 @@ services:
       USER_SOCIAL_OUTBOX_STARTUP_BACKFILL_ENABLED: "true"
       USER_SOCIAL_OUTBOX_STARTUP_DRAIN_ENABLED: "false"
       USER_SOCIAL_OUTBOX_STARTUP_MAX_DRAIN_BATCHES: 0
+    volumes: *mtls-user-service-volumes
     restart: unless-stopped
+    networks:
+      - inflap-network
+
+  user-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/user-service/Dockerfile
+    container_name: user-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+      user-postgres-migrator:
+        condition: service_completed_successfully
+      search-service:
+        condition: service_healthy
+    entrypoint: ["/opt/app/user-service-backfill-search-index"]
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      POSTGRES_HOST: user-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: user_secret_dev
+      POSTGRES_DB: user_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${USER_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/user-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/user-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/user-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: user-service
+      TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-user-service-volumes
+    restart: "no"
     networks:
       - inflap-network
 
@@ -1064,9 +1241,12 @@ services:
         condition: service_started
       anti-fraud-service:
         condition: service_started
+      search-service:
+        condition: service_started
     ports:
       - "8085:8085"
       - "9095:9095"
+      - "${GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT:-9485}"
     environment:
       APP_ENV: development
       HTTP_PORT: 8085
@@ -1074,6 +1254,7 @@ services:
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
       GRPC_PORT: 9095
+      INTERNAL_HTTP_TLS_PORT: ${GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
 
       POSTGRES_HOST: guide-postgres
       POSTGRES_PORT: 5432
@@ -1087,6 +1268,7 @@ services:
       POSTGRES_MAX_CONN_IDLE_TIME: 30m
 
       LOG_LEVEL: info
+      INTERNAL_GRPC_TLS_PORT: ${GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       REQUIRE_AUTHENTICATED_WRITES: "true"
@@ -1095,19 +1277,85 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
-      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
-      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
+      USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
+      EXCURSION_SERVICE_HTTP_URL: ${EXCURSION_SERVICE_INTERNAL_HTTP_URL:-http://excursion-service:8093}
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${GUIDE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/guide-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/guide-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service,support-service}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: guide-service
+      TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-guide-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
   
+  guide-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/guide-service/Dockerfile
+    container_name: guide-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      guide-postgres:
+        condition: service_healthy
+      guide-postgres-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+      search-service:
+        condition: service_healthy
+    entrypoint: ["/opt/app/guide-service-backfill-search-index"]
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      POSTGRES_HOST: guide-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: guide_service
+      POSTGRES_PASSWORD: guide_secret_dev
+      POSTGRES_DB: guide_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+      USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${GUIDE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/guide-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: guide-service
+      TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-guide-service-volumes
+    restart: "no"
+    networks:
+      - inflap-network
+
   # ============================================
   # Activity Service
   # ============================================
@@ -1131,15 +1379,20 @@ services:
         condition: service_started
       switches-service:
         condition: service_healthy
+      search-service:
+        condition: service_started
     ports:
       - "8086:8086"
       - "9096:9096"
+      - "${ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT:-9486}"
     environment:
       APP_NAME: activity-service
       APP_ENV: development
 
       HTTP_PORT: 8086
       GRPC_PORT: 9096
+      INTERNAL_HTTP_TLS_PORT: ${ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_GRPC_TLS_PORT: ${ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
 
       DB_HOST: activity-postgres
       DB_PORT: 5432
@@ -1161,28 +1414,93 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
-      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      USER_SERVICE_GRPC_ADDR: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
+      CHAT_SERVICE_HTTP_URL: ${CHAT_SERVICE_INTERNAL_HTTP_URL:-http://chat-service:8088}
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
 
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
-      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      PAYMENT_SERVICE_HTTP_URL: ${PAYMENT_SERVICE_INTERNAL_HTTP_URL:-http://payment-service:8091}
       PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
 
       TRUST_POLICY_ENABLED: "true"
-      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
       TRUST_SERVICE_TIMEOUT: 250ms
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${ACTIVITY_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/feed-service}
+      MTLS_ALLOWED_DNS_NAMES: ${ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,chat-service,feed-service}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: activity-service
+      TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:-activity-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-activity-service-volumes
     restart: unless-stopped
+    networks:
+      - inflap-network
+
+  activity-search-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/activity-service/Dockerfile
+    container_name: activity-search-backfill
+    profiles:
+      - search-backfill
+    depends_on:
+      activity-postgres:
+        condition: service_healthy
+      activity-postgres-migrator:
+        condition: service_completed_successfully
+      search-service:
+        condition: service_healthy
+    entrypoint: ["/app/activity-service-backfill-search-index"]
+    environment:
+      APP_NAME: activity-search-backfill
+      APP_ENV: development
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      DB_HOST: activity-postgres
+      DB_PORT: 5432
+      DB_NAME: activity_service_db
+      DB_USER: activity_service
+      DB_PASSWORD: activity_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 15m
+      DB_MAX_CONN_LIFETIME: 1h
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${ACTIVITY_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/client.key
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: activity-service
+      TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:-activity-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-activity-service-volumes
+    restart: "no"
     networks:
       - inflap-network
 
@@ -1196,8 +1514,12 @@ services:
     container_name: translation-service
     ports:
       - "8094:8094"
+    expose:
+      - "${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9497}"
     environment:
       APP_ENV: development
+      HTTP_PORT: 8094
+      INTERNAL_HTTP_TLS_PORT: ${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       TRANSLATION_MODEL_NAME: facebook/m2m100_418M
       TRANSLATION_SUPPORTED_LANGUAGES: en,ru,kk
@@ -1207,8 +1529,16 @@ services:
       TRANSLATION_NUM_BEAMS: 2
       TRANSLATION_CACHE_MAX_ITEMS: 20000
       TRANSLATION_PRELOAD_MODEL: "true"
+      MTLS_MODE: ${TRANSLATION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/excursion-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-excursion-service}
     volumes:
       - translation_hf_cache:/models/huggingface
+      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1242,13 +1572,18 @@ services:
         condition: service_started
       switches-service:
         condition: service_healthy
+      search-service:
+        condition: service_started
     ports:
       - "8093:8093"
+    expose:
+      - "${EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9493}"
     environment:
       APP_NAME: excursion-service
       APP_ENV: development
 
       HTTP_PORT: 8093
+      INTERNAL_HTTP_TLS_PORT: ${EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
 
       DB_HOST: excursion-postgres
       DB_PORT: 5432
@@ -1270,27 +1605,44 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      GUIDE_SERVICE_GRPC_TARGET: dns:///guide-service:9095
-      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
-      TRANSLATION_SERVICE_URL: http://translation-service:8094
+      GUIDE_SERVICE_GRPC_TARGET: ${GUIDE_SERVICE_INTERNAL_GRPC_TARGET:-dns:///guide-service:9095}
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
+      TRANSLATION_SERVICE_URL: ${TRANSLATION_SERVICE_INTERNAL_HTTP_URL:-http://translation-service:8094}
       TRANSLATION_SERVICE_TIMEOUT: 20s
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
 
       TRUST_POLICY_ENABLED: "true"
-      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
       TRUST_SERVICE_TIMEOUT: 250ms
 
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
 
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${EXCURSION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/excursion-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/excursion-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/excursion-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/excursion-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/excursion-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: excursion-service
+      TOKEN_SERVICE_SECRET: ${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:-excursion-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+    volumes: *mtls-excursion-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1330,10 +1682,13 @@ services:
         condition: service_healthy
     ports:
       - "8095:8095"
+    expose:
+      - "${ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT:-9495}"
     environment:
       APP_NAME: admin-panel
       APP_ENV: development
       HTTP_PORT: 8095
+      INTERNAL_HTTP_TLS_PORT: ${ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT:-0}
       DB_HOST: admin-postgres
       DB_PORT: 5432
       DB_NAME: admin_panel_db
@@ -1343,35 +1698,45 @@ services:
       LOG_LEVEL: debug
       COOKIE_SECURE: "false"
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
-      EXCURSION_SERVICE_URL: http://excursion-service:8093
-      ACTIVITY_SERVICE_URL: http://activity-service:8086
-      GUIDE_SERVICE_URL: http://guide-service:8085
-      FEED_SERVICE_URL: http://feed-service:8087
-      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      EXCURSION_SERVICE_URL: ${EXCURSION_SERVICE_INTERNAL_HTTP_URL:-http://excursion-service:8093}
+      ACTIVITY_SERVICE_URL: ${ACTIVITY_SERVICE_INTERNAL_HTTP_URL:-http://activity-service:8086}
+      GUIDE_SERVICE_URL: ${GUIDE_SERVICE_INTERNAL_HTTP_URL:-http://guide-service:8085}
+      FEED_SERVICE_URL: ${FEED_SERVICE_INTERNAL_HTTP_URL:-http://feed-service:8087}
+      USER_ROUTE_SERVICE_HTTP_URL: ${USER_ROUTE_SERVICE_INTERNAL_HTTP_URL:-http://user-route-service:8096}
       USER_ROUTE_SERVICE_REQUEST_TIMEOUT: 3s
-      CHAT_SERVICE_URL: http://chat-service:8088
-      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_INTERNAL_HTTP_URL:-http://chat-service:8088}
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
       TRUST_SERVICE_TIMEOUT: 3s
       TRUST_OUTBOX_POLL_INTERVAL: 5s
       TRUST_OUTBOX_BATCH_SIZE: 50
       TRUST_OUTBOX_MAX_ATTEMPTS: 20
       TRUST_OUTBOX_BASE_BACKOFF: 1s
-      ANTI_FRAUD_SERVICE_URL: http://anti-fraud-service:8096
+      MTLS_MODE: ${ADMIN_PANEL_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/admin-panel/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/admin-panel/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/admin-panel/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/admin-panel/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/admin-panel/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
+      ANTI_FRAUD_SERVICE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_SERVICE_TIMEOUT: 5s
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
-      SUPPORT_SERVICE_URL: http://support-service:8100
+      SUPPORT_SERVICE_URL: ${SUPPORT_SERVICE_INTERNAL_HTTP_URL:-http://support-service:8100}
       SUPPORT_SERVICE_TIMEOUT: 5s
-      FEATURE_FLAG_SERVICE_URL: http://switches-service:8096
+      FEATURE_FLAG_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       FEATURE_FLAG_SERVICE_TIMEOUT: 5s
-      TECH_BREAK_SERVICE_URL: http://switches-service:8096
+      TECH_BREAK_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       TECH_BREAK_SERVICE_TIMEOUT: 5s
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
       BOOTSTRAP_SUPERADMIN_EMAIL: admin@inflap.local
       BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: Inflap Super Admin
       BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!
+    volumes: *mtls-admin-panel-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1397,11 +1762,16 @@ services:
         condition: service_healthy
       switches-service:
         condition: service_healthy
+      search-service:
+        condition: service_healthy
     ports:
       - "8087:8087"
+    expose:
+      - "${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-9487}"
     environment:
       APP_ENV: development
       HTTP_PORT: 8087
+      INTERNAL_HTTP_TLS_PORT: ${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -1426,20 +1796,40 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
-      ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
+      USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
+      NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
+      ACTIVITY_SERVICE_HTTP_URL: ${ACTIVITY_SERVICE_INTERNAL_HTTP_URL:-http://activity-service:8086}
       ACTIVITY_SERVICE_REQUEST_TIMEOUT: 5s
-      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      USER_ROUTE_SERVICE_HTTP_URL: ${USER_ROUTE_SERVICE_INTERNAL_HTTP_URL:-http://user-route-service:8096}
       USER_ROUTE_SERVICE_REQUEST_TIMEOUT: 3s
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${FEED_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/feed-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/feed-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,user-service}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: feed-service
+      TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
       FEED_ACTIVITY_INTENT_WORKER_ENABLED: "true"
       FEED_ACTIVITY_INTENT_WORKER_POLL_INTERVAL: 5s
       FEED_ACTIVITY_INTENT_WORKER_BATCH_SIZE: 50
       FEED_ACTIVITY_INTENT_WORKER_MAX_ATTEMPTS: 20
       FEED_ACTIVITY_INTENT_WORKER_BASE_BACKOFF: 1s
       FEED_STORY_SHARE_BASE_URL: https://inflap.app/stories
+    volumes: *mtls-feed-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1476,15 +1866,19 @@ services:
     ports:
       - "8088:8088"
       - "9097:9097"
+    expose:
+      - "${CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT:-9488}"
     environment:
       APP_NAME: chat-service
       APP_ENV: development
 
       HTTP_PORT: 8088
+      INTERNAL_HTTP_TLS_PORT: ${CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 120s
       HTTP_IDLE_TIMEOUT: 120s
       GRPC_PORT: 9097
+      INTERNAL_GRPC_TLS_PORT: ${CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
 
       DB_HOST: chat-postgres
       DB_PORT: 5432
@@ -1509,21 +1903,31 @@ services:
       REDIS_ADDR: redis:6379
       REDIS_DB: 2
 
-      USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
-      ACTIVITY_SERVICE_GRPC_ADDR: dns:///activity-service:9096
-      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
+      USER_SERVICE_GRPC_ADDR: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      ACTIVITY_SERVICE_GRPC_ADDR: ${ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET:-dns:///activity-service:9096}
+      STICKER_SERVICE_HTTP_URL: ${STICKER_SERVICE_INTERNAL_HTTP_URL:-http://sticker-service:8092}
       STICKER_SERVICE_TIMEOUT: 5s
       STICKER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
 
       TRUST_POLICY_ENABLED: "true"
-      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
       TRUST_SERVICE_TIMEOUT: 250ms
+      MTLS_MODE: ${CHAT_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/chat-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/chat-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/chat-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/chat-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/chat-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,excursion-service,support-service}
 
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+    volumes: *mtls-chat-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1545,11 +1949,13 @@ services:
         condition: service_healthy
     expose:
       - "8097"
+      - "${NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9448}"
     environment:
       APP_NAME: notification-service
       APP_ENV: development
 
       HTTP_PORT: 8097
+      INTERNAL_HTTP_TLS_PORT: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -1567,6 +1973,14 @@ services:
       DB_MAX_CONN_LIFETIME: 1h
 
       LOG_LEVEL: debug
+
+      MTLS_MODE: ${NOTIFICATION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/notification-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/notification-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/notification-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/checklist-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/token-service}
+      MTLS_ALLOWED_DNS_NAMES: ${NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,chat-service,checklist-service,excursion-service,feed-service,support-service,token-service}
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       INTERNAL_SERVICE_TOKEN_FILE: ${NOTIFICATION_INTERNAL_SERVICE_TOKEN_FILE:-}
@@ -1614,6 +2028,7 @@ services:
       HMS_CLIENT_SECRET_FILE: ${HMS_CLIENT_SECRET_FILE:-}
       HMS_TIMEOUT: 5s
     volumes:
+      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
       - ../backend/services/notification-service/run/secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
       - ../backend/services/notification-service/run/secrets/notification-token-encryption-key-base64:/run/secrets/notification-token-encryption-key-base64:ro
       - ../backend/services/notification-service/run/secrets/notification-token-hash-key-base64:/run/secrets/notification-token-hash-key-base64:ro
@@ -1644,29 +2059,42 @@ services:
         condition: service_started
     ports:
       - "8100:8100"
+    expose:
+      - "${SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT:-9500}"
     environment:
       APP_NAME: support-service
       APP_ENV: development
 
       SUPPORT_SERVICE_HTTP_PORT: 8100
+      INTERNAL_HTTP_TLS_PORT: ${SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       SUPPORT_SERVICE_HTTP_READ_TIMEOUT: 5s
       SUPPORT_SERVICE_HTTP_WRITE_TIMEOUT: 10s
       SUPPORT_SERVICE_HTTP_IDLE_TIMEOUT: 60s
 
       SUPPORT_SERVICE_DATABASE_URL: postgres://support_service:support_secret_dev@support-postgres:5432/support_service_db?sslmode=disable
-      SUPPORT_SERVICE_CHAT_SERVICE_URL: http://chat-service:8088
+      SUPPORT_SERVICE_CHAT_SERVICE_URL: ${CHAT_SERVICE_INTERNAL_HTTP_URL:-http://chat-service:8088}
       SUPPORT_SERVICE_CHAT_SERVICE_TIMEOUT: 5s
       SUPPORT_SERVICE_CHAT_SUPPORT_SUBJECT: support-service
-      SUPPORT_SERVICE_NOTIFICATION_SERVICE_URL: http://notification-service:8097
+      SUPPORT_SERVICE_NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       SUPPORT_SERVICE_NOTIFICATION_SERVICE_TIMEOUT: 3s
       SUPPORT_SERVICE_SLA_ALERT_INTERVAL: 1m
-      SUPPORT_SERVICE_USER_SERVICE_URL: http://user-service:8084
-      SUPPORT_SERVICE_GUIDE_SERVICE_URL: http://guide-service:8085
+      SUPPORT_SERVICE_USER_SERVICE_URL: ${USER_SERVICE_INTERNAL_HTTP_URL:-http://user-service:8084}
+      SUPPORT_SERVICE_GUIDE_SERVICE_URL: ${GUIDE_SERVICE_INTERNAL_HTTP_URL:-http://guide-service:8085}
       SUPPORT_SERVICE_USER_CONTEXT_TIMEOUT: 3s
       SUPPORT_SERVICE_SEGMENT_REFRESH_INTERVAL: 5m
       SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      MTLS_MODE: ${SUPPORT_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/support-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/support-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/support-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/support-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/support-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway}
 
       LOG_LEVEL: debug
+    volumes: *mtls-support-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1696,6 +2124,7 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8096
+      INTERNAL_HTTP_TLS_PORT: ${SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 30s
       HTTP_IDLE_TIMEOUT: 120s
@@ -1722,9 +2151,17 @@ services:
       TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
+      MTLS_MODE: ${SWITCHES_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/switches-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/switches-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/switches-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/currency-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/file-manager-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,user-service}
 
       SCHEDULER_ENABLED: "true"
       SCHEDULER_INTERVAL: 1m
+    volumes: *mtls-switches-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1769,6 +2206,51 @@ services:
     entrypoint: ["/bin/sh", "/usr/local/bin/009_place_service_migrate.sh"]
     depends_on:
       place-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Search PostgreSQL
+  # ============================================
+  search-postgres:
+    image: postgis/postgis:17-3.5-alpine
+    platform: linux/amd64
+    container_name: search-postgres
+    environment:
+      POSTGRES_DB: search_service_db
+      POSTGRES_USER: search_service
+      POSTGRES_PASSWORD: search_secret_dev
+    ports:
+      - "${SEARCH_POSTGRES_HOST_PORT:-5455}:5432"
+    volumes:
+      - search_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/search-service/migrations:/migrations/search-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U search_service -d search_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  search-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: search-postgres-migrator
+    environment:
+      PGHOST: search-postgres
+      PGPORT: 5432
+      POSTGRES_DB: search_service_db
+      POSTGRES_USER: search_service
+      POSTGRES_PASSWORD: search_secret_dev
+    volumes:
+      - ./init-scripts/023_search_service_migrate.sh:/usr/local/bin/023_search_service_migrate.sh:ro
+      - ../backend/services/search-service/migrations:/migrations/search-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/023_search_service_migrate.sh"]
+    depends_on:
+      search-postgres:
         condition: service_healthy
     restart: "no"
     networks:
@@ -1928,13 +2410,18 @@ services:
         condition: service_healthy
       switches-service:
         condition: service_healthy
+      search-service:
+        condition: service_started
     ports:
       - "8090:8090"
+    expose:
+      - "${PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT:-9490}"
     environment:
       APP_NAME: place-service
       APP_ENV: development
 
       HTTP_PORT: 8090
+      INTERNAL_HTTP_TLS_PORT: ${PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -1955,6 +2442,22 @@ services:
       REDIS_CACHE_DB: 4
       PLACE_DETAIL_CACHE_TTL: 15m
       PLACE_LIST_CACHE_TTL: 5m
+      SEARCH_INDEXING_ENABLED: "true"
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      SEARCH_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${PLACE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/place-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/place-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/place-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/place-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/place-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service}
+      MTLS_ALLOWED_DNS_NAMES: ${PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service}
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_ID: place-service
+      TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       REQUIRE_AUTHENTICATED_WRITES: "true"
@@ -1963,10 +2466,11 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+    volumes: *mtls-place-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1993,6 +2497,7 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8091
+      INTERNAL_HTTP_TLS_PORT: ${PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2020,9 +2525,19 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       ANTI_FRAUD_ENABLED: "true"
-      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_TIMEOUT: 800ms
+      MTLS_MODE: ${PAYMENT_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/payment-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/payment-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/payment-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/payment-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/payment-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service}
+      MTLS_ALLOWED_DNS_NAMES: ${PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service}
+    volumes: *mtls-payment-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2046,6 +2561,7 @@ services:
       APP_NAME: anti-fraud-service
       APP_ENV: development
       HTTP_PORT: 8096
+      INTERNAL_HTTP_TLS_PORT: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2063,10 +2579,18 @@ services:
 
       LOG_LEVEL: info
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      MTLS_MODE: ${ANTI_FRAUD_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/anti-fraud-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/anti-fraud-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/anti-fraud-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/file-manager-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/payment-service}
+      MTLS_ALLOWED_DNS_NAMES: ${ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,auth-service,excursion-service,file-manager-service,guide-service,payment-service}
 
       FRAUD_SHADOW_MODE: "true"
       FRAUD_WINDOW: 1h
       FRAUD_PAYMENT_CURRENCY: KZT
+    volumes: *mtls-anti-fraud-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2089,6 +2613,7 @@ services:
     environment:
       APP_ENV: development
       GRPC_PORT: 9096
+      INTERNAL_GRPC_TLS_PORT: ${TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
       LOG_LEVEL: debug
 
       POSTGRES_HOST: trust-postgres
@@ -2103,6 +2628,14 @@ services:
       POSTGRES_MAX_CONN_IDLE_TIME: 30m
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      MTLS_MODE: ${TRUST_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/trust-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/trust-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/trust-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/file-manager-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,activity-service,api-gateway,chat-service,excursion-service,file-manager-service}
+    volumes: *mtls-trust-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2124,11 +2657,14 @@ services:
         condition: service_started
     ports:
       - "8092:8092"
+    expose:
+      - "${STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT:-9492}"
     environment:
       APP_NAME: sticker-service
       APP_ENV: development
 
       HTTP_PORT: 8092
+      INTERNAL_HTTP_TLS_PORT: ${STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 30s
       HTTP_IDLE_TIMEOUT: 120s
@@ -2152,12 +2688,22 @@ services:
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
 
-      FILE_MANAGER_BASE_URL: http://file-manager-service:8083
+      FILE_MANAGER_BASE_URL: ${FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL:-http://file-manager-service:8083}
       FILE_MANAGER_TIMEOUT: 5s
       FILE_MANAGER_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
 
       POST_MODERATION_ENABLED: "true"
       STICKER_UPLOAD_SESSION_TTL: 15m
+      MTLS_MODE: ${STICKER_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/sticker-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/sticker-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/sticker-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/sticker-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/sticker-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service}
+      MTLS_ALLOWED_DNS_NAMES: ${STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway,chat-service}
+    volumes: *mtls-sticker-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2192,12 +2738,18 @@ services:
       LOG_LEVEL: info
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
-      FILE_MANAGER_BASE_URL: http://file-manager-service:8083
+      FILE_MANAGER_BASE_URL: ${FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL:-http://file-manager-service:8083}
       FILE_MANAGER_TIMEOUT: 10s
       FILE_MANAGER_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       POST_MODERATION_ENABLED: "false"
       STICKER_UPLOAD_SESSION_TTL: 15m
+      MTLS_MODE: ${STICKER_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/sticker-service/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/sticker-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/sticker-service/client.key
     entrypoint: ["/app/seed-default-stickers"]
+    volumes: *mtls-sticker-service-volumes
     restart: "no"
     networks:
       - inflap-network
@@ -2212,16 +2764,28 @@ services:
     container_name: reference-service
     ports:
       - "8089:8089"
+    expose:
+      - "${REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT:-9489}"
     environment:
       APP_NAME: reference-service
       APP_ENV: development
 
       HTTP_PORT: 8089
+      INTERNAL_HTTP_TLS_PORT: ${REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 10s
       HTTP_IDLE_TIMEOUT: 60s
 
+      MTLS_MODE: ${REFERENCE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/reference-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/reference-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/reference-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
+
       LOG_LEVEL: info
+    volumes: *mtls-reference-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2239,11 +2803,14 @@ services:
         condition: service_completed_successfully
     ports:
       - "8099:8099"
+    expose:
+      - "${CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT:-9499}"
     environment:
       APP_NAME: checklist-service
       APP_ENV: development
 
       HTTP_PORT: 8099
+      INTERNAL_HTTP_TLS_PORT: ${CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 10s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2260,6 +2827,19 @@ services:
       DB_MAX_CONN_LIFETIME: 1h
 
       LOG_LEVEL: info
+      NOTIFICATION_SERVICE_BASE_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
+      NOTIFICATION_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      CHECKLIST_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      MTLS_MODE: ${CHECKLIST_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/checklist-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/checklist-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/checklist-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/checklist-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/checklist-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
+    volumes: *mtls-checklist-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2277,11 +2857,14 @@ services:
         condition: service_healthy
     ports:
       - "8098:8098"
+    expose:
+      - "${CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT:-9498}"
     environment:
       APP_NAME: currency-service
       APP_ENV: development
 
       HTTP_PORT: 8098
+      INTERNAL_HTTP_TLS_PORT: ${CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 10s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2291,9 +2874,19 @@ services:
       CURRENCY_RATE_CACHE_TTL: 1h
 
       LOG_LEVEL: info
-      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
+      MTLS_MODE: ${CURRENCY_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/currency-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/currency-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/currency-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/currency-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/currency-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
+    volumes: *mtls-currency-service-volumes
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2311,11 +2904,14 @@ services:
         condition: service_completed_successfully
     ports:
       - "8106:8096"
+    expose:
+      - "${USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT:-9496}"
     environment:
       APP_NAME: user-route-service
       APP_ENV: development
 
       HTTP_PORT: 8096
+      INTERNAL_HTTP_TLS_PORT: ${USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 10s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2332,6 +2928,14 @@ services:
       POSTGRES_MAX_CONN_LIFETIME: 1h
 
       LOG_LEVEL: info
+      MTLS_MODE: ${USER_ROUTE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/user-route-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/user-route-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/user-route-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/feed-service}
+      MTLS_ALLOWED_DNS_NAMES: ${USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,feed-service}
+    volumes: *mtls-user-route-service-volumes
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8096/health >/dev/null 2>&1 || exit 1"]
       interval: 10s
@@ -2393,16 +2997,26 @@ services:
     container_name: routing-service
     ports:
       - "8104:8094"
+    expose:
+      - "${ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT:-9494}"
     environment:
       APP_NAME: routing-service
       APP_ENV: development
 
       HTTP_PORT: 8094
+      INTERNAL_HTTP_TLS_PORT: ${ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 20s
       HTTP_IDLE_TIMEOUT: 60s
 
       LOG_LEVEL: info
+      MTLS_MODE: ${ROUTING_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/routing-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/routing-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/routing-service/server.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway}
+      MTLS_ALLOWED_DNS_NAMES: ${ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway}
 
       VALHALLA_URL: http://valhalla:8002
       OSRM_URL: http://osrm:5000
@@ -2424,6 +3038,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes: *mtls-routing-service-volumes
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8094/health >/dev/null 2>&1 || exit 1"]
       interval: 10s
@@ -2475,6 +3090,8 @@ services:
         condition: service_started
       place-service:
         condition: service_started
+      search-service:
+        condition: service_started
       routing-service:
         condition: service_healthy
       user-route-service:
@@ -2503,34 +3120,41 @@ services:
 
       API_PREFIX: /api/v1
 
-      AUTH_SERVICE_HTTP_URL: http://auth-service:8082
-      USER_SERVICE_HTTP_URL: http://user-service:8084
-      GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
-      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
-      FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
-      ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
-      FEED_SERVICE_HTTP_URL: http://feed-service:8087
-      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
-      SUPPORT_SERVICE_HTTP_URL: http://support-service:8100
-      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
-      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
-      REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
-      CHECKLIST_SERVICE_HTTP_URL: http://checklist-service:8099
-      CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
-      PLACE_SERVICE_HTTP_URL: http://place-service:8090
-      ROUTING_SERVICE_HTTP_URL: http://routing-service:8094
-      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
-      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
-      ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095
+      AUTH_SERVICE_HTTP_URL: ${AUTH_SERVICE_INTERNAL_HTTP_URL:-http://auth-service:8082}
+      USER_SERVICE_HTTP_URL: ${USER_SERVICE_INTERNAL_HTTP_URL:-http://user-service:8084}
+      GUIDE_SERVICE_HTTP_URL: ${GUIDE_SERVICE_INTERNAL_HTTP_URL:-http://guide-service:8085}
+      EXCURSION_SERVICE_HTTP_URL: ${EXCURSION_SERVICE_INTERNAL_HTTP_URL:-http://excursion-service:8093}
+      FILE_MANAGER_HTTP_URL: ${FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL:-http://file-manager-service:8083}
+      ACTIVITY_SERVICE_HTTP_URL: ${ACTIVITY_SERVICE_INTERNAL_HTTP_URL:-http://activity-service:8086}
+      FEED_SERVICE_HTTP_URL: ${FEED_SERVICE_INTERNAL_HTTP_URL:-http://feed-service:8087}
+      CHAT_SERVICE_HTTP_URL: ${CHAT_SERVICE_INTERNAL_HTTP_URL:-http://chat-service:8088}
+      SUPPORT_SERVICE_HTTP_URL: ${SUPPORT_SERVICE_INTERNAL_HTTP_URL:-http://support-service:8100}
+      NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
+      STICKER_SERVICE_HTTP_URL: ${STICKER_SERVICE_INTERNAL_HTTP_URL:-http://sticker-service:8092}
+      REFERENCE_SERVICE_HTTP_URL: ${REFERENCE_SERVICE_INTERNAL_HTTP_URL:-http://reference-service:8089}
+      CHECKLIST_SERVICE_HTTP_URL: ${CHECKLIST_SERVICE_INTERNAL_HTTP_URL:-http://checklist-service:8099}
+      CURRENCY_SERVICE_HTTP_URL: ${CURRENCY_SERVICE_INTERNAL_HTTP_URL:-http://currency-service:8098}
+      PLACE_SERVICE_HTTP_URL: ${PLACE_SERVICE_INTERNAL_HTTP_URL:-http://place-service:8090}
+      SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
+      ROUTING_SERVICE_HTTP_URL: ${ROUTING_SERVICE_INTERNAL_HTTP_URL:-http://routing-service:8094}
+      USER_ROUTE_SERVICE_HTTP_URL: ${USER_ROUTE_SERVICE_INTERNAL_HTTP_URL:-http://user-route-service:8096}
+      PAYMENT_SERVICE_HTTP_URL: ${PAYMENT_SERVICE_INTERNAL_HTTP_URL:-http://payment-service:8091}
+      ADMIN_PANEL_SERVICE_HTTP_URL: ${ADMIN_PANEL_INTERNAL_HTTP_URL:-http://admin-panel:8095}
 
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 3
       REDIS_CACHE_TTL: 1h
 
-      TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: api-gateway
-      TOKEN_SERVICE_SECRET: api-gateway-secret
+      TOKEN_SERVICE_SECRET: ${API_GATEWAY_TOKEN_SERVICE_SECRET:-api-gateway-secret}
       TOKEN_SERVICE_CALL_TIMEOUT: 3s
+      TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-dns:///trust-service:9096}
+      MTLS_MODE: ${API_GATEWAY_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/api-gateway/ca.crt
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/api-gateway/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/api-gateway/client.key
 
       CORS_ALLOWED_ORIGINS: "*"
       CORS_ALLOWED_METHODS: GET,POST,PUT,PATCH,DELETE,OPTIONS
@@ -2542,6 +3166,62 @@ services:
       RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_REQUESTS_PER_MINUTE: 120
       RATE_LIMIT_CLEANUP_INTERVAL: 1m
+    volumes: *mtls-api-gateway-volumes
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Search Service
+  # ============================================
+  search-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/search-service/Dockerfile
+    container_name: search-service
+    depends_on:
+      search-postgres:
+        condition: service_healthy
+      search-postgres-migrator:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    ports:
+      - "8101:8101"
+    environment:
+      APP_NAME: search-service
+      APP_ENV: development
+      HTTP_PORT: 8101
+      INTERNAL_HTTP_TLS_PORT: ${SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      MTLS_MODE: ${SEARCH_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/search-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/search-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/search-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/search-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/search-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,user-service}
+      SERVICE_AUTH_ISSUER: tourism-inflap/token-service
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
+      DATABASE_DSN: postgres://search_service:search_secret_dev@search-postgres:5432/search_service_db?sslmode=disable
+      SEARCH_CACHE_ENABLED: "true"
+      REDIS_ADDR: redis:6379
+      REDIS_CACHE_DB: 7
+      SEARCH_CACHE_KEY_PREFIX: "search-service:search-cache:"
+      SEARCH_CACHE_TTL: 45s
+    volumes: *mtls-search-service-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8101/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2570,6 +3250,7 @@ volumes:
   user_route_postgres_data:
   nats_data:
   place_postgres_data:
+  search_postgres_data:
   payment_postgres_data:
   anti_fraud_postgres_data:
   sticker_postgres_data:

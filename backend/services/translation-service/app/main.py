@@ -3,17 +3,20 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import asyncio
+import ssl
 from collections import OrderedDict
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from threading import RLock
-from typing import Annotated
+from typing import Annotated, Any
 
 import torch
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+import uvicorn
 
 
 SUPPORTED_LANGUAGES = {"en", "ru", "kk"}
@@ -30,6 +33,25 @@ class Settings:
     num_beams: int
     cache_max_items: int
     preload_model: bool
+
+
+@dataclass(frozen=True)
+class ServerSettings:
+    host: str
+    http_port: int
+    internal_http_tls_port: int
+    mtls_mode: str
+    mtls_ca_cert_path: str
+    mtls_server_cert_path: str
+    mtls_server_key_path: str
+    mtls_allowed_spiffe_ids: tuple[str, ...]
+    mtls_allowed_dns_names: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MTLSPeerIdentities:
+    spiffe_ids: tuple[str, ...]
+    dns_names: tuple[str, ...]
 
 
 def load_settings() -> Settings:
@@ -55,6 +77,113 @@ def load_settings() -> Settings:
         preload_model=os.getenv("TRANSLATION_PRELOAD_MODEL", "false").strip().lower()
         in {"1", "true", "yes", "on"},
     )
+
+
+def load_server_settings() -> ServerSettings:
+    return ServerSettings(
+        host=os.getenv("HTTP_HOST", "0.0.0.0").strip() or "0.0.0.0",
+        http_port=max(1, int(os.getenv("HTTP_PORT", "8094"))),
+        internal_http_tls_port=max(0, int(os.getenv("INTERNAL_HTTP_TLS_PORT", "0"))),
+        mtls_mode=normalize_mtls_mode(os.getenv("MTLS_MODE", "disabled")),
+        mtls_ca_cert_path=os.getenv("MTLS_CA_CERT_PATH", "").strip(),
+        mtls_server_cert_path=os.getenv("MTLS_SERVER_CERT_PATH", "").strip(),
+        mtls_server_key_path=os.getenv("MTLS_SERVER_KEY_PATH", "").strip(),
+        mtls_allowed_spiffe_ids=split_env_list(os.getenv("MTLS_ALLOWED_SPIFFE_IDS", "")),
+        mtls_allowed_dns_names=split_env_list(os.getenv("MTLS_ALLOWED_DNS_NAMES", "")),
+    )
+
+
+def split_env_list(value: str) -> tuple[str, ...]:
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
+def normalize_mtls_mode(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"permissive", "enforce"}:
+        return normalized
+    return "disabled"
+
+
+def validate_translation_mtls_config(settings: ServerSettings) -> None:
+    if settings.mtls_mode == "disabled":
+        return
+    if settings.internal_http_tls_port == 0:
+        raise ValueError("INTERNAL_HTTP_TLS_PORT is required when translation-service mTLS is enabled")
+    if settings.internal_http_tls_port == settings.http_port:
+        raise ValueError("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+    if not settings.mtls_ca_cert_path:
+        raise ValueError("MTLS_CA_CERT_PATH is required when translation-service mTLS is enabled")
+    if not settings.mtls_server_cert_path or not settings.mtls_server_key_path:
+        raise ValueError("MTLS_SERVER_CERT_PATH and MTLS_SERVER_KEY_PATH are required when translation-service mTLS is enabled")
+
+
+def internal_mtls_uvicorn_ssl_options(settings: ServerSettings) -> dict[str, object]:
+    validate_translation_mtls_config(settings)
+    return {
+        "ssl_certfile": settings.mtls_server_cert_path,
+        "ssl_keyfile": settings.mtls_server_key_path,
+        "ssl_ca_certs": settings.mtls_ca_cert_path,
+        "ssl_cert_reqs": ssl.CERT_REQUIRED if settings.mtls_mode == "enforce" else ssl.CERT_OPTIONAL,
+    }
+
+
+def extract_peer_certificate_identities(peer_cert: dict[str, Any] | None) -> MTLSPeerIdentities:
+    if not peer_cert:
+        return MTLSPeerIdentities(spiffe_ids=(), dns_names=())
+
+    spiffe_ids: list[str] = []
+    dns_names: list[str] = []
+    for kind, value in peer_cert.get("subjectAltName", ()):
+        normalized_kind = str(kind).strip().upper()
+        normalized_value = str(value).strip()
+        if not normalized_value:
+            continue
+        if normalized_kind == "URI" and normalized_value.startswith("spiffe://"):
+            spiffe_ids.append(normalized_value)
+        elif normalized_kind == "DNS":
+            dns_names.append(normalized_value.lower())
+
+    return MTLSPeerIdentities(
+        spiffe_ids=tuple(spiffe_ids),
+        dns_names=tuple(dns_names),
+    )
+
+
+def peer_certificate_identity_allowed(
+    identities: MTLSPeerIdentities,
+    server_settings: ServerSettings,
+) -> bool:
+    allowed_spiffe_ids = set(server_settings.mtls_allowed_spiffe_ids)
+    allowed_dns_names = {value.lower() for value in server_settings.mtls_allowed_dns_names}
+    if not allowed_spiffe_ids and not allowed_dns_names:
+        return True
+    if allowed_spiffe_ids.intersection(identities.spiffe_ids):
+        return True
+    if allowed_dns_names.intersection(identities.dns_names):
+        return True
+    return False
+
+
+def mtls_h11_protocol_class():
+    from uvicorn.protocols.http.h11_impl import H11Protocol
+
+    class MTLSH11Protocol(H11Protocol):
+        def connection_made(self, transport):  # type: ignore[no-untyped-def]
+            super().connection_made(transport)
+            ssl_object = transport.get_extra_info("ssl_object")
+            peer_cert = ssl_object.getpeercert() if ssl_object is not None else None
+            self._mtls_peer_identities = extract_peer_certificate_identities(peer_cert)
+
+        def handle_events(self) -> None:
+            super().handle_events()
+            if self.scope is not None:
+                self.scope["mtls.peer"] = getattr(
+                    self,
+                    "_mtls_peer_identities",
+                    MTLSPeerIdentities(spiffe_ids=(), dns_names=()),
+                )
+
+    return MTLSH11Protocol
 
 
 def normalize_language_code(value: str) -> str:
@@ -288,6 +417,23 @@ app = FastAPI(title="Inflap Translation Service", version="1.0.0", lifespan=life
 
 
 @app.middleware("http")
+async def require_mtls_peer_identity(request: Request, call_next):
+    server_settings = load_server_settings()
+    if server_settings.mtls_mode != "enforce" or request.scope.get("scheme") != "https":
+        return await call_next(request)
+
+    peer_identities = request.scope.get("mtls.peer")
+    if not isinstance(peer_identities, MTLSPeerIdentities):
+        peer_identities = MTLSPeerIdentities(spiffe_ids=(), dns_names=())
+    if not peer_certificate_identity_allowed(peer_identities, server_settings):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"error": "mTLS peer identity is not allowed"},
+        )
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def require_internal_token(request: Request, call_next):
     if request.url.path in {"/health", "/health/live", "/health/ready"} or not settings.internal_service_token:
         return await call_next(request)
@@ -340,3 +486,42 @@ def translate(payload: TranslateRequest) -> TranslateResponse:
         payload.texts,
     )
     return TranslateResponse(translations=translations, model=settings.model_name)
+
+
+async def serve_translation() -> None:
+    server_settings = load_server_settings()
+    validate_translation_mtls_config(server_settings)
+
+    servers = [
+        uvicorn.Server(
+            uvicorn.Config(
+                app,
+                host=server_settings.host,
+                port=server_settings.http_port,
+                log_level="info",
+            )
+        )
+    ]
+    if server_settings.mtls_mode != "disabled":
+        servers.append(
+            uvicorn.Server(
+                uvicorn.Config(
+                    app,
+                    host=server_settings.host,
+                    port=server_settings.internal_http_tls_port,
+                    log_level="info",
+                    http=mtls_h11_protocol_class(),
+                    **internal_mtls_uvicorn_ssl_options(server_settings),
+                )
+            )
+        )
+
+    await asyncio.gather(*(server.serve() for server in servers))
+
+
+def main() -> None:
+    asyncio.run(serve_translation())
+
+
+if __name__ == "__main__":
+    main()

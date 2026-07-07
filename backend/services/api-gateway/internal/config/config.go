@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
@@ -21,6 +23,7 @@ type Config struct {
 	CORS         CORSConfig
 	RateLimit    RateLimitConfig
 	Redis        RedisConfig
+	MTLS         transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -73,6 +76,7 @@ type DownstreamsConfig struct {
 	PlaceService        string `env:"PLACE_SERVICE_HTTP_URL, default=http://place-service:8090"`
 	RoutingService      string `env:"ROUTING_SERVICE_HTTP_URL, default=http://routing-service:8094"`
 	UserRouteService    string `env:"USER_ROUTE_SERVICE_HTTP_URL, default=http://user-route-service:8096"`
+	SearchService       string `env:"SEARCH_SERVICE_HTTP_URL, default=http://search-service:8101"`
 	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	StickerService      string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	NotificationService string `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
@@ -87,7 +91,7 @@ type RedisConfig struct {
 }
 
 type TokenServiceConfig struct {
-	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:9092"`
+	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:50051"`
 	ServiceID     string        `env:"TOKEN_SERVICE_ID, required"`
 	ServiceSecret string        `env:"TOKEN_SERVICE_SECRET, required"`
 	CallTimeout   time.Duration `env:"TOKEN_SERVICE_CALL_TIMEOUT, default=3s"`

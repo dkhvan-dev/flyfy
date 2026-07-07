@@ -8,6 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/app"
 )
 
@@ -91,14 +92,33 @@ type HTTPReadinessChecker struct {
 }
 
 func NewHTTPReadinessChecker(url string, timeout time.Duration) *HTTPReadinessChecker {
-	if timeout <= 0 {
-		timeout = 2 * time.Second
+	return &HTTPReadinessChecker{
+		client: &http.Client{Timeout: normalizeReadinessTimeout(timeout)},
+		url:    url,
+	}
+}
+
+func NewHTTPReadinessCheckerWithTransportAuth(url string, timeout time.Duration, mtls transportauth.EnvConfig) (*HTTPReadinessChecker, error) {
+	timeout = normalizeReadinessTimeout(timeout)
+	client, err := transportauth.NewHTTPClient(
+		mtls.ClientConfig(transportauth.ServerNameFromTarget(url)),
+		timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize readiness mTLS client for %s: %w", url, err)
 	}
 
 	return &HTTPReadinessChecker{
-		client: &http.Client{Timeout: timeout},
+		client: client,
 		url:    url,
+	}, nil
+}
+
+func normalizeReadinessTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		timeout = 2 * time.Second
 	}
+	return timeout
 }
 
 func (c *HTTPReadinessChecker) Check(ctx context.Context) error {

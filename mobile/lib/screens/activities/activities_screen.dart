@@ -259,6 +259,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
+  void _submitActivitySearch(String value) {
+    FocusScope.of(context).unfocus();
+    final nextQuery = value.trim();
+    if (_searchQuery == nextQuery) {
+      return;
+    }
+    setState(() {
+      _searchQuery = nextQuery;
+      _currentPage = 1;
+    });
+  }
+
   void _handleSortTap(_ActivitySortField field) {
     setState(() {
       if (_sortField == field) {
@@ -679,6 +691,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     hintText: l10n.activitiesSearchHint,
                                     activeFilterCount:
                                         _filters.activeGroupCount,
+                                    onSubmitted: _submitActivitySearch,
                                     onFilterTap: () => _openDiscoverFilters(
                                       context,
                                       provider.categoryItems,
@@ -1001,6 +1014,7 @@ class _DiscoverSearchField extends StatelessWidget {
     required this.focusNode,
     required this.hintText,
     required this.activeFilterCount,
+    required this.onSubmitted,
     required this.onFilterTap,
   });
 
@@ -1008,6 +1022,7 @@ class _DiscoverSearchField extends StatelessWidget {
   final FocusNode focusNode;
   final String hintText;
   final int activeFilterCount;
+  final ValueChanged<String> onSubmitted;
   final VoidCallback onFilterTap;
 
   @override
@@ -1020,6 +1035,7 @@ class _DiscoverSearchField extends StatelessWidget {
       activeFilterCount: activeFilterCount,
       showClearButton: true,
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
+      onSubmitted: onSubmitted,
       onFilterTap: onFilterTap,
     );
   }

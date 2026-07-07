@@ -76,6 +76,7 @@ type ExcursionUseCase struct {
 	attendanceQRSigningKey  []byte
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
+	searchIndexer           ExcursionSearchIndexer
 }
 
 const (
@@ -544,7 +545,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	u.bindCoverFiles(ctx, item.ID, input.ActorUserID, relations.PhotoFileIDs)
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeCreated, input.ActorUserID, map[string]any{"status": string(item.Status)})
 
-	return &ExcursionAggregate{
+	aggregate := &ExcursionAggregate{
 		Excursion:             item,
 		Tags:                  relations.Tags,
 		LanguageCodes:         relations.LanguageCodes,
@@ -557,7 +558,9 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		ProductCoverImageURL:  relations.ProductCoverImageURL,
 		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
 		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
-	}, nil
+	}
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcursionInput) (*ExcursionAggregate, error) {
@@ -721,7 +724,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	u.bindCoverFiles(ctx, item.ID, input.ActorUserID, relations.PhotoFileIDs)
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeUpdated, input.ActorUserID, map[string]any{"revision": item.Revision})
 
-	return &ExcursionAggregate{
+	aggregate := &ExcursionAggregate{
 		Excursion:             item,
 		Tags:                  relations.Tags,
 		LanguageCodes:         relations.LanguageCodes,
@@ -734,7 +737,9 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		ProductCoverImageURL:  relations.ProductCoverImageURL,
 		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
 		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
-	}, nil
+	}
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) (*ExcursionAggregate, error) {
@@ -809,7 +814,9 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 			"publishRiskScore":     item.PublishRiskScore,
 			"reasonCodes":          item.ModerationReasonCodes,
 		})
-		return newExcursionAggregate(item, relations), nil
+		aggregate := newExcursionAggregate(item, relations)
+		u.syncExcursionSearchDocument(ctx, aggregate)
+		return aggregate, nil
 	}
 	if err = item.ApplyPublishingEvaluation(evaluation); err != nil {
 		return nil, err
@@ -822,7 +829,9 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypePublished, actorUserID, map[string]any{"publishedAt": item.PublishedAt})
 
-	return newExcursionAggregate(item, relations), nil
+	aggregate := newExcursionAggregate(item, relations)
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID) (*ExcursionAggregate, error) {
@@ -856,7 +865,9 @@ func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excur
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationApproved, moderatorUserID, map[string]any{"publishedAt": item.PublishedAt})
 	u.notifyExcursionModerationApproved(ctx, item)
 
-	return newExcursionAggregate(item, relations), nil
+	aggregate := newExcursionAggregate(item, relations)
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID, reasonCodes []string) (*ExcursionAggregate, error) {
@@ -886,7 +897,9 @@ func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excurs
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationRejected, moderatorUserID, map[string]any{"reasonCodes": item.ModerationReasonCodes})
 	u.notifyExcursionModerationRejected(ctx, item)
 
-	return newExcursionAggregate(item, relations), nil
+	aggregate := newExcursionAggregate(item, relations)
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) (*ExcursionAggregate, error) {
@@ -902,7 +915,9 @@ func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uui
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeArchived, actorUserID, map[string]any{"archivedAt": item.UpdatedAt})
 
-	return newExcursionAggregate(item, relations), nil
+	aggregate := newExcursionAggregate(item, relations)
+	u.syncExcursionSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *ExcursionUseCase) ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error {
@@ -924,6 +939,7 @@ func (u *ExcursionUseCase) DeleteExcursion(ctx context.Context, excursionID uuid
 		if err = u.repo.DeleteDraftExcursion(ctx, item.ID, actorUserID); err != nil {
 			return fmt.Errorf("hard delete draft excursion: %w", err)
 		}
+		u.deleteExcursionSearchDocument(ctx, item.ID)
 		return nil
 	}
 	if err = item.Archive(); err != nil {
@@ -933,6 +949,7 @@ func (u *ExcursionUseCase) DeleteExcursion(ctx context.Context, excursionID uuid
 		return fmt.Errorf("delete excursion: %w", err)
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeDeleted, actorUserID, map[string]any{"deletedAt": item.DeletedAt})
+	u.syncExcursionSearchDocument(ctx, newExcursionAggregate(item, relations))
 	return nil
 }
 

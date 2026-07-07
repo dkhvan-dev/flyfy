@@ -1,0 +1,3 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_domain_trending_score;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_trending_score;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_trgm_gist;

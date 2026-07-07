@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -12,6 +14,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"kz/inflap/backend/pkg/transportauth"
 	grpcadapter "kz/inflap/backend/services/trust-service/internal/adapter/grpc"
 	"kz/inflap/backend/services/trust-service/internal/adapter/repository"
 	"kz/inflap/backend/services/trust-service/internal/app"
@@ -43,30 +46,99 @@ func main() {
 	policyUseCase := app.NewPolicyUseCase(trustRepo)
 	trustServer := grpcadapter.NewServer(policyUseCase)
 
-	listener, err := net.Listen("tcp", cfg.GRPC.Address())
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
 	if err != nil {
-		log.Fatal().Err(err).Str("address", cfg.GRPC.Address()).Msg("failed to listen grpc")
+		log.Fatal().Err(err).Msg("failed to configure trust-service mTLS")
+	}
+	if err := validateTrustServiceMTLSPort(cfg, mtlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid trust-service mTLS listener configuration")
 	}
 
-	grpcServer := grpc.NewServer(
+	grpcOptions := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg)),
-	)
-	trustv1.RegisterTrustServiceServer(grpcServer, trustServer)
+	}
+	grpcServer := newTrustGRPCServer(trustServer, grpcOptions...)
 
+	var internalGRPCServer *grpc.Server
+	if mtlsConfig != nil {
+		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to configure trust-service internal mTLS gRPC")
+		}
+		internalGRPCServer = newTrustGRPCServer(trustServer, append(mtlsGRPCOptions, grpcOptions...)...)
+	}
+
+	errCh := make(chan error, 2)
 	go func() {
 		log.Info().
 			Str("address", cfg.GRPC.Address()).
 			Msg("grpc server started")
 
-		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatal().Err(err).Msg("grpc server failed")
+		if err := serveTrustGRPCServer(cfg.GRPC.Address(), grpcServer); err != nil {
+			errCh <- fmt.Errorf("grpc server failed: %w", err)
 		}
 	}()
 
-	<-ctx.Done()
-	log.Info().Msg("shutdown signal received")
+	if internalGRPCServer != nil {
+		go func() {
+			log.Info().
+				Str("address", cfg.GRPC.InternalTLSAddress()).
+				Msg("internal mTLS grpc server started")
+
+			if err := serveTrustGRPCServer(cfg.GRPC.InternalTLSAddress(), internalGRPCServer); err != nil {
+				errCh <- fmt.Errorf("internal mTLS grpc server failed: %w", err)
+			}
+		}()
+	}
+
+	var serverErr error
+	select {
+	case <-ctx.Done():
+		log.Info().Msg("shutdown signal received")
+	case err := <-errCh:
+		serverErr = err
+		log.Error().Err(err).Msg("server error")
+	}
+
 	grpcServer.GracefulStop()
+	if internalGRPCServer != nil {
+		internalGRPCServer.GracefulStop()
+	}
 	log.Info().Msg("grpc server stopped")
+	if serverErr != nil {
+		os.Exit(1)
+	}
+}
+
+func newTrustGRPCServer(trustServer trustv1.TrustServiceServer, options ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(options...)
+	trustv1.RegisterTrustServiceServer(grpcServer, trustServer)
+	return grpcServer
+}
+
+func serveTrustGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	if err := server.Serve(listener); err != nil {
+		return fmt.Errorf("serve: %w", err)
+	}
+	return nil
+}
+
+func validateTrustServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.GRPC.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when trust-service mTLS is enabled")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.GRPC.Port {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from GRPC_PORT")
+	}
+	return nil
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

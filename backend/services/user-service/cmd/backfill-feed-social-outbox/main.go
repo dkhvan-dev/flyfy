@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"kz/inflap/backend/pkg/transportauth"
 	feedserviceadapter "kz/inflap/backend/services/user-service/internal/adapter/feedservice"
 	"kz/inflap/backend/services/user-service/internal/adapter/repository"
 	"kz/inflap/backend/services/user-service/internal/app"
@@ -73,11 +75,16 @@ func drainFeedSocialOutbox(ctx context.Context, pool *pgxpool.Pool, cfg *config.
 	}
 	maxBatches = maxDrainBatches
 	userRepo := repository.NewPGUserRepository(pool)
+	feedHTTPClient, err := newFeedServiceHTTPClient(cfg)
+	if err != nil {
+		return 0, 0, err
+	}
 	publisher := feedserviceadapter.New(
 		cfg.FeedService.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		"user-service-backfill",
 		cfg.FeedService.RequestTimeout,
+		feedserviceadapter.WithHTTPClient(feedHTTPClient),
 	)
 	worker := app.NewUserSocialOutboxWorker(
 		userRepo,
@@ -114,6 +121,17 @@ func drainFeedSocialOutbox(ctx context.Context, pool *pgxpool.Pool, cfg *config.
 			Msg("feed social outbox drain batch completed")
 	}
 	return drained, batches, nil
+}
+
+func newFeedServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	client, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.FeedService.HTTPURL)),
+		cfg.FeedService.RequestTimeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize feed-service mTLS transport: %w", err)
+	}
+	return client, nil
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

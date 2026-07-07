@@ -1,7 +1,7 @@
 COMPOSE_FILE=deploy/docker-compose.yml
 DOCKER_COMPOSE=docker compose -f $(COMPOSE_FILE)
 
-.PHONY: up down restart logs ps build rebuild \
+.PHONY: up down restart logs ps build rebuild build-backfill-search-index backfill-search-index \
         activity-up activity-down activity-restart activity-logs activity-build activity-rebuild \
         activity-db-logs activity-db-shell activity-shell
 
@@ -25,6 +25,12 @@ build:
 
 rebuild:
 	$(DOCKER_COMPOSE) build --no-cache
+
+build-backfill-search-index:
+	go build -o bin/activity-service-backfill-search-index ./cmd/backfill-search-index
+
+backfill-search-index:
+	go run ./cmd/backfill-search-index
 
 activity-up:
 	$(DOCKER_COMPOSE) up -d activity-postgres activity-service

@@ -21,11 +21,21 @@ type Client struct {
 	httpClient     *http.Client
 }
 
-func New(baseURL string, internalToken string, serviceID string, requestTimeout time.Duration) *Client {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func New(baseURL string, internalToken string, serviceID string, requestTimeout time.Duration, options ...Option) *Client {
 	if requestTimeout <= 0 {
 		requestTimeout = 3 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL:        strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		internalToken:  strings.TrimSpace(internalToken),
 		serviceID:      strings.TrimSpace(serviceID),
@@ -34,6 +44,10 @@ func New(baseURL string, internalToken string, serviceID string, requestTimeout 
 			Timeout: requestTimeout,
 		},
 	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (c *Client) PublishUserSocialEvent(ctx context.Context, event model.UserSocialOutboxEvent) error {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/reflection"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/token-service/internal/adapter/crypto"
 	tokengrpc "kz/inflap/backend/services/token-service/internal/adapter/grpc"
 	"kz/inflap/backend/services/token-service/internal/adapter/grpc/handler"
@@ -101,11 +103,16 @@ func main() {
 	audit := repository.NewZerologAuditLogger(logger)
 	var tokenOptions []app.Option
 	if cfg.Notification.HTTPURL != "" && cfg.Notification.InternalServiceToken != "" {
+		notificationHTTPClient, err := newNotificationServiceHTTPClient(cfg)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("failed to initialize notification-service mTLS transport")
+		}
 		tokenOptions = append(tokenOptions, app.WithSessionRevocationNotifier(
 			notificationAdapter.NewClient(
 				cfg.Notification.HTTPURL,
 				cfg.Notification.InternalServiceToken,
 				cfg.Notification.Timeout,
+				notificationAdapter.WithHTTPClient(notificationHTTPClient),
 			),
 		))
 		logger.Info().Str("url", cfg.Notification.HTTPURL).Msg("notification session revocation notifier enabled")
@@ -130,6 +137,14 @@ func main() {
 
 	// --- gRPC Server ---
 	grpcHandler := handler.NewTokenGRPCHandler(tokenUC, tokenUC, tokenUC, tokenUC, tokenUC, tokenUC, logger)
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to configure token-service mTLS")
+	}
+	if err := validateTokenServiceMTLSPorts(cfg, mtlsConfig); err != nil {
+		logger.Fatal().Err(err).Msg("invalid token-service mTLS listener configuration")
+	}
 
 	// Define method permissions for S2S auth interceptor
 	// Methods listed here require service token + specified roles.
@@ -149,13 +164,14 @@ func main() {
 		// AuthenticateService is NOT in this map → public (no service token required)
 	}
 
-	grpcServer := grpc.NewServer(
+	grpcOptions := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			interceptor.RecoveryInterceptor(logger),
 			interceptor.LoggingInterceptor(logger),
 			interceptor.ServiceAuthInterceptor(tokenUC, audit, methodPerms, logger),
 		),
-	)
+	}
+	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// Register the gRPC service
 	tokenSrv := tokengrpc.NewTokenServiceServer(grpcHandler)
@@ -163,6 +179,17 @@ func main() {
 
 	// Enable reflection (so Apidog can discover endpoints)
 	reflection.Register(grpcServer)
+
+	var internalGRPCServer *grpc.Server
+	if mtlsConfig != nil {
+		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("failed to configure token-service internal mTLS gRPC")
+		}
+		internalGRPCServer = grpc.NewServer(append(mtlsGRPCOptions, grpcOptions...)...)
+		pb.RegisterTokenServiceServer(internalGRPCServer, tokenSrv)
+		reflection.Register(internalGRPCServer)
+	}
 
 	// --- HTTP Server (JWKS + Health) ---
 	jwksHandler := httpAdapter.NewJWKSHandler(tokenUC, logger)
@@ -173,9 +200,10 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
+	internalHTTPServer := newInternalMTLSHTTPServer(cfg, jwksHandler.Router(), mtlsConfig)
 
 	// --- Start servers ---
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 4)
 
 	// gRPC
 	go func() {
@@ -190,6 +218,20 @@ func main() {
 		}
 	}()
 
+	if internalGRPCServer != nil {
+		go func() {
+			lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.InternalGRPCTLSPort))
+			if err != nil {
+				errCh <- fmt.Errorf("internal mTLS gRPC listen: %w", err)
+				return
+			}
+			logger.Info().Int("port", cfg.InternalGRPCTLSPort).Msg("internal mTLS gRPC server listening")
+			if err := internalGRPCServer.Serve(lis); err != nil {
+				errCh <- fmt.Errorf("internal mTLS gRPC serve: %w", err)
+			}
+		}()
+	}
+
 	// HTTP
 	go func() {
 		logger.Info().Int("port", cfg.HTTPPort).Msg("HTTP server listening (JWKS + Health)")
@@ -197,6 +239,15 @@ func main() {
 			errCh <- fmt.Errorf("HTTP serve: %w", err)
 		}
 	}()
+
+	if internalHTTPServer != nil {
+		go func() {
+			logger.Info().Int("port", cfg.InternalHTTPTLSPort).Msg("internal mTLS HTTP server listening (JWKS + Health)")
+			if err := internalHTTPServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				errCh <- fmt.Errorf("internal mTLS HTTP serve: %w", err)
+			}
+		}()
+	}
 
 	// --- Graceful shutdown ---
 	sigCh := make(chan os.Signal, 1)
@@ -217,9 +268,51 @@ func main() {
 	defer shutdownCancel()
 
 	grpcServer.GracefulStop()
+	if internalGRPCServer != nil {
+		internalGRPCServer.GracefulStop()
+	}
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error().Err(err).Msg("HTTP shutdown error")
 	}
+	if internalHTTPServer != nil {
+		if err := internalHTTPServer.Shutdown(shutdownCtx); err != nil {
+			logger.Error().Err(err).Msg("internal mTLS HTTP shutdown error")
+		}
+	}
 
 	logger.Info().Msg("token-service stopped")
+}
+
+func validateTokenServiceMTLSPorts(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.InternalGRPCTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when token-service mTLS is enabled")
+	}
+	if cfg.InternalHTTPTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when token-service mTLS is enabled")
+	}
+	return nil
+}
+
+func newInternalMTLSHTTPServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil || cfg.InternalHTTPTLSPort == 0 {
+		return nil
+	}
+	return &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.InternalHTTPTLSPort),
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+		TLSConfig:    tlsConfig,
+	}
+}
+
+func newNotificationServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notification.HTTPURL)),
+		cfg.Notification.Timeout,
+	)
 }

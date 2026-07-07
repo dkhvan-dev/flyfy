@@ -1160,6 +1160,117 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 	return items, rows.Err()
 }
 
+func (r *PGUserRepository) ListUserSearchIndexBackfillAggregates(
+	ctx context.Context,
+	limit int,
+	offset int,
+) ([]port.UserSearchIndexBackfillAggregate, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	const query = `
+		SELECT
+			u.id, u.auth_subject_id, u.status, u.primary_phone, u.primary_phone_verified_at,
+			u.primary_email, u.is_deleted, u.deleted_at, u.last_seen_at, u.created_at, u.updated_at,
+			COALESCE(p.user_id, u.id), p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, COALESCE(p.locale, ''), COALESCE(p.timezone, ''),
+			p.currency, COALESCE(p.is_profile_completed, FALSE),
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			COALESCE(p.created_at, u.created_at), COALESCE(p.updated_at, u.updated_at),
+			COALESCE(rep.user_id, u.id), COALESCE(rep.trust_score, 0), COALESCE(rep.risk_score, 0),
+			COALESCE(rep.completed_bookings, 0), COALESCE(rep.completed_activities, 0),
+			COALESCE(rep.cancellations_count, 0), COALESCE(rep.reports_count, 0),
+			COALESCE(rep.created_at, u.created_at), COALESCE(rep.updated_at, u.updated_at),
+			COALESCE(followers.followers_count, 0)
+		FROM users u
+		LEFT JOIN user_profiles p ON p.user_id = u.id
+		LEFT JOIN user_reputation rep ON rep.user_id = u.id
+		LEFT JOIN (
+			SELECT followed_user_id, COUNT(*)::int AS followers_count
+			FROM user_follows
+			GROUP BY followed_user_id
+		) followers ON followers.followed_user_id = u.id
+		ORDER BY u.created_at ASC, u.id ASC
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.pool.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("query users for search backfill: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]port.UserSearchIndexBackfillAggregate, 0, limit)
+	for rows.Next() {
+		var (
+			user           model.User
+			statusRaw      string
+			profile        model.UserProfile
+			reputation     model.UserReputation
+			followersCount int
+		)
+		if err = rows.Scan(
+			&user.ID,
+			&user.AuthSubjectID,
+			&statusRaw,
+			&user.PrimaryPhone,
+			&user.PrimaryPhoneVerifiedAt,
+			&user.PrimaryEmail,
+			&user.IsDeleted,
+			&user.DeletedAt,
+			&user.LastSeenAt,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&profile.UserID,
+			&profile.FirstName,
+			&profile.LastName,
+			&profile.Nickname,
+			&profile.Bio,
+			&profile.BirthDate,
+			&profile.AvatarFileID,
+			&profile.CityID,
+			&profile.CountryCode,
+			&profile.Locale,
+			&profile.Timezone,
+			&profile.Currency,
+			&profile.IsProfileCompleted,
+			&profile.IsOnline,
+			&profile.LastSeenAt,
+			&profile.CreatedAt,
+			&profile.UpdatedAt,
+			&reputation.UserID,
+			&reputation.TrustScore,
+			&reputation.RiskScore,
+			&reputation.CompletedBookings,
+			&reputation.CompletedActivities,
+			&reputation.CancellationsCount,
+			&reputation.ReportsCount,
+			&reputation.CreatedAt,
+			&reputation.UpdatedAt,
+			&followersCount,
+		); err != nil {
+			return nil, fmt.Errorf("scan user search backfill aggregate: %w", err)
+		}
+		user.Status = enum.UserStatus(statusRaw)
+		items = append(items, port.UserSearchIndexBackfillAggregate{
+			User:           &user,
+			Profile:        &profile,
+			Reputation:     &reputation,
+			FollowersCount: followersCount,
+		})
+	}
+
+	return items, rows.Err()
+}
+
 func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error) {
 	if len(userIDs) == 0 {
 		return []*model.UserProfile{}, nil

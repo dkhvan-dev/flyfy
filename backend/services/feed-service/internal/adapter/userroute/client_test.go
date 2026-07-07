@@ -154,6 +154,20 @@ func TestValidatePostRouteReferenceKeepsServerFailureTechnical(t *testing.T) {
 	}
 }
 
+func TestNewUsesInjectedHTTPClient(t *testing.T) {
+	customClient := &http.Client{Timeout: 123 * time.Millisecond}
+
+	client := New(
+		"http://user-route-service.test",
+		time.Second,
+		WithHTTPClient(customClient),
+	)
+
+	if client.httpClient != customClient {
+		t.Fatalf("httpClient = %#v, want injected client %#v", client.httpClient, customClient)
+	}
+}
+
 func jsonResponse(req *http.Request, status int, body string) *http.Response {
 	return &http.Response{
 		StatusCode: status,

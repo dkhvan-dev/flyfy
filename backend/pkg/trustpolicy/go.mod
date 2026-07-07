@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
+	kz/inflap/backend/pkg/transportauth v0.0.0
 	kz/inflap/proto v0.0.0
 )
 
@@ -17,3 +18,5 @@ require (
 )
 
 replace kz/inflap/proto => ../../../proto
+
+replace kz/inflap/backend/pkg/transportauth => ../transportauth

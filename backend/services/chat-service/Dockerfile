@@ -10,6 +10,7 @@ WORKDIR /app
 COPY backend/services/chat-service/go.mod backend/services/chat-service/go.sum* ./backend/services/chat-service/
 COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 COPY backend/pkg/trustpolicy/go.mod backend/pkg/trustpolicy/go.sum* ./backend/pkg/trustpolicy/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 COPY proto ./proto
 
 WORKDIR /app/backend/services/chat-service
@@ -17,6 +18,7 @@ RUN go mod download
 
 COPY backend/pkg/trustpolicy /app/backend/pkg/trustpolicy
 COPY backend/pkg/switches /app/backend/pkg/switches
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/chat-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

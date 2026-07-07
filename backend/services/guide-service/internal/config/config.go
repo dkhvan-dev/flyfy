@@ -7,19 +7,24 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	GRPC        GRPCConfig
-	Postgres    PostgresConfig
-	Log         LogConfig
-	Security    SecurityConfig
-	UserService UserServiceConfig
-	FileManager FileManagerConfig
-	Excursion   ExcursionServiceConfig
-	AntiFraud   AntiFraudConfig
+	App           AppConfig
+	HTTP          HTTPConfig
+	GRPC          GRPCConfig
+	Postgres      PostgresConfig
+	Log           LogConfig
+	Security      SecurityConfig
+	UserService   UserServiceConfig
+	FileManager   FileManagerConfig
+	Excursion     ExcursionServiceConfig
+	AntiFraud     AntiFraudConfig
+	TokenService  TokenServiceConfig
+	SearchService SearchServiceConfig
+	MTLS          transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -31,22 +36,32 @@ func (a AppConfig) IsProduction() bool {
 }
 
 type HTTPConfig struct {
-	Port         int           `env:"HTTP_PORT, default=8085"`
-	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
-	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
-	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
+	Port            int           `env:"HTTP_PORT, default=8085"`
+	InternalTLSPort int           `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
+	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
 }
 
 func (h HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", h.Port)
 }
 
+func (h HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", h.InternalTLSPort)
+}
+
 type GRPCConfig struct {
-	Port int `env:"GRPC_PORT, default=9095"`
+	Port            int `env:"GRPC_PORT, default=9095"`
+	InternalTLSPort int `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
 }
 
 func (g GRPCConfig) Address() string {
 	return fmt.Sprintf(":%d", g.Port)
+}
+
+func (g GRPCConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", g.InternalTLSPort)
 }
 
 type PostgresConfig struct {
@@ -112,7 +127,8 @@ type FileManagerConfig struct {
 }
 
 type ExcursionServiceConfig struct {
-	BaseURL string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
+	BaseURL string        `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
+	Timeout time.Duration `env:"EXCURSION_SERVICE_TIMEOUT, default=3s"`
 }
 
 type AntiFraudConfig struct {
@@ -121,6 +137,25 @@ type AntiFraudConfig struct {
 	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
 	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
 	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
+}
+
+type SearchServiceConfig struct {
+	Enabled bool          `env:"SEARCH_INDEXING_ENABLED, default=false"`
+	HTTPURL string        `env:"SEARCH_SERVICE_HTTP_URL, default=http://search-service:8101"`
+	Timeout time.Duration `env:"SEARCH_SERVICE_TIMEOUT, default=800ms"`
+}
+
+type TokenServiceConfig struct {
+	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:50051"`
+	ServiceID     string        `env:"TOKEN_SERVICE_ID, default=guide-service"`
+	ServiceSecret string        `env:"TOKEN_SERVICE_SECRET"`
+	CallTimeout   time.Duration `env:"TOKEN_SERVICE_CALL_TIMEOUT, default=3s"`
+}
+
+func (c TokenServiceConfig) Enabled() bool {
+	return strings.TrimSpace(c.Target) != "" &&
+		strings.TrimSpace(c.ServiceID) != "" &&
+		strings.TrimSpace(c.ServiceSecret) != ""
 }
 
 func Load(ctx context.Context) (*Config, error) {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -14,8 +16,8 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"kz/inflap/backend/pkg/switches"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	grpcadapter "kz/inflap/backend/services/chat-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/chat-service/internal/adapter/http"
@@ -58,14 +60,7 @@ func main() {
 	defer publisher.Close()
 
 	// User service gRPC client
-	userConn, err := grpc.NewClient(
-		cfg.UserService.GRPCAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-		)),
-	)
+	userConn, err := newUserServiceConn(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to dial user-service grpc")
 	}
@@ -75,14 +70,7 @@ func main() {
 	actorResolver := grpcadapter.NewUserResolver(userClient)
 
 	// Activity service gRPC client
-	activityConn, err := grpc.NewClient(
-		cfg.ActivityService.GRPCAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-		)),
-	)
+	activityConn, err := newActivityServiceConn(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to dial activity-service grpc")
 	}
@@ -93,10 +81,14 @@ func main() {
 
 	// Repository & use cases
 	repo := repository.NewPGChatRepository(pool)
+	stickerHTTPClient, err := newStickerServiceHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("initialize sticker-service mTLS transport")
+	}
 	stickerResolver := stickeradapter.NewClient(
 		cfg.StickerService.HTTPURL,
 		cfg.StickerService.EffectiveInternalServiceToken(cfg.Security.InternalServiceToken),
-		&http.Client{Timeout: cfg.StickerService.Timeout},
+		stickerHTTPClient,
 	)
 	conversationUC := app.NewConversationUseCase(repo, publisher, actorResolver, activityResolver)
 	messageUC := app.NewMessageUseCaseWithStickerResolver(
@@ -106,11 +98,18 @@ func main() {
 		stickerResolver,
 		activityResolver,
 	)
+	notificationHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notification.HTTPURL)),
+		cfg.Notification.RequestTimeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("initialize notification-service mTLS transport")
+	}
 	notificationClient := notificationadapter.NewClient(
 		cfg.Notification.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		cfg.App.Name,
-		&http.Client{Timeout: cfg.Notification.RequestTimeout},
+		notificationHTTPClient,
 	)
 	conversationUC.SetNotificationSender(notificationClient)
 	messageUC.SetNotificationSender(notificationClient)
@@ -137,12 +136,7 @@ func main() {
 	}
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
-		trustClient, err = grpcclient.New(
-			cfg.Trust.Target,
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-			cfg.Trust.Timeout,
-		)
+		trustClient, err = newTrustPolicyClient(cfg)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize trust-service client")
 		}
@@ -169,20 +163,33 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(httpMux, cfg.Switches, cfg.Security.InternalServiceToken, "CHAT")),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(httpMux, cfg.Switches, cfg.MTLS, cfg.Security.InternalServiceToken, "CHAT")),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure chat-service mTLS")
+	}
+	if err := validateChatServiceMTLSPort(cfg, mtlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid chat-service mTLS listener configuration")
+	}
+	internalHTTPServer := newInternalChatHTTPMTLSServer(cfg, httpServer.Handler, mtlsConfig)
+
 	// gRPC server (internal service API)
-	grpcServer := grpc.NewServer()
 	chatGRPCServer := grpcadapter.NewServer(conversationUC)
 	_ = chatGRPCServer // will register with proto-generated service later
-
-	grpcLis, err := net.Listen("tcp", cfg.GRPC.Address())
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to listen grpc")
+	grpcServer := newChatGRPCServer()
+	var internalGRPCServer *grpc.Server
+	if mtlsConfig != nil {
+		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to configure chat-service internal mTLS gRPC")
+		}
+		internalGRPCServer = newChatGRPCServer(mtlsGRPCOptions...)
 	}
 
 	// Start servers
@@ -198,14 +205,42 @@ func main() {
 		httpErrCh <- nil
 	}()
 
+	if internalHTTPServer != nil {
+		go func() {
+			log.Info().
+				Str("service", cfg.App.Name).
+				Str("address", cfg.HTTP.InternalTLSAddress()).
+				Msg("internal mTLS HTTP server started")
+			if err := internalHTTPServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				httpErrCh <- err
+				return
+			}
+			httpErrCh <- nil
+		}()
+	}
+
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.GRPC.Port).Msg("gRPC server started")
-		if err := grpcServer.Serve(grpcLis); err != nil {
+		if err := serveChatGRPCServer(cfg.GRPC.Address(), grpcServer); err != nil {
 			grpcErrCh <- err
 			return
 		}
 		grpcErrCh <- nil
 	}()
+
+	if internalGRPCServer != nil {
+		go func() {
+			log.Info().
+				Str("service", cfg.App.Name).
+				Str("address", cfg.GRPC.InternalTLSAddress()).
+				Msg("internal mTLS gRPC server started")
+			if err := serveChatGRPCServer(cfg.GRPC.InternalTLSAddress(), internalGRPCServer); err != nil {
+				grpcErrCh <- err
+				return
+			}
+			grpcErrCh <- nil
+		}()
+	}
 
 	// Graceful shutdown
 	stop := make(chan os.Signal, 1)
@@ -233,10 +268,18 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
 	}
+	if internalHTTPServer != nil {
+		if err := internalHTTPServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS http shutdown failed")
+		}
+	}
 
 	done := make(chan struct{})
 	go func() {
 		grpcServer.GracefulStop()
+		if internalGRPCServer != nil {
+			internalGRPCServer.GracefulStop()
+		}
 		close(done)
 	}()
 
@@ -251,13 +294,73 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
 
-func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+func newChatGRPCServer(options ...grpc.ServerOption) *grpc.Server {
+	return grpc.NewServer(options...)
+}
+
+func serveChatGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	if err := server.Serve(listener); err != nil {
+		return fmt.Errorf("serve: %w", err)
+	}
+	return nil
+}
+
+func validateChatServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.GRPC.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when chat-service mTLS is enabled")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.GRPC.Port {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from GRPC_PORT")
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when chat-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalChatHTTPMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func newStickerServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	client, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.StickerService.HTTPURL)),
+		cfg.StickerService.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize sticker-service mTLS transport: %w", err)
+	}
+	return client, nil
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
 	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
 	middleware, err := switches.NewMaintenanceMiddleware(
 		switches.HTTPClientConfig{
 			BaseURL:              cfg.HTTPURL,
 			InternalServiceToken: token,
 			Timeout:              cfg.RequestTimeout,
+			TransportAuth:        mtls.ClientConfig(transportauth.ServerNameFromTarget(cfg.HTTPURL)),
 		},
 		switches.MaintenanceMiddlewareConfig{
 			DomainCode: domainCode,
@@ -271,6 +374,50 @@ func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfi
 		return next
 	}
 	return middleware(next)
+}
+
+func newTrustPolicyClient(cfg *config.Config) (*grpcclient.Client, error) {
+	return grpcclient.NewWithTransportAuth(
+		cfg.Trust.Target,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		cfg.Trust.Timeout,
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Trust.Target)),
+	)
+}
+
+func newUserServiceConn(cfg *config.Config) (*grpc.ClientConn, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.UserService.GRPCAddress)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS transport: %w", err)
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	return grpc.NewClient(cfg.UserService.GRPCAddress, grpcOptions...)
+}
+
+func newActivityServiceConn(cfg *config.Config) (*grpc.ClientConn, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.ActivityService.GRPCAddress)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize activity-service mTLS transport: %w", err)
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	return grpc.NewClient(cfg.ActivityService.GRPCAddress, grpcOptions...)
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

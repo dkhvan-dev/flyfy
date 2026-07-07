@@ -33,18 +33,34 @@ type Client struct {
 	httpClient    *http.Client
 }
 
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
 var _ port.PostActivityIntentPublisher = (*Client)(nil)
 
-func New(baseURL string, internalToken string, serviceName string, timeout time.Duration) *Client {
+func New(baseURL string, internalToken string, serviceName string, timeout time.Duration, options ...Option) *Client {
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		internalToken: strings.TrimSpace(internalToken),
 		serviceName:   strings.TrimSpace(serviceName),
 		httpClient:    &http.Client{Timeout: timeout},
 	}
+	for _, option := range options {
+		if option != nil {
+			option(client)
+		}
+	}
+	return client
 }
 
 func (c *Client) PublishPostActivityIntent(

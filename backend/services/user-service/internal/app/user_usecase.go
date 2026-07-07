@@ -43,8 +43,9 @@ type UserFriendshipSummary struct {
 }
 
 type UserUseCase struct {
-	repo        port.UserRepository
-	fileManager FileManagerClient
+	repo          port.UserRepository
+	fileManager   FileManagerClient
+	searchIndexer UserSearchIndexer
 }
 
 func NewUserUseCase(repo port.UserRepository, fileManager FileManagerClient) *UserUseCase {
@@ -52,6 +53,10 @@ func NewUserUseCase(repo port.UserRepository, fileManager FileManagerClient) *Us
 		repo:        repo,
 		fileManager: fileManager,
 	}
+}
+
+func (u *UserUseCase) SetSearchIndexer(indexer UserSearchIndexer) {
+	u.searchIndexer = indexer
 }
 
 type InitUserInput struct {
@@ -708,7 +713,12 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 		return nil, fmt.Errorf("update profile: %w", err)
 	}
 
-	return u.GetAggregateByUserID(ctx, userID)
+	aggregate, err := u.GetAggregateByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncUserSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *UserUseCase) UpdateLastSeen(ctx context.Context, userID uuid.UUID) (*model.User, error) {

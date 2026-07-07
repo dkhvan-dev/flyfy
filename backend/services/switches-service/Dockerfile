@@ -5,7 +5,9 @@ ARG TARGETARCH=amd64
 
 WORKDIR /src
 COPY backend/services/switches-service/go.mod backend/services/switches-service/go.sum* ./
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* /pkg/transportauth/
 RUN go mod download
+COPY backend/pkg/transportauth /pkg/transportauth
 COPY backend/services/switches-service ./
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/switches-service ./cmd
 

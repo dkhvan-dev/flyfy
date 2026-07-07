@@ -26,6 +26,7 @@ type ActivityUseCase struct {
 	fraud               port.FraudEvaluator
 	trustPolicy         port.TrustPolicyClient
 	userProfiles        port.UserProfileResolver
+	searchIndexer       ActivitySearchIndexer
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -422,6 +423,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	if err = u.syncCoverMedia(ctx, item.ID, input.HostUserID, input.CoverFileID, input.CoverFileID != nil); err != nil {
 		return nil, err
 	}
+	u.syncActivitySearchDocument(ctx, item)
 
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
 		ActivityID:  item.ID,
@@ -885,6 +887,7 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 
 	if changed {
 		u.syncActivityChat(ctx, updated)
+		u.syncActivitySearchDocument(ctx, updated)
 		if updated != nil {
 			switch updated.Status {
 			case enum.ActivityStatusCancelled:
@@ -1074,6 +1077,7 @@ func (u *ActivityUseCase) startActivityInternal(
 	}
 
 	u.syncActivityChat(ctx, item)
+	u.syncActivitySearchDocument(ctx, item)
 
 	return item, nil
 }
@@ -1119,6 +1123,7 @@ func (u *ActivityUseCase) completeActivityInternal(
 	}
 
 	u.syncActivityChat(ctx, item)
+	u.syncActivitySearchDocument(ctx, item)
 	u.notifyActivityCompleted(ctx, item, actorUserID)
 
 	return item, nil
@@ -1172,6 +1177,7 @@ func (u *ActivityUseCase) PublishActivity(
 	}
 
 	u.syncActivityChat(ctx, item)
+	u.syncActivitySearchDocument(ctx, item)
 
 	return item, nil
 }
@@ -1288,6 +1294,8 @@ func (u *ActivityUseCase) DuplicateActivity(
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
+
+	u.syncActivitySearchDocument(ctx, dup)
 
 	return dup, nil
 }
@@ -1480,6 +1488,7 @@ func (u *ActivityUseCase) CancelActivity(
 	}
 
 	u.syncActivityChat(ctx, updated)
+	u.syncActivitySearchDocument(ctx, updated)
 	u.notifyActivityCancelled(
 		ctx,
 		updated,
@@ -1781,6 +1790,7 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	if err = u.syncCoverMedia(ctx, item.ID, input.ActorUserID, input.CoverFileID, input.HasCoverFileID); err != nil {
 		return nil, err
 	}
+	u.syncActivitySearchDocument(ctx, item)
 
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
 		ActivityID:  item.ID,
@@ -2269,6 +2279,7 @@ func (u *ActivityUseCase) ApproveModeration(
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
+	u.syncActivitySearchDocument(ctx, item)
 	return item, nil
 }
 
@@ -2366,6 +2377,7 @@ func (u *ActivityUseCase) RejectModeration(
 	}
 
 	u.syncActivityChat(ctx, updated)
+	u.syncActivitySearchDocument(ctx, updated)
 	for _, task := range paymentTasks {
 		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
 			return nil, err

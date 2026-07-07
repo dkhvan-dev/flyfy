@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
+	"kz/inflap/backend/pkg/transportauth"
 	fraudadapter "kz/inflap/backend/services/auth-service/internal/adapter/fraud"
 	httpAdapter "kz/inflap/backend/services/auth-service/internal/adapter/http"
 	"kz/inflap/backend/services/auth-service/internal/adapter/oauth"
@@ -94,7 +97,7 @@ func main() {
 	appleVerifier := oauth.NewAppleVerifier(cfg.Apple.TeamID, cfg.Apple.BundleID, logger)
 
 	// Token service client (S2S gRPC)
-	tokenClient, err := tokenclient.NewTokenServiceClient(cfg.TokenService, logger)
+	tokenClient, err := newTokenServiceClient(cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create token service client")
 	}
@@ -108,7 +111,7 @@ func main() {
 	if cfg.UserService.InternalServiceToken == "" {
 		logger.Warn().Msg("user-service internal token is not configured; nickname password login is disabled")
 	} else {
-		userClient, err := userservice.New(cfg.UserService)
+		userClient, err := newUserServiceClient(cfg)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("failed to create user-service client")
 		}
@@ -152,23 +155,41 @@ func main() {
 
 	// --- HTTP Server ---
 	authHandler := httpAdapter.NewAuthHandler(authUC, logger)
+	router := authHandler.Router()
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler:      authHandler.Router(),
+		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	tlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to configure auth-service mTLS")
+	}
+	if err := validateAuthServiceMTLSPort(*cfg, tlsConfig); err != nil {
+		logger.Fatal().Err(err).Msg("invalid auth-service mTLS listener configuration")
+	}
+	internalMTLSServer := newInternalAuthMTLSServer(*cfg, router, tlsConfig)
 
 	// --- Start server ---
-	errCh := make(chan error, 1)
+	errCh := make(chan error, 2)
 
 	go func() {
 		logger.Info().Int("port", cfg.HTTPPort).Msg("HTTP server listening")
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- fmt.Errorf("HTTP serve: %w", err)
 		}
 	}()
+	if internalMTLSServer != nil {
+		go func() {
+			logger.Info().Int("port", cfg.InternalHTTPTLSPort).Msg("internal mTLS HTTP server listening")
+			if err := internalMTLSServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errCh <- fmt.Errorf("internal mTLS HTTP serve: %w", err)
+			}
+		}()
+	}
 
 	// --- Graceful shutdown ---
 	sigCh := make(chan os.Signal, 1)
@@ -191,20 +212,80 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error().Err(err).Msg("HTTP shutdown error")
 	}
+	if internalMTLSServer != nil {
+		if err := internalMTLSServer.Shutdown(shutdownCtx); err != nil {
+			logger.Error().Err(err).Msg("internal mTLS HTTP shutdown error")
+		}
+	}
 
 	logger.Info().Msg("auth-service stopped")
+}
+
+func validateAuthServiceMTLSPort(cfg config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.InternalHTTPTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when auth-service mTLS is enabled")
+	}
+	if cfg.InternalHTTPTLSPort == cfg.HTTPPort {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalAuthMTLSServer(cfg config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.InternalHTTPAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
 }
 
 func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 	if cfg == nil || !cfg.AntiFraud.Enabled {
 		return nil, nil
 	}
+	fraudHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.AntiFraud.BaseURL)),
+		cfg.AntiFraud.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize anti-fraud mTLS transport: %w", err)
+	}
 	return fraudadapter.NewHTTPClient(
 		cfg.AntiFraud.BaseURL,
 		cfg.AntiFraud.InternalServiceToken,
 		cfg.AntiFraud.SignalHashKey,
 		cfg.AntiFraud.Timeout,
+		fraudadapter.WithHTTPClient(fraudHTTPClient),
 	)
+}
+
+func newUserServiceClient(cfg *config.Config) (*userservice.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.UserService.GRPCTarget)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS transport: %w", err)
+	}
+	return userservice.New(cfg.UserService, grpcOptions...)
+}
+
+func newTokenServiceClient(cfg *config.Config, logger zerolog.Logger) (*tokenclient.TokenServiceClient, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Addr)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize token-service mTLS transport: %w", err)
+	}
+	return tokenclient.NewTokenServiceClient(cfg.TokenService, logger, grpcOptions...)
 }
 
 func newSwitchesClient(cfg *config.Config, logger zerolog.Logger) *switchesadapter.Client {
@@ -212,7 +293,19 @@ func newSwitchesClient(cfg *config.Config, logger zerolog.Logger) *switchesadapt
 		logger.Warn().Msg("switches-service client is disabled; feature flags and tech breaks are not enforced")
 		return nil
 	}
-	client, err := switchesadapter.NewHTTPClient(cfg.Switches, logger)
+	switchesHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Switches.BaseURL)),
+		cfg.Switches.Timeout,
+	)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to configure switches-service mTLS client")
+		return nil
+	}
+	client, err := switchesadapter.NewHTTPClient(
+		cfg.Switches,
+		logger,
+		switchesadapter.WithHTTPClient(switchesHTTPClient),
+	)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to create switches-service client")
 		return nil

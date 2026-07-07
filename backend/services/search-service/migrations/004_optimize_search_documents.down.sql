@@ -1,0 +1,5 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_geo;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_domain_locale_scores;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_prefix;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_trgm;
+DROP INDEX CONCURRENTLY IF EXISTS idx_search_documents_active_vector;

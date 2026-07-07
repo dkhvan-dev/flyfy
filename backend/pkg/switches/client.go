@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 const internalServiceTokenHeader = "X-Internal-Service-Token"
@@ -32,6 +34,7 @@ type HTTPClientConfig struct {
 	BaseURL              string
 	InternalServiceToken string
 	Timeout              time.Duration
+	TransportAuth        transportauth.Config
 }
 
 type HTTPClient struct {
@@ -74,10 +77,14 @@ func NewHTTPClient(cfg HTTPClientConfig, opts ...HTTPClientOption) (*HTTPClient,
 	if timeout <= 0 {
 		timeout = 800 * time.Millisecond
 	}
+	httpClient, err := transportauth.NewHTTPClient(cfg.TransportAuth, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("initialize switches mTLS transport: %w", err)
+	}
 	client := &HTTPClient{
 		baseURL:              baseURL,
 		internalServiceToken: strings.TrimSpace(cfg.InternalServiceToken),
-		httpClient:           &http.Client{Timeout: timeout},
+		httpClient:           httpClient,
 	}
 	for _, opt := range opts {
 		opt(client)

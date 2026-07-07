@@ -146,6 +146,12 @@ class _PlacesScreenState extends State<PlacesScreen> {
     );
   }
 
+  void _submitPlaceSearch(String value) {
+    _searchDebounce?.cancel();
+    FocusScope.of(context).unfocus();
+    unawaited(_loadPlaces(page: 1));
+  }
+
   Future<void> _bootstrapPlaces() async {
     await _initializeDefaultLocationFilter();
     if (!mounted) return;
@@ -422,10 +428,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
         filterTooltip: l10n.placesFiltersTitle,
         activeFilterCount: activeFilterCount,
         onFilterTap: _openFilters,
-        onSubmitted: (_) {
-          _searchDebounce?.cancel();
-          _loadPlaces(page: 1);
-        },
+        onSubmitted: _submitPlaceSearch,
       ),
     );
   }

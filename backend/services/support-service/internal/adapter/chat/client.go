@@ -21,12 +21,22 @@ type Client struct {
 	supportSubject string
 }
 
-func NewClient(baseURL string, timeout time.Duration, internalToken string, supportSubject string) *Client {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func NewClient(baseURL string, timeout time.Duration, internalToken string, supportSubject string, options ...Option) *Client {
 	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL: baseURL,
 		httpClient: &http.Client{
 			Timeout: timeout,
@@ -34,6 +44,10 @@ func NewClient(baseURL string, timeout time.Duration, internalToken string, supp
 		internalToken:  strings.TrimSpace(internalToken),
 		supportSubject: strings.TrimSpace(supportSubject),
 	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (c *Client) EnsureSupportConversation(ctx context.Context, userID string) (app.SupportChatConversationResult, error) {

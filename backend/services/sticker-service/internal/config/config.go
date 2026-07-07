@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
@@ -17,6 +19,7 @@ type Config struct {
 	Security    SecurityConfig
 	FileManager FileManagerConfig
 	Sticker     StickerConfig
+	MTLS        transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -29,14 +32,19 @@ func (a AppConfig) IsProduction() bool {
 }
 
 type HTTPConfig struct {
-	Port         int           `env:"HTTP_PORT, default=8092"`
-	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
-	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=30s"`
-	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=120s"`
+	Port            int           `env:"HTTP_PORT, default=8092"`
+	InternalTLSPort int           `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=30s"`
+	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=120s"`
 }
 
 func (h HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", h.Port)
+}
+
+func (h HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", h.InternalTLSPort)
 }
 
 type DBConfig struct {

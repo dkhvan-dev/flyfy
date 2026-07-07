@@ -6,13 +6,18 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
 	// Server
-	GRPCPort int    `env:"GRPC_PORT, default=50051"`
-	HTTPPort int    `env:"HTTP_PORT, default=8081"`
-	Env      string `env:"APP_ENV, default=development"`
+	GRPCPort            int    `env:"GRPC_PORT, default=50051"`
+	InternalGRPCTLSPort int    `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
+	HTTPPort            int    `env:"HTTP_PORT, default=8081"`
+	InternalHTTPTLSPort int    `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	Env                 string `env:"APP_ENV, default=development"`
+	MTLS                transportauth.EnvConfig
 
 	// JWT
 	JWT JWTConfig

@@ -60,6 +60,8 @@ import '../../features/help_center/models/help_center_models.dart';
 import '../../features/help_center/presentation/help_center_screen.dart';
 import '../../features/help_center/presentation/support_tickets_screen.dart';
 import '../../features/notifications/data/notification_api.dart';
+import '../../features/search/presentation/search_route_config.dart';
+import '../../features/search/presentation/search_screen.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../features/user_routes/presentation/user_route_details_screen.dart';
 import '../../features/user_routes/presentation/user_routes_screen.dart';
@@ -106,6 +108,15 @@ class AppRouter {
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+        GoRoute(
+          path: '/search',
+          builder: (context, state) {
+            final config = SearchRouteConfig.fromQueryParameters(
+              state.uri.queryParameters,
+            );
+            return _withAndroidBackSwipe(SearchScreen(config: config));
+          },
+        ),
         GoRoute(
           path: '/feed',
           builder: (context, state) =>
@@ -819,6 +830,7 @@ class AppRouter {
 
   static bool _isPublicRoute(String location) {
     if (location == '/' ||
+        location == '/search' ||
         location == '/login' ||
         location == '/otp' ||
         location == '/password-reset') {

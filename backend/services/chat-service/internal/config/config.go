@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
@@ -25,6 +27,7 @@ type Config struct {
 	NotificationOutbox ChatNotificationOutboxConfig
 	Trust              TrustServiceConfig
 	Switches           SwitchesServiceConfig
+	MTLS               transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -33,22 +36,32 @@ type AppConfig struct {
 }
 
 type HTTPConfig struct {
-	Port         int           `env:"HTTP_PORT, default=8088"`
-	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
-	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=120s"`
-	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=120s"`
+	Port            int           `env:"HTTP_PORT, default=8088"`
+	InternalTLSPort int           `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=120s"`
+	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=120s"`
 }
 
 func (h HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", h.Port)
 }
 
+func (h HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", h.InternalTLSPort)
+}
+
 type GRPCConfig struct {
-	Port int `env:"GRPC_PORT, default=9097"`
+	Port            int `env:"GRPC_PORT, default=9097"`
+	InternalTLSPort int `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
 }
 
 func (g GRPCConfig) Address() string {
 	return fmt.Sprintf(":%d", g.Port)
+}
+
+func (g GRPCConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", g.InternalTLSPort)
 }
 
 type DBConfig struct {

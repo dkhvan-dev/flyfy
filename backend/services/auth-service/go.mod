@@ -12,6 +12,7 @@ require (
 	golang.org/x/crypto v0.53.0
 	google.golang.org/api v0.257.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/backend/pkg/transportauth v0.0.0
 	kz/inflap/proto v0.0.0
 )
 
@@ -48,3 +49,5 @@ require (
 )
 
 replace kz/inflap/proto => ../../../proto
+
+replace kz/inflap/backend/pkg/transportauth => ../../pkg/transportauth

@@ -194,6 +194,19 @@ class _GuidesScreenState extends State<GuidesScreen> {
     });
   }
 
+  void _submitGuideSearch(String value) {
+    FocusScope.of(context).unfocus();
+    _searchDebounce?.cancel();
+    final next = value.trim();
+    if (next != _searchQuery || _currentPage != 1) {
+      setState(() {
+        _searchQuery = next;
+        _currentPage = 1;
+      });
+    }
+    unawaited(_loadGuides(page: 1));
+  }
+
   Future<void> _loadGuides({int page = 1}) async {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
@@ -463,6 +476,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                     hintText: l10n.guidesSearchHint,
                     onFilterTap: _showFilters,
                     onClear: _clearSearch,
+                    onSubmitted: _submitGuideSearch,
                     activeFilterCount: _filters.activeCount,
                   ),
                   const SizedBox(height: 23),
@@ -567,6 +581,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                   hintText: l10n.guidesSearchHint,
                   onFilterTap: _showFilters,
                   onClear: _clearSearch,
+                  onSubmitted: _submitGuideSearch,
                   activeFilterCount: _filters.activeCount,
                 ),
                 const SizedBox(height: 23),
@@ -633,6 +648,7 @@ class _GuidesSearchField extends StatelessWidget {
     required this.hintText,
     required this.onFilterTap,
     required this.onClear,
+    required this.onSubmitted,
     required this.activeFilterCount,
   });
 
@@ -640,6 +656,7 @@ class _GuidesSearchField extends StatelessWidget {
   final String hintText;
   final VoidCallback onFilterTap;
   final VoidCallback onClear;
+  final ValueChanged<String> onSubmitted;
   final int activeFilterCount;
 
   @override
@@ -652,6 +669,7 @@ class _GuidesSearchField extends StatelessWidget {
       onFilterTap: onFilterTap,
       showClearButton: true,
       onClear: onClear,
+      onSubmitted: onSubmitted,
     );
   }
 }

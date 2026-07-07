@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inflap/features/feed/data/feed_api.dart';
 import 'package:inflap/features/feed/models/feed_block_vm.dart';
 import 'package:inflap/features/feed/presentation/community_discovery_screen.dart';
@@ -42,7 +43,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.listCalls, ['::0:20']);
-    expect(find.text('Communities'), findsOneWidget);
+    expect(find.text('Communities'), findsWidgets);
     expect(find.text('Investments'), findsOneWidget);
     expect(find.text('Almaty weekends'), findsOneWidget);
 
@@ -52,6 +53,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(openedCommunity?.id, 'community-1');
+  });
+
+  testWidgets('search submission reloads discovery list in place', (
+    tester,
+  ) async {
+    final submittedSearches = <String?>[];
+    final api = _FakeFeedApi(
+      onListCommunities:
+          ({
+            String? topic,
+            String? countryCode,
+            String? cityId,
+            String? search,
+            bool excludeFollowed = false,
+            bool onlyFollowed = false,
+            int limit = 20,
+            int offset = 0,
+          }) {
+            submittedSearches.add(search);
+            return Future.value(
+              CommunityListPageVm(
+                items: [
+                  _community(
+                    title: search == 'city clubs'
+                        ? 'City clubs'
+                        : 'Almaty creators',
+                  ),
+                ],
+                limit: limit,
+                offset: offset,
+              ),
+            );
+          },
+    );
+
+    await tester.pumpWidget(_routerDiscoveryApp(api));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'city clubs');
+    await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('search route'), findsNothing);
+    expect(find.text('City clubs'), findsOneWidget);
+    expect(submittedSearches, [null, 'city clubs']);
   });
 
   testWidgets('toggles community follow from discovery list', (tester) async {
@@ -150,6 +196,27 @@ Widget _discoveryApp(
       feedApi: api,
       onCommunityOpen: onCommunityOpen,
     ),
+  );
+}
+
+Widget _routerDiscoveryApp(FeedApi api) {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => CommunityDiscoveryScreen(feedApi: api),
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const Scaffold(body: Text('search route')),
+      ),
+    ],
+  );
+
+  return MaterialApp.router(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    routerConfig: router,
   );
 }
 

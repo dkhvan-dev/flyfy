@@ -13,134 +13,166 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"kz/inflap/backend/pkg/serviceauth"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/adapter"
 	trustserviceadapter "kz/inflap/backend/services/api-gateway/internal/adapter/trustservice"
 	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 type ProxyHandler struct {
-	cfg               *config.Config
-	readiness         *ReadinessHandler
-	authProxy         *httputil.ReverseProxy
-	userProxy         *httputil.ReverseProxy
-	guideProxy        *httputil.ReverseProxy
-	fileManagerProxy  *httputil.ReverseProxy
-	activityProxy     *httputil.ReverseProxy
-	excursionProxy    *httputil.ReverseProxy
-	feedProxy         *httputil.ReverseProxy
-	chatProxy         *httputil.ReverseProxy
-	referenceProxy    *httputil.ReverseProxy
-	checklistProxy    *httputil.ReverseProxy
-	currencyProxy     *httputil.ReverseProxy
-	placeProxy        *httputil.ReverseProxy
-	routingProxy      *httputil.ReverseProxy
-	userRouteProxy    *httputil.ReverseProxy
-	paymentProxy      *httputil.ReverseProxy
-	stickerProxy      *httputil.ReverseProxy
-	notificationProxy *httputil.ReverseProxy
-	supportProxy      *httputil.ReverseProxy
-	adminPanelProxy   *httputil.ReverseProxy
-	trustClient       *trustserviceadapter.Client
-	userIDResolver    userIDResolver
+	cfg                *config.Config
+	readiness          *ReadinessHandler
+	authProxy          *httputil.ReverseProxy
+	userProxy          *httputil.ReverseProxy
+	guideProxy         *httputil.ReverseProxy
+	fileManagerProxy   *httputil.ReverseProxy
+	activityProxy      *httputil.ReverseProxy
+	excursionProxy     *httputil.ReverseProxy
+	feedProxy          *httputil.ReverseProxy
+	chatProxy          *httputil.ReverseProxy
+	referenceProxy     *httputil.ReverseProxy
+	checklistProxy     *httputil.ReverseProxy
+	currencyProxy      *httputil.ReverseProxy
+	placeProxy         *httputil.ReverseProxy
+	routingProxy       *httputil.ReverseProxy
+	userRouteProxy     *httputil.ReverseProxy
+	searchProxy        *httputil.ReverseProxy
+	paymentProxy       *httputil.ReverseProxy
+	stickerProxy       *httputil.ReverseProxy
+	notificationProxy  *httputil.ReverseProxy
+	supportProxy       *httputil.ReverseProxy
+	adminPanelProxy    *httputil.ReverseProxy
+	trustClient        *trustserviceadapter.Client
+	serviceTokenSource *serviceauth.GRPCServiceTokenSource
+	userIDResolver     userIDResolver
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
-	authProxy, err := newSingleHostProxy("auth", cfg.Downstreams.AuthService, cfg.Security.InternalServiceToken)
+	serviceTokenSource, err := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+		Target:        cfg.TokenService.Target,
+		ServiceID:     cfg.TokenService.ServiceID,
+		ServiceSecret: cfg.TokenService.ServiceSecret,
+		CallTimeout:   cfg.TokenService.CallTimeout,
+		TransportAuth: cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("initialize gateway service token source: %w", err)
+	}
+	proxyHandlerReady := false
+	defer func() {
+		if !proxyHandlerReady {
+			_ = serviceTokenSource.Close()
+		}
+	}()
+
+	authProxy, err := newGatewayDownstreamProxy("auth", cfg.Downstreams.AuthService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	userProxy, err := newSingleHostProxy("user", cfg.Downstreams.UserService, cfg.Security.InternalServiceToken)
+	userProxy, err := newGatewayDownstreamProxy("user", cfg.Downstreams.UserService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	guideProxy, err := newSingleHostProxy("guide", cfg.Downstreams.GuideService, cfg.Security.InternalServiceToken)
+	guideProxy, err := newGatewayDownstreamProxy("guide", cfg.Downstreams.GuideService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	fileManagerProxy, err := newSingleHostProxy("file-manager", cfg.Downstreams.FileManagerService, cfg.Security.InternalServiceToken)
+	fileManagerProxy, err := newGatewayDownstreamProxy("file-manager", cfg.Downstreams.FileManagerService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	activityProxy, err := newSingleHostProxy("activity", cfg.Downstreams.ActivityService, cfg.Security.InternalServiceToken)
+	activityProxy, err := newGatewayDownstreamProxy("activity", cfg.Downstreams.ActivityService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	excursionProxy, err := newSingleHostProxy("excursion", cfg.Downstreams.ExcursionService, cfg.Security.InternalServiceToken)
+	excursionProxy, err := newGatewayDownstreamProxy("excursion", cfg.Downstreams.ExcursionService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	feedProxy, err := newSingleHostProxy("feed", cfg.Downstreams.FeedService, cfg.Security.InternalServiceToken)
+	feedProxy, err := newGatewayDownstreamProxy("feed", cfg.Downstreams.FeedService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	chatProxy, err := newSingleHostProxy("chat", cfg.Downstreams.ChatService, cfg.Security.InternalServiceToken)
+	chatProxy, err := newGatewayDownstreamProxy("chat", cfg.Downstreams.ChatService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	referenceProxy, err := newSingleHostProxy("reference", cfg.Downstreams.ReferenceService, cfg.Security.InternalServiceToken)
+	referenceProxy, err := newGatewayDownstreamProxy("reference", cfg.Downstreams.ReferenceService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	checklistProxy, err := newSingleHostProxy("checklist", cfg.Downstreams.ChecklistService, cfg.Security.InternalServiceToken)
+	checklistProxy, err := newGatewayDownstreamProxy("checklist", cfg.Downstreams.ChecklistService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	currencyProxy, err := newSingleHostProxy("currency", cfg.Downstreams.CurrencyService, cfg.Security.InternalServiceToken)
+	currencyProxy, err := newGatewayDownstreamProxy("currency", cfg.Downstreams.CurrencyService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	placeProxy, err := newSingleHostProxy("place", cfg.Downstreams.PlaceService, cfg.Security.InternalServiceToken)
+	placeProxy, err := newGatewayDownstreamProxy("place", cfg.Downstreams.PlaceService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	routingProxy, err := newSingleHostProxy("routing", cfg.Downstreams.RoutingService, cfg.Security.InternalServiceToken)
+	routingProxy, err := newGatewayDownstreamProxy("routing", cfg.Downstreams.RoutingService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	userRouteProxy, err := newSingleHostProxy("user-route", cfg.Downstreams.UserRouteService, cfg.Security.InternalServiceToken)
+	userRouteProxy, err := newGatewayDownstreamProxy("user-route", cfg.Downstreams.UserRouteService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	paymentProxy, err := newSingleHostProxy("payment", cfg.Downstreams.PaymentService, cfg.Security.InternalServiceToken)
+	// Search-service already validates service JWT/RBAC for internal indexing endpoints.
+	// Other downstreams keep the legacy header until their inbound middleware is migrated.
+	searchProxy, err := newGatewayDownstreamProxy("search", cfg.Downstreams.SearchService, cfg.Security.InternalServiceToken, serviceTokenSource, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	stickerProxy, err := newSingleHostProxy("sticker", cfg.Downstreams.StickerService, cfg.Security.InternalServiceToken)
+	paymentProxy, err := newGatewayDownstreamProxy("payment", cfg.Downstreams.PaymentService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	notificationProxy, err := newSingleHostProxy("notification", cfg.Downstreams.NotificationService, cfg.Security.InternalServiceToken)
+	stickerProxy, err := newGatewayDownstreamProxy("sticker", cfg.Downstreams.StickerService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	supportProxy, err := newSingleHostProxy("support", cfg.Downstreams.SupportService, cfg.Security.InternalServiceToken)
+	notificationProxy, err := newGatewayDownstreamProxy("notification", cfg.Downstreams.NotificationService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	adminPanelProxy, err := newSingleHostProxy("admin-panel", cfg.Downstreams.AdminPanelService, cfg.Security.InternalServiceToken)
+	supportProxy, err := newGatewayDownstreamProxy("support", cfg.Downstreams.SupportService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
 
-	trustClient, err := trustserviceadapter.New(cfg.TrustService, cfg.Security.InternalServiceToken)
+	adminPanelProxy, err := newGatewayDownstreamProxy("admin-panel", cfg.Downstreams.AdminPanelService, cfg.Security.InternalServiceToken, nil, cfg.MTLS)
+	if err != nil {
+		return nil, err
+	}
+
+	trustClient, err := trustserviceadapter.NewWithTransportAuth(
+		cfg.TrustService,
+		cfg.Security.InternalServiceToken,
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TrustService.Target)),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -151,38 +183,50 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	proxyHandlerReady = true
 	return &ProxyHandler{
-		cfg:               cfg,
-		readiness:         readiness,
-		authProxy:         authProxy,
-		userProxy:         userProxy,
-		guideProxy:        guideProxy,
-		fileManagerProxy:  fileManagerProxy,
-		activityProxy:     activityProxy,
-		excursionProxy:    excursionProxy,
-		feedProxy:         feedProxy,
-		chatProxy:         chatProxy,
-		referenceProxy:    referenceProxy,
-		checklistProxy:    checklistProxy,
-		currencyProxy:     currencyProxy,
-		placeProxy:        placeProxy,
-		routingProxy:      routingProxy,
-		userRouteProxy:    userRouteProxy,
-		paymentProxy:      paymentProxy,
-		stickerProxy:      stickerProxy,
-		notificationProxy: notificationProxy,
-		supportProxy:      supportProxy,
-		adminPanelProxy:   adminPanelProxy,
-		trustClient:       trustClient,
-		userIDResolver:    userIDResolver,
+		cfg:                cfg,
+		readiness:          readiness,
+		authProxy:          authProxy,
+		userProxy:          userProxy,
+		guideProxy:         guideProxy,
+		fileManagerProxy:   fileManagerProxy,
+		activityProxy:      activityProxy,
+		excursionProxy:     excursionProxy,
+		feedProxy:          feedProxy,
+		chatProxy:          chatProxy,
+		referenceProxy:     referenceProxy,
+		checklistProxy:     checklistProxy,
+		currencyProxy:      currencyProxy,
+		placeProxy:         placeProxy,
+		routingProxy:       routingProxy,
+		userRouteProxy:     userRouteProxy,
+		searchProxy:        searchProxy,
+		paymentProxy:       paymentProxy,
+		stickerProxy:       stickerProxy,
+		notificationProxy:  notificationProxy,
+		supportProxy:       supportProxy,
+		adminPanelProxy:    adminPanelProxy,
+		trustClient:        trustClient,
+		serviceTokenSource: serviceTokenSource,
+		userIDResolver:     userIDResolver,
 	}, nil
 }
 
 func (h *ProxyHandler) Close() error {
-	if h == nil || h.trustClient == nil {
+	if h == nil {
 		return nil
 	}
-	return h.trustClient.Close()
+	var closeErr error
+	if h.trustClient != nil {
+		closeErr = h.trustClient.Close()
+	}
+	if h.serviceTokenSource != nil {
+		if err := h.serviceTokenSource.Close(); err != nil && closeErr == nil {
+			closeErr = err
+		}
+	}
+	return closeErr
 }
 
 func (h *ProxyHandler) Register(mux *http.ServeMux) {
@@ -281,6 +325,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.routingProxy
 	case "user-route":
 		return h.userRouteProxy
+	case "search":
+		return h.searchProxy
 	case "payment":
 		return h.paymentProxy
 	case "sticker":
@@ -381,20 +427,68 @@ func (h *ProxyHandler) rewritePath(r *http.Request, policy *RoutePolicy) {
 	r.RequestURI = ""
 }
 
-func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceToken string) (*httputil.ReverseProxy, error) {
+func newSingleHostProxy(
+	upstreamName string,
+	rawTarget string,
+	internalServiceToken string,
+	tokenSource serviceauth.TokenSource,
+) (*httputil.ReverseProxy, error) {
+	return newSingleHostProxyWithTransport(upstreamName, rawTarget, internalServiceToken, tokenSource, nil)
+}
+
+func newGatewayDownstreamProxy(
+	upstreamName string,
+	rawTarget string,
+	internalServiceToken string,
+	tokenSource serviceauth.TokenSource,
+	mtls transportauth.EnvConfig,
+) (*httputil.ReverseProxy, error) {
+	baseTransport, err := newGatewayDownstreamTransport(rawTarget, mtls)
+	if err != nil {
+		return nil, fmt.Errorf("initialize %s downstream mTLS transport: %w", upstreamName, err)
+	}
+	return newSingleHostProxyWithTransport(upstreamName, rawTarget, internalServiceToken, tokenSource, baseTransport)
+}
+
+func newGatewayDownstreamTransport(rawTarget string, mtls transportauth.EnvConfig) (http.RoundTripper, error) {
+	client, err := transportauth.NewHTTPClient(
+		mtls.ClientConfig(transportauth.ServerNameFromTarget(rawTarget)),
+		0,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return client.Transport, nil
+}
+
+func newSingleHostProxyWithTransport(
+	upstreamName string,
+	rawTarget string,
+	internalServiceToken string,
+	tokenSource serviceauth.TokenSource,
+	baseTransport http.RoundTripper,
+) (*httputil.ReverseProxy, error) {
 	target, err := url.Parse(strings.TrimSpace(rawTarget))
 	if err != nil {
 		return nil, err
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	if baseTransport != nil {
+		proxy.Transport = baseTransport
+	}
 	originalDirector := proxy.Director
 	proxy.Director = func(r *http.Request) {
 		originalDirector(r)
 		r.Header.Del("X-Internal-Service-Token")
-		if token := strings.TrimSpace(internalServiceToken); token != "" {
-			r.Header.Set("X-Internal-Service-Token", token)
+		if tokenSource == nil {
+			if token := strings.TrimSpace(internalServiceToken); token != "" {
+				r.Header.Set("X-Internal-Service-Token", token)
+			}
 		}
+	}
+	if tokenSource != nil {
+		proxy.Transport = serviceauth.NewBearerTransport(tokenSource, proxy.Transport)
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
 		if resp.StatusCode < http.StatusBadRequest {

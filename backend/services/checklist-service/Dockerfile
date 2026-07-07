@@ -8,10 +8,12 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/checklist-service/go.mod backend/services/checklist-service/go.sum* ./backend/services/checklist-service/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 
 WORKDIR /app/backend/services/checklist-service
 RUN go mod download
 
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/checklist-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

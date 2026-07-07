@@ -3,27 +3,33 @@ package config
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
-	App          AppConfig
-	HTTP         HTTPConfig
-	GRPC         GRPCConfig
-	DB           DBConfig
-	Log          LogConfig
-	Security     SecurityConfig
-	Attendance   AttendanceConfig
-	UserService  UserServiceConfig
-	FileManager  FileManagerConfig
-	ChatService  ChatServiceConfig
-	Notification NotificationServiceConfig
-	Payment      PaymentServiceConfig
-	Switches     SwitchesServiceConfig
-	AntiFraud    AntiFraudConfig
-	Trust        TrustServiceConfig
+	App           AppConfig
+	HTTP          HTTPConfig
+	GRPC          GRPCConfig
+	DB            DBConfig
+	Log           LogConfig
+	Security      SecurityConfig
+	Attendance    AttendanceConfig
+	UserService   UserServiceConfig
+	FileManager   FileManagerConfig
+	ChatService   ChatServiceConfig
+	Notification  NotificationServiceConfig
+	Payment       PaymentServiceConfig
+	Switches      SwitchesServiceConfig
+	AntiFraud     AntiFraudConfig
+	Trust         TrustServiceConfig
+	TokenService  TokenServiceConfig
+	SearchService SearchServiceConfig
+	MTLS          transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -31,23 +37,37 @@ type AppConfig struct {
 	Env  string `env:"APP_ENV, default=development"`
 }
 
+func (a AppConfig) IsProduction() bool {
+	return strings.EqualFold(a.Env, "production")
+}
+
 type HTTPConfig struct {
-	Port         int           `env:"HTTP_PORT, default=8080"`
-	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
-	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
-	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
+	Port            int           `env:"HTTP_PORT, default=8080"`
+	InternalTLSPort int           `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
+	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
 }
 
 func (h HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", h.Port)
 }
 
+func (h HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", h.InternalTLSPort)
+}
+
 type GRPCConfig struct {
-	Port int `env:"GRPC_PORT, default=9090"`
+	Port            int `env:"GRPC_PORT, default=9090"`
+	InternalTLSPort int `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
 }
 
 func (g GRPCConfig) Address() string {
 	return fmt.Sprintf(":%d", g.Port)
+}
+
+func (g GRPCConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", g.InternalTLSPort)
 }
 
 type DBConfig struct {
@@ -140,6 +160,25 @@ type TrustServiceConfig struct {
 	Enabled bool          `env:"TRUST_POLICY_ENABLED, default=true"`
 	Target  string        `env:"TRUST_SERVICE_GRPC_TARGET, default=trust-service:9096"`
 	Timeout time.Duration `env:"TRUST_SERVICE_TIMEOUT, default=250ms"`
+}
+
+type SearchServiceConfig struct {
+	Enabled bool          `env:"SEARCH_INDEXING_ENABLED, default=false"`
+	HTTPURL string        `env:"SEARCH_SERVICE_HTTP_URL, default=http://search-service:8101"`
+	Timeout time.Duration `env:"SEARCH_SERVICE_TIMEOUT, default=800ms"`
+}
+
+type TokenServiceConfig struct {
+	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:50051"`
+	ServiceID     string        `env:"TOKEN_SERVICE_ID, default=activity-service"`
+	ServiceSecret string        `env:"TOKEN_SERVICE_SECRET"`
+	CallTimeout   time.Duration `env:"TOKEN_SERVICE_CALL_TIMEOUT, default=3s"`
+}
+
+func (c TokenServiceConfig) Enabled() bool {
+	return strings.TrimSpace(c.Target) != "" &&
+		strings.TrimSpace(c.ServiceID) != "" &&
+		strings.TrimSpace(c.ServiceSecret) != ""
 }
 
 func Load(ctx context.Context) (*Config, error) {

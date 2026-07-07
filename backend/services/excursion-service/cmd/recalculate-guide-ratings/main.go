@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/transportauth"
 	guideratingadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guiderating"
 	"kz/inflap/backend/services/excursion-service/internal/adapter/repository"
 	"kz/inflap/backend/services/excursion-service/internal/config"
@@ -48,7 +51,15 @@ func main() {
 		})
 	}
 
-	client := guideratingadapter.NewClient(cfg.GuideService.BaseURL, cfg.Security.InternalServiceToken)
+	guideRatingHTTPClient, err := newGuideRatingHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("initialize guide-service rating client")
+	}
+	client := guideratingadapter.NewClient(
+		cfg.GuideService.BaseURL,
+		cfg.Security.InternalServiceToken,
+		guideratingadapter.WithHTTPClient(guideRatingHTTPClient),
+	)
 	if err = client.ApplySnapshots(ctx, snapshots); err != nil {
 		log.Fatal().Err(err).Msg("apply guide rating snapshots")
 	}
@@ -78,4 +89,15 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 	poolCfg.MaxConnLifetime = cfg.DB.ParsedMaxConnLifetime()
 	poolCfg.MaxConnIdleTime = cfg.DB.ParsedMaxConnIdleTime()
 	return pgxpool.NewWithConfig(ctx, poolCfg)
+}
+
+func newGuideRatingHTTPClient(cfg *config.Config) (*http.Client, error) {
+	client, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.GuideService.BaseURL)),
+		cfg.GuideService.HTTPTimeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize guide-service rating mTLS transport: %w", err)
+	}
+	return client, nil
 }

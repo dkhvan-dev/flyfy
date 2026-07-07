@@ -9,12 +9,15 @@ require (
 	github.com/sethvargo/go-envconfig v1.3.0
 	golang.org/x/crypto v0.46.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/backend/pkg/serviceauth v0.0.0
 	kz/inflap/backend/pkg/switches v0.0.0
+	kz/inflap/backend/pkg/transportauth v0.0.0
 	kz/inflap/backend/pkg/trustpolicy v0.0.0
 	kz/inflap/proto v0.0.0
 )
 
 require (
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -30,6 +33,10 @@ require (
 
 replace kz/inflap/proto => ../../../proto
 
+replace kz/inflap/backend/pkg/serviceauth => ../../pkg/serviceauth
+
 replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy
 
 replace kz/inflap/backend/pkg/switches => ../../pkg/switches
+
+replace kz/inflap/backend/pkg/transportauth => ../../pkg/transportauth

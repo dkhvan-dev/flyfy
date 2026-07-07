@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
@@ -16,6 +18,7 @@ type Config struct {
 	Notification NotificationConfig
 	UserContext  UserContextConfig
 	Security     SecurityConfig
+	MTLS         transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -23,10 +26,11 @@ type AppConfig struct {
 }
 
 type HTTPConfig struct {
-	Port         int
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	Port            int
+	InternalTLSPort int
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
 }
 
 type DBConfig struct {
@@ -81,8 +85,16 @@ func (c HTTPConfig) Address() string {
 	return fmt.Sprintf(":%d", c.Port)
 }
 
+func (c HTTPConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", c.InternalTLSPort)
+}
+
 func Load() (Config, error) {
 	port, err := envInt("SUPPORT_SERVICE_HTTP_PORT", 8100)
+	if err != nil {
+		return Config{}, err
+	}
+	internalTLSPort, err := envOptionalPort("INTERNAL_HTTP_TLS_PORT", 0)
 	if err != nil {
 		return Config{}, err
 	}
@@ -123,10 +135,11 @@ func Load() (Config, error) {
 	return Config{
 		App: AppConfig{Name: "support-service"},
 		HTTP: HTTPConfig{
-			Port:         port,
-			ReadTimeout:  readTimeout,
-			WriteTimeout: writeTimeout,
-			IdleTimeout:  idleTimeout,
+			Port:            port,
+			InternalTLSPort: internalTLSPort,
+			ReadTimeout:     readTimeout,
+			WriteTimeout:    writeTimeout,
+			IdleTimeout:     idleTimeout,
 		},
 		DB: DBConfig{URL: databaseURL},
 		Chat: ChatConfig{
@@ -149,7 +162,29 @@ func Load() (Config, error) {
 		Security: SecurityConfig{
 			InternalServiceToken: os.Getenv("SUPPORT_SERVICE_INTERNAL_SERVICE_TOKEN"),
 		},
+		MTLS: loadMTLSConfig(),
 	}, nil
+}
+
+func loadMTLSConfig() transportauth.EnvConfig {
+	return transportauth.EnvConfig{
+		Mode:             envString("MTLS_MODE", "disabled"),
+		CACertPath:       os.Getenv("MTLS_CA_CERT_PATH"),
+		ServerCertPath:   os.Getenv("MTLS_SERVER_CERT_PATH"),
+		ServerKeyPath:    os.Getenv("MTLS_SERVER_KEY_PATH"),
+		ClientCertPath:   os.Getenv("MTLS_CLIENT_CERT_PATH"),
+		ClientKeyPath:    os.Getenv("MTLS_CLIENT_KEY_PATH"),
+		ServerName:       os.Getenv("MTLS_SERVER_NAME"),
+		AllowedSPIFFEIDs: os.Getenv("MTLS_ALLOWED_SPIFFE_IDS"),
+		AllowedDNSNames:  os.Getenv("MTLS_ALLOWED_DNS_NAMES"),
+	}
+}
+
+func envString(name string, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
 }
 
 func envInt(name string, fallback int) (int, error) {
@@ -159,6 +194,18 @@ func envInt(name string, fallback int) (int, error) {
 	}
 	parsed, err := strconv.Atoi(value)
 	if err != nil || parsed <= 0 || parsed > 65535 {
+		return 0, fmt.Errorf("invalid %s", name)
+	}
+	return parsed, nil
+}
+
+func envOptionalPort(name string, fallback int) (int, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 || parsed > 65535 {
 		return 0, fmt.Errorf("invalid %s", name)
 	}
 	return parsed, nil

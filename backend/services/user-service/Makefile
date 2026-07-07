@@ -1,7 +1,7 @@
 SERVICE_NAME=user-service
 PROTO_MODULE=kz/inflap/proto
 
-.PHONY: run build build-backfill-feed-social-outbox backfill-feed-social-outbox backfill-feed-social-outbox-drain test tidy fmt vet docker-build
+.PHONY: run build build-backfill-feed-social-outbox backfill-feed-social-outbox backfill-feed-social-outbox-drain build-backfill-search-index backfill-search-index test tidy fmt vet docker-build
 
 run:
 	go run ./cmd
@@ -12,11 +12,17 @@ build:
 build-backfill-feed-social-outbox:
 	go build -o bin/$(SERVICE_NAME)-backfill-feed-social-outbox ./cmd/backfill-feed-social-outbox
 
+build-backfill-search-index:
+	go build -o bin/$(SERVICE_NAME)-backfill-search-index ./cmd/backfill-search-index
+
 backfill-feed-social-outbox:
 	go run ./cmd/backfill-feed-social-outbox
 
 backfill-feed-social-outbox-drain:
 	go run ./cmd/backfill-feed-social-outbox -drain
+
+backfill-search-index:
+	go run ./cmd/backfill-search-index
 
 test:
 	go test ./...

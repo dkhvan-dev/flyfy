@@ -31,6 +31,7 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
 
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   late final ScrollController _scrollController;
+  final TextEditingController _searchController = TextEditingController();
 
   List<FeedCommunityVm> _communities = const [];
   Set<String> _updatingCommunityIds = const {};
@@ -49,6 +50,7 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -78,6 +80,9 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
 
     try {
       final page = await _feedApi.listCommunities(
+        search: _searchController.text.trim().isEmpty
+            ? null
+            : _searchController.text.trim(),
         limit: _pageLimit,
         offset: offset,
       );
@@ -217,6 +222,15 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
     );
   }
 
+  void _submitCommunitySearch([String value = '']) {
+    final normalized = value.trim();
+    if (_searchController.text != normalized) {
+      _searchController.text = normalized;
+    }
+    FocusScope.of(context).unfocus();
+    unawaited(_loadCommunities());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -238,11 +252,22 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
         ),
         body: SafeArea(
           top: false,
-          child: RefreshIndicator(
-            color: colors.primary,
-            backgroundColor: colors.surface,
-            onRefresh: () => _loadCommunities(showLoading: false),
-            child: _buildBody(context),
+          child: Column(
+            children: [
+              _CommunityDiscoverySearchBar(
+                controller: _searchController,
+                hintText: l10n.communityDiscoverySearchHint,
+                onSubmitted: _submitCommunitySearch,
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  color: colors.primary,
+                  backgroundColor: colors.surface,
+                  onRefresh: () => _loadCommunities(showLoading: false),
+                  child: _buildBody(context),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -333,6 +358,77 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+class _CommunityDiscoverySearchBar extends StatelessWidget {
+  const _CommunityDiscoverySearchBar({
+    required this.controller,
+    required this.hintText,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontalPadding = _horizontalPadding(constraints.maxWidth);
+        return Padding(
+          padding: AppEdgeInsets.fromLTRB(
+            horizontalPadding,
+            8,
+            horizontalPadding,
+            8,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: SizedBox(
+                height: 48,
+                child: TextField(
+                  controller: controller,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: onSubmitted,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: colors.textSecondary,
+                    ),
+                    suffixIcon: IconButton(
+                      tooltip: hintText,
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      onPressed: () => onSubmitted(controller.text),
+                    ),
+                    filled: true,
+                    fillColor: colors.surface,
+                    contentPadding: EdgeInsets.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colors.borderSoft),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colors.borderSoft),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colors.primary, width: 1.4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

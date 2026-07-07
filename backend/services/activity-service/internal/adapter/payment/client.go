@@ -24,7 +24,17 @@ type Client struct {
 	requestLimit int64
 }
 
-func New(baseURL string, internalToken string, timeout time.Duration) (*Client, error) {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func New(baseURL string, internalToken string, timeout time.Duration, opts ...Option) (*Client, error) {
 	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(baseURL), "/"))
 	if err != nil {
 		return nil, fmt.Errorf("parse payment service url: %w", err)
@@ -37,14 +47,20 @@ func New(baseURL string, internalToken string, timeout time.Duration) (*Client, 
 		timeout = 5 * time.Second
 	}
 
-	return &Client{
+	client := &Client{
 		baseURL:     parsed,
 		internalJWT: strings.TrimSpace(internalToken),
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
 		requestLimit: 1 << 20,
-	}, nil
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(client)
+		}
+	}
+	return client, nil
 }
 
 func (c *Client) Authorize(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error) {

@@ -81,6 +81,21 @@ func TestTranslateTextsRejectsMismatchedResponseLength(t *testing.T) {
 	}
 }
 
+func TestNewClientUsesProvidedHTTPClient(t *testing.T) {
+	customClient := &http.Client{Timeout: 150 * time.Millisecond}
+
+	client := NewClient(
+		"http://translation-service",
+		time.Second,
+		"internal-token",
+		WithHTTPClient(customClient),
+	)
+
+	if client.httpClient != customClient {
+		t.Fatalf("http client = %#v, want provided client", client.httpClient)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {

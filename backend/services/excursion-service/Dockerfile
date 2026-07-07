@@ -8,15 +8,19 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/excursion-service/go.mod backend/services/excursion-service/go.sum* ./backend/services/excursion-service/
+COPY backend/pkg/serviceauth/go.mod backend/pkg/serviceauth/go.sum* ./backend/pkg/serviceauth/
 COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 COPY backend/pkg/trustpolicy/go.mod backend/pkg/trustpolicy/go.sum* ./backend/pkg/trustpolicy/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 COPY proto ./proto
 
 WORKDIR /app/backend/services/excursion-service
 RUN go mod download
 
 COPY backend/pkg/trustpolicy /app/backend/pkg/trustpolicy
+COPY backend/pkg/serviceauth /app/backend/pkg/serviceauth
 COPY backend/pkg/switches /app/backend/pkg/switches
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/excursion-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

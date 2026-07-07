@@ -21,7 +21,17 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-func NewClient(baseURL string, timeout time.Duration, internalToken string) *Client {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func NewClient(baseURL string, timeout time.Duration, internalToken string, options ...Option) *Client {
 	normalizedBaseURL := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if normalizedBaseURL == "" {
 		return nil
@@ -29,11 +39,15 @@ func NewClient(baseURL string, timeout time.Duration, internalToken string) *Cli
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
-	return &Client{
+	client := &Client{
 		baseURL:       normalizedBaseURL,
 		internalToken: strings.TrimSpace(internalToken),
 		httpClient:    &http.Client{Timeout: timeout},
 	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (c *Client) TranslateTexts(ctx context.Context, input port.TranslationRequest) (port.TranslationResult, error) {

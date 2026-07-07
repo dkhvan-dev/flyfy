@@ -53,6 +53,8 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	checklistLimit := 180
 	routingLimit := 240
 	userRouteLimit := 180
+	searchLimit := 180
+	searchEventLimit := 60
 	helpReadLimit := 180
 	supportWriteLimit := 60
 
@@ -232,6 +234,46 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "checklist",
 			RateLimitPerMinute: &checklistLimit,
 			RewritePrefix:      "/v1/checklists",
+		},
+		{
+			Name:               "smart-search-suggest",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/search/suggest",
+			ExactPath:          apiPrefix + "/search/suggest",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "search",
+			RateLimitPerMinute: &searchLimit,
+			RewritePrefix:      "/v1/search/suggest",
+		},
+		{
+			Name:               "smart-search-trending",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/search/trending",
+			ExactPath:          apiPrefix + "/search/trending",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "search",
+			RateLimitPerMinute: &searchLimit,
+			RewritePrefix:      "/v1/search/trending",
+		},
+		{
+			Name:               "smart-search-events",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/search/events",
+			ExactPath:          apiPrefix + "/search/events",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "search",
+			RateLimitPerMinute: &searchEventLimit,
+			RewritePrefix:      "/v1/search/events",
+		},
+		{
+			Name:               "smart-search",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/search",
+			ExactPath:          apiPrefix + "/search",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "search",
+			RateLimitPerMinute: &searchLimit,
+			RewritePrefix:      "/v1/search",
 		},
 		{
 			Name:               "my-excursion-bookings",

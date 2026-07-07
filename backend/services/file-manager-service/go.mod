@@ -13,6 +13,7 @@ require (
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.79.2
 	kz/inflap/backend/pkg/switches v0.0.0
+	kz/inflap/backend/pkg/transportauth v0.0.0
 	kz/inflap/backend/pkg/trustpolicy v0.0.0
 	kz/inflap/proto v0.0.0
 )
@@ -51,3 +52,5 @@ replace kz/inflap/proto => ../../../proto
 replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy
 
 replace kz/inflap/backend/pkg/switches => ../../pkg/switches
+
+replace kz/inflap/backend/pkg/transportauth => ../../pkg/transportauth

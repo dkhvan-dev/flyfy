@@ -20,11 +20,21 @@ type Resolver struct {
 	httpClient    *http.Client
 }
 
-func NewResolver(userServiceURL string, guideServiceURL string, internalToken string, timeout time.Duration) *Resolver {
+type Option func(*Resolver)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(r *Resolver) {
+		if httpClient != nil {
+			r.httpClient = httpClient
+		}
+	}
+}
+
+func NewResolver(userServiceURL string, guideServiceURL string, internalToken string, timeout time.Duration, options ...Option) *Resolver {
 	if timeout <= 0 {
 		timeout = 3 * time.Second
 	}
-	return &Resolver{
+	resolver := &Resolver{
 		userBaseURL:   strings.TrimRight(strings.TrimSpace(userServiceURL), "/"),
 		guideBaseURL:  strings.TrimRight(strings.TrimSpace(guideServiceURL), "/"),
 		internalToken: strings.TrimSpace(internalToken),
@@ -32,6 +42,10 @@ func NewResolver(userServiceURL string, guideServiceURL string, internalToken st
 			Timeout: timeout,
 		},
 	}
+	for _, option := range options {
+		option(resolver)
+	}
+	return resolver
 }
 
 func (r *Resolver) ResolveSupportUserSegment(ctx context.Context, userID string) (app.SupportUserSegment, error) {

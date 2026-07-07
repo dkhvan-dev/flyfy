@@ -203,13 +203,14 @@ func (r *adminPlaceRepoStub) ListVisitReferenceValues(_ context.Context, locale 
 }
 
 type adminPlaceUserClientStub struct {
-	resolveErr   error
-	resolveCalls int
+	resolvedUserID uuid.UUID
+	resolveErr     error
+	resolveCalls   int
 }
 
 func (c *adminPlaceUserClientStub) ResolveUserIDBySubject(_ context.Context, _ string) (uuid.UUID, error) {
 	c.resolveCalls++
-	return uuid.Nil, c.resolveErr
+	return c.resolvedUserID, c.resolveErr
 }
 
 func (c *adminPlaceUserClientStub) GetPublicUserProfiles(_ context.Context, userIDs []uuid.UUID) (map[uuid.UUID]PublicUserProfile, error) {

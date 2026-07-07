@@ -111,3 +111,19 @@ func TestClientEnsureSupportConversationCreatesDirectChat(t *testing.T) {
 		t.Fatalf("participantUserIds = %#v", capturedBody["participantUserIds"])
 	}
 }
+
+func TestNewClientUsesProvidedHTTPClient(t *testing.T) {
+	customClient := &http.Client{Timeout: 150 * time.Millisecond}
+
+	client := NewClient(
+		"http://chat-service:8088",
+		time.Second,
+		"internal-token",
+		"support-auth-subject",
+		WithHTTPClient(customClient),
+	)
+
+	if client.httpClient != customClient {
+		t.Fatalf("http client = %#v, want provided client", client.httpClient)
+	}
+}

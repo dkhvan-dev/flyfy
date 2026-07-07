@@ -2668,6 +2668,68 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get searchTitle => 'Search';
+
+  @override
+  String get searchIdleTitle => 'Start typing';
+
+  @override
+  String get searchIdleMessage =>
+      'Find activities, places, excursions, guides, communities, and people.';
+
+  @override
+  String get searchNoResultsTitle => 'Nothing found';
+
+  @override
+  String get searchNoResultsMessage =>
+      'Try a shorter query or another spelling.';
+
+  @override
+  String get searchLoadFailed => 'Search failed. Try again.';
+
+  @override
+  String get searchLoadMore => 'Load more';
+
+  @override
+  String get searchTopResultsTitle => 'Top results';
+
+  @override
+  String get searchActivitiesTitle => 'Activities';
+
+  @override
+  String get searchPlacesTitle => 'Places';
+
+  @override
+  String get searchExcursionsTitle => 'Excursions';
+
+  @override
+  String get searchGuidesTitle => 'Guides';
+
+  @override
+  String get searchCommunitiesTitle => 'Communities';
+
+  @override
+  String get searchUsersTitle => 'People';
+
+  @override
+  String get searchDomainActivity => 'Activity';
+
+  @override
+  String get searchDomainPlace => 'Place';
+
+  @override
+  String get searchDomainExcursion => 'Excursion';
+
+  @override
+  String get searchDomainGuide => 'Guide';
+
+  @override
+  String get searchDomainCommunity => 'Community';
+
+  @override
+  String get searchDomainUser => 'Person';
+
+  @override
   String get homeSearchHint => 'Activities, places, excursions...';
 
   @override

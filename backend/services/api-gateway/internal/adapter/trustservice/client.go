@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/config"
 	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
@@ -21,6 +22,22 @@ type Client struct {
 	internalToken string
 	conn          *grpc.ClientConn
 	service       trustv1.TrustServiceClient
+}
+
+func NewWithTransportAuth(
+	cfg config.TrustServiceConfig,
+	internalToken string,
+	auth transportauth.Config,
+	opts ...grpc.DialOption,
+) (*Client, error) {
+	if len(opts) == 0 {
+		dialOptions, err := transportauth.GRPCDialOptions(auth)
+		if err != nil {
+			return nil, fmt.Errorf("initialize trust-service mTLS transport: %w", err)
+		}
+		opts = dialOptions
+	}
+	return New(cfg, internalToken, opts...)
 }
 
 func New(cfg config.TrustServiceConfig, internalToken string, opts ...grpc.DialOption) (*Client, error) {

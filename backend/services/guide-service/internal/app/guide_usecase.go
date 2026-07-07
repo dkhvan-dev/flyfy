@@ -29,6 +29,7 @@ type GuideUseCase struct {
 	fileClient      FileManagerClient
 	excursionClient GuideExcursionCoverageClient
 	fraud           port.FraudEvaluator
+	searchIndexer   GuideSearchIndexer
 }
 
 func NewGuideUseCase(
@@ -113,12 +114,14 @@ func (u *GuideUseCase) GetOrCreateGuideProfile(ctx context.Context, input InitGu
 		return nil, fmt.Errorf("create guide profile: %w", err)
 	}
 
-	return &GuideAggregate{
+	aggregate := &GuideAggregate{
 		Profile:         profile,
 		Documents:       []*model.GuideDocument{},
 		Languages:       []*model.GuideLanguage{},
 		Specializations: []*model.GuideSpecialization{},
-	}, nil
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) GetGuideAggregateByProfileID(ctx context.Context, profileID uuid.UUID) (*GuideAggregate, error) {
@@ -360,7 +363,12 @@ func (u *GuideUseCase) UpdateGuideProfile(ctx context.Context, input UpdateGuide
 		}
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) ApplyGuideRatingSnapshots(ctx context.Context, items []GuideRatingSnapshotInput) error {
@@ -677,7 +685,12 @@ func (u *GuideUseCase) SubmitGuideApplication(
 		return nil, fmt.Errorf("update guide profile status: %w", err)
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 type AttachGuideDocumentInput struct {
@@ -1014,7 +1027,12 @@ func (u *GuideUseCase) ApproveVerificationRequest(
 		}
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) RejectVerificationRequest(
@@ -1062,7 +1080,12 @@ func (u *GuideUseCase) RejectVerificationRequest(
 		return nil, fmt.Errorf("update guide profile: %w", err)
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 type RevokeGuideStatusInput struct {
@@ -1157,7 +1180,12 @@ func (u *GuideUseCase) revokeGuideProfile(
 				Msg("failed to revoke guide role after guide status revocation")
 		}
 	}
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func isVerificationRequestReviewable(status enum.VerificationRequestStatus) bool {
@@ -1192,7 +1220,12 @@ func (u *GuideUseCase) SuspendGuideProfile(
 		return nil, fmt.Errorf("update guide profile: %w", err)
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) ActivateGuideProfile(
@@ -1219,7 +1252,12 @@ func (u *GuideUseCase) ActivateGuideProfile(
 		return nil, fmt.Errorf("update guide profile: %w", err)
 	}
 
-	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	aggregate, err := u.GetGuideAggregateByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.syncGuideSearchDocument(ctx, aggregate)
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) ListPendingVerificationRequests(

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/transportauth"
 	fraudadapter "kz/inflap/backend/services/payment-service/internal/adapter/fraud"
 	httpadapter "kz/inflap/backend/services/payment-service/internal/adapter/http"
 	mockprovider "kz/inflap/backend/services/payment-service/internal/adapter/provider"
@@ -54,14 +56,25 @@ func main() {
 	handler := httpadapter.NewHandler(useCase)
 	mux := http.NewServeMux()
 	handler.Register(mux)
+	httpHandler := httpadapter.Chain(cfg, withRequestLogging(mux))
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withRequestLogging(mux)),
+		Handler:      httpHandler,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
+
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	tlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure payment-service mTLS")
+	}
+	if err := validatePaymentServiceMTLSPort(cfg, tlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid payment-service mTLS listener configuration")
+	}
+	internalMTLSServer := newInternalPaymentMTLSServer(cfg, httpHandler, tlsConfig)
 
 	go func() {
 		log.Info().Str("address", cfg.HTTP.Address()).Msg("http server started")
@@ -69,6 +82,14 @@ func main() {
 			log.Fatal().Err(err).Msg("http server failed")
 		}
 	}()
+	if internalMTLSServer != nil {
+		go func() {
+			log.Info().Str("address", cfg.HTTP.InternalTLSAddress()).Msg("internal mTLS http server started")
+			if err = internalMTLSServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				log.Fatal().Err(err).Msg("internal mTLS http server failed")
+			}
+		}()
+	}
 
 	<-ctx.Done()
 	log.Info().Msg("shutdown signal received")
@@ -81,6 +102,40 @@ func main() {
 	} else {
 		log.Info().Msg("http server stopped")
 	}
+	if internalMTLSServer != nil {
+		if err = internalMTLSServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS http server shutdown failed")
+		} else {
+			log.Info().Msg("internal mTLS http server stopped")
+		}
+	}
+}
+
+func newInternalPaymentMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func validatePaymentServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when payment-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
@@ -122,10 +177,18 @@ func newFraudDecisionPort(cfg *config.Config) (port.FraudDecisionPort, error) {
 	if cfg == nil || !cfg.AntiFraud.Enabled {
 		return nil, nil
 	}
+	fraudHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.AntiFraud.BaseURL)),
+		cfg.AntiFraud.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize anti-fraud mTLS transport: %w", err)
+	}
 	return fraudadapter.NewHTTPClient(
 		cfg.AntiFraud.BaseURL,
 		cfg.AntiFraud.InternalServiceToken,
 		cfg.AntiFraud.Timeout,
+		fraudadapter.WithHTTPClient(fraudHTTPClient),
 	)
 }
 

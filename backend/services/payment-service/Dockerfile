@@ -5,6 +5,7 @@ ARG TARGETARCH=amd64
 
 WORKDIR /app
 
+COPY ./backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY ./backend/services/payment-service /app/backend/services/payment-service
 
 WORKDIR /app/backend/services/payment-service

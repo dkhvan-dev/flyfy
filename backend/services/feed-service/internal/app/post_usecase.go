@@ -268,6 +268,7 @@ type PostUseCase struct {
 	mediaBinder              PostMediaBinder
 	routeReferenceValidator  PostRouteReferenceValidator
 	postNotifications        port.PostNotificationGateway
+	communitySearchIndexer   CommunitySearchIndexer
 	postFeedCache            port.PostFeedCache
 	postFeedCacheTTL         time.Duration
 	postsTrayCacheTTL        time.Duration
@@ -288,6 +289,11 @@ func NewPostUseCase(repo port.PostRepository, users UserServiceClient, postsBase
 			RankingExperiment: defaultFeedExperimentKey,
 		},
 	}
+}
+
+func (u *PostUseCase) WithCommunitySearchIndexer(indexer CommunitySearchIndexer) *PostUseCase {
+	u.communitySearchIndexer = indexer
+	return u
 }
 
 func (u *PostUseCase) WithPostMediaBinder(binder PostMediaBinder) *PostUseCase {

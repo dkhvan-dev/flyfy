@@ -3,6 +3,7 @@ package grpcclient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/pkg/trustpolicy"
 	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
@@ -27,6 +29,24 @@ type Client struct {
 	internalToken string
 	serviceName   string
 	timeout       time.Duration
+}
+
+func NewWithTransportAuth(
+	target string,
+	internalToken string,
+	serviceName string,
+	timeout time.Duration,
+	auth transportauth.Config,
+	opts ...grpc.DialOption,
+) (*Client, error) {
+	if len(opts) == 0 {
+		dialOptions, err := transportauth.GRPCDialOptions(auth)
+		if err != nil {
+			return nil, fmt.Errorf("initialize trustpolicy mTLS transport: %w", err)
+		}
+		opts = dialOptions
+	}
+	return New(target, internalToken, serviceName, timeout, opts...)
 }
 
 func New(target string, internalToken string, serviceName string, timeout time.Duration, opts ...grpc.DialOption) (*Client, error) {

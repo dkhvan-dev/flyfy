@@ -14,12 +14,14 @@ WORKDIR /app
 
 COPY proto/go.mod proto/go.sum ./proto/
 COPY backend/services/auth-service/go.mod backend/services/auth-service/go.sum ./backend/services/auth-service/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 
 WORKDIR /app/backend/services/auth-service
 RUN go mod download
 
 WORKDIR /app
 COPY proto ./proto
+COPY backend/pkg/transportauth ./backend/pkg/transportauth
 COPY backend/services/auth-service ./backend/services/auth-service
 
 WORKDIR /app/backend/services/auth-service

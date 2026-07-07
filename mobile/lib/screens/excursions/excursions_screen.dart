@@ -572,6 +572,18 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     });
   }
 
+  void _submitExcursionSearch(String value) {
+    FocusScope.of(context).unfocus();
+    final nextQuery = value.trim();
+    _searchDebounce?.cancel();
+    if (nextQuery != _searchQuery) {
+      setState(() {
+        _searchQuery = nextQuery;
+      });
+    }
+    unawaited(_loadExcursionsForCurrentFilters());
+  }
+
   void _goBack() {
     if (Navigator.of(context).canPop()) {
       context.pop();
@@ -808,6 +820,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   controller: _searchController,
                                   hintText: l10n.excursionsSearchHint,
                                   onFilterTap: _showFilters,
+                                  onSubmitted: _submitExcursionSearch,
                                   activeFilterCount: _filters.activeCount,
                                 ),
                                 const SizedBox(height: 18),
@@ -1220,12 +1233,14 @@ class _ExcursionsSearchField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.onFilterTap,
+    required this.onSubmitted,
     required this.activeFilterCount,
   });
 
   final TextEditingController controller;
   final String hintText;
   final VoidCallback onFilterTap;
+  final ValueChanged<String> onSubmitted;
   final int activeFilterCount;
 
   @override
@@ -1236,6 +1251,7 @@ class _ExcursionsSearchField extends StatelessWidget {
       filterTooltip: AppLocalizations.of(context)!.myActivitiesFilterButton,
       activeFilterCount: activeFilterCount,
       onFilterTap: onFilterTap,
+      onSubmitted: onSubmitted,
     );
   }
 }

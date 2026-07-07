@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
@@ -15,6 +17,7 @@ type Config struct {
 	Postgres PostgresConfig
 	Log      LogConfig
 	Security SecurityConfig
+	MTLS     transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -26,11 +29,16 @@ func (a AppConfig) IsProduction() bool {
 }
 
 type GRPCConfig struct {
-	Port int `env:"GRPC_PORT, default=9096"`
+	Port            int `env:"GRPC_PORT, default=9096"`
+	InternalTLSPort int `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
 }
 
 func (g GRPCConfig) Address() string {
 	return fmt.Sprintf(":%d", g.Port)
+}
+
+func (g GRPCConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", g.InternalTLSPort)
 }
 
 type PostgresConfig struct {

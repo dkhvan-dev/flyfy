@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -12,8 +14,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/switches"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	chatadapter "kz/inflap/backend/services/activity-service/internal/adapter/chat"
 	filemanageradapter "kz/inflap/backend/services/activity-service/internal/adapter/filemanager"
@@ -23,6 +26,7 @@ import (
 	notificationadapter "kz/inflap/backend/services/activity-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/activity-service/internal/adapter/payment"
 	"kz/inflap/backend/services/activity-service/internal/adapter/repository"
+	searchindexadapter "kz/inflap/backend/services/activity-service/internal/adapter/searchindex"
 	switchesadapter "kz/inflap/backend/services/activity-service/internal/adapter/switches"
 	"kz/inflap/backend/services/activity-service/internal/app"
 	"kz/inflap/backend/services/activity-service/internal/config"
@@ -50,14 +54,7 @@ func main() {
 
 	repo := repository.NewPGActivityRepository(pool)
 
-	userConn, err := grpc.NewClient(
-		cfg.UserService.GRPCAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-		)),
-	)
+	userConn, err := newUserServiceConn(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed dial user-service grpc")
 	}
@@ -66,14 +63,7 @@ func main() {
 	userClient := userv1.NewUserServiceClient(userConn)
 	actorResolver := grpcadapter.NewUserResolver(userClient)
 
-	fileManagerClient, err := filemanageradapter.New(
-		cfg.FileManager.Target,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-		)),
-	)
+	fileManagerClient, err := newFileManagerClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed dial file-manager grpc")
 	}
@@ -81,14 +71,20 @@ func main() {
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
 	activityUC.SetUserProfileResolver(actorResolver)
+	if cfg.SearchService.Enabled {
+		searchIndexOptions, closeSearchIndexAuth := newSearchIndexOptions(cfg)
+		defer closeSearchIndexAuth()
+		searchIndexer := searchindexadapter.New(
+			cfg.SearchService.HTTPURL,
+			cfg.Security.InternalServiceToken,
+			cfg.SearchService.Timeout,
+			searchIndexOptions...,
+		)
+		activityUC.SetSearchIndexer(searchIndexer)
+	}
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
-		trustClient, err = grpcclient.New(
-			cfg.Trust.Target,
-			cfg.Security.InternalServiceToken,
-			cfg.App.Name,
-			cfg.Trust.Timeout,
-		)
+		trustClient, err = newTrustPolicyClient(cfg)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed initialize trust-service client")
 		}
@@ -100,24 +96,33 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed initialize anti-fraud client")
 	}
 	activityUC.SetFraudEvaluator(fraudClient)
+	chatHTTPClient, err := newChatServiceHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize chat-service mTLS transport")
+	}
 	chatClient := chatadapter.New(
 		cfg.ChatService.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		cfg.ChatService.RequestTimeout,
+		chatadapter.WithHTTPClient(chatHTTPClient),
 	)
 	activityUC.SetChatGateway(chatClient)
+	notificationHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notification.HTTPURL)),
+		cfg.Notification.RequestTimeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize notification-service mTLS transport")
+	}
 	notificationClient := notificationadapter.New(
 		cfg.Notification.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		cfg.App.Name,
 		cfg.Notification.RequestTimeout,
+		notificationadapter.WithHTTPClient(notificationHTTPClient),
 	)
 	activityUC.SetNotificationGateway(notificationClient)
-	paymentClient, err := paymentadapter.New(
-		cfg.Payment.HTTPURL,
-		cfg.Security.InternalServiceToken,
-		cfg.Payment.RequestTimeout,
-	)
+	paymentClient, err := newPaymentServiceClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed initialize payment-service client")
 	}
@@ -155,27 +160,39 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(withRequestLogging(httpMux), cfg.Switches, cfg.Security.InternalServiceToken, "ACTIVITY")),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(withRequestLogging(httpMux), cfg.Switches, cfg.MTLS, cfg.Security.InternalServiceToken, "ACTIVITY")),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
-	grpcServer := grpc.NewServer()
 	activityGRPCServer := grpcadapter.NewServer(
 		activityUC,
 		joinUC,
 		searchUC,
 		moderationUC,
 	)
-	activityv1.RegisterActivityServiceServer(grpcServer, activityGRPCServer)
-
-	grpcLis, err := net.Listen("tcp", cfg.GRPC.Address())
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed listen grpc")
+		log.Fatal().Err(err).Msg("failed to configure activity-service mTLS")
+	}
+	if err := validateActivityServiceMTLSPort(cfg, mtlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid activity-service mTLS listener configuration")
+	}
+	internalHTTPServer := newInternalActivityHTTPMTLSServer(cfg, httpServer.Handler, mtlsConfig)
+
+	grpcServer := newActivityGRPCServer(activityGRPCServer)
+	var internalGRPCServer *grpc.Server
+	if mtlsConfig != nil {
+		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to configure activity-service internal mTLS gRPC")
+		}
+		internalGRPCServer = newActivityGRPCServer(activityGRPCServer, mtlsGRPCOptions...)
 	}
 
-	httpErrCh := make(chan error, 1)
+	httpErrCh := make(chan error, 2)
 	grpcErrCh := make(chan error, 1)
 	backgroundCtx, stopBackground := context.WithCancel(context.Background())
 	defer stopBackground()
@@ -189,14 +206,42 @@ func main() {
 		httpErrCh <- nil
 	}()
 
+	if internalHTTPServer != nil {
+		go func() {
+			log.Info().
+				Str("service", cfg.App.Name).
+				Str("address", cfg.HTTP.InternalTLSAddress()).
+				Msg("internal mTLS HTTP server started")
+			if err := internalHTTPServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				httpErrCh <- err
+				return
+			}
+			httpErrCh <- nil
+		}()
+	}
+
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.GRPC.Port).Msg("gRPC server started")
-		if err := grpcServer.Serve(grpcLis); err != nil {
+		if err := serveActivityGRPCServer(cfg.GRPC.Address(), grpcServer); err != nil {
 			grpcErrCh <- err
 			return
 		}
 		grpcErrCh <- nil
 	}()
+
+	if internalGRPCServer != nil {
+		go func() {
+			log.Info().
+				Str("service", cfg.App.Name).
+				Str("address", cfg.GRPC.InternalTLSAddress()).
+				Msg("internal mTLS gRPC server started")
+			if err := serveActivityGRPCServer(cfg.GRPC.InternalTLSAddress(), internalGRPCServer); err != nil {
+				grpcErrCh <- err
+				return
+			}
+			grpcErrCh <- nil
+		}()
+	}
 
 	go runActivityLifecycleTicker(backgroundCtx, activityUC)
 
@@ -225,10 +270,18 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
 	}
+	if internalHTTPServer != nil {
+		if err := internalHTTPServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS http shutdown failed")
+		}
+	}
 
 	done := make(chan struct{})
 	go func() {
 		grpcServer.GracefulStop()
+		if internalGRPCServer != nil {
+			internalGRPCServer.GracefulStop()
+		}
 		close(done)
 	}()
 
@@ -243,13 +296,159 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
 
-func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+func newActivityGRPCServer(activityServer activityv1.ActivityServiceServer, options ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(options...)
+	activityv1.RegisterActivityServiceServer(grpcServer, activityServer)
+	return grpcServer
+}
+
+func serveActivityGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	if err := server.Serve(listener); err != nil {
+		return fmt.Errorf("serve: %w", err)
+	}
+	return nil
+}
+
+func validateActivityServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.GRPC.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when activity-service mTLS is enabled")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.GRPC.Port {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from GRPC_PORT")
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when activity-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalActivityHTTPMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func newSearchIndexOptions(cfg *config.Config) ([]searchindexadapter.Option, func()) {
+	searchHTTPClient, err := newSearchIndexHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure search indexing mTLS client")
+	}
+	options := []searchindexadapter.Option{searchindexadapter.WithHTTPClient(searchHTTPClient)}
+
+	if !cfg.TokenService.Enabled() {
+		if cfg.App.IsProduction() {
+			log.Fatal().Msg("TOKEN_SERVICE_SECRET is required when search indexing is enabled in production")
+		}
+		log.Warn().Msg("search indexing service JWT auth disabled; falling back to legacy internal token")
+		return options, func() {}
+	}
+	source, err := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+		Target:        cfg.TokenService.Target,
+		ServiceID:     cfg.TokenService.ServiceID,
+		ServiceSecret: cfg.TokenService.ServiceSecret,
+		CallTimeout:   cfg.TokenService.CallTimeout,
+		TransportAuth: cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize search indexing service token source")
+	}
+	log.Info().Str("service_id", cfg.TokenService.ServiceID).Msg("search indexing service JWT auth enabled")
+	options = append(options, searchindexadapter.WithServiceTokenSource(source))
+	return options, func() {
+		if err := source.Close(); err != nil {
+			log.Warn().Err(err).Msg("failed to close search indexing service token source")
+		}
+	}
+}
+
+func newTrustPolicyClient(cfg *config.Config) (*grpcclient.Client, error) {
+	return grpcclient.NewWithTransportAuth(
+		cfg.Trust.Target,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		cfg.Trust.Timeout,
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Trust.Target)),
+	)
+}
+
+func newUserServiceConn(cfg *config.Config) (*grpc.ClientConn, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.UserService.GRPCAddress)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS transport: %w", err)
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	return grpc.NewClient(cfg.UserService.GRPCAddress, grpcOptions...)
+}
+
+func newFileManagerClient(cfg *config.Config) (*filemanageradapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.FileManager.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize file-manager mTLS transport: %w", err)
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	return filemanageradapter.New(cfg.FileManager.Target, grpcOptions...)
+}
+
+func newSearchIndexHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.SearchService.HTTPURL)),
+		cfg.SearchService.Timeout,
+	)
+}
+
+func newChatServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	client, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.ChatService.HTTPURL)),
+		cfg.ChatService.RequestTimeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize chat-service mTLS transport: %w", err)
+	}
+	return client, nil
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
 	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
 	middleware, err := switches.NewMaintenanceMiddleware(
 		switches.HTTPClientConfig{
 			BaseURL:              cfg.HTTPURL,
 			InternalServiceToken: token,
 			Timeout:              cfg.RequestTimeout,
+			TransportAuth:        mtls.ClientConfig(transportauth.ServerNameFromTarget(cfg.HTTPURL)),
 		},
 		switches.MaintenanceMiddlewareConfig{
 			DomainCode: domainCode,
@@ -269,11 +468,35 @@ func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 	if cfg == nil || !cfg.AntiFraud.Enabled {
 		return nil, nil
 	}
+	fraudHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.AntiFraud.BaseURL)),
+		cfg.AntiFraud.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize anti-fraud mTLS transport: %w", err)
+	}
 	return fraudadapter.NewHTTPClient(
 		cfg.AntiFraud.BaseURL,
 		cfg.AntiFraud.InternalServiceToken,
 		cfg.AntiFraud.SignalHashKey,
 		cfg.AntiFraud.Timeout,
+		fraudadapter.WithHTTPClient(fraudHTTPClient),
+	)
+}
+
+func newPaymentServiceClient(cfg *config.Config) (*paymentadapter.Client, error) {
+	paymentHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Payment.HTTPURL)),
+		cfg.Payment.RequestTimeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize payment-service mTLS transport: %w", err)
+	}
+	return paymentadapter.New(
+		cfg.Payment.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.Payment.RequestTimeout,
+		paymentadapter.WithHTTPClient(paymentHTTPClient),
 	)
 }
 
@@ -282,7 +505,18 @@ func newSwitchesClient(cfg *config.Config) *switchesadapter.Client {
 		log.Warn().Msg("switches-service client is disabled; activity feature flags and tech breaks are not enforced")
 		return nil
 	}
-	client, err := switchesadapter.New(cfg.Switches)
+	switchesHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Switches.HTTPURL)),
+		cfg.Switches.RequestTimeout,
+	)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to configure switches-service mTLS client")
+		return nil
+	}
+	client, err := switchesadapter.New(
+		cfg.Switches,
+		switchesadapter.WithHTTPClient(switchesHTTPClient),
+	)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create switches-service client")
 		return nil

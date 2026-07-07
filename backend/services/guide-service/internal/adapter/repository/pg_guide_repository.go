@@ -857,6 +857,51 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 	}, nil
 }
 
+func (r *PGGuideRepository) ListGuideProfilesForSearchIndexBackfill(
+	ctx context.Context,
+	limit int,
+	offset int,
+) ([]*model.GuideProfile, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	const query = `
+		SELECT
+			id, user_id, type, status, headline, about, experience_years,
+			base_city_id, is_private_guide_available, is_activity_host_available,
+			is_excursion_guide_available, rating_avg, reviews_count,
+			status_reason, status_changed_at, status_changed_by,
+			created_at, updated_at
+		FROM guide_profiles
+		ORDER BY updated_at ASC, id ASC
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.pool.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("query guide profiles for search backfill: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.GuideProfile, 0, limit)
+	for rows.Next() {
+		item, scanErr := scanGuideProfile(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan guide profile for search backfill: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGGuideRepository) ListPublicGuideFilterOptions(
 	ctx context.Context,
 ) (port.PublicGuideFilterOptions, error) {
@@ -917,6 +962,43 @@ func (r *PGGuideRepository) listDistinctPublicGuideCodes(
 	}
 
 	return result, nil
+}
+
+type guideProfileScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanGuideProfile(row guideProfileScanner) (*model.GuideProfile, error) {
+	var (
+		item      model.GuideProfile
+		typeRaw   string
+		statusRaw string
+	)
+	if err := row.Scan(
+		&item.ID,
+		&item.UserID,
+		&typeRaw,
+		&statusRaw,
+		&item.Headline,
+		&item.About,
+		&item.ExperienceYears,
+		&item.BaseCityID,
+		&item.IsPrivateGuideAvailable,
+		&item.IsActivityHostAvailable,
+		&item.IsExcursionGuideAvailable,
+		&item.RatingAvg,
+		&item.ReviewsCount,
+		&item.StatusReason,
+		&item.StatusChangedAt,
+		&item.StatusChangedBy,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	item.Type = enum.GuideType(typeRaw)
+	item.Status = enum.GuideStatus(statusRaw)
+	return &item, nil
 }
 
 func buildPublicGuideWhere(filter port.PublicGuideListFilter) ([]string, []any) {

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/checklist-service/data"
 	httpadapter "kz/inflap/backend/services/checklist-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/checklist-service/internal/adapter/notification"
@@ -33,11 +37,16 @@ func main() {
 
 	useCaseOptions := make([]app.ChecklistUseCaseOption, 0, 1)
 	if cfg.Notifications.IsSenderConfigured() {
+		notificationHTTPClient, err := newNotificationServiceHTTPClient(cfg)
+		if err != nil {
+			log.Fatal().Err(err).Msg("initialize notification-service mTLS transport")
+		}
 		sender, err := notificationadapter.NewHTTPSender(notificationadapter.HTTPSenderConfig{
 			BaseURL:              cfg.Notifications.ServiceBaseURL,
 			InternalServiceToken: cfg.Notifications.InternalServiceToken,
 			SourceService:        cfg.App.Name,
 			Timeout:              cfg.Notifications.HTTPTimeout,
+			HTTPClient:           notificationHTTPClient,
 		})
 		if err != nil {
 			log.Fatal().Err(err).Msg("initialize notification sender")
@@ -69,15 +78,35 @@ func main() {
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
-	errCh := make(chan error, 1)
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	tlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("configure checklist-service mTLS")
+	}
+	if err := validateChecklistServiceMTLSPort(cfg, tlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid checklist-service mTLS listener configuration")
+	}
+	internalMTLSServer := newInternalChecklistMTLSServer(cfg, mux, tlsConfig)
+
+	errCh := make(chan error, 2)
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.Port).Msg("HTTP server started")
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 			return
 		}
 		errCh <- nil
 	}()
+	if internalMTLSServer != nil {
+		go func() {
+			log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.InternalTLSPort).Msg("internal mTLS HTTP server started")
+			if err := internalMTLSServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errCh <- fmt.Errorf("internal mTLS HTTP serve: %w", err)
+				return
+			}
+			errCh <- nil
+		}()
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -97,6 +126,11 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
+	}
+	if internalMTLSServer != nil {
+		if err := internalMTLSServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS HTTP shutdown failed")
+		}
 	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
@@ -182,4 +216,38 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 		return nil, err
 	}
 	return pool, nil
+}
+
+func newNotificationServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notifications.ServiceBaseURL)),
+		cfg.Notifications.HTTPTimeout,
+	)
+}
+
+func validateChecklistServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when checklist-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalChecklistMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
 }

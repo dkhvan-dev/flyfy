@@ -210,6 +210,7 @@ type PlaceUseCase struct {
 	repo              port.PlaceRepository
 	users             UserServiceClient
 	cache             port.PlaceCache
+	searchIndexer     PlaceSearchIndexer
 	detailCacheTTL    time.Duration
 	listCacheTTL      time.Duration
 	adminAuthorUserID uuid.UUID
@@ -232,6 +233,12 @@ func WithPlaceCache(cache port.PlaceCache, detailTTL time.Duration, listTTL time
 		u.cache = cache
 		u.detailCacheTTL = detailTTL
 		u.listCacheTTL = listTTL
+	}
+}
+
+func WithPlaceSearchIndexer(indexer PlaceSearchIndexer) PlaceUseCaseOption {
+	return func(u *PlaceUseCase) {
+		u.searchIndexer = indexer
 	}
 }
 
@@ -378,6 +385,7 @@ func (u *PlaceUseCase) createPlace(ctx context.Context, authorUserID uuid.UUID, 
 		return nil, fmt.Errorf("create place: %w", err)
 	}
 	u.bumpPlaceCacheVersion(ctx, uuid.Nil)
+	u.syncPlaceSearchDocument(ctx, place)
 
 	return u.toPlaceView(ctx, place)
 }
@@ -513,6 +521,7 @@ func (u *PlaceUseCase) updatePlaceRecord(ctx context.Context, place *model.Place
 		return nil, fmt.Errorf("update place: %w", err)
 	}
 	u.bumpPlaceCacheVersion(ctx, place.ID)
+	u.syncPlaceSearchDocument(ctx, place)
 
 	return u.toPlaceView(ctx, place)
 }
@@ -542,6 +551,7 @@ func (u *PlaceUseCase) DeletePlace(ctx context.Context, subject string, placeID 
 		return fmt.Errorf("delete place: %w", err)
 	}
 	u.bumpPlaceCacheVersion(ctx, placeID)
+	u.deletePlaceSearchDocument(ctx, placeID)
 	return nil
 }
 
@@ -562,6 +572,7 @@ func (u *PlaceUseCase) RecoverPlace(ctx context.Context, placeID uuid.UUID, role
 	if err != nil {
 		return nil, fmt.Errorf("get recovered place: %w", err)
 	}
+	u.syncPlaceSearchDocument(ctx, place)
 	return u.toPlaceView(ctx, place)
 }
 

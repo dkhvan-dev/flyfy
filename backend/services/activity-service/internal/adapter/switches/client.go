@@ -20,7 +20,17 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func New(cfg config.SwitchesServiceConfig) (*Client, error) {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func New(cfg config.SwitchesServiceConfig, opts ...Option) (*Client, error) {
 	baseURL := strings.TrimRight(strings.TrimSpace(cfg.HTTPURL), "/")
 	if baseURL == "" {
 		return nil, fmt.Errorf("switches service url is empty")
@@ -32,11 +42,17 @@ func New(cfg config.SwitchesServiceConfig) (*Client, error) {
 	if timeout <= 0 {
 		timeout = 800 * time.Millisecond
 	}
-	return &Client{
+	client := &Client{
 		baseURL:    baseURL,
 		token:      strings.TrimSpace(cfg.InternalServiceToken),
 		httpClient: &http.Client{Timeout: timeout},
-	}, nil
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(client)
+		}
+	}
+	return client, nil
 }
 
 func (c *Client) GetFeatureFlag(ctx context.Context, domainCode string, code string) (port.FeatureFlag, error) {

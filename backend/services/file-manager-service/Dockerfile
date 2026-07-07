@@ -10,6 +10,7 @@ RUN apk add --no-cache git ca-certificates tzdata
 COPY backend/services/file-manager-service/go.mod backend/services/file-manager-service/go.sum* ./backend/services/file-manager-service/
 COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 COPY backend/pkg/trustpolicy/go.mod backend/pkg/trustpolicy/go.sum* ./backend/pkg/trustpolicy/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 COPY proto ./proto
 
 WORKDIR /app/backend/services/file-manager-service
@@ -17,6 +18,7 @@ RUN go mod download
 
 COPY backend/pkg/trustpolicy /app/backend/pkg/trustpolicy
 COPY backend/pkg/switches /app/backend/pkg/switches
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/file-manager-service ./ 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /bin/file-manager-service ./cmd
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/transportauth"
 	httpadapter "kz/inflap/backend/services/api-gateway/internal/adapter/http"
 	tokenserviceadapter "kz/inflap/backend/services/api-gateway/internal/adapter/tokenservice"
 	"kz/inflap/backend/services/api-gateway/internal/app"
@@ -27,27 +29,16 @@ func main() {
 
 	setupLogger(cfg)
 
-	tokenVerifier, err := tokenserviceadapter.New(cfg.TokenService)
+	tokenVerifier, err := newTokenServiceClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize token-service grpc client")
 	}
 	defer tokenVerifier.Close()
 
-	readiness := httpadapter.NewReadinessHandler(
-		map[string]app.ReadinessChecker{
-			"token-service":        tokenVerifier,
-			"auth-service":         httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.AuthService+"/health", 2*time.Second),
-			"user-service":         httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.UserService+"/health", 2*time.Second),
-			"guide-service":        httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.GuideService+"/health", 2*time.Second),
-			"file-manager-service": httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.FileManagerService+"/health", 2*time.Second),
-			"payment-service":      httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.PaymentService+"/health", 2*time.Second),
-			"sticker-service":      httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.StickerService+"/health", 2*time.Second),
-			"user-route-service":   httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.UserRouteService+"/health", 2*time.Second),
-			"notification-service": httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.NotificationService+"/health", 2*time.Second),
-			"admin-panel":          httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.AdminPanelService+"/health", 2*time.Second),
-		},
-		2*time.Second,
-	)
+	readiness, err := newReadinessHandler(cfg, tokenVerifier)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize readiness checks")
+	}
 
 	// Redis response cache for reference data.
 	responseCache := httpadapter.NewResponseCache(cfg.Redis)
@@ -98,6 +89,50 @@ func main() {
 	} else {
 		log.Info().Msg("gateway stopped")
 	}
+}
+
+func newReadinessHandler(cfg *config.Config, tokenVerifier app.ReadinessChecker) (*httpadapter.ReadinessHandler, error) {
+	httpChecker := func(name, baseURL string) (app.ReadinessChecker, error) {
+		checker, err := httpadapter.NewHTTPReadinessCheckerWithTransportAuth(baseURL+"/health", 2*time.Second, cfg.MTLS)
+		if err != nil {
+			return nil, fmt.Errorf("initialize %s readiness check: %w", name, err)
+		}
+		return checker, nil
+	}
+
+	checkers := map[string]app.ReadinessChecker{
+		"token-service": tokenVerifier,
+	}
+	for name, baseURL := range map[string]string{
+		"auth-service":         cfg.Downstreams.AuthService,
+		"user-service":         cfg.Downstreams.UserService,
+		"guide-service":        cfg.Downstreams.GuideService,
+		"file-manager-service": cfg.Downstreams.FileManagerService,
+		"payment-service":      cfg.Downstreams.PaymentService,
+		"sticker-service":      cfg.Downstreams.StickerService,
+		"user-route-service":   cfg.Downstreams.UserRouteService,
+		"notification-service": cfg.Downstreams.NotificationService,
+		"admin-panel":          cfg.Downstreams.AdminPanelService,
+		"search-service":       cfg.Downstreams.SearchService,
+	} {
+		checker, err := httpChecker(name, baseURL)
+		if err != nil {
+			return nil, err
+		}
+		checkers[name] = checker
+	}
+
+	return httpadapter.NewReadinessHandler(checkers, 2*time.Second), nil
+}
+
+func newTokenServiceClient(cfg *config.Config) (*tokenserviceadapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize token-service mTLS transport: %w", err)
+	}
+	return tokenserviceadapter.New(cfg.TokenService, grpcOptions...)
 }
 
 func setupLogger(cfg *config.Config) {

@@ -30,11 +30,11 @@ type TokenServiceClient struct {
 	tokenExpiry  time.Time
 }
 
-func NewTokenServiceClient(cfg config.TokenServiceConfig, logger zerolog.Logger) (*TokenServiceClient, error) {
-	conn, err := grpc.NewClient(
-		cfg.Addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+func NewTokenServiceClient(cfg config.TokenServiceConfig, logger zerolog.Logger, opts ...grpc.DialOption) (*TokenServiceClient, error) {
+	if len(opts) == 0 {
+		opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	}
+	conn, err := grpc.NewClient(cfg.Addr, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to token-service at %s: %w", cfg.Addr, err)
 	}

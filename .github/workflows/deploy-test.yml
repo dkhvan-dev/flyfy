@@ -91,6 +91,7 @@ jobs:
             place-service
             reference-service
             routing-service
+            search-service
             sticker-service
             support-service
             switches-service
@@ -234,9 +235,288 @@ jobs:
           TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS || secrets.TEST_SERVER_KNOWN_HOSTS }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          API_GATEWAY_TOKEN_SERVICE_SECRET: ${{ secrets.API_GATEWAY_TOKEN_SERVICE_SECRET }}
+          AUTH_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.AUTH_SERVICE_TOKEN_SERVICE_SECRET }}
+          ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET }}
+          EXCURSION_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.EXCURSION_SERVICE_TOKEN_SERVICE_SECRET }}
+          FEED_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.FEED_SERVICE_TOKEN_SERVICE_SECRET }}
+          GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.GUIDE_SERVICE_TOKEN_SERVICE_SECRET }}
+          PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.PLACE_SERVICE_TOKEN_SERVICE_SECRET }}
+          USER_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.USER_SERVICE_TOKEN_SERVICE_SECRET }}
+          MTLS_MODE: ${{ vars.MTLS_MODE || 'disabled' }}
+          MTLS_MIN_VERSION: ${{ vars.MTLS_MIN_VERSION || '1.3' }}
+          ADMIN_PANEL_MTLS_MODE: ${{ vars.ADMIN_PANEL_MTLS_MODE || '' }}
+          ANTI_FRAUD_SERVICE_MTLS_MODE: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_MODE || '' }}
+          API_GATEWAY_MTLS_MODE: ${{ vars.API_GATEWAY_MTLS_MODE || '' }}
+          ACTIVITY_SERVICE_MTLS_MODE: ${{ vars.ACTIVITY_SERVICE_MTLS_MODE || '' }}
+          AUTH_SERVICE_MTLS_MODE: ${{ vars.AUTH_SERVICE_MTLS_MODE || '' }}
+          CHAT_SERVICE_MTLS_MODE: ${{ vars.CHAT_SERVICE_MTLS_MODE || '' }}
+          CHECKLIST_SERVICE_MTLS_MODE: ${{ vars.CHECKLIST_SERVICE_MTLS_MODE || '' }}
+          CURRENCY_SERVICE_MTLS_MODE: ${{ vars.CURRENCY_SERVICE_MTLS_MODE || '' }}
+          EXCURSION_SERVICE_MTLS_MODE: ${{ vars.EXCURSION_SERVICE_MTLS_MODE || '' }}
+          FEED_SERVICE_MTLS_MODE: ${{ vars.FEED_SERVICE_MTLS_MODE || '' }}
+          FILE_MANAGER_SERVICE_MTLS_MODE: ${{ vars.FILE_MANAGER_SERVICE_MTLS_MODE || '' }}
+          GUIDE_SERVICE_MTLS_MODE: ${{ vars.GUIDE_SERVICE_MTLS_MODE || '' }}
+          NOTIFICATION_SERVICE_MTLS_MODE: ${{ vars.NOTIFICATION_SERVICE_MTLS_MODE || '' }}
+          PAYMENT_SERVICE_MTLS_MODE: ${{ vars.PAYMENT_SERVICE_MTLS_MODE || '' }}
+          PLACE_SERVICE_MTLS_MODE: ${{ vars.PLACE_SERVICE_MTLS_MODE || '' }}
+          REFERENCE_SERVICE_MTLS_MODE: ${{ vars.REFERENCE_SERVICE_MTLS_MODE || '' }}
+          ROUTING_SERVICE_MTLS_MODE: ${{ vars.ROUTING_SERVICE_MTLS_MODE || '' }}
+          SEARCH_SERVICE_MTLS_MODE: ${{ vars.SEARCH_SERVICE_MTLS_MODE || '' }}
+          STICKER_SERVICE_MTLS_MODE: ${{ vars.STICKER_SERVICE_MTLS_MODE || '' }}
+          SUPPORT_SERVICE_MTLS_MODE: ${{ vars.SUPPORT_SERVICE_MTLS_MODE || '' }}
+          SWITCHES_SERVICE_MTLS_MODE: ${{ vars.SWITCHES_SERVICE_MTLS_MODE || '' }}
+          TOKEN_SERVICE_MTLS_MODE: ${{ vars.TOKEN_SERVICE_MTLS_MODE || '' }}
+          TRANSLATION_SERVICE_MTLS_MODE: ${{ vars.TRANSLATION_SERVICE_MTLS_MODE || '' }}
+          TRUST_SERVICE_MTLS_MODE: ${{ vars.TRUST_SERVICE_MTLS_MODE || '' }}
+          USER_ROUTE_SERVICE_MTLS_MODE: ${{ vars.USER_ROUTE_SERVICE_MTLS_MODE || '' }}
+          USER_SERVICE_MTLS_MODE: ${{ vars.USER_SERVICE_MTLS_MODE || '' }}
+          MTLS_SECRETS_DIR: ${{ vars.MTLS_SECRETS_DIR || '/opt/inflap/secrets/mtls' }}
+          MTLS_CA_CERT_PATH: ${{ vars.MTLS_CA_CERT_PATH || '/opt/inflap/secrets/mtls/ca.crt' }}
+          AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT || '9482' }}
+          AUTH_SERVICE_INTERNAL_HTTP_URL: ${{ vars.AUTH_SERVICE_INTERNAL_HTTP_URL || 'https://auth-service:9482' }}
+          AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT: ${{ vars.ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT || '9495' }}
+          ADMIN_PANEL_INTERNAL_HTTP_URL: ${{ vars.ADMIN_PANEL_INTERNAL_HTTP_URL || 'https://admin-panel:9495' }}
+          ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT || '9446' }}
+          ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL || 'https://anti-fraud-service:9446' }}
+          ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/payment-service' }}
+          ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,auth-service,excursion-service,file-manager-service,guide-service,payment-service' }}
+          SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT || '9447' }}
+          SWITCHES_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SWITCHES_SERVICE_INTERNAL_HTTP_URL || 'https://switches-service:9447' }}
+          SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/currency-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/place-service,spiffe://inflap/test/user-service' }}
+          SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,user-service' }}
+          PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9441' }}
+          PAYMENT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.PAYMENT_SERVICE_INTERNAL_HTTP_URL || 'https://payment-service:9441' }}
+          PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service' }}
+          PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service' }}
+          NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9448' }}
+          NOTIFICATION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.NOTIFICATION_SERVICE_INTERNAL_HTTP_URL || 'https://notification-service:9448' }}
+          NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/checklist-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/support-service,spiffe://inflap/test/token-service' }}
+          NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,api-gateway,chat-service,checklist-service,excursion-service,feed-service,support-service,token-service' }}
+          CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT || '9499' }}
+          CHECKLIST_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CHECKLIST_SERVICE_INTERNAL_HTTP_URL || 'https://checklist-service:9499' }}
+          CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          FEED_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.FEED_SERVICE_INTERNAL_HTTP_TLS_PORT || '9487' }}
+          FEED_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FEED_SERVICE_INTERNAL_HTTP_URL || 'https://feed-service:9487' }}
+          FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/user-service' }}
+          FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,user-service' }}
+          EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9493' }}
+          EXCURSION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.EXCURSION_SERVICE_INTERNAL_HTTP_URL || 'https://excursion-service:9493' }}
+          EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/guide-service' }}
+          EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,guide-service' }}
+          PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9490' }}
+          PLACE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.PLACE_SERVICE_INTERNAL_HTTP_URL || 'https://place-service:9490' }}
+          PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service' }}
+          PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,excursion-service' }}
+          SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9500' }}
+          SUPPORT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SUPPORT_SERVICE_INTERNAL_HTTP_URL || 'https://support-service:9500' }}
+          SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway' }}
+          SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway' }}
+          CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT || '9498' }}
+          CURRENCY_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CURRENCY_SERVICE_INTERNAL_HTTP_URL || 'https://currency-service:9498' }}
+          CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9489' }}
+          REFERENCE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.REFERENCE_SERVICE_INTERNAL_HTTP_URL || 'https://reference-service:9489' }}
+          REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT || '9494' }}
+          ROUTING_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ROUTING_SERVICE_INTERNAL_HTTP_URL || 'https://routing-service:9494' }}
+          ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9496' }}
+          USER_ROUTE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_ROUTE_SERVICE_INTERNAL_HTTP_URL || 'https://user-route-service:9496' }}
+          USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/feed-service' }}
+          USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,feed-service' }}
+          STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9492' }}
+          STICKER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.STICKER_SERVICE_INTERNAL_HTTP_URL || 'https://sticker-service:9492' }}
+          STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service' }}
+          STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway,chat-service' }}
+          TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9497' }}
+          TRANSLATION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.TRANSLATION_SERVICE_INTERNAL_HTTP_URL || 'https://translation-service:9497' }}
+          TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/excursion-service' }}
+          TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'excursion-service' }}
+          ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT || '9486' }}
+          ACTIVITY_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ACTIVITY_SERVICE_INTERNAL_HTTP_URL || 'https://activity-service:9486' }}
+          ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT || '9446' }}
+          ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///activity-service:9446' }}
+          ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/feed-service' }}
+          ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,chat-service,feed-service' }}
+          GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9485' }}
+          GUIDE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.GUIDE_SERVICE_INTERNAL_HTTP_URL || 'https://guide-service:9485' }}
+          GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT || '9445' }}
+          GUIDE_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.GUIDE_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///guide-service:9445' }}
+          GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/support-service' }}
+          GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,excursion-service,support-service' }}
+          CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9488' }}
+          CHAT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CHAT_SERVICE_INTERNAL_HTTP_URL || 'https://chat-service:9488' }}
+          CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT || '9447' }}
+          CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/support-service' }}
+          CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,api-gateway,excursion-service,support-service' }}
+          SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT || '9501' }}
+          SEARCH_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SEARCH_SERVICE_INTERNAL_HTTP_URL || 'https://search-service:9501' }}
+          SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/user-service' }}
+          SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,user-service' }}
+          TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT || '9440' }}
+          TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT || '9481' }}
+          TOKEN_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.TOKEN_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///token-service:9440' }}
+          TOKEN_SERVICE_INTERNAL_JWKS_URL: ${{ vars.TOKEN_SERVICE_INTERNAL_JWKS_URL || 'https://token-service:9481/.well-known/jwks.json' }}
+          TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/search-service,spiffe://inflap/test/user-service' }}
+          TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,user-service' }}
+          TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT || '9442' }}
+          TRUST_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.TRUST_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///trust-service:9442' }}
+          TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/file-manager-service' }}
+          TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,activity-service,api-gateway,chat-service,excursion-service,file-manager-service' }}
+          FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9483' }}
+          FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL || 'https://file-manager-service:9483' }}
+          FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9443' }}
+          FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///file-manager-service:9443' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service' }}
+          USER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9484' }}
+          USER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_SERVICE_INTERNAL_HTTP_URL || 'https://user-service:9484' }}
+          USER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9444' }}
+          USER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///user-service:9444' }}
+          USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/support-service' }}
+          USER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.USER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,activity-service,api-gateway,auth-service,chat-service,excursion-service,feed-service,guide-service,place-service,support-service' }}
         run: |
           set -euo pipefail
-          for name in TEST_DEPLOY_HOST TEST_DEPLOY_USER TEST_DEPLOY_SSH_KEY TEST_DEPLOY_KNOWN_HOSTS GHCR_USERNAME GHCR_READ_TOKEN; do
+          for name in \
+            TEST_DEPLOY_HOST \
+            TEST_DEPLOY_USER \
+            TEST_DEPLOY_SSH_KEY \
+            TEST_DEPLOY_KNOWN_HOSTS \
+            GHCR_USERNAME \
+            GHCR_READ_TOKEN \
+            API_GATEWAY_TOKEN_SERVICE_SECRET \
+            AUTH_SERVICE_TOKEN_SERVICE_SECRET \
+            ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET \
+            EXCURSION_SERVICE_TOKEN_SERVICE_SECRET \
+            FEED_SERVICE_TOKEN_SERVICE_SECRET \
+            GUIDE_SERVICE_TOKEN_SERVICE_SECRET \
+            PLACE_SERVICE_TOKEN_SERVICE_SECRET \
+            USER_SERVICE_TOKEN_SERVICE_SECRET \
+            MTLS_MODE \
+            MTLS_MIN_VERSION \
+            MTLS_SECRETS_DIR \
+            MTLS_CA_CERT_PATH \
+            AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            AUTH_SERVICE_INTERNAL_HTTP_URL \
+            AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT \
+            ADMIN_PANEL_INTERNAL_HTTP_URL \
+            ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS \
+            ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES \
+            ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL \
+            ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SWITCHES_SERVICE_INTERNAL_HTTP_URL \
+            SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            PAYMENT_SERVICE_INTERNAL_HTTP_URL \
+            PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            NOTIFICATION_SERVICE_INTERNAL_HTTP_URL \
+            NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CHECKLIST_SERVICE_INTERNAL_HTTP_URL \
+            CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            FEED_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            FEED_SERVICE_INTERNAL_HTTP_URL \
+            FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            EXCURSION_SERVICE_INTERNAL_HTTP_URL \
+            EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            PLACE_SERVICE_INTERNAL_HTTP_URL \
+            PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SUPPORT_SERVICE_INTERNAL_HTTP_URL \
+            SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CURRENCY_SERVICE_INTERNAL_HTTP_URL \
+            CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            REFERENCE_SERVICE_INTERNAL_HTTP_URL \
+            REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ROUTING_SERVICE_INTERNAL_HTTP_URL \
+            ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            USER_ROUTE_SERVICE_INTERNAL_HTTP_URL \
+            USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            STICKER_SERVICE_INTERNAL_HTTP_URL \
+            STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            TRANSLATION_SERVICE_INTERNAL_HTTP_URL \
+            TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ACTIVITY_SERVICE_INTERNAL_HTTP_URL \
+            ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET \
+            ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            GUIDE_SERVICE_INTERNAL_HTTP_URL \
+            GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            GUIDE_SERVICE_INTERNAL_GRPC_TARGET \
+            GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CHAT_SERVICE_INTERNAL_HTTP_URL \
+            CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SEARCH_SERVICE_INTERNAL_HTTP_URL \
+            SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            TOKEN_SERVICE_INTERNAL_GRPC_TARGET \
+            TOKEN_SERVICE_INTERNAL_JWKS_URL \
+            TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            TRUST_SERVICE_INTERNAL_GRPC_TARGET \
+            TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL \
+            FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET \
+            FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            USER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            USER_SERVICE_INTERNAL_HTTP_URL \
+            USER_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            USER_SERVICE_INTERNAL_GRPC_TARGET \
+            USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            USER_SERVICE_MTLS_ALLOWED_DNS_NAMES
+          do
             if [[ -z "${!name}" ]]; then
               echo "Missing GitHub environment secret: ${name}" >&2
               exit 1
@@ -264,6 +544,7 @@ jobs:
           done
 
           cp deploy/init-scripts/*_migrate.sh "${package_dir}/migration-scripts/"
+          cp deploy/init-scripts/001_token_service_seed_services.sh "${package_dir}/migration-scripts/"
 
           tar -czf /tmp/inflap-test-infra.tgz -C "${package_dir}" .
 
@@ -284,6 +565,155 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_BASE_URL: ${{ vars.RESEND_BASE_URL || secrets.RESEND_BASE_URL }}
           RESEND_TIMEOUT: ${{ vars.RESEND_TIMEOUT || secrets.RESEND_TIMEOUT }}
+          API_GATEWAY_TOKEN_SERVICE_SECRET: ${{ secrets.API_GATEWAY_TOKEN_SERVICE_SECRET }}
+          AUTH_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.AUTH_SERVICE_TOKEN_SERVICE_SECRET }}
+          ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET }}
+          EXCURSION_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.EXCURSION_SERVICE_TOKEN_SERVICE_SECRET }}
+          FEED_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.FEED_SERVICE_TOKEN_SERVICE_SECRET }}
+          GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.GUIDE_SERVICE_TOKEN_SERVICE_SECRET }}
+          PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.PLACE_SERVICE_TOKEN_SERVICE_SECRET }}
+          USER_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.USER_SERVICE_TOKEN_SERVICE_SECRET }}
+          MTLS_MODE: ${{ vars.MTLS_MODE || 'disabled' }}
+          MTLS_MIN_VERSION: ${{ vars.MTLS_MIN_VERSION || '1.3' }}
+          ADMIN_PANEL_MTLS_MODE: ${{ vars.ADMIN_PANEL_MTLS_MODE || '' }}
+          ANTI_FRAUD_SERVICE_MTLS_MODE: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_MODE || '' }}
+          API_GATEWAY_MTLS_MODE: ${{ vars.API_GATEWAY_MTLS_MODE || '' }}
+          ACTIVITY_SERVICE_MTLS_MODE: ${{ vars.ACTIVITY_SERVICE_MTLS_MODE || '' }}
+          AUTH_SERVICE_MTLS_MODE: ${{ vars.AUTH_SERVICE_MTLS_MODE || '' }}
+          CHAT_SERVICE_MTLS_MODE: ${{ vars.CHAT_SERVICE_MTLS_MODE || '' }}
+          CHECKLIST_SERVICE_MTLS_MODE: ${{ vars.CHECKLIST_SERVICE_MTLS_MODE || '' }}
+          CURRENCY_SERVICE_MTLS_MODE: ${{ vars.CURRENCY_SERVICE_MTLS_MODE || '' }}
+          EXCURSION_SERVICE_MTLS_MODE: ${{ vars.EXCURSION_SERVICE_MTLS_MODE || '' }}
+          FEED_SERVICE_MTLS_MODE: ${{ vars.FEED_SERVICE_MTLS_MODE || '' }}
+          FILE_MANAGER_SERVICE_MTLS_MODE: ${{ vars.FILE_MANAGER_SERVICE_MTLS_MODE || '' }}
+          GUIDE_SERVICE_MTLS_MODE: ${{ vars.GUIDE_SERVICE_MTLS_MODE || '' }}
+          NOTIFICATION_SERVICE_MTLS_MODE: ${{ vars.NOTIFICATION_SERVICE_MTLS_MODE || '' }}
+          PAYMENT_SERVICE_MTLS_MODE: ${{ vars.PAYMENT_SERVICE_MTLS_MODE || '' }}
+          PLACE_SERVICE_MTLS_MODE: ${{ vars.PLACE_SERVICE_MTLS_MODE || '' }}
+          REFERENCE_SERVICE_MTLS_MODE: ${{ vars.REFERENCE_SERVICE_MTLS_MODE || '' }}
+          ROUTING_SERVICE_MTLS_MODE: ${{ vars.ROUTING_SERVICE_MTLS_MODE || '' }}
+          SEARCH_SERVICE_MTLS_MODE: ${{ vars.SEARCH_SERVICE_MTLS_MODE || '' }}
+          STICKER_SERVICE_MTLS_MODE: ${{ vars.STICKER_SERVICE_MTLS_MODE || '' }}
+          SUPPORT_SERVICE_MTLS_MODE: ${{ vars.SUPPORT_SERVICE_MTLS_MODE || '' }}
+          SWITCHES_SERVICE_MTLS_MODE: ${{ vars.SWITCHES_SERVICE_MTLS_MODE || '' }}
+          TOKEN_SERVICE_MTLS_MODE: ${{ vars.TOKEN_SERVICE_MTLS_MODE || '' }}
+          TRANSLATION_SERVICE_MTLS_MODE: ${{ vars.TRANSLATION_SERVICE_MTLS_MODE || '' }}
+          TRUST_SERVICE_MTLS_MODE: ${{ vars.TRUST_SERVICE_MTLS_MODE || '' }}
+          USER_ROUTE_SERVICE_MTLS_MODE: ${{ vars.USER_ROUTE_SERVICE_MTLS_MODE || '' }}
+          USER_SERVICE_MTLS_MODE: ${{ vars.USER_SERVICE_MTLS_MODE || '' }}
+          MTLS_SECRETS_DIR: ${{ vars.MTLS_SECRETS_DIR || '/opt/inflap/secrets/mtls' }}
+          MTLS_CA_CERT_PATH: ${{ vars.MTLS_CA_CERT_PATH || '/opt/inflap/secrets/mtls/ca.crt' }}
+          AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT || '9482' }}
+          AUTH_SERVICE_INTERNAL_HTTP_URL: ${{ vars.AUTH_SERVICE_INTERNAL_HTTP_URL || 'https://auth-service:9482' }}
+          AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT: ${{ vars.ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT || '9495' }}
+          ADMIN_PANEL_INTERNAL_HTTP_URL: ${{ vars.ADMIN_PANEL_INTERNAL_HTTP_URL || 'https://admin-panel:9495' }}
+          ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT || '9446' }}
+          ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL || 'https://anti-fraud-service:9446' }}
+          ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/payment-service' }}
+          ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,auth-service,excursion-service,file-manager-service,guide-service,payment-service' }}
+          SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT || '9447' }}
+          SWITCHES_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SWITCHES_SERVICE_INTERNAL_HTTP_URL || 'https://switches-service:9447' }}
+          SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/currency-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/place-service,spiffe://inflap/test/user-service' }}
+          SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,user-service' }}
+          PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9441' }}
+          PAYMENT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.PAYMENT_SERVICE_INTERNAL_HTTP_URL || 'https://payment-service:9441' }}
+          PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service' }}
+          PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service' }}
+          NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9448' }}
+          NOTIFICATION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.NOTIFICATION_SERVICE_INTERNAL_HTTP_URL || 'https://notification-service:9448' }}
+          NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/checklist-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/support-service,spiffe://inflap/test/token-service' }}
+          NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,api-gateway,chat-service,checklist-service,excursion-service,feed-service,support-service,token-service' }}
+          CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT || '9499' }}
+          CHECKLIST_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CHECKLIST_SERVICE_INTERNAL_HTTP_URL || 'https://checklist-service:9499' }}
+          CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          FEED_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.FEED_SERVICE_INTERNAL_HTTP_TLS_PORT || '9487' }}
+          FEED_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FEED_SERVICE_INTERNAL_HTTP_URL || 'https://feed-service:9487' }}
+          FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/user-service' }}
+          FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,user-service' }}
+          EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9493' }}
+          EXCURSION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.EXCURSION_SERVICE_INTERNAL_HTTP_URL || 'https://excursion-service:9493' }}
+          EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/guide-service' }}
+          EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,guide-service' }}
+          PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9490' }}
+          PLACE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.PLACE_SERVICE_INTERNAL_HTTP_URL || 'https://place-service:9490' }}
+          PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service' }}
+          PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,excursion-service' }}
+          SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9500' }}
+          SUPPORT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SUPPORT_SERVICE_INTERNAL_HTTP_URL || 'https://support-service:9500' }}
+          SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway' }}
+          SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway' }}
+          CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT || '9498' }}
+          CURRENCY_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CURRENCY_SERVICE_INTERNAL_HTTP_URL || 'https://currency-service:9498' }}
+          CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9489' }}
+          REFERENCE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.REFERENCE_SERVICE_INTERNAL_HTTP_URL || 'https://reference-service:9489' }}
+          REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT || '9494' }}
+          ROUTING_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ROUTING_SERVICE_INTERNAL_HTTP_URL || 'https://routing-service:9494' }}
+          ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway' }}
+          ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway' }}
+          USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9496' }}
+          USER_ROUTE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_ROUTE_SERVICE_INTERNAL_HTTP_URL || 'https://user-route-service:9496' }}
+          USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/feed-service' }}
+          USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,feed-service' }}
+          STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9492' }}
+          STICKER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.STICKER_SERVICE_INTERNAL_HTTP_URL || 'https://sticker-service:9492' }}
+          STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service' }}
+          STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'api-gateway,chat-service' }}
+          TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT || '9497' }}
+          TRANSLATION_SERVICE_INTERNAL_HTTP_URL: ${{ vars.TRANSLATION_SERVICE_INTERNAL_HTTP_URL || 'https://translation-service:9497' }}
+          TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/excursion-service' }}
+          TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'excursion-service' }}
+          ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT || '9486' }}
+          ACTIVITY_SERVICE_INTERNAL_HTTP_URL: ${{ vars.ACTIVITY_SERVICE_INTERNAL_HTTP_URL || 'https://activity-service:9486' }}
+          ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT || '9446' }}
+          ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///activity-service:9446' }}
+          ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/feed-service' }}
+          ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,chat-service,feed-service' }}
+          GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT || '9485' }}
+          GUIDE_SERVICE_INTERNAL_HTTP_URL: ${{ vars.GUIDE_SERVICE_INTERNAL_HTTP_URL || 'https://guide-service:9485' }}
+          GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT || '9445' }}
+          GUIDE_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.GUIDE_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///guide-service:9445' }}
+          GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/support-service' }}
+          GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,api-gateway,excursion-service,support-service' }}
+          CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT || '9488' }}
+          CHAT_SERVICE_INTERNAL_HTTP_URL: ${{ vars.CHAT_SERVICE_INTERNAL_HTTP_URL || 'https://chat-service:9488' }}
+          CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT || '9447' }}
+          CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/support-service' }}
+          CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,admin-panel,api-gateway,excursion-service,support-service' }}
+          SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT || '9501' }}
+          SEARCH_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SEARCH_SERVICE_INTERNAL_HTTP_URL || 'https://search-service:9501' }}
+          SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/user-service' }}
+          SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,user-service' }}
+          TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT || '9440' }}
+          TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT || '9481' }}
+          TOKEN_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.TOKEN_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///token-service:9440' }}
+          TOKEN_SERVICE_INTERNAL_JWKS_URL: ${{ vars.TOKEN_SERVICE_INTERNAL_JWKS_URL || 'https://token-service:9481/.well-known/jwks.json' }}
+          TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/search-service,spiffe://inflap/test/user-service' }}
+          TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,user-service' }}
+          TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT || '9442' }}
+          TRUST_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.TRUST_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///trust-service:9442' }}
+          TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/chat-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/file-manager-service' }}
+          TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,activity-service,api-gateway,chat-service,excursion-service,file-manager-service' }}
+          FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9483' }}
+          FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL || 'https://file-manager-service:9483' }}
+          FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9443' }}
+          FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///file-manager-service:9443' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service' }}
+          USER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9484' }}
+          USER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_SERVICE_INTERNAL_HTTP_URL || 'https://user-service:9484' }}
+          USER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9444' }}
+          USER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///user-service:9444' }}
+          USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/admin-panel,spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/support-service' }}
+          USER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.USER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'admin-panel,activity-service,api-gateway,auth-service,chat-service,excursion-service,feed-service,guide-service,place-service,support-service' }}
         run: |
           set -euo pipefail
 
@@ -330,7 +760,156 @@ jobs:
             EMAIL_OTP_FROM_ADDRESS \
             RESEND_API_KEY \
             RESEND_BASE_URL \
-            RESEND_TIMEOUT
+            RESEND_TIMEOUT \
+            API_GATEWAY_TOKEN_SERVICE_SECRET \
+            AUTH_SERVICE_TOKEN_SERVICE_SECRET \
+            ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET \
+            EXCURSION_SERVICE_TOKEN_SERVICE_SECRET \
+            FEED_SERVICE_TOKEN_SERVICE_SECRET \
+            GUIDE_SERVICE_TOKEN_SERVICE_SECRET \
+            PLACE_SERVICE_TOKEN_SERVICE_SECRET \
+            USER_SERVICE_TOKEN_SERVICE_SECRET \
+            MTLS_MODE \
+            MTLS_MIN_VERSION \
+            ADMIN_PANEL_MTLS_MODE \
+            ANTI_FRAUD_SERVICE_MTLS_MODE \
+            API_GATEWAY_MTLS_MODE \
+            ACTIVITY_SERVICE_MTLS_MODE \
+            AUTH_SERVICE_MTLS_MODE \
+            CHAT_SERVICE_MTLS_MODE \
+            CHECKLIST_SERVICE_MTLS_MODE \
+            CURRENCY_SERVICE_MTLS_MODE \
+            EXCURSION_SERVICE_MTLS_MODE \
+            FEED_SERVICE_MTLS_MODE \
+            FILE_MANAGER_SERVICE_MTLS_MODE \
+            GUIDE_SERVICE_MTLS_MODE \
+            NOTIFICATION_SERVICE_MTLS_MODE \
+            PAYMENT_SERVICE_MTLS_MODE \
+            PLACE_SERVICE_MTLS_MODE \
+            REFERENCE_SERVICE_MTLS_MODE \
+            ROUTING_SERVICE_MTLS_MODE \
+            SEARCH_SERVICE_MTLS_MODE \
+            STICKER_SERVICE_MTLS_MODE \
+            SUPPORT_SERVICE_MTLS_MODE \
+            SWITCHES_SERVICE_MTLS_MODE \
+            TOKEN_SERVICE_MTLS_MODE \
+            TRANSLATION_SERVICE_MTLS_MODE \
+            TRUST_SERVICE_MTLS_MODE \
+            USER_ROUTE_SERVICE_MTLS_MODE \
+            USER_SERVICE_MTLS_MODE \
+            MTLS_SECRETS_DIR \
+            MTLS_CA_CERT_PATH \
+            AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            AUTH_SERVICE_INTERNAL_HTTP_URL \
+            AUTH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            AUTH_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ADMIN_PANEL_INTERNAL_HTTP_TLS_PORT \
+            ADMIN_PANEL_INTERNAL_HTTP_URL \
+            ADMIN_PANEL_MTLS_ALLOWED_SPIFFE_IDS \
+            ADMIN_PANEL_MTLS_ALLOWED_DNS_NAMES \
+            ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL \
+            ANTI_FRAUD_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ANTI_FRAUD_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SWITCHES_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SWITCHES_SERVICE_INTERNAL_HTTP_URL \
+            SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            PAYMENT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            PAYMENT_SERVICE_INTERNAL_HTTP_URL \
+            PAYMENT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            PAYMENT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            NOTIFICATION_SERVICE_INTERNAL_HTTP_URL \
+            NOTIFICATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            NOTIFICATION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CHECKLIST_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CHECKLIST_SERVICE_INTERNAL_HTTP_URL \
+            CHECKLIST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CHECKLIST_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            FEED_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            FEED_SERVICE_INTERNAL_HTTP_URL \
+            FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            EXCURSION_SERVICE_INTERNAL_HTTP_URL \
+            EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            PLACE_SERVICE_INTERNAL_HTTP_URL \
+            PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SUPPORT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SUPPORT_SERVICE_INTERNAL_HTTP_URL \
+            SUPPORT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SUPPORT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CURRENCY_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CURRENCY_SERVICE_INTERNAL_HTTP_URL \
+            CURRENCY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CURRENCY_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            REFERENCE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            REFERENCE_SERVICE_INTERNAL_HTTP_URL \
+            REFERENCE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            REFERENCE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ROUTING_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ROUTING_SERVICE_INTERNAL_HTTP_URL \
+            ROUTING_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ROUTING_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            USER_ROUTE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            USER_ROUTE_SERVICE_INTERNAL_HTTP_URL \
+            USER_ROUTE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            USER_ROUTE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            STICKER_SERVICE_INTERNAL_HTTP_URL \
+            STICKER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            STICKER_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            TRANSLATION_SERVICE_INTERNAL_HTTP_URL \
+            TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            ACTIVITY_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            ACTIVITY_SERVICE_INTERNAL_HTTP_URL \
+            ACTIVITY_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET \
+            ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            GUIDE_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            GUIDE_SERVICE_INTERNAL_HTTP_URL \
+            GUIDE_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            GUIDE_SERVICE_INTERNAL_GRPC_TARGET \
+            GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            CHAT_SERVICE_INTERNAL_HTTP_URL \
+            CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            SEARCH_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            SEARCH_SERVICE_INTERNAL_HTTP_URL \
+            SEARCH_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            SEARCH_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TOKEN_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            TOKEN_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            TOKEN_SERVICE_INTERNAL_GRPC_TARGET \
+            TOKEN_SERVICE_INTERNAL_JWKS_URL \
+            TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            TRUST_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            TRUST_SERVICE_INTERNAL_GRPC_TARGET \
+            TRUST_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            TRUST_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            FILE_MANAGER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL \
+            FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET \
+            FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES \
+            USER_SERVICE_INTERNAL_HTTP_TLS_PORT \
+            USER_SERVICE_INTERNAL_HTTP_URL \
+            USER_SERVICE_INTERNAL_GRPC_TLS_PORT \
+            USER_SERVICE_INTERNAL_GRPC_TARGET \
+            USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS \
+            USER_SERVICE_MTLS_ALLOWED_DNS_NAMES
           do
             value="${!name:-}"
             if [[ -z "${value}" ]]; then
@@ -348,6 +927,107 @@ jobs:
               "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}:/tmp/inflap-test-runtime.env"
             ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
               "mkdir -p /opt/inflap/env && umask 077 && mv /tmp/inflap-test-runtime.env /opt/inflap/env/runtime.env"
+          fi
+
+          ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+            "mkdir -p '${MTLS_SECRETS_DIR}' && chmod 700 '${MTLS_SECRETS_DIR}'"
+
+          if [[ "${MTLS_MODE}" != "disabled" ]]; then
+            ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+              "INFLAP_ENV=test MTLS_MIN_VALID_DAYS=1 /opt/inflap/scripts/preflight-mtls-certs.sh --secrets-dir '${MTLS_SECRETS_DIR}' --ca-cert '${MTLS_CA_CERT_PATH}' --env test --min-valid-days 1"
+
+            required_mtls_files=(
+              "${MTLS_CA_CERT_PATH}"
+              "${MTLS_SECRETS_DIR}/auth-service/server.crt"
+              "${MTLS_SECRETS_DIR}/auth-service/server.key"
+              "${MTLS_SECRETS_DIR}/token-service/server.crt"
+              "${MTLS_SECRETS_DIR}/token-service/server.key"
+              "${MTLS_SECRETS_DIR}/search-service/server.crt"
+              "${MTLS_SECRETS_DIR}/search-service/server.key"
+              "${MTLS_SECRETS_DIR}/notification-service/server.crt"
+              "${MTLS_SECRETS_DIR}/notification-service/server.key"
+              "${MTLS_SECRETS_DIR}/checklist-service/server.crt"
+              "${MTLS_SECRETS_DIR}/checklist-service/server.key"
+              "${MTLS_SECRETS_DIR}/feed-service/server.crt"
+              "${MTLS_SECRETS_DIR}/feed-service/server.key"
+              "${MTLS_SECRETS_DIR}/excursion-service/server.crt"
+              "${MTLS_SECRETS_DIR}/excursion-service/server.key"
+              "${MTLS_SECRETS_DIR}/place-service/server.crt"
+              "${MTLS_SECRETS_DIR}/place-service/server.key"
+              "${MTLS_SECRETS_DIR}/support-service/server.crt"
+              "${MTLS_SECRETS_DIR}/support-service/server.key"
+              "${MTLS_SECRETS_DIR}/anti-fraud-service/server.crt"
+              "${MTLS_SECRETS_DIR}/anti-fraud-service/server.key"
+              "${MTLS_SECRETS_DIR}/switches-service/server.crt"
+              "${MTLS_SECRETS_DIR}/switches-service/server.key"
+              "${MTLS_SECRETS_DIR}/payment-service/server.crt"
+              "${MTLS_SECRETS_DIR}/payment-service/server.key"
+              "${MTLS_SECRETS_DIR}/trust-service/server.crt"
+              "${MTLS_SECRETS_DIR}/trust-service/server.key"
+              "${MTLS_SECRETS_DIR}/file-manager-service/server.crt"
+              "${MTLS_SECRETS_DIR}/file-manager-service/server.key"
+              "${MTLS_SECRETS_DIR}/user-service/server.crt"
+              "${MTLS_SECRETS_DIR}/user-service/server.key"
+              "${MTLS_SECRETS_DIR}/activity-service/server.crt"
+              "${MTLS_SECRETS_DIR}/activity-service/server.key"
+              "${MTLS_SECRETS_DIR}/guide-service/server.crt"
+              "${MTLS_SECRETS_DIR}/guide-service/server.key"
+              "${MTLS_SECRETS_DIR}/chat-service/server.crt"
+              "${MTLS_SECRETS_DIR}/chat-service/server.key"
+              "${MTLS_SECRETS_DIR}/currency-service/server.crt"
+              "${MTLS_SECRETS_DIR}/currency-service/server.key"
+              "${MTLS_SECRETS_DIR}/reference-service/server.crt"
+              "${MTLS_SECRETS_DIR}/reference-service/server.key"
+              "${MTLS_SECRETS_DIR}/routing-service/server.crt"
+              "${MTLS_SECRETS_DIR}/routing-service/server.key"
+              "${MTLS_SECRETS_DIR}/user-route-service/server.crt"
+              "${MTLS_SECRETS_DIR}/user-route-service/server.key"
+              "${MTLS_SECRETS_DIR}/sticker-service/server.crt"
+              "${MTLS_SECRETS_DIR}/sticker-service/server.key"
+              "${MTLS_SECRETS_DIR}/translation-service/server.crt"
+              "${MTLS_SECRETS_DIR}/translation-service/server.key"
+              "${MTLS_SECRETS_DIR}/admin-panel/server.crt"
+              "${MTLS_SECRETS_DIR}/admin-panel/server.key"
+              "${MTLS_SECRETS_DIR}/admin-panel/client.crt"
+              "${MTLS_SECRETS_DIR}/admin-panel/client.key"
+              "${MTLS_SECRETS_DIR}/api-gateway/client.crt"
+              "${MTLS_SECRETS_DIR}/api-gateway/client.key"
+              "${MTLS_SECRETS_DIR}/activity-service/client.crt"
+              "${MTLS_SECRETS_DIR}/activity-service/client.key"
+              "${MTLS_SECRETS_DIR}/auth-service/client.crt"
+              "${MTLS_SECRETS_DIR}/auth-service/client.key"
+              "${MTLS_SECRETS_DIR}/chat-service/client.crt"
+              "${MTLS_SECRETS_DIR}/chat-service/client.key"
+              "${MTLS_SECRETS_DIR}/checklist-service/client.crt"
+              "${MTLS_SECRETS_DIR}/checklist-service/client.key"
+              "${MTLS_SECRETS_DIR}/currency-service/client.crt"
+              "${MTLS_SECRETS_DIR}/currency-service/client.key"
+              "${MTLS_SECRETS_DIR}/excursion-service/client.crt"
+              "${MTLS_SECRETS_DIR}/excursion-service/client.key"
+              "${MTLS_SECRETS_DIR}/feed-service/client.crt"
+              "${MTLS_SECRETS_DIR}/feed-service/client.key"
+              "${MTLS_SECRETS_DIR}/file-manager-service/client.crt"
+              "${MTLS_SECRETS_DIR}/file-manager-service/client.key"
+              "${MTLS_SECRETS_DIR}/guide-service/client.crt"
+              "${MTLS_SECRETS_DIR}/guide-service/client.key"
+              "${MTLS_SECRETS_DIR}/payment-service/client.crt"
+              "${MTLS_SECRETS_DIR}/payment-service/client.key"
+              "${MTLS_SECRETS_DIR}/place-service/client.crt"
+              "${MTLS_SECRETS_DIR}/place-service/client.key"
+              "${MTLS_SECRETS_DIR}/search-service/client.crt"
+              "${MTLS_SECRETS_DIR}/search-service/client.key"
+              "${MTLS_SECRETS_DIR}/sticker-service/client.crt"
+              "${MTLS_SECRETS_DIR}/sticker-service/client.key"
+              "${MTLS_SECRETS_DIR}/support-service/client.crt"
+              "${MTLS_SECRETS_DIR}/support-service/client.key"
+              "${MTLS_SECRETS_DIR}/token-service/client.crt"
+              "${MTLS_SECRETS_DIR}/token-service/client.key"
+              "${MTLS_SECRETS_DIR}/user-service/client.crt"
+              "${MTLS_SECRETS_DIR}/user-service/client.key"
+            )
+            required_mtls_files_arg="$(printf '%q ' "${required_mtls_files[@]}")"
+            ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
+              "for f in ${required_mtls_files_arg}; do test -r \"\$f\" || { echo \"Missing mTLS runtime file: \$f\" >&2; exit 1; }; done"
           fi
 
           ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \

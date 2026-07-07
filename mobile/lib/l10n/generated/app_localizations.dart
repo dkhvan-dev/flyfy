@@ -4936,6 +4936,126 @@ abstract class AppLocalizations {
   /// **'{location}'**
   String homeExploringLocation(Object location);
 
+  /// No description provided for @searchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchTitle;
+
+  /// No description provided for @searchIdleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start typing'**
+  String get searchIdleTitle;
+
+  /// No description provided for @searchIdleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Find activities, places, excursions, guides, communities, and people.'**
+  String get searchIdleMessage;
+
+  /// No description provided for @searchNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found'**
+  String get searchNoResultsTitle;
+
+  /// No description provided for @searchNoResultsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a shorter query or another spelling.'**
+  String get searchNoResultsMessage;
+
+  /// No description provided for @searchLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Try again.'**
+  String get searchLoadFailed;
+
+  /// No description provided for @searchLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get searchLoadMore;
+
+  /// No description provided for @searchTopResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top results'**
+  String get searchTopResultsTitle;
+
+  /// No description provided for @searchActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get searchActivitiesTitle;
+
+  /// No description provided for @searchPlacesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get searchPlacesTitle;
+
+  /// No description provided for @searchExcursionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursions'**
+  String get searchExcursionsTitle;
+
+  /// No description provided for @searchGuidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guides'**
+  String get searchGuidesTitle;
+
+  /// No description provided for @searchCommunitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Communities'**
+  String get searchCommunitiesTitle;
+
+  /// No description provided for @searchUsersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get searchUsersTitle;
+
+  /// No description provided for @searchDomainActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get searchDomainActivity;
+
+  /// No description provided for @searchDomainPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get searchDomainPlace;
+
+  /// No description provided for @searchDomainExcursion.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion'**
+  String get searchDomainExcursion;
+
+  /// No description provided for @searchDomainGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get searchDomainGuide;
+
+  /// No description provided for @searchDomainCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get searchDomainCommunity;
+
+  /// No description provided for @searchDomainUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get searchDomainUser;
+
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:

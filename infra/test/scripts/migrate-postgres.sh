@@ -4,6 +4,7 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/inflap}"
 ENV_FILE="${ENV_FILE:-${APP_DIR}/env/test.env}"
 DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-${APP_DIR}/env/deploy.env}"
+RUNTIME_ENV_FILE="${RUNTIME_ENV_FILE:-${APP_DIR}/env/runtime.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${APP_DIR}/docker-compose.test.yml}"
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-${APP_DIR}/migrations}"
 MIGRATION_SCRIPTS_DIR="${MIGRATION_SCRIPTS_DIR:-${APP_DIR}/migration-scripts}"
@@ -31,6 +32,7 @@ DEFAULT_MIGRATION_SERVICE_MAP=(
   "support-service:support_service_db:022_support_service_migrate.sh"
   "admin-panel:admin_panel_db:013_admin_panel_migrate.sh"
   "user-route-service:user_route_service_db:021_user_route_service_migrate.sh"
+  "search-service:search_service_db:-"
 )
 
 cd "${APP_DIR}"
@@ -48,6 +50,38 @@ if [[ -f "${DEPLOY_ENV_FILE}" ]]; then
   . "${DEPLOY_ENV_FILE}"
 fi
 set +a
+
+load_compose_env_value() {
+  local key="$1"
+  local file="$2"
+  local line
+
+  if [[ ! -f "${file}" || -n "${!key:-}" ]]; then
+    return 0
+  fi
+
+  line="$(grep -E "^${key}=" "${file}" | tail -n 1 || true)"
+  if [[ -z "${line}" ]]; then
+    return 0
+  fi
+
+  export "${key}=${line#*=}"
+}
+
+if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
+  for key in \
+    API_GATEWAY_TOKEN_SERVICE_SECRET \
+    AUTH_SERVICE_TOKEN_SERVICE_SECRET \
+    ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET \
+    EXCURSION_SERVICE_TOKEN_SERVICE_SECRET \
+    FEED_SERVICE_TOKEN_SERVICE_SECRET \
+    GUIDE_SERVICE_TOKEN_SERVICE_SECRET \
+    PLACE_SERVICE_TOKEN_SERVICE_SECRET \
+    USER_SERVICE_TOKEN_SERVICE_SECRET
+  do
+    load_compose_env_value "${key}" "${RUNTIME_ENV_FILE}"
+  done
+fi
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me-postgres-password}"
@@ -132,6 +166,34 @@ for item in "${migration_services[@]}"; do
     -v "${script_mount[@]}" \
     "${MIGRATION_CLIENT_IMAGE}" \
     "${container_script}"
+
+  if [[ "${service}" == "token-service" && "${SEED_TOKEN_SERVICE_ACCOUNTS:-true}" == "true" ]]; then
+    seed_script="${MIGRATION_SCRIPTS_DIR}/001_token_service_seed_services.sh"
+    if [[ ! -f "${seed_script}" ]]; then
+      echo "Missing token-service seed script: ${seed_script}" >&2
+      exit 1
+    fi
+    echo "Seeding token-service service accounts"
+    docker run --rm \
+      --network "container:${postgres_container_id}" \
+      --entrypoint /bin/sh \
+      -e "POSTGRES_DB=${database}" \
+      -e "POSTGRES_USER=${POSTGRES_USER}" \
+      -e "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+      -e "PGHOST=127.0.0.1" \
+      -e "PGPORT=5432" \
+      -e "AUTH_SERVICE_TOKEN_SERVICE_SECRET=${AUTH_SERVICE_TOKEN_SERVICE_SECRET:?AUTH_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "API_GATEWAY_TOKEN_SERVICE_SECRET=${API_GATEWAY_TOKEN_SERVICE_SECRET:?API_GATEWAY_TOKEN_SERVICE_SECRET is required}" \
+      -e "ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET=${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:?ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "EXCURSION_SERVICE_TOKEN_SERVICE_SECRET=${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:?EXCURSION_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "FEED_SERVICE_TOKEN_SERVICE_SECRET=${FEED_SERVICE_TOKEN_SERVICE_SECRET:?FEED_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "GUIDE_SERVICE_TOKEN_SERVICE_SECRET=${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:?GUIDE_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "PLACE_SERVICE_TOKEN_SERVICE_SECRET=${PLACE_SERVICE_TOKEN_SERVICE_SECRET:?PLACE_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "USER_SERVICE_TOKEN_SERVICE_SECRET=${USER_SERVICE_TOKEN_SERVICE_SECRET:?USER_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -v "${seed_script}:/scripts/001_token_service_seed_services.sh:ro" \
+      "${MIGRATION_CLIENT_IMAGE}" \
+      /scripts/001_token_service_seed_services.sh
+  fi
 done
 
 echo "PostgreSQL migrations completed."

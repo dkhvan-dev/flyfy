@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
+
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
 	// Server
-	GRPCPort int    `env:"GRPC_PORT, default=50052"`
-	HTTPPort int    `env:"HTTP_PORT, default=8082"`
-	Env      string `env:"APP_ENV, default=development"`
+	GRPCPort            int    `env:"GRPC_PORT, default=50052"`
+	HTTPPort            int    `env:"HTTP_PORT, default=8082"`
+	InternalHTTPTLSPort int    `env:"INTERNAL_HTTP_TLS_PORT, default=0"`
+	Env                 string `env:"APP_ENV, default=development"`
 
 	// Database
 	Postgres PostgresConfig
@@ -27,6 +30,7 @@ type Config struct {
 	OTP      OTPConfig
 	Email    EmailConfig
 	Security AuthSecurityConfig
+	MTLS     transportauth.EnvConfig
 
 	// OAuth
 	Google    GoogleConfig
@@ -124,4 +128,8 @@ func Load(ctx context.Context) (*Config, error) {
 		return nil, fmt.Errorf("loading config: %w", err)
 	}
 	return &cfg, nil
+}
+
+func (c Config) InternalHTTPAddress() string {
+	return fmt.Sprintf(":%d", c.InternalHTTPTLSPort)
 }

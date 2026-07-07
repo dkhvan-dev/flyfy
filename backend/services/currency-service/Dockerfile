@@ -9,11 +9,13 @@ WORKDIR /app
 
 COPY backend/services/currency-service/go.mod backend/services/currency-service/go.sum* ./backend/services/currency-service/
 COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 
 WORKDIR /app/backend/services/currency-service
 RUN go mod download
 
 COPY backend/pkg/switches /app/backend/pkg/switches
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY backend/services/currency-service ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

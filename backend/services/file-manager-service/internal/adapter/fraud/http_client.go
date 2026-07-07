@@ -25,7 +25,17 @@ type HTTPClient struct {
 	httpClient *http.Client
 }
 
-func NewHTTPClient(baseURL string, token string, signalHashKey string, timeout time.Duration) (*HTTPClient, error) {
+type Option func(*HTTPClient)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *HTTPClient) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
+func NewHTTPClient(baseURL string, token string, signalHashKey string, timeout time.Duration, opts ...Option) (*HTTPClient, error) {
 	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(baseURL), "/"))
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return nil, fmt.Errorf("invalid anti-fraud base url")
@@ -40,14 +50,21 @@ func NewHTTPClient(baseURL string, token string, signalHashKey string, timeout t
 		timeout = 800 * time.Millisecond
 	}
 
-	return &HTTPClient{
+	client := &HTTPClient{
 		baseURL: parsed.String(),
 		token:   strings.TrimSpace(token),
 		hashKey: []byte(signalHashKey),
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
-	}, nil
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(client)
+		}
+	}
+
+	return client, nil
 }
 
 func (c *HTTPClient) AssessFile(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error) {

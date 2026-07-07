@@ -1,12 +1,14 @@
 package trust
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
@@ -78,5 +80,21 @@ func TestDecisionEventIDDerivesStableUUIDFromFormKey(t *testing.T) {
 	}
 	if first != second {
 		t.Fatalf("decisionEventID() = %q then %q, want stable value", first, second)
+	}
+}
+
+func TestNewWithTransportAuthFailsFastWhenMTLSConfigInvalid(t *testing.T) {
+	_, err := NewWithTransportAuth(
+		"trust-service:9096",
+		"internal-token",
+		"admin-panel",
+		time.Second,
+		transportauth.Config{Mode: transportauth.ModeEnforce},
+	)
+	if err == nil {
+		t.Fatal("NewWithTransportAuth error = nil, want invalid mTLS config error")
+	}
+	if !strings.Contains(err.Error(), "initialize admin trust mTLS transport") {
+		t.Fatalf("error = %q, want admin trust mTLS context", err)
 	}
 }

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,13 +15,16 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/switches"
+	"kz/inflap/backend/pkg/transportauth"
 	activityadapter "kz/inflap/backend/services/feed-service/internal/adapter/activity"
 	cacheadapter "kz/inflap/backend/services/feed-service/internal/adapter/cache"
 	filemanageradapter "kz/inflap/backend/services/feed-service/internal/adapter/filemanager"
 	httpadapter "kz/inflap/backend/services/feed-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/feed-service/internal/adapter/notification"
 	"kz/inflap/backend/services/feed-service/internal/adapter/repository"
+	searchindexadapter "kz/inflap/backend/services/feed-service/internal/adapter/searchindex"
 	userrouteadapter "kz/inflap/backend/services/feed-service/internal/adapter/userroute"
 	uservicadapter "kz/inflap/backend/services/feed-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/feed-service/internal/app"
@@ -44,21 +50,13 @@ func main() {
 	}
 	defer pool.Close()
 
-	userClient, err := uservicadapter.New(
-		cfg.UserService.Target,
-		cfg.Security.InternalServiceToken,
-		"feed-service",
-	)
+	userClient, err := newUserServiceClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize user-service grpc client")
 	}
 	defer userClient.Close()
 
-	fileManagerClient, err := filemanageradapter.New(
-		cfg.FileManager.Target,
-		cfg.Security.InternalServiceToken,
-		"feed-service",
-	)
+	fileManagerClient, err := newFileManagerClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize file-manager grpc client")
 	}
@@ -68,21 +66,36 @@ func main() {
 	feedCuratedBlockPolicy := feedCuratedBlockPolicyFromConfig(cfg.Feed).Normalized()
 	repo := repository.NewPGPostRepository(pool).
 		WithFeedRankingPolicy(feedRankingPolicy)
+	notificationHTTPClient, err := newNotificationServiceHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure notification-service mTLS client")
+	}
 	notificationClient := notificationadapter.New(
 		cfg.Notification.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		"feed-service",
 		cfg.Notification.RequestTimeout,
+		notificationadapter.WithHTTPClient(notificationHTTPClient),
 	)
+	activityHTTPClient, err := newActivityServiceHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure activity-service mTLS client")
+	}
 	activityClient := activityadapter.New(
 		cfg.Activity.HTTPURL,
 		cfg.Security.InternalServiceToken,
 		"feed-service",
 		cfg.Activity.RequestTimeout,
+		activityadapter.WithHTTPClient(activityHTTPClient),
 	)
+	userRouteHTTPClient, err := newUserRouteServiceHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure user-route-service mTLS client")
+	}
 	userRouteClient := userrouteadapter.New(
 		cfg.UserRoute.HTTPURL,
 		cfg.UserRoute.RequestTimeout,
+		userrouteadapter.WithHTTPClient(userRouteHTTPClient),
 	)
 	postFeedCache, closePostFeedCache := newPostFeedCache(ctx, cfg)
 	defer closePostFeedCache()
@@ -94,6 +107,17 @@ func main() {
 		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey).
 		WithFeedExperimentVariants(cfg.Feed.RankingExperimentVariants).
 		WithFeedExperimentPolicyOverrides(cfg.Feed.RankingExperimentPolicies)
+	if cfg.SearchService.Enabled {
+		searchIndexOptions, closeSearchIndexAuth := newSearchIndexOptions(cfg)
+		defer closeSearchIndexAuth()
+		searchIndexer := searchindexadapter.New(
+			cfg.SearchService.HTTPURL,
+			cfg.Security.InternalServiceToken,
+			cfg.SearchService.Timeout,
+			searchIndexOptions...,
+		)
+		useCase.WithCommunitySearchIndexer(searchIndexer)
+	}
 	if postFeedCache != nil {
 		useCase.WithPostFeedCache(postFeedCache, cfg.Redis.FeedTTL, cfg.Redis.TrayTTL)
 	}
@@ -124,21 +148,40 @@ func main() {
 	handler := httpadapter.NewHandler(useCase)
 	mux := http.NewServeMux()
 	handler.Register(mux)
+	httpHandler := httpadapter.Chain(cfg, withTechBreakMaintenance(withRequestLogging(mux), cfg.Switches, cfg.MTLS, cfg.Security.InternalServiceToken, "FEED"))
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(withRequestLogging(mux), cfg.Switches, cfg.Security.InternalServiceToken, "FEED")),
+		Handler:      httpHandler,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	tlsConfig, err := transportTLSConfig.ServerTLSConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("configure feed-service mTLS")
+	}
+	if err := validateFeedServiceMTLSPort(cfg, tlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid feed-service mTLS listener configuration")
+	}
+	internalMTLSServer := newInternalFeedMTLSServer(cfg, httpHandler, tlsConfig)
+
 	go func() {
 		log.Info().Str("address", cfg.HTTP.Address()).Msg("http server started")
-		if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal().Err(err).Msg("http server failed")
 		}
 	}()
+	if internalMTLSServer != nil {
+		go func() {
+			log.Info().Str("address", cfg.HTTP.InternalTLSAddress()).Msg("internal mTLS http server started")
+			if err := internalMTLSServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatal().Err(err).Msg("internal mTLS http server failed")
+			}
+		}()
+	}
 
 	<-ctx.Done()
 	log.Info().Msg("shutdown signal received")
@@ -151,15 +194,23 @@ func main() {
 	} else {
 		log.Info().Msg("http server stopped")
 	}
+	if internalMTLSServer != nil {
+		if err = internalMTLSServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS http server shutdown failed")
+		} else {
+			log.Info().Msg("internal mTLS http server stopped")
+		}
+	}
 }
 
-func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
 	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
 	middleware, err := switches.NewMaintenanceMiddleware(
 		switches.HTTPClientConfig{
 			BaseURL:              cfg.HTTPURL,
 			InternalServiceToken: token,
 			Timeout:              cfg.RequestTimeout,
+			TransportAuth:        mtls.ClientConfig(transportauth.ServerNameFromTarget(cfg.HTTPURL)),
 		},
 		switches.MaintenanceMiddlewareConfig{
 			DomainCode: domainCode,
@@ -275,6 +326,124 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 	}
 
 	return pool, nil
+}
+
+func newSearchIndexOptions(cfg *config.Config) ([]searchindexadapter.Option, func()) {
+	searchHTTPClient, err := newSearchIndexHTTPClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure search indexing mTLS client")
+	}
+	options := []searchindexadapter.Option{searchindexadapter.WithHTTPClient(searchHTTPClient)}
+
+	if !cfg.TokenService.Enabled() {
+		if cfg.App.IsProduction() {
+			log.Fatal().Msg("TOKEN_SERVICE_SECRET is required when search indexing is enabled in production")
+		}
+		log.Warn().Msg("search indexing service JWT auth disabled; falling back to legacy internal token")
+		return options, func() {}
+	}
+	source, err := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+		Target:        cfg.TokenService.Target,
+		ServiceID:     cfg.TokenService.ServiceID,
+		ServiceSecret: cfg.TokenService.ServiceSecret,
+		CallTimeout:   cfg.TokenService.CallTimeout,
+		TransportAuth: cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize search indexing service token source")
+	}
+	log.Info().Str("service_id", cfg.TokenService.ServiceID).Msg("search indexing service JWT auth enabled")
+	options = append(options, searchindexadapter.WithServiceTokenSource(source))
+	return options, func() {
+		if err := source.Close(); err != nil {
+			log.Warn().Err(err).Msg("failed to close search indexing service token source")
+		}
+	}
+}
+
+func newSearchIndexHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.SearchService.HTTPURL)),
+		cfg.SearchService.Timeout,
+	)
+}
+
+func newNotificationServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Notification.HTTPURL)),
+		cfg.Notification.RequestTimeout,
+	)
+}
+
+func newActivityServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Activity.HTTPURL)),
+		cfg.Activity.RequestTimeout,
+	)
+}
+
+func newUserRouteServiceHTTPClient(cfg *config.Config) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.UserRoute.HTTPURL)),
+		cfg.UserRoute.RequestTimeout,
+	)
+}
+
+func validateFeedServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when feed-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalFeedMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func newUserServiceClient(cfg *config.Config) (*uservicadapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.UserService.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize user-service mTLS transport: %w", err)
+	}
+	return uservicadapter.New(
+		cfg.UserService.Target,
+		cfg.Security.InternalServiceToken,
+		"feed-service",
+		grpcOptions...,
+	)
+}
+
+func newFileManagerClient(cfg *config.Config) (*filemanageradapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.FileManager.Target)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize file-manager mTLS transport: %w", err)
+	}
+	return filemanageradapter.New(
+		cfg.FileManager.Target,
+		cfg.Security.InternalServiceToken,
+		"feed-service",
+		grpcOptions...,
+	)
 }
 
 func setupLogger(cfg *config.Config) {

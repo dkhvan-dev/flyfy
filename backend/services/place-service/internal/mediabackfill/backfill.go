@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"kz/inflap/backend/pkg/transportauth"
 )
 
 const (
@@ -48,6 +49,7 @@ type Config struct {
 	DryRun                  bool
 	ContinueOnError         bool
 	HTTPTimeout             time.Duration
+	FileManagerHTTPClient   *http.Client
 	RowDelay                time.Duration
 	CountryCode             string
 	CityID                  string
@@ -214,6 +216,11 @@ func RunCLI() {
 	}
 	defer pool.Close()
 
+	fileManagerHTTPClient, err := newFileManagerHTTPClientFromEnv(*fileManagerURL, *httpTimeout)
+	if err != nil {
+		fatalf("initialize file-manager mTLS transport: %v", err)
+	}
+
 	_, err = Run(ctx, pool, Config{
 		FileManagerURL:          *fileManagerURL,
 		UserAgent:               *userAgent,
@@ -222,6 +229,7 @@ func RunCLI() {
 		DryRun:                  *dryRun,
 		ContinueOnError:         *continueOnErr,
 		HTTPTimeout:             *httpTimeout,
+		FileManagerHTTPClient:   fileManagerHTTPClient,
 		RowDelay:                *rowDelay,
 		CountryCode:             *countryCode,
 		CityID:                  *cityID,
@@ -231,6 +239,19 @@ func RunCLI() {
 	if err != nil {
 		fatalf("%v", err)
 	}
+}
+
+func newFileManagerHTTPClientFromEnv(fileManagerURL string, timeout time.Duration) (*http.Client, error) {
+	return transportauth.NewHTTPClient(
+		transportauth.EnvConfig{
+			Mode:           envOr("MTLS_MODE", "disabled"),
+			CACertPath:     os.Getenv("MTLS_CA_CERT_PATH"),
+			ClientCertPath: os.Getenv("MTLS_CLIENT_CERT_PATH"),
+			ClientKeyPath:  os.Getenv("MTLS_CLIENT_KEY_PATH"),
+			ServerName:     os.Getenv("MTLS_SERVER_NAME"),
+		}.ClientConfig(transportauth.ServerNameFromTarget(fileManagerURL)),
+		timeout,
+	)
 }
 
 func Run(ctx context.Context, pool *pgxpool.Pool, cfg Config) (Result, error) {
@@ -250,7 +271,11 @@ func Run(ctx context.Context, pool *pgxpool.Pool, cfg Config) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("load place media rows: %w", err)
 	}
-	client := &http.Client{Timeout: cfg.HTTPTimeout}
+	sourceClient := &http.Client{Timeout: cfg.HTTPTimeout}
+	fileManagerClient := cfg.FileManagerHTTPClient
+	if fileManagerClient == nil {
+		fileManagerClient = &http.Client{Timeout: cfg.HTTPTimeout}
+	}
 	result := Result{MirroredTotal: len(rows)}
 	for _, row := range rows {
 		logf(cfg.LogWriter, "Backfilling %s (%s)\n", row.Title, row.MediaID)
@@ -259,7 +284,7 @@ func Run(ctx context.Context, pool *pgxpool.Pool, cfg Config) (Result, error) {
 			continue
 		}
 
-		fileID, err := mirrorOne(ctx, client, strings.TrimRight(cfg.FileManagerURL, "/"), strings.TrimSpace(cfg.UserAgent), row)
+		fileID, err := mirrorOne(ctx, sourceClient, fileManagerClient, strings.TrimRight(cfg.FileManagerURL, "/"), strings.TrimSpace(cfg.UserAgent), row)
 		if err != nil {
 			result.Failed++
 			if !cfg.ContinueOnError {
@@ -366,13 +391,13 @@ func loadRows(ctx context.Context, pool *pgxpool.Pool, force bool, limit int, fi
 	return result, rows.Err()
 }
 
-func mirrorOne(ctx context.Context, client *http.Client, fileManagerURL string, userAgent string, row mediaRow) (uuid.UUID, error) {
-	body, contentType, originalName, err := downloadImage(ctx, client, row, userAgent)
+func mirrorOne(ctx context.Context, sourceClient *http.Client, fileManagerClient *http.Client, fileManagerURL string, userAgent string, row mediaRow) (uuid.UUID, error) {
+	body, contentType, originalName, err := downloadImage(ctx, sourceClient, row, userAgent)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	upload, err := createUploadRequest(ctx, client, fileManagerURL, row, originalName, contentType, len(body))
+	upload, err := createUploadRequest(ctx, fileManagerClient, fileManagerURL, row, originalName, contentType, len(body))
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -382,10 +407,10 @@ func mirrorOne(ctx context.Context, client *http.Client, fileManagerURL string, 
 		return uuid.Nil, fmt.Errorf("parse file-manager file id %q: %w", upload.FileID, err)
 	}
 
-	if err = uploadBinary(ctx, client, fileManagerURL, row.AuthorUserID, fileID, body, contentType); err != nil {
+	if err = uploadBinary(ctx, fileManagerClient, fileManagerURL, row.AuthorUserID, fileID, body, contentType); err != nil {
 		return uuid.Nil, err
 	}
-	if err = completeUpload(ctx, client, fileManagerURL, row.AuthorUserID, fileID); err != nil {
+	if err = completeUpload(ctx, fileManagerClient, fileManagerURL, row.AuthorUserID, fileID); err != nil {
 		return uuid.Nil, err
 	}
 	return fileID, nil
@@ -608,7 +633,8 @@ func updatePlaceMedia(ctx context.Context, pool *pgxpool.Pool, mediaID uuid.UUID
 func importCommonsMedia(
 	ctx context.Context,
 	pool *pgxpool.Pool,
-	client *http.Client,
+	sourceClient *http.Client,
+	fileManagerClient *http.Client,
 	fileManagerURL string,
 	userAgent string,
 	minMedia int,
@@ -630,7 +656,7 @@ func importCommonsMedia(
 		}
 
 		fmt.Printf("Discovering Commons media for %s: need %d more\n", target.Title, missing)
-		candidates, err := discoverCommonsCandidates(ctx, client, userAgent, target, missing)
+		candidates, err := discoverCommonsCandidates(ctx, sourceClient, userAgent, target, missing)
 		if err != nil {
 			if continueOnError {
 				logf(logWriter, "  failed to discover Commons media for %s: %v\n", target.Title, err)
@@ -661,7 +687,7 @@ func importCommonsMedia(
 				continue
 			}
 
-			fileID, err := mirrorOne(ctx, client, fileManagerURL, userAgent, row)
+			fileID, err := mirrorOne(ctx, sourceClient, fileManagerClient, fileManagerURL, userAgent, row)
 			if err != nil {
 				if continueOnError {
 					logf(logWriter, "  failed to mirror %s for %s: %v\n", candidate.SourceURL, target.Title, err)

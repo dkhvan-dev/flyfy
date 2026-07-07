@@ -2686,6 +2686,68 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get searchTitle => 'Іздеу';
+
+  @override
+  String get searchIdleTitle => 'Жаза бастаңыз';
+
+  @override
+  String get searchIdleMessage =>
+      'Белсенділіктерді, орындарды, экскурсияларды, гидтерді, қауымдастықтарды және адамдарды іздеңіз.';
+
+  @override
+  String get searchNoResultsTitle => 'Ештеңе табылмады';
+
+  @override
+  String get searchNoResultsMessage =>
+      'Қысқарақ сұрау немесе басқа жазылу нұсқасын қолданып көріңіз.';
+
+  @override
+  String get searchLoadFailed => 'Іздеу сәтсіз аяқталды. Қайталап көріңіз.';
+
+  @override
+  String get searchLoadMore => 'Тағы жүктеу';
+
+  @override
+  String get searchTopResultsTitle => 'Үздік нәтижелер';
+
+  @override
+  String get searchActivitiesTitle => 'Белсенділіктер';
+
+  @override
+  String get searchPlacesTitle => 'Орындар';
+
+  @override
+  String get searchExcursionsTitle => 'Экскурсиялар';
+
+  @override
+  String get searchGuidesTitle => 'Гидтер';
+
+  @override
+  String get searchCommunitiesTitle => 'Қауымдастықтар';
+
+  @override
+  String get searchUsersTitle => 'Адамдар';
+
+  @override
+  String get searchDomainActivity => 'Белсенділік';
+
+  @override
+  String get searchDomainPlace => 'Орын';
+
+  @override
+  String get searchDomainExcursion => 'Экскурсия';
+
+  @override
+  String get searchDomainGuide => 'Гид';
+
+  @override
+  String get searchDomainCommunity => 'Қауымдастық';
+
+  @override
+  String get searchDomainUser => 'Адам';
+
+  @override
   String get homeSearchHint => 'Белсенділіктер, орындар, экскурсиялар...';
 
   @override

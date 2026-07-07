@@ -23,7 +23,17 @@ type Client struct {
 	logger  zerolog.Logger
 }
 
-func NewHTTPClient(cfg config.SwitchesConfig, logger zerolog.Logger) (*Client, error) {
+type Option func(*Client)
+
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.http = httpClient
+		}
+	}
+}
+
+func NewHTTPClient(cfg config.SwitchesConfig, logger zerolog.Logger, opts ...Option) (*Client, error) {
 	baseURL := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	if baseURL == "" {
 		return nil, fmt.Errorf("switches service url is empty")
@@ -35,12 +45,18 @@ func NewHTTPClient(cfg config.SwitchesConfig, logger zerolog.Logger) (*Client, e
 	if timeout <= 0 {
 		timeout = 800 * time.Millisecond
 	}
-	return &Client{
+	client := &Client{
 		baseURL: baseURL,
 		token:   strings.TrimSpace(cfg.InternalServiceToken),
 		http:    &http.Client{Timeout: timeout},
 		logger:  logger.With().Str("component", "switches_client").Logger(),
-	}, nil
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(client)
+		}
+	}
+	return client, nil
 }
 
 func (c *Client) GetFeatureFlag(ctx context.Context, domainCode string, code string) (port.FeatureFlag, error) {

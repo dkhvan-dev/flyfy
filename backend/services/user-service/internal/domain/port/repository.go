@@ -19,6 +19,13 @@ type UserConnectionListOptions struct {
 	Offset        int
 }
 
+type UserSearchIndexBackfillAggregate struct {
+	User           *model.User
+	Profile        *model.UserProfile
+	Reputation     *model.UserReputation
+	FollowersCount int
+}
+
 type UserRepository interface {
 	CreateUserAggregate(
 		ctx context.Context,

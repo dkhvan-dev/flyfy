@@ -125,3 +125,19 @@ func TestResolverReturnsErrorWhenUserServiceIsUnavailable(t *testing.T) {
 		t.Fatal("expected user-service error")
 	}
 }
+
+func TestNewResolverUsesProvidedHTTPClient(t *testing.T) {
+	customClient := &http.Client{Timeout: 150 * time.Millisecond}
+
+	resolver := NewResolver(
+		"http://user-service:8084",
+		"http://guide-service:8085",
+		"internal-token",
+		time.Second,
+		WithHTTPClient(customClient),
+	)
+
+	if resolver.httpClient != customClient {
+		t.Fatalf("http client = %#v, want provided client", resolver.httpClient)
+	}
+}

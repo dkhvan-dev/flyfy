@@ -2674,6 +2674,69 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get searchTitle => 'Поиск';
+
+  @override
+  String get searchIdleTitle => 'Начните вводить';
+
+  @override
+  String get searchIdleMessage =>
+      'Ищите активности, места, экскурсии, гидов, сообщества и людей.';
+
+  @override
+  String get searchNoResultsTitle => 'Ничего не найдено';
+
+  @override
+  String get searchNoResultsMessage =>
+      'Попробуйте более короткий запрос или другое написание.';
+
+  @override
+  String get searchLoadFailed =>
+      'Не удалось выполнить поиск. Попробуйте ещё раз.';
+
+  @override
+  String get searchLoadMore => 'Показать еще';
+
+  @override
+  String get searchTopResultsTitle => 'Лучшие результаты';
+
+  @override
+  String get searchActivitiesTitle => 'Активности';
+
+  @override
+  String get searchPlacesTitle => 'Места';
+
+  @override
+  String get searchExcursionsTitle => 'Экскурсии';
+
+  @override
+  String get searchGuidesTitle => 'Гиды';
+
+  @override
+  String get searchCommunitiesTitle => 'Сообщества';
+
+  @override
+  String get searchUsersTitle => 'Люди';
+
+  @override
+  String get searchDomainActivity => 'Активность';
+
+  @override
+  String get searchDomainPlace => 'Место';
+
+  @override
+  String get searchDomainExcursion => 'Экскурсия';
+
+  @override
+  String get searchDomainGuide => 'Гид';
+
+  @override
+  String get searchDomainCommunity => 'Сообщество';
+
+  @override
+  String get searchDomainUser => 'Пользователь';
+
+  @override
   String get homeSearchHint => 'Активности, места, экскурсии...';
 
   @override

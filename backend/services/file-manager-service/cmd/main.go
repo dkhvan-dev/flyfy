@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"kz/inflap/backend/pkg/switches"
+	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	fraudadapter "kz/inflap/backend/services/file-manager-service/internal/adapter/fraud"
 	grpcadapter "kz/inflap/backend/services/file-manager-service/internal/adapter/grpc"
@@ -70,12 +72,7 @@ func main() {
 	bindingUseCase := app.NewFileBindingUseCaseWithFraud(fileRepo, bindingRepo, fraudClient)
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
-		trustClient, err = grpcclient.New(
-			cfg.Trust.Target,
-			cfg.Security.InternalServiceToken,
-			"file-manager-service",
-			cfg.Trust.Timeout,
-		)
+		trustClient, err = newTrustPolicyClient(cfg)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize trust-service client")
 		}
@@ -87,26 +84,40 @@ func main() {
 	httpHandler := httpadapter.NewHandler(fileUseCase, bindingUseCase)
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)
+	httpApplicationHandler := httpadapter.Chain(cfg, withTechBreakMaintenance(httpMux, cfg.Switches, cfg.MTLS, cfg.Security.InternalServiceToken, "FILE_MANAGER"))
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(httpMux, cfg.Switches, cfg.Security.InternalServiceToken, "FILE_MANAGER")),
+		Handler:      httpApplicationHandler,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
-	grpcLis, err := net.Listen("tcp", cfg.GRPC.Address())
+	transportTLSConfig := cfg.MTLS.ServerConfig()
+	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to listen grpc")
+		log.Fatal().Err(err).Msg("failed to configure file-manager-service mTLS")
+	}
+	if err := validateFileManagerServiceMTLSPort(cfg, mtlsConfig); err != nil {
+		log.Fatal().Err(err).Msg("invalid file-manager-service mTLS listener configuration")
+	}
+	internalHTTPServer := newInternalFileManagerHTTPMTLSServer(cfg, httpApplicationHandler, mtlsConfig)
+
+	grpcOptions := []grpc.ServerOption{
+		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg)),
 	}
 
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg)),
-	)
-
 	fileGRPCServer := grpcadapter.NewServer(fileUseCase, bindingUseCase)
-	filev1.RegisterFileServiceServer(grpcServer, fileGRPCServer)
+	grpcServer := newFileManagerGRPCServer(fileGRPCServer, grpcOptions...)
+	var internalGRPCServer *grpc.Server
+	if mtlsConfig != nil {
+		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to configure file-manager-service internal mTLS gRPC")
+		}
+		internalGRPCServer = newFileManagerGRPCServer(fileGRPCServer, append(mtlsGRPCOptions, grpcOptions...)...)
+	}
 
 	cleanupWorker := app.NewIdempotencyCleanupWorker(cleanupRepo, time.Hour, 1000)
 	go cleanupWorker.Start(ctx)
@@ -134,10 +145,33 @@ func main() {
 			Str("address", cfg.GRPC.Address()).
 			Msg("grpc server started")
 
-		if err = grpcServer.Serve(grpcLis); err != nil {
+		if err = serveFileManagerGRPCServer(cfg.GRPC.Address(), grpcServer); err != nil {
 			log.Fatal().Err(err).Msg("grpc server failed")
 		}
 	}()
+
+	if internalGRPCServer != nil {
+		go func() {
+			log.Info().
+				Str("address", cfg.GRPC.InternalTLSAddress()).
+				Msg("internal mTLS grpc server started")
+
+			if err = serveFileManagerGRPCServer(cfg.GRPC.InternalTLSAddress(), internalGRPCServer); err != nil {
+				log.Fatal().Err(err).Msg("internal mTLS grpc server failed")
+			}
+		}()
+	}
+	if internalHTTPServer != nil {
+		go func() {
+			log.Info().
+				Str("address", cfg.HTTP.InternalTLSAddress()).
+				Msg("internal mTLS http server started")
+
+			if serveErr := internalHTTPServer.ListenAndServeTLS("", ""); serveErr != nil && serveErr != http.ErrServerClosed {
+				log.Fatal().Err(serveErr).Msg("internal mTLS http server failed")
+			}
+		}()
+	}
 
 	<-ctx.Done()
 	log.Info().Msg("shutdown signal received")
@@ -146,21 +180,82 @@ func main() {
 	defer cancel()
 
 	grpcServer.GracefulStop()
+	if internalGRPCServer != nil {
+		internalGRPCServer.GracefulStop()
+	}
 
 	if err = httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http server shutdown failed")
 	} else {
 		log.Info().Msg("http server stopped")
 	}
+	if internalHTTPServer != nil {
+		if err = internalHTTPServer.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("internal mTLS http server shutdown failed")
+		} else {
+			log.Info().Msg("internal mTLS http server stopped")
+		}
+	}
 }
 
-func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+func newFileManagerGRPCServer(fileServer filev1.FileServiceServer, options ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(options...)
+	filev1.RegisterFileServiceServer(grpcServer, fileServer)
+	return grpcServer
+}
+
+func serveFileManagerGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	if err := server.Serve(listener); err != nil {
+		return fmt.Errorf("serve: %w", err)
+	}
+	return nil
+}
+
+func validateFileManagerServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) error {
+	if tlsConfig == nil {
+		return nil
+	}
+	if cfg.GRPC.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when file-manager-service mTLS is enabled")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.GRPC.Port {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from GRPC_PORT")
+	}
+	if cfg.HTTP.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT is required when file-manager-service mTLS is enabled")
+	}
+	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
+		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func newInternalFileManagerHTTPMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {
+	if tlsConfig == nil {
+		return nil
+	}
+	return &http.Server{
+		Addr:         cfg.HTTP.InternalTLSAddress(),
+		Handler:      handler,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
+	}
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
 	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
 	middleware, err := switches.NewMaintenanceMiddleware(
 		switches.HTTPClientConfig{
 			BaseURL:              cfg.HTTPURL,
 			InternalServiceToken: token,
 			Timeout:              cfg.RequestTimeout,
+			TransportAuth:        mtls.ClientConfig(transportauth.ServerNameFromTarget(cfg.HTTPURL)),
 		},
 		switches.MaintenanceMiddlewareConfig{
 			DomainCode: domainCode,
@@ -218,11 +313,29 @@ func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 	if cfg == nil || !cfg.AntiFraud.Enabled {
 		return nil, nil
 	}
+	fraudHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.AntiFraud.BaseURL)),
+		cfg.AntiFraud.Timeout,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize anti-fraud mTLS transport: %w", err)
+	}
 	return fraudadapter.NewHTTPClient(
 		cfg.AntiFraud.BaseURL,
 		cfg.AntiFraud.InternalServiceToken,
 		cfg.AntiFraud.SignalHashKey,
 		cfg.AntiFraud.Timeout,
+		fraudadapter.WithHTTPClient(fraudHTTPClient),
+	)
+}
+
+func newTrustPolicyClient(cfg *config.Config) (*grpcclient.Client, error) {
+	return grpcclient.NewWithTransportAuth(
+		cfg.Trust.Target,
+		cfg.Security.InternalServiceToken,
+		"file-manager-service",
+		cfg.Trust.Timeout,
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Trust.Target)),
 	)
 }
 
