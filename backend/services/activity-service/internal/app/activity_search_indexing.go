@@ -108,8 +108,20 @@ func isActivitySearchIndexable(item *model.Activity) bool {
 		return false
 	}
 	return item.Visibility == enum.ActivityVisibilityPublic &&
-		item.ModerationStatus == enum.ActivityModerationStatusApproved &&
+		isActivitySearchModerationVisible(item.ModerationStatus) &&
 		!item.Status.IsTerminal()
+}
+
+func isActivitySearchModerationVisible(status enum.ActivityModerationStatus) bool {
+	switch status {
+	case enum.ActivityModerationStatusNotRequired,
+		enum.ActivityModerationStatusFlagged,
+		enum.ActivityModerationStatusInReview,
+		enum.ActivityModerationStatusApproved:
+		return true
+	default:
+		return false
+	}
 }
 
 func activitySearchDocument(item *model.Activity, tags []string) SearchIndexDocument {

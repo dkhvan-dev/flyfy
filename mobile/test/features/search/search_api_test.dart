@@ -134,6 +134,104 @@ void main() {
     expect(adapter.dioQueryParameters, isEmpty);
   });
 
+  test(
+    'search ignores unsupported result domains instead of failing',
+    () async {
+      final adapter = _JsonAdapter({
+        'query': 'аккаунт',
+        'locale': 'ru',
+        'topResults': [
+          {
+            'domain': 'help_article',
+            'entityId': 'app-faq-003',
+            'title': 'Зачем нужен аккаунт?',
+            'deepLink': '/help?article=app-faq-003',
+          },
+          {
+            'domain': 'future_domain',
+            'entityId': 'future-1',
+            'title': 'Новый домен',
+            'deepLink': '/future/future-1',
+          },
+        ],
+        'groups': {
+          'places': {'items': [], 'hasMore': false},
+          'activities': {'items': [], 'hasMore': false},
+          'excursions': {'items': [], 'hasMore': false},
+          'guides': {'items': [], 'hasMore': false},
+          'communities': {'items': [], 'hasMore': false},
+          'users': {'items': [], 'hasMore': false},
+          'helpArticles': {
+            'items': [
+              {
+                'domain': 'help_article',
+                'entityId': 'app-faq-003',
+                'title': 'Зачем нужен аккаунт?',
+                'deepLink': '/help?article=app-faq-003',
+              },
+            ],
+            'hasMore': false,
+          },
+        },
+      });
+      final api = SearchApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.search(
+        query: 'аккаунт',
+        scope: SearchScope.global,
+      );
+
+      expect(page.topResults, hasLength(1));
+      expect(page.topResults.single.domain, SearchDomain.helpArticle);
+      expect(page.groups.helpArticles.items.single.entityId, 'app-faq-003');
+    },
+  );
+
+  test('search accepts legacy list response from gateway caches', () async {
+    final adapter = _JsonAdapter([
+      {
+        'domain': 'help_article',
+        'entityId': 'app-faq-003',
+        'title': 'Зачем нужен аккаунт?',
+        'deepLink': '/help?article=app-faq-003',
+      },
+      {
+        'domain': 'activity',
+        'entityId': 'activity-1',
+        'title': 'Тестовая активность',
+        'deepLink': '/activities/activity-1',
+      },
+    ]);
+    final api = SearchApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final page = await api.search(
+      query: 'аккаунт',
+      scope: SearchScope.global,
+      locale: 'ru',
+    );
+
+    expect(page.query, 'аккаунт');
+    expect(page.locale, 'ru');
+    expect(page.topResults.map((result) => result.domain), [
+      SearchDomain.helpArticle,
+      SearchDomain.activity,
+    ]);
+    expect(page.groups.helpArticles.items.single.entityId, 'app-faq-003');
+    expect(page.groups.activities.items.single.entityId, 'activity-1');
+  });
+
   test('suggest sends scope to suggestions endpoint', () async {
     final adapter = _JsonAdapter({
       'query': 'alm',
@@ -209,7 +307,7 @@ void main() {
 class _JsonAdapter implements HttpClientAdapter {
   _JsonAdapter(this.payload);
 
-  final Map<String, Object?> payload;
+  final Object? payload;
   String? path;
   String? rawPath;
   String? method;

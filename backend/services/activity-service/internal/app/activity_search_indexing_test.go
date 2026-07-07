@@ -91,6 +91,63 @@ func TestCreatePublicApprovedActivityIndexesSearchDocument(t *testing.T) {
 	}
 }
 
+func TestCreateFlaggedPostModerationActivityIndexesSearchDocument(t *testing.T) {
+	t.Parallel()
+
+	indexer := &activitySearchIndexerStub{}
+	uc := NewActivityUseCase(&activityRepoStub{})
+	uc.SetSearchIndexer(indexer)
+
+	input := validCreateActivityInput()
+	input.Title = "VIP hiking trip"
+	input.Description = "Message me on WhatsApp +77011234567 before joining this activity."
+
+	item, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+
+	if item.ModerationStatus != enum.ActivityModerationStatusFlagged {
+		t.Fatalf("moderation status = %s, want %s", item.ModerationStatus, enum.ActivityModerationStatusFlagged)
+	}
+	if len(indexer.upserts) != 1 {
+		t.Fatalf("search upserts = %d, want 1", len(indexer.upserts))
+	}
+	if len(indexer.deletes) != 0 {
+		t.Fatalf("search deletes = %d, want 0", len(indexer.deletes))
+	}
+	if indexer.upserts[0].EntityID != item.ID.String() {
+		t.Fatalf("upsert entity = %s, want %s", indexer.upserts[0].EntityID, item.ID)
+	}
+}
+
+func TestActivitySearchIndexableModerationStatusesFollowPostModeration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status enum.ActivityModerationStatus
+		want   bool
+	}{
+		{name: "not required", status: enum.ActivityModerationStatusNotRequired, want: true},
+		{name: "flagged", status: enum.ActivityModerationStatusFlagged, want: true},
+		{name: "in review", status: enum.ActivityModerationStatusInReview, want: true},
+		{name: "approved", status: enum.ActivityModerationStatusApproved, want: true},
+		{name: "rejected", status: enum.ActivityModerationStatusRejected, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			item := validActivity(t, uuid.New(), uuid.New())
+			item.ModerationStatus = tt.status
+
+			if got := isActivitySearchIndexable(item); got != tt.want {
+				t.Fatalf("isActivitySearchIndexable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCreateNonPublicActivityDeletesSearchDocument(t *testing.T) {
 	t.Parallel()
 

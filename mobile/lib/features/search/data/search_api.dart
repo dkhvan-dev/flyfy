@@ -49,7 +49,11 @@ class SearchApi implements SearchClient {
         extra: const {'requiresAuth': false, 'optionalAuth': true},
       ),
     );
-    return SearchPage.fromJson(response.data as Map<String, dynamic>? ?? {});
+    return SearchPage.fromResponse(
+      response.data,
+      fallbackQuery: normalizedQuery,
+      fallbackLocale: locale,
+    );
   }
 
   @override

@@ -93,6 +93,45 @@ class SearchGroups {
     );
   }
 
+  factory SearchGroups.fromResults(List<SearchResult> results) {
+    final activities = <SearchResult>[];
+    final excursions = <SearchResult>[];
+    final places = <SearchResult>[];
+    final guides = <SearchResult>[];
+    final communities = <SearchResult>[];
+    final users = <SearchResult>[];
+    final helpArticles = <SearchResult>[];
+
+    for (final result in results) {
+      switch (result.domain) {
+        case SearchDomain.activity:
+          activities.add(result);
+        case SearchDomain.excursion:
+          excursions.add(result);
+        case SearchDomain.place:
+          places.add(result);
+        case SearchDomain.guide:
+          guides.add(result);
+        case SearchDomain.community:
+          communities.add(result);
+        case SearchDomain.user:
+          users.add(result);
+        case SearchDomain.helpArticle:
+          helpArticles.add(result);
+      }
+    }
+
+    return SearchGroups(
+      activities: SearchGroupPage(items: activities),
+      excursions: SearchGroupPage(items: excursions),
+      places: SearchGroupPage(items: places),
+      guides: SearchGroupPage(items: guides),
+      communities: SearchGroupPage(items: communities),
+      users: SearchGroupPage(items: users),
+      helpArticles: SearchGroupPage(items: helpArticles),
+    );
+  }
+
   SearchGroupPage byDomain(SearchDomain domain) {
     return switch (domain) {
       SearchDomain.activity => activities,
@@ -252,14 +291,54 @@ class SearchPage {
       nextPageToken: _nullableString(json['nextPageToken']),
     );
   }
+
+  factory SearchPage.fromResponse(
+    dynamic value, {
+    String? fallbackQuery,
+    String? fallbackLocale,
+  }) {
+    if (value is Map) {
+      return SearchPage.fromJson(value.cast<String, dynamic>());
+    }
+    if (value is List) {
+      final results = _resultList(value);
+      return SearchPage(
+        query: fallbackQuery?.trim() ?? '',
+        locale: fallbackLocale?.trim().isNotEmpty == true
+            ? fallbackLocale!.trim()
+            : 'en',
+        topResults: results,
+        groups: SearchGroups.fromResults(results),
+      );
+    }
+    return SearchPage(
+      query: fallbackQuery?.trim() ?? '',
+      locale: fallbackLocale?.trim().isNotEmpty == true
+          ? fallbackLocale!.trim()
+          : 'en',
+      topResults: const [],
+      groups: const SearchGroups(),
+    );
+  }
 }
 
 List<SearchResult> _resultList(dynamic value) {
   if (value is! List) return const [];
-  return value
-      .whereType<Map<String, dynamic>>()
-      .map(SearchResult.fromJson)
-      .toList(growable: false);
+  final results = <SearchResult>[];
+  for (final item in value) {
+    if (item is! Map) continue;
+    final result = _trySearchResultFromJson(item.cast<String, dynamic>());
+    if (result != null) results.add(result);
+  }
+  return List<SearchResult>.unmodifiable(results);
+}
+
+SearchResult? _trySearchResultFromJson(Map<String, dynamic> json) {
+  try {
+    return SearchResult.fromJson(json);
+  } on FormatException {
+    return null;
+  }
 }
 
 String? _nullableString(dynamic value) {
