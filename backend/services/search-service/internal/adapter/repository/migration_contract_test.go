@@ -277,6 +277,9 @@ func TestSearchRepositorySQLMatchesAnyNormalizedQueryToken(t *testing.T) {
 		"websearch_to_tsquery('simple', $9)",
 		"d.search_vector @@ websearch_to_tsquery('simple', $9)",
 		"regexp_split_to_array(lower(trim($2::text)), '\\s+') AS tokens",
+		"char_length(token.value) >= 2",
+		"d.search_text_normalized LIKE token.value || '%'",
+		"d.search_text_normalized LIKE '% ' || token.value || '%'",
 	}
 	for _, fragment := range required {
 		if !strings.Contains(source, fragment) {

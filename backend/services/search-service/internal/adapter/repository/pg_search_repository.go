@@ -140,6 +140,25 @@ matching_ids AS MATERIALIZED (
       AND d.moderation_status = 'approved'
       AND d.domain = ANY($1)
       AND d.search_text_normalized LIKE normalized.q || '%'
+
+    UNION
+
+    SELECT d.id
+    FROM search_documents d
+    CROSS JOIN normalized
+    WHERE d.deleted_at IS NULL
+      AND d.visibility = 'public'
+      AND d.moderation_status = 'approved'
+      AND d.domain = ANY($1)
+      AND EXISTS (
+          SELECT 1
+          FROM unnest(normalized.tokens) AS token(value)
+          WHERE char_length(token.value) >= 2
+            AND (
+                d.search_text_normalized LIKE token.value || '%'
+                OR d.search_text_normalized LIKE '% ' || token.value || '%'
+            )
+      )
 ),
 candidate_pool AS (
     SELECT
@@ -166,6 +185,12 @@ candidate_pool AS (
                     WHERE token.value <> ''
                       AND d.search_text_normalized LIKE token.value || '%'
                 ) THEN 0.35
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM unnest(normalized.tokens) AS token(value)
+                    WHERE char_length(token.value) >= 2
+                      AND d.search_text_normalized LIKE '% ' || token.value || '%'
+                ) THEN 0.32
                 WHEN EXISTS (
                     SELECT 1
                     FROM unnest(d.search_variants) AS variant(value)
@@ -283,6 +308,25 @@ matching_ids AS MATERIALIZED (
 
     UNION
 
+    SELECT d.id
+    FROM search_documents d
+    CROSS JOIN normalized
+    WHERE d.deleted_at IS NULL
+      AND d.visibility = 'public'
+      AND d.moderation_status = 'approved'
+      AND d.domain = ANY($1)
+      AND EXISTS (
+          SELECT 1
+          FROM unnest(normalized.tokens) AS token(value)
+          WHERE char_length(token.value) >= 2
+            AND (
+                d.search_text_normalized LIKE token.value || '%'
+                OR d.search_text_normalized LIKE '% ' || token.value || '%'
+            )
+      )
+
+    UNION
+
     SELECT fuzzy.id
     FROM (
         SELECT d.id, d.search_text_normalized
@@ -329,6 +373,12 @@ candidate_pool AS (
                     WHERE token.value <> ''
                       AND d.search_text_normalized LIKE token.value || '%'
                 ) THEN 0.35
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM unnest(normalized.tokens) AS token(value)
+                    WHERE char_length(token.value) >= 2
+                      AND d.search_text_normalized LIKE '% ' || token.value || '%'
+                ) THEN 0.32
                 WHEN EXISTS (
                     SELECT 1
                     FROM unnest(d.search_variants) AS variant(value)

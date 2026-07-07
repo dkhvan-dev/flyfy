@@ -14,13 +14,15 @@ COPY ./backend/services/place-service /app/backend/services/place-service
 WORKDIR /app/backend/services/place-service
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o place-service ./cmd
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o place-service ./cmd && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o place-service-backfill-search-index ./cmd/backfill-search-index
 
 FROM gcr.io/distroless/base-debian12:latest
 
 WORKDIR /opt/app
 
 COPY --from=builder /app/backend/services/place-service/place-service /opt/app/place-service
+COPY --from=builder /app/backend/services/place-service/place-service-backfill-search-index /opt/app/place-service-backfill-search-index
 
 EXPOSE 8090
 
