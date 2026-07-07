@@ -76,6 +76,7 @@ docker compose \
 if [[ "${RUN_POSTGRES_MIGRATIONS:-true}" == "true" ]]; then
   APP_DIR="${APP_DIR}" \
     ENV_FILE="${ENV_FILE}" \
+    RUNTIME_ENV_FILE="${RUNTIME_ENV_FILE}" \
     DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE}" \
     COMPOSE_FILE="${COMPOSE_FILE}" \
     "${APP_DIR}/scripts/migrate-postgres.sh"

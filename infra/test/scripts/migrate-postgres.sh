@@ -128,6 +128,9 @@ if [[ "${MIGRATIONS_DRY_RUN}" == "true" ]]; then
 fi
 
 compose_args=(docker compose --env-file "${ENV_FILE}")
+if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
+  compose_args+=(--env-file "${RUNTIME_ENV_FILE}")
+fi
 if [[ -f "${DEPLOY_ENV_FILE}" ]]; then
   compose_args+=(--env-file "${DEPLOY_ENV_FILE}")
 fi
