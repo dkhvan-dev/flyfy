@@ -93,6 +93,8 @@ x-pg-env: &pg-env
 
 x-service-defaults: &service-defaults
   restart: unless-stopped
+  group_add:
+    - "${MTLS_CERT_GROUP_ID:-1001}"
   networks:
     - internal
   depends_on:
@@ -395,6 +397,8 @@ services:
     profiles:
       - search-backfill
     restart: "no"
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     entrypoint: ["/opt/app/user-service-backfill-search-index"]
@@ -461,6 +465,8 @@ services:
     profiles:
       - search-backfill
     restart: "no"
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     entrypoint: ["/opt/app/guide-service-backfill-search-index"]
@@ -581,6 +587,8 @@ services:
     profiles:
       - search-backfill
     restart: "no"
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     entrypoint: ["/app/activity-service-backfill-search-index"]
@@ -860,6 +868,8 @@ services:
   reference-service:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}reference-service:${IMAGE_TAG:-test-latest}
     restart: unless-stopped
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     environment:
@@ -922,6 +932,8 @@ services:
   currency-service:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}currency-service:${IMAGE_TAG:-test-latest}
     restart: unless-stopped
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     environment:
@@ -948,6 +960,8 @@ services:
   routing-service:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}routing-service:${IMAGE_TAG:-test-latest}
     restart: unless-stopped
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
     environment:
@@ -1111,6 +1125,8 @@ services:
   translation-service:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}translation-service:${IMAGE_TAG:-test-latest}
     restart: unless-stopped
+    group_add:
+      - "${MTLS_CERT_GROUP_ID:-1001}"
     profiles:
       - ml
     networks:

@@ -40,6 +40,7 @@ secrets_dir="${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}"
 identity_env="${INFLAP_ENV:-test}"
 cert_days="${MTLS_CERT_DAYS:-30}"
 ca_days="${MTLS_CA_DAYS:-365}"
+cert_group_id="${MTLS_CERT_GROUP_ID:-1001}"
 force="false"
 
 while [[ $# -gt 0 ]]; do
@@ -81,6 +82,7 @@ done
 require_command openssl
 validate_positive_int "--cert-days" "${cert_days}"
 validate_positive_int "--ca-days" "${ca_days}"
+validate_positive_int "MTLS_CERT_GROUP_ID" "${cert_group_id}"
 [[ "${identity_env}" =~ ^[A-Za-z0-9._-]+$ ]] || fail "--env may contain only letters, numbers, dot, underscore, and hyphen"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
@@ -125,7 +127,8 @@ ca_crt="${target_root}/ca.crt"
 ca_serial="${target_root}/ca.srl"
 
 umask 077
-chmod 700 "${target_root}"
+chgrp "${cert_group_id}" "${target_root}" || fail "failed to set mTLS bundle group to GID ${cert_group_id}; run bootstrap-server.sh as root or chgrp the bundle with sudo"
+chmod 750 "${target_root}"
 
 if [[ "${force}" == "true" ]]; then
   rm -f "${ca_key}" "${ca_crt}" "${ca_serial}"
@@ -196,14 +199,19 @@ generate_leaf() {
   local ext_path="${tmp_dir}/${service}-${role}.cnf"
 
   mkdir -p "${service_dir}"
-  chmod 700 "${service_dir}"
+  chgrp "${cert_group_id}" "${service_dir}" || fail "failed to set mTLS service bundle group to GID ${cert_group_id}: ${service_dir}"
+  chmod 750 "${service_dir}"
   cp "${ca_crt}" "${service_dir}/ca.crt"
+  chgrp "${cert_group_id}" "${service_dir}/ca.crt" || fail "failed to set mTLS CA copy group: ${service_dir}/ca.crt"
   chmod 644 "${service_dir}/ca.crt"
 
   if [[ "${force}" == "true" ]]; then
     rm -f "${key_path}" "${cert_path}"
   fi
   if [[ -f "${key_path}" && -f "${cert_path}" ]]; then
+    chgrp "${cert_group_id}" "${key_path}" "${cert_path}" || fail "failed to set mTLS leaf bundle group for ${service}/${role}"
+    chmod 640 "${key_path}"
+    chmod 644 "${cert_path}"
     return 0
   fi
   if [[ -f "${key_path}" || -f "${cert_path}" ]]; then
@@ -224,7 +232,8 @@ generate_leaf() {
     -sha256 \
     -extfile "${ext_path}" \
     -extensions v3_leaf >/dev/null 2>&1
-  chmod 600 "${key_path}"
+  chgrp "${cert_group_id}" "${key_path}" "${cert_path}" || fail "failed to set mTLS leaf bundle group for ${service}/${role}"
+  chmod 640 "${key_path}"
   chmod 644 "${cert_path}"
 }
 

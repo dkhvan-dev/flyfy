@@ -4,6 +4,8 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/inflap}"
 LOG_DIR="${LOG_DIR:-/var/log/inflap}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
+MTLS_CERT_GROUP_ID="${MTLS_CERT_GROUP_ID:-1001}"
+MTLS_CERT_GROUP_NAME="${MTLS_CERT_GROUP_NAME:-inflap-mtls}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script as root with sudo." >&2
@@ -49,6 +51,14 @@ if ! id "${DEPLOY_USER}" >/dev/null 2>&1; then
 fi
 usermod -aG docker "${DEPLOY_USER}"
 
+if getent group "${MTLS_CERT_GROUP_ID}" >/dev/null 2>&1; then
+  mtls_group_name="$(getent group "${MTLS_CERT_GROUP_ID}" | cut -d: -f1)"
+else
+  groupadd -g "${MTLS_CERT_GROUP_ID}" "${MTLS_CERT_GROUP_NAME}"
+  mtls_group_name="${MTLS_CERT_GROUP_NAME}"
+fi
+usermod -aG "${mtls_group_name}" "${DEPLOY_USER}"
+
 install -m 0700 -o "${DEPLOY_USER}" -g "${DEPLOY_USER}" -d "/home/${DEPLOY_USER}/.ssh"
 if [[ -f /root/.ssh/authorized_keys && ! -s "/home/${DEPLOY_USER}/.ssh/authorized_keys" ]]; then
   install -m 0600 -o "${DEPLOY_USER}" -g "${DEPLOY_USER}" \
@@ -57,6 +67,7 @@ fi
 
 mkdir -p "${APP_DIR}/env" "${APP_DIR}/scripts" "${APP_DIR}/backups/postgres" "${LOG_DIR}"
 chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${APP_DIR}" "${LOG_DIR}"
+install -d -m 0750 -o "${DEPLOY_USER}" -g "${mtls_group_name}" "${APP_DIR}/secrets/mtls"
 
 ufw default deny incoming
 ufw default allow outgoing

@@ -37,6 +37,7 @@ secrets_dir="${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}"
 ca_cert="${MTLS_CA_CERT_PATH:-}"
 identity_env="${INFLAP_ENV:-test}"
 min_valid_days="${MTLS_MIN_VALID_DAYS:-1}"
+cert_group_id="${MTLS_CERT_GROUP_ID:-1001}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -72,6 +73,7 @@ done
 
 require_command openssl
 validate_positive_int "--min-valid-days" "${min_valid_days}"
+validate_positive_int "MTLS_CERT_GROUP_ID" "${cert_group_id}"
 [[ "${identity_env}" =~ ^[A-Za-z0-9._-]+$ ]] || fail "--env may contain only letters, numbers, dot, underscore, and hyphen"
 
 secrets_dir="$(cd "${secrets_dir}" 2>/dev/null && pwd -P)" || fail "missing mTLS secrets directory: ${secrets_dir}"
@@ -131,6 +133,30 @@ client_services=(
 
 seconds=$((min_valid_days * 86400))
 
+group_perm_digit() {
+  local path="$1"
+  local mode
+  mode="$(stat -c '%a' "${path}" 2>/dev/null)" || fail "stat failed: ${path}"
+  mode="${mode: -3}"
+  printf '%s' "${mode:1:1}"
+}
+
+check_group_access() {
+  local path="$1"
+  local required_bits="$2"
+  local gid
+  local group_digit
+
+  gid="$(stat -c '%g' "${path}" 2>/dev/null)" || fail "stat failed: ${path}"
+  [[ "${gid}" == "${cert_group_id}" ]] || \
+    fail "mTLS bundle path must be owned by group GID ${cert_group_id} for container read access: ${path} has GID ${gid}"
+
+  group_digit="$(group_perm_digit "${path}")"
+  if (( (group_digit & required_bits) != required_bits )); then
+    fail "mTLS bundle path lacks required group permission ${required_bits}: ${path}"
+  fi
+}
+
 check_not_expiring() {
   local file="$1"
   openssl x509 -in "${file}" -checkend "${seconds}" -noout >/dev/null 2>&1 || \
@@ -167,6 +193,9 @@ check_leaf() {
 
   [[ -r "${cert}" ]] || fail "missing readable certificate: ${cert}"
   [[ -r "${key}" ]] || fail "missing readable private key: ${key}"
+  check_group_access "${secrets_dir}/${service}" 5
+  check_group_access "${cert}" 4
+  check_group_access "${key}" 4
   check_not_expiring "${cert}"
   openssl verify -CAfile "${ca_cert}" "${cert}" >/dev/null 2>&1 || fail "certificate is not signed by CA: ${cert}"
   check_key_matches_cert "${cert}" "${key}"
@@ -182,15 +211,18 @@ check_leaf() {
     fail "certificate missing EKU ${expected_eku}: ${cert}"
 }
 
+check_group_access "${secrets_dir}" 5
 check_not_expiring "${ca_cert}"
 
 for service in "${server_services[@]}"; do
   check_service_ca_copy "${service}"
+  check_group_access "${secrets_dir}/${service}/ca.crt" 4
   check_leaf "${service}" server "TLS Web Server Authentication"
 done
 
 for service in "${client_services[@]}"; do
   check_service_ca_copy "${service}"
+  check_group_access "${secrets_dir}/${service}/ca.crt" 4
   check_leaf "${service}" client "TLS Web Client Authentication"
 done
 
