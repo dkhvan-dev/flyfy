@@ -44,8 +44,7 @@ class SearchApi implements SearchClient {
     }
 
     final response = await _apiClient.dio.get(
-      '/search',
-      queryParameters: params,
+      _encodedGetPath('/search', params),
       options: Options(
         extra: const {'requiresAuth': false, 'optionalAuth': true},
       ),
@@ -71,8 +70,7 @@ class SearchApi implements SearchClient {
     }
 
     final response = await _apiClient.dio.get(
-      '/search/suggest',
-      queryParameters: params,
+      _encodedGetPath('/search/suggest', params),
       options: Options(
         extra: const {'requiresAuth': false, 'optionalAuth': true},
       ),
@@ -125,5 +123,16 @@ class SearchApi implements SearchClient {
       if (seen.add(domain)) values.add(domain.apiValue);
     }
     return values.join(',');
+  }
+
+  String _encodedGetPath(String path, Map<String, dynamic> params) {
+    return Uri(
+      path: path,
+      queryParameters: _stringQueryParameters(params),
+    ).toString();
+  }
+
+  Map<String, String> _stringQueryParameters(Map<String, dynamic> params) {
+    return params.map((key, value) => MapEntry(key, value.toString()));
   }
 }

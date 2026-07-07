@@ -88,6 +88,35 @@ void main() {
     },
   );
 
+  test('search encodes unicode query in URI for debug inspectors', () async {
+    final adapter = _JsonAdapter({
+      'query': 'я',
+      'topResults': [],
+      'groups': {
+        'places': {'items': [], 'hasMore': false},
+        'activities': {'items': [], 'hasMore': false},
+        'excursions': {'items': [], 'hasMore': false},
+        'guides': {'items': [], 'hasMore': false},
+        'communities': {'items': [], 'hasMore': false},
+        'users': {'items': [], 'hasMore': false},
+      },
+    });
+    final api = SearchApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    await api.search(query: ' я ', scope: SearchScope.global, locale: 'ru');
+
+    expect(adapter.rawPath, contains('q=%D1%8F'));
+    expect(adapter.rawPath, isNot(contains('q=я')));
+    expect(adapter.queryParameters['q'], 'я');
+    expect(adapter.dioQueryParameters, isEmpty);
+  });
+
   test('suggest sends scope to suggestions endpoint', () async {
     final adapter = _JsonAdapter({
       'query': 'alm',
@@ -165,8 +194,10 @@ class _JsonAdapter implements HttpClientAdapter {
 
   final Map<String, Object?> payload;
   String? path;
+  String? rawPath;
   String? method;
   Map<String, String> queryParameters = const {};
+  Map<String, String> dioQueryParameters = const {};
   Map<String, Object?> jsonBody = const {};
   bool? requiresAuth;
   bool? optionalAuth;
@@ -177,9 +208,13 @@ class _JsonAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    path = options.path;
+    rawPath = options.path;
+    path = options.path.split('?').first;
     method = options.method;
-    queryParameters = options.queryParameters.map(
+    queryParameters = options.uri.queryParameters.map(
+      (key, value) => MapEntry(key, value.toString()),
+    );
+    dioQueryParameters = options.queryParameters.map(
       (key, value) => MapEntry(key, value.toString()),
     );
     if (options.data is Map) {
