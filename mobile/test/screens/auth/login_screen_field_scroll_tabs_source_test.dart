@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'auth form fields fit panel width and tabs use primary action foreground',
+    'auth form fields fit panel width and tabs resolve readable state colors',
     () async {
       final source = await File(
         'lib/screens/auth/login_screen.dart',
@@ -18,13 +18,20 @@ void main() {
       expect(source, contains('scrollPhysics: const BouncingScrollPhysics()'));
       expect(
         source,
-        contains(
-          'foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary)',
-        ),
+        contains('foregroundColor: WidgetStateProperty.resolveWith<Color>'),
       );
       expect(
         source,
-        contains('iconColor: WidgetStateProperty.all(AppPalette.textPrimary)'),
+        contains('iconColor: WidgetStateProperty.resolveWith<Color>'),
+      );
+      expect(source, contains('states.contains(WidgetState.selected)'));
+      expect(
+        source,
+        matches(
+          RegExp(
+            r'states\.contains\(WidgetState\.selected\)[\s\S]*?\?\s*AppPalette\.textPrimary[\s\S]*?:\s*context\.appColors\.textPrimary',
+          ),
+        ),
       );
     },
   );

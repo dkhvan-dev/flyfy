@@ -893,7 +893,13 @@ class _AuthModeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final modeTextColor = context.appColors.textPrimary;
+
+    Color contentColor(Set<WidgetState> states) {
+      return states.contains(WidgetState.selected)
+          ? AppPalette.textPrimary
+          : context.appColors.textPrimary;
+    }
+
     return SegmentedButton<_AuthEntryMode>(
       segments: [
         ButtonSegment<_AuthEntryMode>(
@@ -911,9 +917,8 @@ class _AuthModeSwitch extends StatelessWidget {
       showSelectedIcon: false,
       onSelectionChanged: (selection) => onChanged(selection.first),
       style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary),
-        iconColor: WidgetStateProperty.all(AppPalette.textPrimary),
-        textStyle: WidgetStateProperty.all(AppTextStyle(color: modeTextColor)),
+        foregroundColor: WidgetStateProperty.resolveWith<Color>(contentColor),
+        iconColor: WidgetStateProperty.resolveWith<Color>(contentColor),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppPalette.primary

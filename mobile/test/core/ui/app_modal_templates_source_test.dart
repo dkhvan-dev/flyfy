@@ -88,6 +88,50 @@ void main() {
     },
   );
 
+  test(
+    'titled app modal bottom sheets reserve Android navigation safe padding',
+    () {
+      final source = File(
+        'lib/core/ui/app_modal_templates.dart',
+      ).readAsStringSync();
+
+      final scaffoldStart = source.indexOf('class AppModalScaffold<T>');
+      final dialogStart = source.indexOf('class AppModalDialogCard');
+      final sheetStart = source.indexOf(
+        'Future<T?> showAppModalBottomSheet<T>',
+      );
+      final actionSheetStart = source.indexOf(
+        'Future<T?> showAppActionSheet<T>',
+      );
+
+      expect(scaffoldStart, isNonNegative);
+      expect(dialogStart, greaterThan(scaffoldStart));
+      expect(sheetStart, isNonNegative);
+      expect(actionSheetStart, greaterThan(sheetStart));
+
+      final scaffoldSource = source.substring(scaffoldStart, dialogStart);
+      final sheetSource = source.substring(sheetStart, actionSheetStart);
+
+      expect(scaffoldSource, contains('this.bottomSafeAreaPadding = 0'));
+      expect(scaffoldSource, contains('final double bottomSafeAreaPadding'));
+      expect(
+        scaffoldSource,
+        contains('contentPadding.bottom + bottomSafeAreaPadding'),
+      );
+      expect(scaffoldSource, contains('AppSpacing.xl + bottomSafeAreaPadding'));
+      expect(
+        sheetSource,
+        contains(
+          'final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom',
+        ),
+      );
+      expect(
+        sheetSource,
+        contains('bottomSafeAreaPadding: systemBottomPadding'),
+      );
+    },
+  );
+
   test('app modal scaffold can use sheet-only top corners', () {
     final source = File(
       'lib/core/ui/app_modal_templates.dart',

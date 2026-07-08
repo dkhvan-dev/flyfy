@@ -173,6 +173,28 @@ void main() {
     },
   );
 
+  test(
+    'profile settings theme sheet starts tall enough for Android navigation',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_settings_screen.dart',
+      ).readAsString();
+      final methodStart = source.indexOf(
+        'Future<void> _openAppThemeSettings()',
+      );
+      final labelStart = source.indexOf('String _themeModeLabel', methodStart);
+
+      expect(methodStart, isNonNegative);
+      expect(labelStart, greaterThan(methodStart));
+
+      final methodSource = source.substring(methodStart, labelStart);
+
+      expect(methodSource, contains('initialChildSize: 0.56'));
+      expect(methodSource, contains('minChildSize: 0.42'));
+      expect(methodSource, contains('maxChildSize: 0.82'));
+    },
+  );
+
   test('main app listens to persisted app theme mode', () async {
     final source = await File('lib/main.dart').readAsString();
     final designSystemSource = await File(

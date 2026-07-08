@@ -56,6 +56,7 @@ class AppModalScaffold<T> extends StatelessWidget {
     this.contentPadding = AppInsets.panel,
     this.maxWidth = 440,
     this.surfaceBorderRadius = AppRadius.panel,
+    this.bottomSafeAreaPadding = 0,
   });
 
   final String title;
@@ -70,6 +71,7 @@ class AppModalScaffold<T> extends StatelessWidget {
   final AppEdgeInsets contentPadding;
   final double maxWidth;
   final BorderRadiusGeometry surfaceBorderRadius;
+  final double bottomSafeAreaPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +86,12 @@ class AppModalScaffold<T> extends StatelessWidget {
       color: colors.textSecondary,
       height: 1.42,
     );
+    final effectiveContentPadding = actions.isEmpty && bottomSafeAreaPadding > 0
+        ? contentPadding.copyWith(
+            bottom: contentPadding.bottom + bottomSafeAreaPadding,
+          )
+        : contentPadding;
+    final actionsBottomPadding = AppSpacing.xl + bottomSafeAreaPadding;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
@@ -153,19 +161,19 @@ class AppModalScaffold<T> extends StatelessWidget {
                     child: SingleChildScrollView(
                       controller: scrollController,
                       physics: const BouncingScrollPhysics(),
-                      padding: contentPadding,
+                      padding: effectiveContentPadding,
                       child: child,
                     ),
                   )
                 else
-                  Padding(padding: contentPadding, child: child),
+                  Padding(padding: effectiveContentPadding, child: child),
                 if (actions.isNotEmpty)
                   Padding(
                     padding: AppEdgeInsets.fromLTRB(
                       adaptive.isNarrow ? AppSpacing.lg : AppSpacing.xl,
                       AppSpacing.sm,
                       adaptive.isNarrow ? AppSpacing.lg : AppSpacing.xl,
-                      AppSpacing.xl,
+                      actionsBottomPadding,
                     ),
                     child: _AppModalActions<T>(actions: actions),
                   ),
@@ -509,6 +517,7 @@ Future<T?> showAppModalBottomSheet<T>({
     builder: (context) {
       final content = builder?.call(context) ?? child;
       final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+      final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 
       if (title == null) {
         return Padding(
@@ -550,6 +559,7 @@ Future<T?> showAppModalBottomSheet<T>({
                       showCloseButton: showCloseButton,
                       maxWidth: double.infinity,
                       surfaceBorderRadius: AppRadius.sheetTop,
+                      bottomSafeAreaPadding: systemBottomPadding,
                       child: content ?? const SizedBox.shrink(),
                     ),
                   ),

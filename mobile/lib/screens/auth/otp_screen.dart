@@ -39,6 +39,7 @@ class _OtpScreenState extends State<OtpScreen> {
   Timer? _countdownTimer;
   int _remainingSeconds = _countdownDurationSeconds;
   bool _isSubmitting = false;
+  bool _hasOtpError = false;
 
   @override
   void initState() {
@@ -92,6 +93,10 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _handleCodeChanged(String value) {
+    if (_hasOtpError) {
+      setState(() => _hasOtpError = false);
+    }
+
     if (value.trim().length != 6 || _isSubmitting) {
       return;
     }
@@ -144,6 +149,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
       _finishOtpAuthenticatedNavigation(ctx, widget.from);
     } else {
+      setState(() => _hasOtpError = true);
       await showErrorDialog(
         ctx,
         title: l10n.error,
@@ -167,6 +173,7 @@ class _OtpScreenState extends State<OtpScreen> {
     if (success) {
       _codeController.clear();
       setState(() {
+        _hasOtpError = false;
         _startCountdown();
       });
       _focusNode.requestFocus();
@@ -489,7 +496,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                                               otpRadius,
                                                             ),
                                                         border: Border.all(
-                                                          color: isFocused
+                                                          color: _hasOtpError
+                                                              ? context
+                                                                    .appColors
+                                                                    .danger
+                                                              : isFocused
                                                               ? context
                                                                     .appColors
                                                                     .primary
@@ -500,7 +511,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                                                       alpha:
                                                                           0.2,
                                                                     ),
-                                                          width: 2,
+                                                          width: _hasOtpError
+                                                              ? 2.4
+                                                              : 2,
                                                         ),
                                                       ),
                                                       child: Text(

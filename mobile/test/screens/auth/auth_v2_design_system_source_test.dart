@@ -188,6 +188,40 @@ void main() {
     },
   );
 
+  test(
+    'otp invalid response highlights code boxes until user edits code',
+    () async {
+      final source = await File(
+        'lib/screens/auth/otp_screen.dart',
+      ).readAsString();
+      final submitStart = source.indexOf('void _submit() async');
+      final resendStart = source.indexOf('Future<void> _resendCode()');
+      final boxesStart = source.indexOf(
+        'for (\n                                                var index = 0;',
+      );
+      final hiddenFieldStart = source.indexOf('Positioned.fill(', boxesStart);
+
+      expect(submitStart, isNonNegative);
+      expect(resendStart, greaterThan(submitStart));
+      expect(boxesStart, isNonNegative);
+      expect(hiddenFieldStart, greaterThan(boxesStart));
+
+      final submitSource = source.substring(submitStart, resendStart);
+      final boxesSource = source.substring(boxesStart, hiddenFieldStart);
+
+      expect(source, contains('bool _hasOtpError = false'));
+      expect(source, contains('setState(() => _hasOtpError = false);'));
+      expect(submitSource, contains('setState(() => _hasOtpError = true);'));
+      expect(
+        boxesSource,
+        matches(
+          RegExp(r'_hasOtpError\s*\?\s*context\s*\.\s*appColors\s*\.\s*danger'),
+        ),
+      );
+      expect(boxesSource, matches(RegExp(r'_hasOtpError\s*\?\s*2\.4\s*:\s*2')));
+    },
+  );
+
   test('otp disabled submit button keeps a visible adaptive outline', () async {
     final source = await File(
       'lib/screens/auth/otp_screen.dart',
