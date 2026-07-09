@@ -11,14 +11,21 @@ void main() {
     final resolvedEnd = source.indexOf('class _ProfileBody');
     final gridStart = source.indexOf('class _ProfileStatsGrid');
     final gridEnd = source.indexOf('class _StatsGridLayout');
+    final statCardStart = source.indexOf('class _ProfileStatCard');
+    final statCardEnd = source.indexOf(
+      'class _ProfileRelationshipConfirmDialog',
+    );
 
     expect(resolvedStart, isNonNegative);
     expect(resolvedEnd, greaterThan(resolvedStart));
     expect(gridStart, isNonNegative);
     expect(gridEnd, greaterThan(gridStart));
+    expect(statCardStart, isNonNegative);
+    expect(statCardEnd, greaterThan(statCardStart));
 
     final resolvedSource = source.substring(resolvedStart, resolvedEnd);
     final gridSource = source.substring(gridStart, gridEnd);
+    final statCardSource = source.substring(statCardStart, statCardEnd);
 
     final activitiesIndex = gridSource.indexOf('profileActivitiesStat');
     final storiesIndex = gridSource.indexOf('profileStoriesStat');
@@ -47,6 +54,16 @@ void main() {
     );
     expect(resolvedSource, contains(': _openLoginForProtectedAction;'));
     expect(resolvedSource, contains('onFollowersTap: onFollowersTap'));
+    expect(statCardSource, contains('LayoutBuilder('));
+    expect(statCardSource, contains('builder: (context, constraints)'));
+    expect(
+      statCardSource,
+      contains('final availableWidth = constraints.maxWidth'),
+    );
+    expect(statCardSource, contains('Flexible('));
+    expect(statCardSource, contains('FittedBox('));
+    expect(statCardSource, contains('width: availableWidth'));
+    expect(statCardSource, contains('height: 1.16'));
   });
 
   test(

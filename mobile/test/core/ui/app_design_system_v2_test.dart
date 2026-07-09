@@ -34,7 +34,7 @@ void main() {
     );
   });
 
-  test('light v2 palette matches the clean white home reference', () {
+  test('light v2 palette keeps clean white surfaces with visible controls', () {
     final colors = AppColorSchemes.light;
 
     expect(colors.backgroundDeep, const Color(0xFFFFFFFF));
@@ -42,11 +42,16 @@ void main() {
     expect(colors.backgroundWarm, const Color(0xFFF6F8FB));
     expect(colors.surface, const Color(0xFFFFFFFF));
     expect(colors.surfaceRaised, const Color(0xFFFFFFFF));
-    expect(colors.surfaceHigh, const Color(0xFFF8FAFC));
+    expect(colors.surfaceHigh, const Color(0xFFF1F5F9));
     expect(colors.textPrimary, const Color(0xFF111827));
     expect(colors.textSecondary, const Color(0xFF475569));
     expect(colors.textMuted, const Color(0xFF64748B));
-    expect(colors.border, const Color(0xFFE2E8F0));
+    expect(colors.border, const Color(0xFFCBD5E1));
+    expect(colors.borderSoft, const Color(0xFFCBD5E1));
+    expect(
+      _contrastRatio(colors.borderSoft, colors.surface),
+      greaterThan(1.35),
+    );
     expect(colors.screenGradientColors, [
       const Color(0xFFFFFFFF),
       const Color(0xFFFBFCFE),
@@ -80,6 +85,13 @@ void main() {
       _contrastRatio(colors.secondary, colors.backgroundDeep),
       greaterThan(4.5),
     );
+  });
+
+  test('light v2 secondary buttons use visible neutral outlines', () {
+    final colors = AppColorSchemes.light;
+    final style = AppButtonStyles.secondary(colors);
+
+    expect(style.side?.resolve(<WidgetState>{})?.color, colors.borderSoft);
   });
 
   testWidgets('v2 adaptive theme follows parent brightness', (tester) async {

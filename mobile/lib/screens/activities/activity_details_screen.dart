@@ -141,6 +141,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
   final ProfileApi _profileApi = ProfileApi();
+  final ScrollController _detailsScrollController = ScrollController();
 
   bool _participantsLoading = true;
   String? _participantsError;
@@ -178,6 +179,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   @override
   void dispose() {
     _scheduleActivityProviderCleanup();
+    _detailsScrollController.dispose();
     super.dispose();
   }
 
@@ -363,6 +365,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     if (!mounted) return;
 
     final activity = _visibleActivity(context.read<ActivityProvider>());
+    final checkoutCompleted = await _ensureCheckoutBeforeJoin(activity);
+    if (!mounted || !checkoutCompleted) {
+      return;
+    }
+
     if (_isPrivateActivity(activity)) {
       final joined = await _showPrivateJoinDialog(l10n);
       if (!mounted || joined != true) {
@@ -385,6 +392,25 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       title: l10n.error,
       message: _mapJoinError(provider.actionErrorMessage, l10n),
     );
+  }
+
+  Future<bool> _ensureCheckoutBeforeJoin(ActivityListItemVm? activity) async {
+    if (activity == null || activity.isFree) {
+      return true;
+    }
+    if (_isPaymentSuccessful) {
+      return true;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final session = context.read<SessionProvider>();
+    final hostName = _resolveHostName(
+      activity.hostUserId,
+      session.profile,
+      resolvedProfiles: _resolvedProfiles,
+      l10n: l10n,
+    );
+    return _openPayment(activity, hostName: hostName);
   }
 
   Future<void> _handleContextualHelpAction(
@@ -445,7 +471,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     if (!mounted) return success;
 
     if (!success) {
-      setState(() => _pendingAction = null);
+      setState(() {
+        _pendingAction = null;
+        _isPaymentSuccessful = false;
+      });
       return false;
     }
 
@@ -538,9 +567,40 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     return raw;
   }
 
+  double? _captureDetailsScrollOffset() {
+    if (!_detailsScrollController.hasClients) {
+      return null;
+    }
+    return _detailsScrollController.offset;
+  }
+
+  void _restoreDetailsScrollOffset(double? offset) {
+    if (offset == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_detailsScrollController.hasClients) {
+        return;
+      }
+
+      final position = _detailsScrollController.position;
+      final target = offset.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if ((position.pixels - target).abs() < 0.5) {
+        return;
+      }
+
+      _detailsScrollController.jumpTo(target.toDouble());
+    });
+  }
+
   Future<void> _handleLeave() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ActivityProvider>();
+    final scrollOffsetBeforeLeave = _captureDetailsScrollOffset();
 
     setState(() => _pendingAction = _FooterAction.leave);
     final success = await provider.leaveActivity(widget.activityId);
@@ -549,6 +609,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
     if (!success) {
       setState(() => _pendingAction = null);
+      _restoreDetailsScrollOffset(scrollOffsetBeforeLeave);
       await showErrorDialog(
         context,
         title: l10n.error,
@@ -564,6 +625,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       _pendingAction = null;
       _isPaymentSuccessful = false;
     });
+    _restoreDetailsScrollOffset(scrollOffsetBeforeLeave);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.activityLeaveSuccess)));
@@ -575,12 +637,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     );
   }
 
-  Future<void> _openPayment(
+  Future<bool> _openPayment(
     ActivityListItemVm activity, {
     required String hostName,
   }) async {
     if (_isPaymentSuccessful || activity.isFree) {
-      return;
+      return true;
     }
 
     final success = await context.push<bool>(
@@ -589,7 +651,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     );
 
     if (!mounted || success != true) {
-      return;
+      return false;
     }
 
     final l10n = AppLocalizations.of(context)!;
@@ -597,6 +659,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.activityPaymentSuccess)));
+    return true;
   }
 
   Future<void> _handlePublish() async {
@@ -1648,6 +1711,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         currentParticipant?.hasConfirmedAccess == true;
     final requiresParticipantPayment =
         currentParticipant?.requiresPayment == true;
+    final hasSettledParticipantPayment =
+        !activity.isFree &&
+        currentParticipant != null &&
+        currentParticipant.hasConfirmedAccess &&
+        !currentParticipant.requiresPayment;
     final isParticipationPending =
         currentParticipant?.isPendingDecision == true;
     final participantStatusLabel = currentParticipant == null
@@ -1730,7 +1798,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           canOpenChat: canOpenParticipantChat,
           isParticipationPending: isParticipationPending,
           participantStatusLabel: participantStatusLabel,
-          isPaid: _isPaymentSuccessful,
+          isPaid: hasSettledParticipantPayment,
           showPublish: showPublish,
           isBusy: provider.actionState == ActivityActionState.loading,
           pendingAction: _pendingAction,
@@ -1793,6 +1861,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           color: context.activityDetailsColors.primary,
                           backgroundColor: context.activityDetailsColors.sheet,
                           child: ListView(
+                            controller: _detailsScrollController,
                             physics: const AlwaysScrollableScrollPhysics(
                               parent: BouncingScrollPhysics(),
                             ),
@@ -6514,6 +6583,7 @@ class _DetailsActionBar extends StatelessWidget {
     final priceLabel = activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
+    final shouldStartPaidCheckout = !isJoined && !isOwner && !activity.isFree;
     final canShowChatAction = isJoined && canOpenChat && onOpenChat != null;
     final secondaryAction = showPublish
         ? _FooterButtonSpec(
@@ -6577,6 +6647,14 @@ class _DetailsActionBar extends StatelessWidget {
                   style: _FooterButtonStyle.primary,
                   action: null,
                 )
+        : shouldStartPaidCheckout
+        ? _FooterButtonSpec(
+            label: l10n.activityPaymentPayButton,
+            icon: Icons.payments_rounded,
+            onTap: onJoin,
+            style: _FooterButtonStyle.primary,
+            action: _FooterAction.join,
+          )
         : _FooterButtonSpec(
             label: l10n.activityJoinActivity,
             icon: Icons.chevron_right_rounded,
@@ -6593,7 +6671,7 @@ class _DetailsActionBar extends StatelessWidget {
         : context.activityDetailsColors.textSecondary;
     final priceBlockValueColor = isPaid
         ? context.activityDetailsColors.success
-        : context.activityDetailsColors.white;
+        : context.activityDetailsColors.textPrimary;
 
     return SafeArea(
       top: false,
@@ -6705,42 +6783,52 @@ class _FooterPriceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.activityDetailsColors;
     final resolvedLabelColor =
         labelColor ?? context.activityDetailsColors.textSecondary;
-    final resolvedValueColor =
-        valueColor ?? context.activityDetailsColors.white;
+    final resolvedValueColor = valueColor ?? colors.textPrimary;
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 84),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: AppTextStyle(
-              color: resolvedLabelColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              maxLines: 1,
-              style: AppTextStyle(
-                color: resolvedValueColor,
-                fontSize: 20,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: colors.surfaceHigh,
+        borderRadius: AppBorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 84),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: AppTextStyle(
+                  color: resolvedLabelColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+              const SizedBox(height: 3),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: AppTextStyle(
+                    color: resolvedValueColor,
+                    fontSize: 20,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -235,32 +235,8 @@ func TestChecklistItemFeedbackEndpointRejectsInvalidType(t *testing.T) {
 	}
 }
 
-func TestDispatchChecklistNotificationsRequiresInternalToken(t *testing.T) {
-	handler := NewHandler(
-		app.NewChecklistUseCase(app.NewMemoryChecklistRepository(data.DefaultCatalogSeed())),
-		WithInternalServiceToken("secret-token"),
-	)
-	mux := http.NewServeMux()
-	handler.Register(mux)
-
-	req := httptest.NewRequest(
-		http.MethodPost,
-		"/internal/v1/checklists/notifications/dispatch",
-		bytes.NewReader(nil),
-	)
-	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("expected dispatch 401 without internal token, got %d with body %s", rec.Code, rec.Body.String())
-	}
-}
-
-func TestDispatchChecklistNotificationsAcceptsInternalToken(t *testing.T) {
-	handler := NewHandler(
-		app.NewChecklistUseCase(app.NewMemoryChecklistRepository(data.DefaultCatalogSeed())),
-		WithInternalServiceToken("secret-token"),
-	)
+func TestDispatchChecklistNotificationsEndpointRejectsDispatchRequests(t *testing.T) {
+	handler := NewHandler(app.NewChecklistUseCase(app.NewMemoryChecklistRepository(data.DefaultCatalogSeed())))
 	mux := http.NewServeMux()
 	handler.Register(mux)
 
@@ -273,15 +249,8 @@ func TestDispatchChecklistNotificationsAcceptsInternalToken(t *testing.T) {
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("expected dispatch 202 with internal token, got %d with body %s", rec.Code, rec.Body.String())
-	}
-	var response map[string]any
-	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
-		t.Fatalf("decode dispatch response: %v", err)
-	}
-	if response["scanned"] != float64(0) || response["sent"] != float64(0) || response["skipped"] != float64(0) {
-		t.Fatalf("unexpected dispatch response: %#v", response)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected removed dispatch endpoint 405, got %d with body %s", rec.Code, rec.Body.String())
 	}
 }
 

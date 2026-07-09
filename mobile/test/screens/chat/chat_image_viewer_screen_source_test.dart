@@ -15,4 +15,26 @@ void main() {
     expect(source, contains('colors.white'));
     expect(source, isNot(contains('AppPalette.')));
   });
+
+  test('chat image viewer can be dismissed by swiping down', () async {
+    final source = await File(
+      'lib/screens/chat/chat_image_viewer_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('StatefulWidget'));
+    expect(source, contains('TransformationController'));
+    expect(source, contains('_dismissBySwipeDown'));
+    expect(source, contains('onVerticalDragUpdate'));
+    expect(source, contains('onVerticalDragEnd'));
+    expect(source, contains('primaryVelocity'));
+    expect(source, contains('Navigator.of(context).pop'));
+
+    final dismissStart = source.indexOf('void _dismissBySwipeDown');
+    final resetStart = source.indexOf('void _resetDragOffset');
+    expect(dismissStart, isNonNegative);
+    expect(resetStart, greaterThan(dismissStart));
+
+    final dismissSource = source.substring(dismissStart, resetStart);
+    expect(dismissSource, contains('_currentScale > 1.05'));
+  });
 }

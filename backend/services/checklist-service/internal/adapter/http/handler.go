@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,26 +13,11 @@ import (
 )
 
 type Handler struct {
-	uc                   *app.ChecklistUseCase
-	internalServiceToken string
+	uc *app.ChecklistUseCase
 }
 
-type HandlerOption func(*Handler)
-
-func WithInternalServiceToken(token string) HandlerOption {
-	return func(h *Handler) {
-		h.internalServiceToken = strings.TrimSpace(token)
-	}
-}
-
-func NewHandler(uc *app.ChecklistUseCase, opts ...HandlerOption) *Handler {
-	h := &Handler{uc: uc}
-	for _, opt := range opts {
-		if opt != nil {
-			opt(h)
-		}
-	}
-	return h
+func NewHandler(uc *app.ChecklistUseCase) *Handler {
+	return &Handler{uc: uc}
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -53,7 +37,6 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/checklists/personal-templates", h.ListPersonalChecklistTemplates)
 	mux.HandleFunc("POST /v1/checklists/trips/{tripID}/personal-templates/apply", h.ApplyPersonalChecklistTemplates)
 	mux.HandleFunc("GET /v1/checklists/carry-items/search", h.SearchCarryItems)
-	mux.HandleFunc("POST /internal/v1/checklists/notifications/dispatch", h.DispatchChecklistNotifications)
 	mux.HandleFunc("GET /v1/admin/checklists/feedback", h.ListAdminChecklistFeedback)
 	mux.HandleFunc("GET /", h.NotFound)
 }
@@ -453,37 +436,6 @@ func (h *Handler) ListAdminChecklistFeedback(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, map[string][]checklistItemFeedbackResponse{"items": resp})
 }
 
-func (h *Handler) DispatchChecklistNotifications(w http.ResponseWriter, r *http.Request) {
-	if !h.isInternalRequest(r) {
-		writeError(w, http.StatusUnauthorized, "checklist.internal_token_required", "Internal service token is required")
-		return
-	}
-
-	var req dispatchChecklistNotificationsRequest
-	if r.Body != nil {
-		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
-		if err := decoder.Decode(&req); err != nil && !errors.Is(err, io.EOF) {
-			writeError(w, http.StatusBadRequest, "checklist.invalid_request", "Invalid JSON body")
-			return
-		}
-	}
-
-	result, err := h.uc.DispatchDueChecklistNotifications(r.Context(), app.DispatchChecklistNotificationsInput{
-		Limit:             req.Limit,
-		PreferredLanguage: req.PreferredLanguage,
-	})
-	if err != nil {
-		writeChecklistAppError(w, err)
-		return
-	}
-
-	writeJSON(w, http.StatusAccepted, dispatchChecklistNotificationsResponse{
-		Scanned: result.Scanned,
-		Sent:    result.Sent,
-		Skipped: result.Skipped,
-	})
-}
-
 func (h *Handler) SearchCarryItems(w http.ResponseWriter, r *http.Request) {
 	lang := parseLang(r, "")
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -514,17 +466,6 @@ type tripPreviewRequest struct {
 		CitizenshipCountryCode string `json:"citizenshipCountryCode"`
 		PreferredLanguage      string `json:"preferredLanguage"`
 	} `json:"travelerProfile"`
-}
-
-type dispatchChecklistNotificationsRequest struct {
-	Limit             int    `json:"limit"`
-	PreferredLanguage string `json:"preferredLanguage"`
-}
-
-type dispatchChecklistNotificationsResponse struct {
-	Scanned int `json:"scanned"`
-	Sent    int `json:"sent"`
-	Skipped int `json:"skipped"`
 }
 
 type updateChecklistItemStatusRequest struct {
@@ -922,14 +863,6 @@ func tripPreviewInput(
 
 func trustedUserID(r *http.Request) string {
 	return strings.TrimSpace(r.Header.Get("X-User-Id"))
-}
-
-func (h *Handler) isInternalRequest(r *http.Request) bool {
-	expected := strings.TrimSpace(h.internalServiceToken)
-	if expected == "" {
-		return false
-	}
-	return strings.TrimSpace(r.Header.Get("X-Internal-Service-Token")) == expected
 }
 
 func trustedUserRoles(r *http.Request) []string {

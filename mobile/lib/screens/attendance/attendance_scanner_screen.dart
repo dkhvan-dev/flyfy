@@ -32,7 +32,6 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
 
   bool _isHandlingScan = false;
   bool _isManualSyncing = false;
-  bool _isScannerStopped = false;
   int _pendingCount = 0;
   String? _feedbackMessage;
   _ScannerFeedbackTone _feedbackTone = _ScannerFeedbackTone.neutral;
@@ -88,8 +87,11 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         .length;
     if (pendingBefore == 0) {
       if (!mounted) return;
-      setState(() => _pendingCount = 0);
-      _setFeedback(l10n.qrScannerNoPending, _ScannerFeedbackTone.neutral);
+      setState(() {
+        _pendingCount = 0;
+        _feedbackMessage = null;
+        _feedbackTone = _ScannerFeedbackTone.neutral;
+      });
       return;
     }
 
@@ -120,7 +122,7 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
   ) {
     final results = outcome.resultsByScanId.values.toList(growable: false);
     if (results.isEmpty) {
-      return (l10n.qrScannerNoPending, _ScannerFeedbackTone.neutral);
+      return ('', _ScannerFeedbackTone.neutral);
     }
 
     final rejected = results.where((item) => item.isRejected).toList();
@@ -200,7 +202,12 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       }
 
       final installationId = await _queueRepository.getOrCreateInstallationId();
-      final scanId = _queueRepository.generateScanId();
+      final scanId = _queueRepository.scanIdForProof(
+        participantUserId: participantUserId,
+        type: payload.type,
+        subjectId: payload.subjectId,
+        qrJti: payload.qrJti,
+      );
       final item = AttendanceQueueItem(
         scanId: scanId,
         participantUserId: participantUserId,
@@ -238,7 +245,6 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         type: payload.type,
         results: [result],
       );
-      await _stopScanner();
     } finally {
       _isHandlingScan = false;
     }
@@ -306,43 +312,16 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
 
   void _setFeedback(String message, _ScannerFeedbackTone tone) {
     if (!mounted) return;
+    if (message.trim().isEmpty) {
+      setState(() {
+        _feedbackMessage = null;
+        _feedbackTone = _ScannerFeedbackTone.neutral;
+      });
+      return;
+    }
     setState(() {
       _feedbackMessage = message;
       _feedbackTone = tone;
-    });
-  }
-
-  Future<void> _stopScanner() async {
-    if (_isScannerStopped) {
-      return;
-    }
-
-    try {
-      await _controller.stop();
-    } catch (_) {
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-    setState(() => _isScannerStopped = true);
-  }
-
-  Future<void> _restartScanner() async {
-    try {
-      await _controller.start();
-    } catch (_) {
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isScannerStopped = false;
-      _feedbackMessage = null;
-      _feedbackTone = _ScannerFeedbackTone.neutral;
     });
   }
 
@@ -351,7 +330,7 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       case _ScannerFeedbackTone.success:
         return AppPalette.success;
       case _ScannerFeedbackTone.warning:
-        return AppPalette.primary;
+        return context.appColors.primary;
       case _ScannerFeedbackTone.error:
         return AppPalette.danger;
       case _ScannerFeedbackTone.neutral:
@@ -363,243 +342,182 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = AppDesignSystem.colorsFor(context);
+    final safePadding = MediaQuery.viewPaddingOf(context);
 
     return Theme(
       data: AppDesignSystem.themeFor(context),
       child: Scaffold(
         backgroundColor: colors.background,
-        body: DecoratedBox(
-          decoration: AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: colors.screenGradientColors,
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        color: AppPalette.primary,
-                        style: AppButtonStyles.icon(context.appColors),
-                      ),
-                      Expanded(
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: MobileScanner(
+                controller: _controller,
+                onDetect: _handleDetect,
+                errorBuilder: (context, error) {
+                  return DecoratedBox(
+                    decoration: AppBoxDecoration(
+                      color: colors.surfaceHigh.withValues(alpha: 0.96),
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: const AppEdgeInsets.symmetric(horizontal: 24),
                         child: Text(
-                          l10n.qrScannerTitle,
+                          l10n.qrScannerCameraUnavailable,
                           textAlign: TextAlign.center,
                           style: AppTextStyle(
-                            color: context.appColors.textPrimary,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
+                            color: colors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const AppEdgeInsets.fromLTRB(24, 12, 24, 18),
-                  child: Text(
-                    l10n.qrScannerSubtitle,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyle(
-                      color: context.appColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.45,
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const AppEdgeInsets.symmetric(horizontal: 18),
-                    child: DecoratedBox(
-                      decoration: AppBoxDecoration(
-                        color: context.appColors.surfaceRaised,
-                        borderRadius: AppBorderRadius.circular(30),
-                        border: Border.all(
-                          color: context.appColors.borderPrimary,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: AppBorderRadius.circular(30),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            MobileScanner(
-                              controller: _controller,
-                              onDetect: _handleDetect,
-                              errorBuilder: (context, error) {
-                                return DecoratedBox(
-                                  decoration: AppBoxDecoration(
-                                    color: context.appColors.surfaceHigh,
-                                  ),
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const AppEdgeInsets.symmetric(
-                                        horizontal: 24,
-                                      ),
-                                      child: Text(
-                                        l10n.qrScannerCameraUnavailable,
-                                        textAlign: TextAlign.center,
-                                        style: AppTextStyle(
-                                          color: context.appColors.textPrimary,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                              overlayBuilder: (context, constraints) {
-                                final frameWidth = constraints.maxWidth * 0.72;
-                                final frameHeight =
-                                    constraints.maxHeight * 0.38;
-                                return Center(
-                                  child: Container(
-                                    width: frameWidth,
-                                    height: frameHeight,
-                                    decoration: AppBoxDecoration(
-                                      borderRadius: AppBorderRadius.circular(
-                                        28,
-                                      ),
-                                      border: Border.all(
-                                        color: AppPalette.primary,
-                                        width: 2.4,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppPalette.primary.withValues(
-                                            alpha: 0.24,
-                                          ),
-                                          blurRadius: 30,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            Positioned(
-                              left: 18,
-                              right: 18,
-                              bottom: 18,
-                              child: Container(
-                                padding: const AppEdgeInsets.all(16),
-                                decoration: AppBoxDecoration(
-                                  color: context.appColors.surface.withValues(
-                                    alpha: 0.92,
-                                  ),
-                                  borderRadius: AppBorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: context.appColors.borderPrimary,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _feedbackMessage ?? l10n.qrScannerReady,
-                                      style: AppTextStyle(
-                                        color: _feedbackMessage == null
-                                            ? context.appColors.textPrimary
-                                            : _feedbackColor(),
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _pendingCount > 0
-                                          ? l10n.qrScannerPendingCount(
-                                              _pendingCount.toString(),
-                                            )
-                                          : l10n.qrScannerNoPending,
-                                      style: AppTextStyle(
-                                        color: context.appColors.textSecondary,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton(
-                                            onPressed: _isManualSyncing
-                                                ? null
-                                                : _handleManualSync,
-                                            style:
-                                                AppButtonStyles.secondary(
-                                                  context.appColors,
-                                                ).copyWith(
-                                                  padding: WidgetStateProperty.all(
-                                                    const AppEdgeInsets.symmetric(
-                                                      vertical: 14,
-                                                    ),
-                                                  ),
-                                                ),
-                                            child: _isManualSyncing
-                                                ? const SizedBox(
-                                                    width: 18,
-                                                    height: 18,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(
-                                                            AppPalette
-                                                                .textPrimary,
-                                                          ),
-                                                    ),
-                                                  )
-                                                : Text(l10n.qrScannerSyncNow),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: FilledButton(
-                                            onPressed: _restartScanner,
-                                            style:
-                                                AppButtonStyles.primary(
-                                                  context.appColors,
-                                                ).copyWith(
-                                                  padding: WidgetStateProperty.all(
-                                                    const AppEdgeInsets.symmetric(
-                                                      vertical: 14,
-                                                    ),
-                                                  ),
-                                                ),
-                                            child: Text(
-                                              l10n.qrScannerScanAgain,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  );
+                },
+                overlayBuilder: (context, constraints) {
+                  return SizedBox.expand(
+                    key: const ValueKey(
+                      'qr-scanner-transparent-fullscreen-overlay',
                     ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: AppBoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.scrim.withValues(alpha: 0.48),
+                      colors.transparent,
+                      colors.scrim.withValues(alpha: 0.68),
+                    ],
+                    stops: const [0, 0.42, 1],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: safePadding.top + 10,
+              left: 16,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      color: colors.primary,
+                      style: AppButtonStyles.icon(colors).copyWith(
+                        backgroundColor: WidgetStateProperty.all(
+                          colors.surface.withValues(alpha: 0.86),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const AppEdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: AppBoxDecoration(
+                      color: colors.surface.withValues(alpha: 0.78),
+                      borderRadius: AppBorderRadius.circular(18),
+                      border: Border.all(
+                        color: colors.borderPrimary.withValues(alpha: 0.72),
+                      ),
+                    ),
+                    child: Text(
+                      l10n.qrScannerSubtitle,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        height: 1.28,
+                        shadows: [
+                          Shadow(
+                            color: colors.scrim.withValues(alpha: 0.30),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: safePadding.bottom + 18,
+              child: Container(
+                padding: const AppEdgeInsets.all(16),
+                decoration: AppBoxDecoration(
+                  color: colors.surface.withValues(alpha: 0.92),
+                  borderRadius: AppBorderRadius.circular(24),
+                  border: Border.all(color: colors.borderPrimary),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_feedbackMessage != null)
+                      Text(
+                        _feedbackMessage!,
+                        style: AppTextStyle(
+                          color: _feedbackColor(),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    if (_pendingCount > 0) ...[
+                      if (_feedbackMessage != null) const SizedBox(height: 8),
+                      Text(
+                        l10n.qrScannerPendingCount(_pendingCount.toString()),
+                        style: AppTextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                    if (_feedbackMessage != null || _pendingCount > 0)
+                      const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _isManualSyncing ? null : _handleManualSync,
+                        style: AppButtonStyles.secondary(colors).copyWith(
+                          padding: WidgetStateProperty.all(
+                            const AppEdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                        child: _isManualSyncing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppPalette.textPrimary,
+                                  ),
+                                ),
+                              )
+                            : Text(l10n.qrScannerSyncNow),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -2117,8 +2117,8 @@
   "createExcursionAutosaveHint": "Ұсынысты жасау кезінде прогресс жергілікті сақталады",
   "createExcursionAutosaveRestored": "Жергілікті черновик қалпына келтірілді",
   "createExcursionDiscardTitle": "Сақтамай шығасыз ба?",
-  "createExcursionDiscardDescription": "Экскурсия черновигіндегі деректер жоғалады. Келесі кіргенде форма бос ашылады.",
-  "createExcursionDiscardConfirm": "Шығу және тазарту",
+  "createExcursionDiscardDescription": "Экскурсия черновигіндегі өзгерістер жоғалады.",
+  "createExcursionDiscardConfirm": "Шығу",
   "createExcursionModeSwitchTitle": "Маршрут түрін өзгертесіз бе?",
   "createExcursionModeSwitchDescription": "Қазіргі нұсқаның деректері тазаланады. Экскурсияның қалған мәліметтері сақталады.",
   "createExcursionModeSwitchCancel": "Осы жерде қалу",
@@ -2785,7 +2785,7 @@
     }
   },
   "qrScannerTitle": "QR сканерлеу",
-  "qrScannerSubtitle": "Белсенділікке келгеніңізді растау үшін камераны ұйымдастырушының QR кодының үстіне апарыңыз.",
+  "qrScannerSubtitle": "Камераны QR-ға бағыттаңыз",
   "qrScannerReady": "Камераны QR кодқа бағыттаңыз",
   "qrScannerInvalidCode": "Бұл Inflap белсенділігінің QR коды емес",
   "qrScannerSessionUnavailable": "Ағымдағы сессияны анықтау мүмкін болмады. Экранды қайта ашып көріңіз.",
@@ -3255,6 +3255,8 @@
   },
   "chatSystemUpdate": "Жүйелік оқиға",
   "chatAttachmentPhotoVideo": "Фото / видео",
+  "chatAttachmentPhoto": "Фото",
+  "chatAttachmentVideo": "Видео",
   "chatAttachmentFile": "Файл",
   "chatLastMessagePhoto": "Фотография",
   "chatLastMessageVideo": "Видео",
@@ -3266,7 +3268,7 @@
   "chatAttachmentCameraTitle": "Камера",
   "chatAttachmentAttachTitle": "Тіркеме",
   "chatAttachmentCancel": "Бас тарту",
-  "chatAttachmentVideoTooLong": "Видео тым ұзақ. 5 минутқа дейінгі бейнені пайдаланыңыз.",
+  "chatAttachmentVideoTooLong": "Видео тым ұзақ. 10 минутқа дейінгі бейнені пайдаланыңыз.",
   "chatComposerCameraButtonLabel": "Камера",
   "chatComposerAttachButtonLabel": "Файл тіркеу",
   "chatComposerEmojiButtonLabel": "Эмодзи мен стикерлер",
@@ -3316,6 +3318,7 @@
   "chatCameraTrimFailed": "Бұл видеоны қию мүмкін болмады. Басқа аралықты таңдаңыз немесе түпнұсқасын жіберіңіз.",
   "chatAttachmentUploading": "Тіркеме жүктелуде...",
   "chatAttachmentDownloading": "Жүктеп алынуда...",
+  "chatAttachmentLoadingPreview": "Тіркеме жүктелуде...",
   "chatAttachmentDownloaded": "Файл жүктелді. Ашу үшін қайта басыңыз.",
   "chatAttachmentDownloadedStatus": "Жүктелді",
   "chatAttachmentNotDownloadedStatus": "Жүктеу үшін басыңыз",
@@ -3324,6 +3327,30 @@
   "chatAttachmentUploadFailed": "Тіркемені жүктеу мүмкін болмады. Қайта көріңіз.",
   "chatAttachmentUnsupported": "Бұл файл түрі чат тіркемелері үшін қолдау таппайды.",
   "chatAttachmentTooLarge": "Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.",
+  "chatAttachmentImageLimit": "Бір хабарда {count} суреттен артық жіберуге болмайды.",
+  "@chatAttachmentImageLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentFileLimit": "Бір хабарда {count} файлдан артық жіберуге болмайды.",
+  "@chatAttachmentFileLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentVideoLimit": "Бір хабарда {count} видеодан артық жіберуге болмайды.",
+  "@chatAttachmentVideoLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatComposerHint": "Хабар...",
   "chatComposerClosedHint": "Чат жабылды",
   "chatActivityChatClosed": "Бұл чат енді тек оқуға қолжетімді.",
@@ -3338,6 +3365,7 @@
   "chatVoiceRecordFailed": "Дауыстық хабарды жазу мүмкін болмады. Қайта көріңіз.",
   "chatVoicePlaybackFailed": "Бұл дауыстық хабарды ойнату мүмкін болмады.",
   "chatVoiceTooShort": "Дауыстық хабар тым қысқа.",
+  "chatVoiceTooLong": "Дауыстық хабар тым ұзақ. Ең көбі: 10 минут.",
   "chatReactionSheetTitle": "Реакция",
   "chatReactionFailed": "Реакцияны жаңарту мүмкін болмады. Қайта көріңіз.",
   "chatCopyAction": "Көшіру",

@@ -2117,8 +2117,8 @@
   "createExcursionAutosaveHint": "Прогресс сохраняется локально, пока вы создаете предложение",
   "createExcursionAutosaveRestored": "Локальный черновик восстановлен",
   "createExcursionDiscardTitle": "Выйти без сохранения?",
-  "createExcursionDiscardDescription": "Данные черновика экскурсии будут потеряны. При следующем входе форма откроется пустой.",
-  "createExcursionDiscardConfirm": "Выйти и очистить",
+  "createExcursionDiscardDescription": "Изменения в черновике экскурсии будут потеряны.",
+  "createExcursionDiscardConfirm": "Выйти",
   "createExcursionModeSwitchTitle": "Сменить тип маршрута?",
   "createExcursionModeSwitchDescription": "Данные текущего варианта будут очищены. Остальные детали экскурсии останутся.",
   "createExcursionModeSwitchCancel": "Остаться",
@@ -2785,7 +2785,7 @@
     }
   },
   "qrScannerTitle": "Сканирование QR",
-  "qrScannerSubtitle": "Наведите камеру на QR организатора, чтобы подтвердить свое прибытие на активность.",
+  "qrScannerSubtitle": "Наведите камеру на QR",
   "qrScannerReady": "Наведите камеру на QR код",
   "qrScannerInvalidCode": "Это не QR активности Inflap",
   "qrScannerSessionUnavailable": "Не удалось определить текущую сессию. Попробуйте открыть экран снова.",
@@ -3255,6 +3255,8 @@
   },
   "chatSystemUpdate": "Системное событие",
   "chatAttachmentPhotoVideo": "Фото / видео",
+  "chatAttachmentPhoto": "Фото",
+  "chatAttachmentVideo": "Видео",
   "chatAttachmentFile": "Файл",
   "chatLastMessagePhoto": "Фотография",
   "chatLastMessageVideo": "Видео",
@@ -3266,7 +3268,7 @@
   "chatAttachmentCameraTitle": "Камера",
   "chatAttachmentAttachTitle": "Вложение",
   "chatAttachmentCancel": "Отмена",
-  "chatAttachmentVideoTooLong": "Видео слишком длинное. Используйте ролик до 5 минут.",
+  "chatAttachmentVideoTooLong": "Видео слишком длинное. Используйте ролик до 10 минут.",
   "chatComposerCameraButtonLabel": "Камера",
   "chatComposerAttachButtonLabel": "Прикрепить файл",
   "chatComposerEmojiButtonLabel": "Эмодзи и стикеры",
@@ -3316,6 +3318,7 @@
   "chatCameraTrimFailed": "Не удалось обрезать это видео. Попробуйте другой диапазон или отправьте оригинал.",
   "chatAttachmentUploading": "Загрузка вложения...",
   "chatAttachmentDownloading": "Скачивание...",
+  "chatAttachmentLoadingPreview": "Загружаем вложение...",
   "chatAttachmentDownloaded": "Файл скачан. Нажмите еще раз, чтобы открыть.",
   "chatAttachmentDownloadedStatus": "Скачано",
   "chatAttachmentNotDownloadedStatus": "Нажмите, чтобы скачать",
@@ -3324,6 +3327,30 @@
   "chatAttachmentUploadFailed": "Не удалось загрузить вложение. Попробуйте еще раз.",
   "chatAttachmentUnsupported": "Этот тип файла не поддерживается для вложений в чате.",
   "chatAttachmentTooLarge": "Вложение слишком большое. Используйте файл до 25 МБ.",
+  "chatAttachmentImageLimit": "Можно отправить не больше {count} изображений одним сообщением.",
+  "@chatAttachmentImageLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentFileLimit": "Можно отправить не больше {count} файлов одним сообщением.",
+  "@chatAttachmentFileLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentVideoLimit": "Можно отправить не больше {count} видео одним сообщением.",
+  "@chatAttachmentVideoLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatComposerHint": "Сообщение...",
   "chatComposerClosedHint": "Чат закрыт",
   "chatActivityChatClosed": "Чат теперь доступен только для чтения.",
@@ -3338,6 +3365,7 @@
   "chatVoiceRecordFailed": "Не удалось записать голосовое сообщение. Попробуйте еще раз.",
   "chatVoicePlaybackFailed": "Не удалось воспроизвести это голосовое сообщение.",
   "chatVoiceTooShort": "Голосовое сообщение слишком короткое.",
+  "chatVoiceTooLong": "Голосовое сообщение слишком длинное. Максимум: 10 минут.",
   "chatReactionSheetTitle": "Реакция",
   "chatReactionFailed": "Не удалось обновить реакцию. Попробуйте еще раз.",
   "chatCopyAction": "Скопировать",

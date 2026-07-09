@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/file_api.dart';
@@ -563,7 +564,11 @@ class _UnauthenticatedSecureStorage extends SecureStorage {
 
 class _FakeStoryFileApi extends FileApi {
   @override
-  Future<FileContentVm> downloadContent(String fileId) async {
+  Future<FileContentVm> downloadContent(
+    String fileId, {
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
     return FileContentVm(
       bytes: Uint8List.fromList(
         base64Decode(

@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/files/chat_file_cache.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/app_modal_templates.dart';
 import '../../features/chat/models/conversation_vm.dart';
+import '../../features/chat/utils/chat_attachment_preview_cache.dart';
 import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
@@ -729,8 +729,6 @@ class _LastMessagePreviewLine extends StatefulWidget {
 }
 
 class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
-  final _fileApi = FileApi();
-  final _fileCache = ChatFileCache();
   Future<_LastAttachmentPreviewData?>? _attachmentFuture;
 
   @override
@@ -762,31 +760,12 @@ class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
         .firstOrNull;
     if (fileId == null) return null;
 
-    FileMetadataVm? metadata;
-    Uint8List? imageBytes;
-
-    try {
-      metadata = await _fileApi.getFileMetadata(fileId);
-      if (metadata.isImage) {
-        final downloaded = await _fileCache.downloadedFile(
-          fileId,
-          metadata: metadata,
-        );
-        if (downloaded != null) {
-          imageBytes = await downloaded.file.readAsBytes();
-        } else {
-          final content = await _fileApi.downloadContent(fileId);
-          imageBytes = content.bytes.isEmpty ? null : content.bytes;
-        }
-      }
-    } catch (_) {
-      // Keep the list readable while metadata catches up or the network is slow.
-    }
+    final preview = await ChatAttachmentPreviewCache.load(fileId);
 
     return _LastAttachmentPreviewData(
-      fileId: fileId,
-      metadata: metadata,
-      imageBytes: imageBytes,
+      fileId: preview.fileId,
+      metadata: preview.metadata,
+      imageBytes: preview.imageBytes,
     );
   }
 

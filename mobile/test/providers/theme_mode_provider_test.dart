@@ -52,4 +52,19 @@ void main() {
       expect(provider.themeMode, ThemeMode.system);
     },
   );
+
+  test(
+    'theme mode provider ignores legacy stored mode without explicit selection marker',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        ThemeModeProvider.storageKey: 'dark',
+      });
+
+      final provider = ThemeModeProvider();
+      await provider.load();
+
+      expect(provider.selectedMode, AppThemeModePreference.system);
+      expect(provider.themeMode, ThemeMode.system);
+    },
+  );
 }

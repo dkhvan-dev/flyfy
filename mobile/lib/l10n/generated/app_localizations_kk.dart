@@ -5534,10 +5534,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionDiscardDescription =>
-      'Экскурсия черновигіндегі деректер жоғалады. Келесі кіргенде форма бос ашылады.';
+      'Экскурсия черновигіндегі өзгерістер жоғалады.';
 
   @override
-  String get createExcursionDiscardConfirm => 'Шығу және тазарту';
+  String get createExcursionDiscardConfirm => 'Шығу';
 
   @override
   String get createExcursionModeSwitchTitle => 'Маршрут түрін өзгертесіз бе?';
@@ -7242,8 +7242,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get qrScannerTitle => 'QR сканерлеу';
 
   @override
-  String get qrScannerSubtitle =>
-      'Белсенділікке келгеніңізді растау үшін камераны ұйымдастырушының QR кодының үстіне апарыңыз.';
+  String get qrScannerSubtitle => 'Камераны QR-ға бағыттаңыз';
 
   @override
   String get qrScannerReady => 'Камераны QR кодқа бағыттаңыз';
@@ -8549,6 +8548,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatAttachmentPhotoVideo => 'Фото / видео';
 
   @override
+  String get chatAttachmentPhoto => 'Фото';
+
+  @override
+  String get chatAttachmentVideo => 'Видео';
+
+  @override
   String get chatAttachmentFile => 'Файл';
 
   @override
@@ -8583,7 +8588,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get chatAttachmentVideoTooLong =>
-      'Видео тым ұзақ. 5 минутқа дейінгі бейнені пайдаланыңыз.';
+      'Видео тым ұзақ. 10 минутқа дейінгі бейнені пайдаланыңыз.';
 
   @override
   String get chatComposerCameraButtonLabel => 'Камера';
@@ -8740,6 +8745,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatAttachmentDownloading => 'Жүктеп алынуда...';
 
   @override
+  String get chatAttachmentLoadingPreview => 'Тіркеме жүктелуде...';
+
+  @override
   String get chatAttachmentDownloaded =>
       'Файл жүктелді. Ашу үшін қайта басыңыз.';
 
@@ -8768,6 +8776,21 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get chatAttachmentTooLarge =>
       'Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.';
+
+  @override
+  String chatAttachmentImageLimit(int count) {
+    return 'Бір хабарда $count суреттен артық жіберуге болмайды.';
+  }
+
+  @override
+  String chatAttachmentFileLimit(int count) {
+    return 'Бір хабарда $count файлдан артық жіберуге болмайды.';
+  }
+
+  @override
+  String chatAttachmentVideoLimit(int count) {
+    return 'Бір хабарда $count видеодан артық жіберуге болмайды.';
+  }
 
   @override
   String get chatComposerHint => 'Хабар...';
@@ -8814,6 +8837,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Дауыстық хабар тым қысқа.';
+
+  @override
+  String get chatVoiceTooLong => 'Дауыстық хабар тым ұзақ. Ең көбі: 10 минут.';
 
   @override
   String get chatReactionSheetTitle => 'Реакция';

@@ -6,9 +6,14 @@ type SendMessageRequest struct {
 	SenderDisplayName string                    `json:"senderDisplayName,omitempty"`
 	ClientMessageID   *string                   `json:"clientMessageId,omitempty"`
 	FileIDs           []string                  `json:"fileIds"`
+	DeferFileUpload   bool                      `json:"deferFileUpload,omitempty"`
 	StickerID         *string                   `json:"stickerId,omitempty"`
 	ReplyToMessageID  *string                   `json:"replyToMessageId"`
 	StoryReply        *StoryReplyContextRequest `json:"storyReply,omitempty"`
+}
+
+type CompletePendingMessageAttachmentsRequest struct {
+	FileIDs []string `json:"fileIds"`
 }
 
 type StoryReplyContextRequest struct {
@@ -43,6 +48,7 @@ type MessageResponse struct {
 	SenderDisplayName         string                     `json:"senderDisplayName"`
 	SenderAvatarFileID        *string                    `json:"senderAvatarFileId,omitempty"`
 	Type                      string                     `json:"type"`
+	SendStatus                string                     `json:"sendStatus"`
 	Content                   string                     `json:"content"`
 	FileIDs                   []string                   `json:"fileIds,omitempty"`
 	StickerID                 *string                    `json:"stickerId,omitempty"`

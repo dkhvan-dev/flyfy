@@ -179,6 +179,9 @@ void main() {
       final source = await File(
         'lib/screens/profile/profile_settings_screen.dart',
       ).readAsString();
+      final modalSource = await File(
+        'lib/core/ui/app_modal_templates.dart',
+      ).readAsString();
       final methodStart = source.indexOf(
         'Future<void> _openAppThemeSettings()',
       );
@@ -189,9 +192,19 @@ void main() {
 
       final methodSource = source.substring(methodStart, labelStart);
 
-      expect(methodSource, contains('initialChildSize: 0.56'));
-      expect(methodSource, contains('minChildSize: 0.42'));
-      expect(methodSource, contains('maxChildSize: 0.82'));
+      expect(methodSource, contains('initialChildSize: 0.64'));
+      expect(methodSource, contains('minChildSize: 0.52'));
+      expect(methodSource, contains('maxChildSize: 0.88'));
+      expect(
+        modalSource,
+        contains('final effectiveBottomInset = keyboardInset > 0'),
+      );
+      expect(modalSource, contains('? keyboardInset'));
+      expect(modalSource, contains(': systemBottomPadding'));
+      expect(
+        modalSource,
+        contains('padding: AppEdgeInsets.only(bottom: effectiveBottomInset)'),
+      );
     },
   );
 

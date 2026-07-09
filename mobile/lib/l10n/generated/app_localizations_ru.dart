@@ -5540,10 +5540,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createExcursionDiscardDescription =>
-      'Данные черновика экскурсии будут потеряны. При следующем входе форма откроется пустой.';
+      'Изменения в черновике экскурсии будут потеряны.';
 
   @override
-  String get createExcursionDiscardConfirm => 'Выйти и очистить';
+  String get createExcursionDiscardConfirm => 'Выйти';
 
   @override
   String get createExcursionModeSwitchTitle => 'Сменить тип маршрута?';
@@ -7240,8 +7240,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get qrScannerTitle => 'Сканирование QR';
 
   @override
-  String get qrScannerSubtitle =>
-      'Наведите камеру на QR организатора, чтобы подтвердить свое прибытие на активность.';
+  String get qrScannerSubtitle => 'Наведите камеру на QR';
 
   @override
   String get qrScannerReady => 'Наведите камеру на QR код';
@@ -8559,6 +8558,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatAttachmentPhotoVideo => 'Фото / видео';
 
   @override
+  String get chatAttachmentPhoto => 'Фото';
+
+  @override
+  String get chatAttachmentVideo => 'Видео';
+
+  @override
   String get chatAttachmentFile => 'Файл';
 
   @override
@@ -8593,7 +8598,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatAttachmentVideoTooLong =>
-      'Видео слишком длинное. Используйте ролик до 5 минут.';
+      'Видео слишком длинное. Используйте ролик до 10 минут.';
 
   @override
   String get chatComposerCameraButtonLabel => 'Камера';
@@ -8750,6 +8755,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatAttachmentDownloading => 'Скачивание...';
 
   @override
+  String get chatAttachmentLoadingPreview => 'Загружаем вложение...';
+
+  @override
   String get chatAttachmentDownloaded =>
       'Файл скачан. Нажмите еще раз, чтобы открыть.';
 
@@ -8778,6 +8786,21 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get chatAttachmentTooLarge =>
       'Вложение слишком большое. Используйте файл до 25 МБ.';
+
+  @override
+  String chatAttachmentImageLimit(int count) {
+    return 'Можно отправить не больше $count изображений одним сообщением.';
+  }
+
+  @override
+  String chatAttachmentFileLimit(int count) {
+    return 'Можно отправить не больше $count файлов одним сообщением.';
+  }
+
+  @override
+  String chatAttachmentVideoLimit(int count) {
+    return 'Можно отправить не больше $count видео одним сообщением.';
+  }
 
   @override
   String get chatComposerHint => 'Сообщение...';
@@ -8824,6 +8847,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Голосовое сообщение слишком короткое.';
+
+  @override
+  String get chatVoiceTooLong =>
+      'Голосовое сообщение слишком длинное. Максимум: 10 минут.';
 
   @override
   String get chatReactionSheetTitle => 'Реакция';

@@ -1584,6 +1584,44 @@ void main() {
     expect(find.text('Capture story route'), findsOneWidget);
   });
 
+  testWidgets('hides create story circle for unauthenticated viewers', (
+    tester,
+  ) async {
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(
+          _feedPage(
+            includeSecondTrayStory: true,
+            secondTrayAuthorNickname: 'Inflap',
+          ),
+        );
+      },
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _UnauthenticatedAuthProvider(),
+        child: _feedRouterApp(api),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('feed-stories-circle-tray')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('open-feed-create-story')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('open-feed-create-story-avatar')),
+      findsNothing,
+    );
+    expect(find.text('Your story'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('feed-tray-story-circle-silk-road-notes')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('hides profile completion and official travel update blocks', (
     tester,
   ) async {

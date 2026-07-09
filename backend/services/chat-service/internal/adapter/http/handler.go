@@ -559,6 +559,19 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
+		if len(parts) == 5 && parts[3] == "attachments" && parts[4] == "complete" {
+			msgID, err := uuid.Parse(parts[2])
+			if err != nil {
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.CompletePendingMessageAttachments(w, r, convID, msgID)
+				return
+			}
+			writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
 	case "read":
 		if r.Method == http.MethodPost {
 			h.MarkRead(w, r, convID)
@@ -800,6 +813,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		Type:                req.Type,
 		Content:             req.Content,
 		FileIDs:             req.FileIDs,
+		DeferFileUpload:     req.DeferFileUpload,
 		StickerID:           stickerID,
 		ReplyToMessageID:    replyTo,
 		StoryReply:          storyReply,
@@ -810,6 +824,36 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 	}
 
 	writeJSON(w, http.StatusCreated, messageResponseFromModel(msg))
+}
+
+func (h *Handler) CompletePendingMessageAttachments(w http.ResponseWriter, r *http.Request, convID uuid.UUID, msgID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	var req dto.CompletePendingMessageAttachmentsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	msg, err := h.messageUC.CompletePendingMessageAttachments(
+		r.Context(),
+		app.CompletePendingMessageAttachmentsInput{
+			ConversationID: convID,
+			MessageID:      msgID,
+			SenderUserID:   actorUserID,
+			FileIDs:        req.FileIDs,
+		},
+	)
+	if err != nil {
+		h.writeAppError(w, r, err, "complete pending message attachments failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, messageResponseFromModel(msg))
 }
 
 func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
@@ -1207,6 +1251,10 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 	content := m.Content
 	fileIDs := m.FileIDs
 	deletedAt := m.DeletedAt
+	sendStatus := strings.TrimSpace(m.SendStatus)
+	if sendStatus == "" {
+		sendStatus = model.MessageSendStatusSent
+	}
 	if m.IsHiddenByModeration() {
 		content = ""
 		fileIDs = nil
@@ -1219,6 +1267,7 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		SenderDisplayName:         m.SenderDisplayName,
 		SenderAvatarFileID:        m.SenderAvatarFileID,
 		Type:                      m.Type,
+		SendStatus:                sendStatus,
 		Content:                   content,
 		FileIDs:                   fileIDs,
 		StickerID:                 uuidPtrToString(m.StickerID),

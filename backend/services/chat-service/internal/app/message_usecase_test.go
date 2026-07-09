@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,6 +231,62 @@ func TestSendMessageStoresTextContent(t *testing.T) {
 	}
 	if msg.Content != "hello" {
 		t.Fatalf("Content = %q, want hello", msg.Content)
+	}
+}
+
+func TestPendingAttachmentMessageCompletesAfterUpload(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	repo := newFakeMessageRepo(conversationID, senderID)
+	repo.messagesByID = map[uuid.UUID]*model.Message{}
+	repo.messageFileIDs = map[uuid.UUID][]string{}
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+
+	pending, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID:  conversationID,
+		SenderUserID:    senderID,
+		Type:            messageTypeFile,
+		Content:         "look at this",
+		DeferFileUpload: true,
+	})
+	if err != nil {
+		t.Fatalf("SendMessage pending error: %v", err)
+	}
+	if pending.SendStatus != model.MessageSendStatusPendingAttachments {
+		t.Fatalf("pending SendStatus = %q, want %q", pending.SendStatus, model.MessageSendStatusPendingAttachments)
+	}
+	if len(pending.FileIDs) != 0 {
+		t.Fatalf("pending FileIDs = %#v, want none before upload", pending.FileIDs)
+	}
+	if got := len(repo.createdNotificationOutbox); got != 0 {
+		t.Fatalf("pending notification outbox len = %d, want 0 before upload completes", got)
+	}
+
+	completed, err := useCase.CompletePendingMessageAttachments(context.Background(), CompletePendingMessageAttachmentsInput{
+		ConversationID: conversationID,
+		MessageID:      pending.ID,
+		SenderUserID:   senderID,
+		FileIDs:        []string{"file-a", "file-b"},
+	})
+	if err != nil {
+		t.Fatalf("CompletePendingMessageAttachments error: %v", err)
+	}
+	if completed.SendStatus != model.MessageSendStatusSent {
+		t.Fatalf("completed SendStatus = %q, want %q", completed.SendStatus, model.MessageSendStatusSent)
+	}
+	if completed.Type != messageTypeFile {
+		t.Fatalf("completed Type = %q, want file", completed.Type)
+	}
+	if got := strings.Join(completed.FileIDs, ","); got != "file-a,file-b" {
+		t.Fatalf("completed FileIDs = %q, want file-a,file-b", got)
+	}
+	if got := strings.Join(repo.messageFileIDs[pending.ID], ","); got != "file-a,file-b" {
+		t.Fatalf("repo message files = %q, want file-a,file-b", got)
+	}
+	if got := len(repo.createdNotificationOutbox); got != 1 {
+		t.Fatalf("notification outbox len after complete = %d, want 1", got)
 	}
 }
 
@@ -884,7 +941,14 @@ func (r *fakeMessageRepo) CreateConversation(_ context.Context, conv *model.Conv
 	return nil
 }
 
-func (r *fakeMessageRepo) CreateMessageFiles(context.Context, uuid.UUID, []string) error {
+func (r *fakeMessageRepo) CreateMessageFiles(_ context.Context, messageID uuid.UUID, fileIDs []string) error {
+	copied := append([]string(nil), fileIDs...)
+	if r.messageFileIDs != nil {
+		r.messageFileIDs[messageID] = copied
+	}
+	if r.messagesByID != nil && r.messagesByID[messageID] != nil {
+		r.messagesByID[messageID].FileIDs = copied
+	}
 	return nil
 }
 
@@ -926,6 +990,13 @@ func (r *fakeMessageRepo) GetConversationByExcursionScheduleSlotID(
 }
 
 func (r *fakeMessageRepo) GetMessageByID(_ context.Context, messageID uuid.UUID) (*model.Message, error) {
+	if r.messagesByID != nil {
+		return r.messagesByID[messageID], nil
+	}
+	return nil, nil
+}
+
+func (r *fakeMessageRepo) GetMessageByIDForUpdate(_ context.Context, messageID uuid.UUID) (*model.Message, error) {
 	if r.messagesByID != nil {
 		return r.messagesByID[messageID], nil
 	}

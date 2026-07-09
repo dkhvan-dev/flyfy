@@ -10,26 +10,6 @@ import (
 	"kz/inflap/backend/services/checklist-service/internal/config"
 )
 
-func TestNewNotificationServiceHTTPClientAllowsDisabledMTLS(t *testing.T) {
-	t.Parallel()
-
-	client, err := newNotificationServiceHTTPClient(&config.Config{
-		Notifications: config.NotificationConfig{
-			ServiceBaseURL: "http://notification-service:8097",
-			HTTPTimeout:    750 * time.Millisecond,
-		},
-	})
-	if err != nil {
-		t.Fatalf("newNotificationServiceHTTPClient() error = %v, want nil", err)
-	}
-	if client == nil {
-		t.Fatal("newNotificationServiceHTTPClient() = nil, want client")
-	}
-	if client.Timeout != 750*time.Millisecond {
-		t.Fatalf("client timeout = %v, want 750ms", client.Timeout)
-	}
-}
-
 func TestValidateChecklistServiceMTLSPortAllowsDisabledMTLS(t *testing.T) {
 	t.Parallel()
 

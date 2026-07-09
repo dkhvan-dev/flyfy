@@ -5,6 +5,7 @@ enum AppThemeModePreference { system, light, dark }
 
 class ThemeModeProvider extends ChangeNotifier {
   static const storageKey = 'inflap_theme_mode';
+  static const explicitSelectionStorageKey = 'inflap_theme_mode_explicit';
 
   AppThemeModePreference _selectedMode = AppThemeModePreference.system;
   bool _isLoaded = false;
@@ -22,7 +23,11 @@ class ThemeModeProvider extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _selectedMode = _parse(prefs.getString(storageKey));
+    final hasExplicitSelection =
+        prefs.getBool(explicitSelectionStorageKey) ?? false;
+    _selectedMode = hasExplicitSelection
+        ? _parse(prefs.getString(storageKey))
+        : AppThemeModePreference.system;
     _isLoaded = true;
     notifyListeners();
   }
@@ -33,6 +38,7 @@ class ThemeModeProvider extends ChangeNotifier {
     _selectedMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(storageKey, mode.name);
+    await prefs.setBool(explicitSelectionStorageKey, true);
     notifyListeners();
   }
 

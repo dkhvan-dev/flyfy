@@ -707,8 +707,8 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
         ? null
         : supportTicketExpectedResponseText(l10n, detail.ticket);
     final topOverlayExtent = expectedResponseNote == null
-        ? (isCompact ? 142.0 : 152.0)
-        : (isCompact ? 168.0 : 176.0);
+        ? (isCompact ? 104.0 : 116.0)
+        : (isCompact ? 126.0 : 136.0);
     final bottomOverlayExtent = showReplyComposer
         ? 98.0 + mediaQuery.padding.bottom
         : 0.0;
@@ -1306,9 +1306,7 @@ class _SupportTicketDetailHeader extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
     return _HeaderShell(
       title: l10n.supportTicketDetailTitle,
-      subtitle: ticket == null
-          ? l10n.supportRequestsSubtitle
-          : supportTicketPreviewText(l10n, ticket!),
+      subtitle: ticket == null ? l10n.supportRequestsSubtitle : null,
       supportNote: expectedResponseNote,
       status: ticket == null
           ? null
@@ -1336,14 +1334,14 @@ class _SupportTicketDetailHeader extends StatelessWidget {
 class _HeaderShell extends StatelessWidget {
   const _HeaderShell({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     this.supportNote,
     this.status,
     this.trailing,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final String? supportNote;
   final String? status;
   final Widget? trailing;
@@ -1374,33 +1372,39 @@ class _HeaderShell extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
                   color: colors.textPrimary,
-                  fontSize: 28,
+                  fontSize: 24,
                   height: 1.1,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: AppTextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 14,
-                  height: 1.38,
-                  letterSpacing: 0,
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 13,
+                    height: 1.28,
+                    letterSpacing: 0,
+                  ),
                 ),
-              ),
+              ],
               if (supportNote != null && supportNote!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Text(
                   supportNote!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
                     color: colors.secondary,
-                    fontSize: 13,
+                    fontSize: 12,
                     height: 1.28,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1408,7 +1412,7 @@ class _HeaderShell extends StatelessWidget {
                 ),
               ],
               if (status != null && status!.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 _StatusPill(status: status!),
               ],
             ],

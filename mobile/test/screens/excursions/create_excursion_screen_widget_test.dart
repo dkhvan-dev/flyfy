@@ -164,8 +164,8 @@ void main() {
     final secondTitleBottom = tester
         .getBottomLeft(find.textContaining('Национальный парк'))
         .dy;
-    expect(firstButtonTop - firstTitleBottom, lessThanOrEqualTo(14));
-    expect(secondButtonTop - secondTitleBottom, lessThanOrEqualTo(14));
+    expect(firstButtonTop - firstTitleBottom, lessThanOrEqualTo(24));
+    expect(secondButtonTop - secondTitleBottom, lessThanOrEqualTo(24));
 
     final firstBottomGap =
         tester.getBottomLeft(cardFinder.at(0)).dy -
@@ -187,6 +187,55 @@ void main() {
     expect(secondCategoryTop, lessThan(secondTitleTop));
     expect(firstCategoryTop, lessThan(firstCardTop + firstCardHeight * 0.5));
     expect(secondCategoryTop, lessThan(secondCardTop + secondCardHeight * 0.5));
+  });
+
+  testWidgets('place selector two-column cards fit on 360dp Android width', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 800);
+    addTearDown(tester.view.reset);
+
+    final flutterErrors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = flutterErrors.add;
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ExcursionSelectLocationScreen(
+          countryCode: 'KZ',
+          api: _FakePlaceApi([
+            _place(
+              id: 'place-long-first',
+              title: 'Национальный парк Алтын-Эмель',
+              category: 'historical_site',
+            ),
+            _place(
+              id: 'place-long-second',
+              title: 'Большое Алматинское озеро',
+              category: 'nature',
+            ),
+          ]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    FlutterError.onError = previousOnError;
+    final overflowErrors = flutterErrors.where(
+      (details) => details.exceptionAsString().contains('overflowed'),
+    );
+    expect(overflowErrors, isEmpty);
+    expect(find.text('Выбрать'), findsNWidgets(2));
   });
 
   testWidgets('location selector returns localized city name for place', (

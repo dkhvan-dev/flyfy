@@ -389,6 +389,79 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<MessageVm?> createPendingAttachmentMessage(
+    String content, {
+    String? replyToMessageId,
+    StoryReplyContextVm? storyReply,
+  }) async {
+    final activeConversation = _activeConversation;
+    if (activeConversation == null || !activeConversation.canSendNow) {
+      return null;
+    }
+
+    _sendingMessage = true;
+    notifyListeners();
+
+    try {
+      final msg = await _chatApi.createPendingAttachmentMessage(
+        activeConversation.id,
+        content: content.trim(),
+        replyToMessageId: replyToMessageId,
+        clientMessageId: _newClientMessageId(),
+        storyReply: storyReply,
+      );
+      _messages = _uniqueMessages([msg, ..._messages]);
+      _cacheActiveConversationState();
+      return msg;
+    } catch (e) {
+      debugPrint('createPendingAttachmentMessage error: $e');
+      return null;
+    } finally {
+      _sendingMessage = false;
+      notifyListeners();
+    }
+  }
+
+  Future<MessageVm?> completePendingMessageAttachments(
+    String messageId,
+    List<String> fileIds,
+  ) async {
+    final activeConversation = _activeConversation;
+    final normalizedMessageId = messageId.trim();
+    final normalizedFileIds = fileIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (activeConversation == null ||
+        normalizedMessageId.isEmpty ||
+        normalizedFileIds.isEmpty) {
+      return null;
+    }
+
+    try {
+      final msg = await _chatApi.completePendingMessageAttachments(
+        activeConversation.id,
+        normalizedMessageId,
+        fileIds: normalizedFileIds,
+      );
+      final exists = _messages.any((message) => message.id == msg.id);
+      _messages = exists
+          ? _uniqueMessages(
+              _messages
+                  .map((message) => message.id == msg.id ? msg : message)
+                  .toList(),
+            )
+          : _uniqueMessages([msg, ..._messages]);
+      _upsertConversationPreviewFromMessage(activeConversation.id, msg);
+      _cacheActiveConversationState();
+      notifyListeners();
+      return msg;
+    } catch (e) {
+      debugPrint('completePendingMessageAttachments error: $e');
+      return null;
+    }
+  }
+
   Future<bool> sendSticker({
     required StickerVm sticker,
     String? replyToMessageId,

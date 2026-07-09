@@ -599,8 +599,9 @@ class _PlacesScreenState extends State<PlacesScreen> {
   Widget _buildGrid(PlaceAdaptive a, AppLocalizations l10n) {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.crossAxisExtent < 330;
-        final columns = isCompact ? 1 : 2;
+        final columns = placeDiscoverGridColumnCount(
+          constraints.crossAxisExtent,
+        );
         final spacing = a.scale(16, minFactor: 0.7);
         final cardWidth =
             (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;

@@ -2006,6 +2006,9 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     final currentUserId =
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final hasAnyReviews = _reviews.isNotEmpty || excursionReviews.isNotEmpty;
+    final canCreateReview =
+        context.watch<AuthProvider>().state == AuthState.authenticated &&
+        _shouldShowReviewAction;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2076,37 +2079,35 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     height: 1.32,
                   ),
                 ),
-                SizedBox(height: a.scale(12, minFactor: 0.72)),
-                ElevatedButton.icon(
-                  onPressed: _shouldShowReviewAction ? _openReviewSheet : null,
-                  icon: Icon(
-                    Icons.rate_review_rounded,
-                    size: a.scale(17, minFactor: 0.82),
-                  ),
-                  label: Text(
-                    l10n.placeAddReview,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.placeColors.primary,
-                    foregroundColor: context.placeColors.textPrimary,
-                    disabledBackgroundColor: context.placeColors.primary
-                        .withValues(alpha: 0.35),
-                    disabledForegroundColor: context.placeColors.textPrimary
-                        .withValues(alpha: 0.45),
-                    elevation: 0,
-                    minimumSize: Size(double.infinity, a.scale(44)),
-                    padding: AppEdgeInsets.symmetric(horizontal: a.scale(14)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppBorderRadius.circular(a.radius(12)),
+                if (canCreateReview) ...[
+                  SizedBox(height: a.scale(12, minFactor: 0.72)),
+                  ElevatedButton.icon(
+                    onPressed: _openReviewSheet,
+                    icon: Icon(
+                      Icons.rate_review_rounded,
+                      size: a.scale(17, minFactor: 0.82),
                     ),
-                    textStyle: AppTextStyle(
-                      fontSize: a.scale(13, minFactor: 0.84),
-                      fontWeight: FontWeight.w900,
+                    label: Text(
+                      l10n.placeAddReview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.placeColors.primary,
+                      foregroundColor: context.placeColors.textPrimary,
+                      elevation: 0,
+                      minimumSize: Size(double.infinity, a.scale(44)),
+                      padding: AppEdgeInsets.symmetric(horizontal: a.scale(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppBorderRadius.circular(a.radius(12)),
+                      ),
+                      textStyle: AppTextStyle(
+                        fontSize: a.scale(13, minFactor: 0.84),
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           )
@@ -3975,176 +3976,172 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final availableHeight = mq.size.height - keyboardInset;
     final canSubmit = !_submitting && _commentController.text.trim().isNotEmpty;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      padding: AppEdgeInsets.only(bottom: mq.viewInsets.bottom),
-      child: SafeArea(
-        top: false,
-        child: Container(
-          constraints: BoxConstraints(maxHeight: mq.size.height * 0.9),
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: availableHeight
+              .clamp(0.0, mq.size.height * 0.9)
+              .toDouble(),
+        ),
+        child: DecoratedBox(
           decoration: AppBoxDecoration(
             color: context.placeColors.background,
             borderRadius: AppBorderRadius.vertical(
               top: AppRadiusValue.circular(24),
             ),
           ),
-          child: SingleChildScrollView(
+          child: ListView(
+            shrinkWrap: true,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: AppBoxDecoration(
-                      color: context.placeColors.white.withValues(alpha: 0.22),
-                      borderRadius: AppBorderRadius.circular(999),
-                    ),
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: AppBoxDecoration(
+                    color: context.placeColors.white.withValues(alpha: 0.22),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.l10n.placeReviewSheetTitle,
-                        style: AppTextStyle(
-                          color: context.placeColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.l10n.placeReviewSheetTitle,
+                      style: AppTextStyle(
+                        color: context.placeColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    IconButton(
-                      onPressed: _submitting
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      icon: Icon(Icons.close_rounded),
-                      color: context.placeColors.textSecondary,
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  widget.l10n.placeReviewRatingLabel,
-                  style: AppTextStyle(
+                  ),
+                  IconButton(
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(false),
+                    icon: Icon(Icons.close_rounded),
                     color: context.placeColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
                   ),
-                ),
-                const SizedBox(height: 8),
-                _buildRatingPicker(),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: _commentController,
-                  enabled: !_submitting,
-                  minLines: 3,
-                  maxLines: 5,
-                  maxLength: 2000,
-                  style: AppTextStyle(
-                    color: context.placeColors.textPrimary,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                  decoration: AppInputDecoration(
-                    labelText: widget.l10n.placeReviewCommentLabel,
-                    hintText: widget.l10n.placeReviewCommentHint,
-                    errorText: _errorText,
-                    filled: true,
-                    fillColor: context.placeColors.white.withValues(
-                      alpha: 0.06,
-                    ),
-                    counterStyle: AppTextStyle(
-                      color: context.placeColors.textMuted,
-                      fontSize: 11,
-                    ),
-                    labelStyle: AppTextStyle(
-                      color: context.placeColors.textMuted,
-                    ),
-                    hintStyle: AppTextStyle(
-                      color: context.placeColors.textMuted,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: AppBorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppBorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: context.placeColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _buildMediaActions(),
-                if (_mediaErrorText != null) ...[
-                  AppInlineFieldError(message: _mediaErrorText!),
                 ],
-                if (_media.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildDraftMediaStrip(),
-                ],
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: canSubmit ? _submit : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.placeColors.primary,
-                      foregroundColor: context.placeColors.textPrimary,
-                      disabledBackgroundColor: context.placeColors.white
-                          .withValues(alpha: 0.12),
-                      disabledForegroundColor: context.placeColors.textMuted,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppBorderRadius.circular(14),
-                      ),
-                    ),
-                    child: _submitting
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: context.placeColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Flexible(
-                                child: Text(
-                                  widget.l10n.placeReviewSubmitting,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            widget.l10n.placeReviewSubmit,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                widget.l10n.placeReviewRatingLabel,
+                style: AppTextStyle(
+                  color: context.placeColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildRatingPicker(),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _commentController,
+                enabled: !_submitting,
+                minLines: 3,
+                maxLines: 5,
+                maxLength: 2000,
+                style: AppTextStyle(
+                  color: context.placeColors.textPrimary,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+                decoration: AppInputDecoration(
+                  labelText: widget.l10n.placeReviewCommentLabel,
+                  hintText: widget.l10n.placeReviewCommentHint,
+                  errorText: _errorText,
+                  filled: true,
+                  fillColor: context.placeColors.white.withValues(alpha: 0.06),
+                  counterStyle: AppTextStyle(
+                    color: context.placeColors.textMuted,
+                    fontSize: 11,
+                  ),
+                  labelStyle: AppTextStyle(
+                    color: context.placeColors.textMuted,
+                  ),
+                  hintStyle: AppTextStyle(color: context.placeColors.textMuted),
+                  border: OutlineInputBorder(
+                    borderRadius: AppBorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: AppBorderRadius.circular(14),
+                    borderSide: BorderSide(color: context.placeColors.primary),
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+              _buildMediaActions(),
+              if (_mediaErrorText != null) ...[
+                AppInlineFieldError(message: _mediaErrorText!),
               ],
-            ),
+              if (_media.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildDraftMediaStrip(),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: canSubmit ? _submit : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.placeColors.primary,
+                    foregroundColor: context.placeColors.textPrimary,
+                    disabledBackgroundColor: context.placeColors.white
+                        .withValues(alpha: 0.12),
+                    disabledForegroundColor: context.placeColors.textMuted,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppBorderRadius.circular(14),
+                    ),
+                  ),
+                  child: _submitting
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: context.placeColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                widget.l10n.placeReviewSubmitting,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          widget.l10n.placeReviewSubmit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

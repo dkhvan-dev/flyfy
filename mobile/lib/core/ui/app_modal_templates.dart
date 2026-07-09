@@ -79,11 +79,12 @@ class AppModalScaffold<T> extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
     final titleStyle = AppTypography.titleLargeStyle.copyWith(
       color: colors.textPrimary,
-      fontSize: adaptive.isNarrow ? 20 : 22,
+      fontSize: adaptive.isNarrow ? 18 : 20,
       height: 1.16,
     );
     final subtitleStyle = AppTypography.bodyStyle.copyWith(
       color: colors.textSecondary,
+      fontSize: 13,
       height: 1.42,
     );
     final effectiveContentPadding = actions.isEmpty && bottomSafeAreaPadding > 0
@@ -132,13 +133,18 @@ class AppModalScaffold<T> extends StatelessWidget {
                           children: [
                             Text(
                               title,
-                              maxLines: 3,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: titleStyle,
                             ),
                             if (subtitle != null) ...[
                               const SizedBox(height: AppSpacing.xs),
-                              Text(subtitle!, style: subtitleStyle),
+                              Text(
+                                subtitle!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: subtitleStyle,
+                              ),
                             ],
                           ],
                         ),
@@ -251,7 +257,11 @@ class AppModalDialogCard extends StatelessWidget {
                     DefaultTextStyle.merge(
                       textAlign: TextAlign.start,
                       style: AppTypography.titleLargeStyle
-                          .copyWith(color: colors.textPrimary, height: 1.16)
+                          .copyWith(
+                            color: colors.textPrimary,
+                            fontSize: adaptive.isNarrow ? 18 : 20,
+                            height: 1.16,
+                          )
                           .merge(titleTextStyle),
                       child: title!,
                     ),
@@ -259,7 +269,11 @@ class AppModalDialogCard extends StatelessWidget {
                     if (title != null) const SizedBox(height: AppSpacing.md),
                     DefaultTextStyle.merge(
                       style: AppTypography.bodyStyle
-                          .copyWith(color: colors.textSecondary, height: 1.42)
+                          .copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 13,
+                            height: 1.42,
+                          )
                           .merge(contentTextStyle),
                       child: content!,
                     ),
@@ -518,10 +532,13 @@ Future<T?> showAppModalBottomSheet<T>({
       final content = builder?.call(context) ?? child;
       final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
       final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+      final effectiveBottomInset = keyboardInset > 0
+          ? keyboardInset
+          : systemBottomPadding;
 
       if (title == null) {
         return Padding(
-          padding: AppEdgeInsets.only(bottom: keyboardInset),
+          padding: AppEdgeInsets.only(bottom: effectiveBottomInset),
           child: SizedBox(
             width: double.infinity,
             child: content ?? const SizedBox.shrink(),
@@ -535,7 +552,7 @@ Future<T?> showAppModalBottomSheet<T>({
             ? () => Navigator.of(context).maybePop()
             : null,
         child: Padding(
-          padding: AppEdgeInsets.only(bottom: keyboardInset),
+          padding: AppEdgeInsets.only(bottom: effectiveBottomInset),
           child: SafeArea(
             top: false,
             bottom: false,
@@ -642,7 +659,7 @@ ButtonStyle _destructiveButtonStyle(AppColors colors) {
     disabledBackgroundColor: colors.surfaceHigh,
     disabledForegroundColor: colors.textDisabled,
     shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-    textStyle: AppTypography.bodyStrongStyle,
+    textStyle: _modalActionTextStyle(),
   );
 }
 
@@ -749,12 +766,16 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? FilledButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.primary(colors),
+                style: _compactModalButtonStyle(
+                  AppButtonStyles.primary(colors),
+                ),
                 child: label,
               )
             : FilledButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.primary(colors),
+                style: _compactModalButtonStyle(
+                  AppButtonStyles.primary(colors),
+                ),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -775,12 +796,12 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? TextButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.ghost(colors),
+                style: _compactModalButtonStyle(AppButtonStyles.ghost(colors)),
                 child: label,
               )
             : TextButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.ghost(colors),
+                style: _compactModalButtonStyle(AppButtonStyles.ghost(colors)),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
@@ -788,17 +809,31 @@ class _AppModalActionButton<T> extends StatelessWidget {
         icon == null
             ? OutlinedButton(
                 onPressed: onPressed,
-                style: AppButtonStyles.secondary(colors),
+                style: _compactModalButtonStyle(
+                  AppButtonStyles.secondary(colors),
+                ),
                 child: label,
               )
             : OutlinedButton.icon(
                 onPressed: onPressed,
-                style: AppButtonStyles.secondary(colors),
+                style: _compactModalButtonStyle(
+                  AppButtonStyles.secondary(colors),
+                ),
                 icon: Icon(icon, size: AppSizes.iconSm),
                 label: label,
               ),
     };
   }
+}
+
+TextStyle _modalActionTextStyle() {
+  return AppTypography.bodyStrongStyle.copyWith(fontSize: 14, height: 1.28);
+}
+
+ButtonStyle _compactModalButtonStyle(ButtonStyle style) {
+  return style.copyWith(
+    textStyle: WidgetStatePropertyAll(_modalActionTextStyle()),
+  );
 }
 
 class _AppActionSheetList<T> extends StatelessWidget {
@@ -854,6 +889,7 @@ class _AppActionSheetTile<T> extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyStrongStyle.copyWith(
                         color: item.enabled ? color : colors.textDisabled,
+                        fontSize: 14,
                       ),
                     ),
                     if (item.subtitle != null) ...[

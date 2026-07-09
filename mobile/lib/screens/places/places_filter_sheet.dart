@@ -883,6 +883,9 @@ class _RatingPill extends StatelessWidget {
         decoration: AppBoxDecoration(
           color: selected ? colors.primary : colors.transparent,
           borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? colors.primary : colors.borderSoft,
+          ),
         ),
         alignment: Alignment.center,
         child: Text(

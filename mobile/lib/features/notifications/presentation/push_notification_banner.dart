@@ -529,11 +529,6 @@ class _NotificationBannerVisual {
         color: (colors) => colors.primary,
         label: 'Activity',
       ),
-      PushNotificationChannel.checklists => _NotificationBannerVisual(
-        icon: Icons.checklist_rounded,
-        color: (colors) => colors.secondary,
-        label: 'Checklist',
-      ),
       PushNotificationChannel.messages => _NotificationBannerVisual(
         icon: Icons.chat_bubble_rounded,
         color: (colors) => colors.primary,

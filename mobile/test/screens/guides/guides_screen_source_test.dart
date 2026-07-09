@@ -219,14 +219,36 @@ void main() {
       expect(sortRowSource, contains('return wrap'));
       expect(sortRowSource, contains('? Wrap('));
       expect(source, contains('wrap: true'));
-      expect(source, contains('_guideGridColumnCount('));
+      expect(source, contains("import '../../features/guides/guide_ui.dart';"));
+      expect(source, contains('guideGridColumnCount('));
       expect(source, contains('MediaQuery.textScalerOf(context).scale(1)'));
       expect(
         source,
-        contains('if (textScale >= 1.3 && width < 600) return 1;'),
+        isNot(contains('if (textScale >= 1.3 && width < 600) return 1;')),
       );
     },
   );
+
+  test('guide grid keeps two columns on compact Android widths', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+    final guideUiSource = await File(
+      'lib/features/guides/guide_ui.dart',
+    ).readAsString();
+
+    expect(
+      guideUiSource,
+      contains('const double guideGridMinTwoColumnWidth = 288;'),
+    );
+    expect(
+      guideUiSource,
+      contains('guideGridLargeTextMinTwoColumnWidth = 320'),
+    );
+    expect(source, contains('guideGridColumnCount('));
+    expect(source, isNot(contains('if (width < 335) return 1;')));
+    expect(source, contains('constraints.crossAxisExtent'));
+  });
 
   test('guide card exposes profile navigation as a semantic button', () async {
     final source = await File(

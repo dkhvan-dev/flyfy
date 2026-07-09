@@ -15,8 +15,10 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/file_api.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
+import '../../features/chat/utils/chat_attachment_preview_cache.dart';
 import '../../features/chat/utils/chat_link_utils.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'chat_file_viewer_screen.dart';
 import 'chat_image_viewer_screen.dart';
 import 'widgets/chat_video_preview.dart';
 import 'widgets/chat_voice_attachment_player.dart';
@@ -48,7 +50,6 @@ class ChatSharedContentScreen extends StatefulWidget {
 
 class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
   final _chatApi = ChatApi();
-  final _fileApi = FileApi();
   final _fileCache = ChatFileCache();
 
   _SharedTab _selectedTab = _SharedTab.media;
@@ -151,39 +152,13 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
   }
 
   Future<_FetchedFile> _fetchFile(String fileId) async {
-    FileMetadataVm? metadata;
-    try {
-      metadata = await _fileApi.getFileMetadata(fileId);
-    } catch (_) {
-      return _FetchedFile(fileId: fileId);
-    }
-
-    Uint8List? imageBytes;
-    final downloaded = await _fileCache.downloadedFile(
-      fileId,
-      metadata: metadata,
-    );
-
-    if (metadata.isImage && downloaded != null) {
-      try {
-        imageBytes = await downloaded.file.readAsBytes();
-      } catch (_) {
-        imageBytes = null;
-      }
-    } else if (metadata.isImage) {
-      try {
-        final content = await _fileApi.downloadContent(fileId);
-        imageBytes = content.bytes.isEmpty ? null : content.bytes;
-      } catch (_) {
-        imageBytes = null;
-      }
-    }
+    final preview = await ChatAttachmentPreviewCache.load(fileId);
 
     return _FetchedFile(
-      fileId: fileId,
-      metadata: metadata,
-      imageBytes: imageBytes,
-      downloaded: downloaded != null,
+      fileId: preview.fileId,
+      metadata: preview.metadata,
+      imageBytes: preview.imageBytes,
+      downloaded: preview.downloaded,
     );
   }
 
@@ -199,15 +174,24 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     setState(() => _busyFileIds.add(item.fileId));
 
     try {
+      ChatDownloadedFile downloaded;
       if (item.imageBytes != null) {
-        await _fileCache.saveBytes(
+        downloaded = await _fileCache.saveBytes(
           item.fileId,
           bytes: item.imageBytes!,
           metadata: item.metadata,
         );
       } else {
-        await _fileCache.download(item.fileId, metadata: item.metadata);
+        downloaded = await _fileCache.download(
+          item.fileId,
+          metadata: item.metadata,
+        );
       }
+      ChatAttachmentPreviewCache.rememberDownloaded(
+        item.fileId,
+        metadata: downloaded.metadata ?? item.metadata,
+        imageBytes: item.imageBytes,
+      );
 
       if (!mounted) return;
       setState(() {
@@ -261,13 +245,10 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
         return;
       }
 
-      final result = await _fileCache.open(downloaded);
-      if (!mounted || result.isDone) return;
-
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: l10n.chatAttachmentOpenFailed,
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatFileViewerScreen(downloaded: downloaded),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -1466,7 +1447,7 @@ class _FileCard extends StatelessWidget {
         ? metadata!.originalName.trim()
         : l10n.chatSharedFileFallback(_shortId(item.fileId));
     final label = metadata == null
-        ? l10n.chatSharedUnknownFile
+        ? l10n.chatAttachmentLoadingPreview
         : '${_formatSize(metadata.sizeBytes)} | ${metadata.extensionLabel}';
     final icon = _fileIcon(metadata);
     final iconColor = _fileIconColor(context, metadata);

@@ -48,6 +48,35 @@ void main() {
   );
 
   test(
+    'shared country and city filters use compact modal typography',
+    () async {
+      final source = await File(
+        'lib/shared/widgets/app_city_filter_section.dart',
+      ).readAsString();
+
+      final countryStart = source.indexOf('class AppCountryFilterSection');
+      final cityStart = source.indexOf('class AppCityFilterSection');
+      final optionRowsStart = source.indexOf('class _CountryOptionRow');
+
+      expect(countryStart, isNonNegative);
+      expect(cityStart, greaterThan(countryStart));
+      expect(optionRowsStart, greaterThan(cityStart));
+
+      final countrySource = source.substring(countryStart, cityStart);
+      final citySource = source.substring(cityStart, optionRowsStart);
+
+      expect(countrySource, contains('fontSize: 16'));
+      expect(citySource, contains('fontSize: 16'));
+      expect(countrySource, contains('fontSize: 14'));
+      expect(citySource, contains('fontSize: 14'));
+      expect(countrySource, contains('const SizedBox(height: 12)'));
+      expect(citySource, contains('const SizedBox(height: 12)'));
+      expect(countrySource, isNot(contains('fontSize: 19')));
+      expect(citySource, isNot(contains('fontSize: 19')));
+    },
+  );
+
+  test(
     'discover filters default to effective or selected current location city',
     () async {
       final files = {

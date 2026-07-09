@@ -613,7 +613,9 @@ class _ExcursionSelectLocationScreenState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 330 ? 1 : 2;
+        final crossAxisCount = _locationGridCrossAxisCount(
+          constraints.maxWidth,
+        );
         final aspectRatio = _locationGridAspectRatio(
           context,
           crossAxisCount: crossAxisCount,
@@ -711,6 +713,20 @@ class _LocationSectionTitle extends StatelessWidget {
   }
 }
 
+LinearGradient? _locationCoverOverlayGradient(BuildContext context) {
+  if (Theme.of(context).brightness == Brightness.light) {
+    return null;
+  }
+
+  final colors = AppDesignSystem.colorsFor(context);
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [colors.transparent, colors.black.withValues(alpha: 0.42)],
+    stops: const [0.52, 1.0],
+  );
+}
+
 class _PlaceSelectionCard extends StatelessWidget {
   const _PlaceSelectionCard({
     required this.place,
@@ -733,6 +749,7 @@ class _PlaceSelectionCard extends StatelessWidget {
       maxWidth: 760,
     );
     final categoryLabel = _placeSubtitle(context, place);
+    final coverOverlayGradient = _locationCoverOverlayGradient(context);
 
     return Material(
       color: colors.surface,
@@ -763,19 +780,12 @@ class _PlaceSelectionCard extends StatelessWidget {
                     )
                   else
                     const _PlaceFallback(),
-                  DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colors.transparent,
-                          colors.black.withValues(alpha: 0.42),
-                        ],
-                        stops: const [0.52, 1.0],
+                  if (coverOverlayGradient != null)
+                    DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: coverOverlayGradient,
                       ),
                     ),
-                  ),
                   Positioned(
                     left: 12,
                     right: 12,
@@ -786,7 +796,7 @@ class _PlaceSelectionCard extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Padding(
                 padding: const AppEdgeInsets.fromLTRB(14, 12, 14, 6),
                 child: Column(
@@ -948,7 +958,9 @@ class _PlaceGridPlaceholder extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 330 ? 1 : 2;
+        final crossAxisCount = _locationGridCrossAxisCount(
+          constraints.maxWidth,
+        );
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -995,6 +1007,10 @@ double _locationTopBarTitleFontSize(BuildContext context) {
 double _locationTopBarSideReserve(BuildContext context) {
   final width = MediaQuery.sizeOf(context).width;
   return (width * 0.12).clamp(42.0, 52.0).toDouble();
+}
+
+int _locationGridCrossAxisCount(double maxWidth) {
+  return maxWidth < 300 ? 1 : 2;
 }
 
 double _locationGridAspectRatio(

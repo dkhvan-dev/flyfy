@@ -263,13 +263,13 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
             color: colors.textPrimary,
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
-            height: 1.1,
+            height: 1.15,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         DecoratedBox(
           decoration: AppBoxDecoration(
             color: colors.surfaceRaised,
@@ -293,7 +293,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
                             color: colors.textPrimary,
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
                         )
@@ -307,7 +307,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
                             color: colors.textPrimary,
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -560,13 +560,13 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle(
             color: colors.textPrimary,
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
-            height: 1.1,
+            height: 1.15,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         DecoratedBox(
           decoration: AppBoxDecoration(
             color: colors.surfaceRaised,
@@ -594,7 +594,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
                             color: colors.textPrimary,
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
                         )
@@ -608,7 +608,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
                             color: colors.textPrimary,
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
                         ),

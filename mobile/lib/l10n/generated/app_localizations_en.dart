@@ -5499,10 +5499,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionDiscardDescription =>
-      'Your excursion draft data will be lost. The form will open empty next time.';
+      'Unsaved excursion draft changes will be lost.';
 
   @override
-  String get createExcursionDiscardConfirm => 'Leave and discard';
+  String get createExcursionDiscardConfirm => 'Leave';
 
   @override
   String get createExcursionModeSwitchTitle => 'Switch route type?';
@@ -7192,8 +7192,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qrScannerTitle => 'Scan QR';
 
   @override
-  String get qrScannerSubtitle =>
-      'Point your camera at the host QR to confirm that you arrived at the activity.';
+  String get qrScannerSubtitle => 'Point the camera at the QR';
 
   @override
   String get qrScannerReady => 'Point the camera at the QR code';
@@ -8492,6 +8491,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAttachmentPhotoVideo => 'Photo / Video';
 
   @override
+  String get chatAttachmentPhoto => 'Photo';
+
+  @override
+  String get chatAttachmentVideo => 'Video';
+
+  @override
   String get chatAttachmentFile => 'File';
 
   @override
@@ -8526,7 +8531,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatAttachmentVideoTooLong =>
-      'Video is too long. Use a clip up to 5 minutes.';
+      'Video is too long. Use a clip up to 10 minutes.';
 
   @override
   String get chatComposerCameraButtonLabel => 'Camera';
@@ -8683,6 +8688,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAttachmentDownloading => 'Downloading...';
 
   @override
+  String get chatAttachmentLoadingPreview => 'Loading attachment...';
+
+  @override
   String get chatAttachmentDownloaded => 'Downloaded. Tap again to open.';
 
   @override
@@ -8710,6 +8718,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatAttachmentTooLarge =>
       'The attachment is too large. Use a file up to 25 MB.';
+
+  @override
+  String chatAttachmentImageLimit(int count) {
+    return 'You can send up to $count images in one message.';
+  }
+
+  @override
+  String chatAttachmentFileLimit(int count) {
+    return 'You can send up to $count files in one message.';
+  }
+
+  @override
+  String chatAttachmentVideoLimit(int count) {
+    return 'You can send up to $count videos in one message.';
+  }
 
   @override
   String get chatComposerHint => 'Message...';
@@ -8755,6 +8778,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Voice message is too short.';
+
+  @override
+  String get chatVoiceTooLong =>
+      'Voice message is too long. Maximum duration is 10 minutes.';
 
   @override
   String get chatReactionSheetTitle => 'Reaction';

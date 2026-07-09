@@ -148,6 +148,40 @@ class ChatApi {
     return MessageVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<MessageVm> createPendingAttachmentMessage(
+    String conversationId, {
+    required String content,
+    String? replyToMessageId,
+    String? clientMessageId,
+    StoryReplyContextVm? storyReply,
+  }) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations/$conversationId/messages',
+      data: {
+        'content': content,
+        'type': 'file',
+        'deferFileUpload': true,
+        if ((clientMessageId ?? '').trim().isNotEmpty)
+          'clientMessageId': clientMessageId!.trim(),
+        'replyToMessageId': ?replyToMessageId,
+        if (storyReply != null) 'storyReply': storyReply.toJson(),
+      },
+    );
+    return MessageVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<MessageVm> completePendingMessageAttachments(
+    String conversationId,
+    String messageId, {
+    required List<String> fileIds,
+  }) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations/$conversationId/messages/$messageId/attachments/complete',
+      data: {'fileIds': fileIds},
+    );
+    return MessageVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<MessageVm> forwardMessage({
     required String sourceConversationId,
     required String messageId,

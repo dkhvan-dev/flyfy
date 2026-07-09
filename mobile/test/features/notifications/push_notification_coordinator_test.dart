@@ -133,7 +133,7 @@ void main() {
     });
 
     test(
-      'routes checklist notifications through the checklist channel',
+      'routes legacy checklist notifications through the system channel',
       () async {
         final source = _FakePushNotificationSource();
         final presenter = _FakePushNotificationPresenter();
@@ -161,10 +161,7 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
 
-        expect(
-          presenter.shown.single.channel,
-          PushNotificationChannel.checklists,
-        );
+        expect(presenter.shown.single.channel, PushNotificationChannel.system);
         expect(presenter.shown.single.route, startsWith('/travel-checklist?'));
 
         await coordinator.dispose();

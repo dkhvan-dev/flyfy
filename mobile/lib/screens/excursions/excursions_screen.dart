@@ -1151,7 +1151,7 @@ double _gridAspectRatio(BuildContext context) {
 
 double _excursionGridAspectRatioForWidth(double width) {
   final normalizedWidth = ((width - 360) / 480).clamp(0.0, 1.0).toDouble();
-  return 0.70 + normalizedWidth * 0.12;
+  return 0.64 + normalizedWidth * 0.10;
 }
 
 double _excursionFilterHeaderHeight(BuildContext context) {
@@ -1167,7 +1167,7 @@ double _excursionLanguageGridMaxHeight(BuildContext context) {
 double _excursionSegmentMainAxisExtent(BuildContext context) {
   final width = MediaQuery.sizeOf(context).width;
   final textScale = MediaQuery.textScalerOf(context).scale(1);
-  return (width * 0.115 + 4 * textScale).clamp(46.0, 56.0).toDouble();
+  return (width * 0.12 + 6 * textScale).clamp(50.0, 62.0).toDouble();
 }
 
 DateTime _excursionCreatedAtFor(ExcursionVm excursion) {
@@ -1611,6 +1611,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     final visibleLanguages = _visibleLanguages(l10n);
 
     return AppModalSheetFrame(
+      onTapOutside: () => Navigator.of(context).maybePop(),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.86,
@@ -1635,12 +1636,12 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                 onClear: _clear,
                 height: _excursionFilterHeaderHeight(context),
                 horizontalPadding: 22,
-                titleFontSize: 18,
+                titleFontSize: 16,
               ),
               Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const AppEdgeInsets.fromLTRB(22, 28, 22, 24),
+                  padding: const AppEdgeInsets.fromLTRB(20, 24, 20, 22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -1653,7 +1654,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                         onChanged: _setCountry,
                       ),
                       if (_filters.country != null) ...[
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 24),
                         AppCityFilterSection(
                           title: l10n.locationFilterCitySection,
                           allCitiesLabel: l10n.locationFilterAllCities,
@@ -1664,12 +1665,12 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                           countryCode: _filters.country?.countryCode,
                         ),
                       ],
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterCategories,
                         child: Wrap(
                           spacing: 12,
-                          runSpacing: 12,
+                          runSpacing: 10,
                           children: [
                             for (final option in _categoryFilterOptions)
                               _ExcursionsFilterChip(
@@ -1686,7 +1687,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterPriceRange,
                         child: _ExcursionsPriceRangeFields(
@@ -1697,7 +1698,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                           currencyLabel: 'KZT',
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterDuration,
                         child:
@@ -1724,7 +1725,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                               onSelected: _setDuration,
                             ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterLanguage,
                         child: Column(
@@ -1821,8 +1822,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: AppBorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: context.excursionsColors.white
-                                        .withValues(alpha: 0.06),
+                                    color: context.excursionsColors.border,
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -1915,13 +1915,13 @@ class _ExcursionsFilterSection extends StatelessWidget {
           title,
           style: AppTextStyle(
             color: context.excursionsColors.textPrimary,
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
-            height: 1.1,
+            height: 1.15,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         child,
       ],
     );
@@ -1998,7 +1998,7 @@ class _ExcursionsPriceInputField extends StatelessWidget {
       cursorColor: context.excursionsColors.primary,
       style: AppTextStyle(
         color: context.excursionsColors.textPrimary,
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
       ),
       decoration: AppInputDecoration(
@@ -2020,9 +2020,7 @@ class _ExcursionsPriceInputField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: context.excursionsColors.white.withValues(alpha: 0.06),
-          ),
+          borderSide: BorderSide(color: context.excursionsColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppBorderRadius.circular(16),
@@ -2065,7 +2063,7 @@ class _ExcursionsLanguageOptionRow extends StatelessWidget {
             border: Border.all(
               color: selected
                   ? context.excursionsColors.primary
-                  : context.excursionsColors.white.withValues(alpha: 0.07),
+                  : context.excursionsColors.borderSoft,
             ),
           ),
           child: Padding(
@@ -2135,13 +2133,19 @@ class _ExcursionsFilterChip extends StatelessWidget {
         borderRadius: AppBorderRadius.circular(999),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          constraints: const BoxConstraints(minHeight: 42),
-          padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          constraints: const BoxConstraints(minHeight: 38, maxWidth: 220),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: AppBoxDecoration(
             color: selected
                 ? context.excursionsColors.primary
                 : context.excursionsColors.warmSurfaceHigh03,
             borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? context.excursionsColors.primary
+                  : context.excursionsColors.borderSoft,
+              width: selected ? 1.2 : 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -2156,16 +2160,18 @@ class _ExcursionsFilterChip extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyle(
-                  color: selected
-                      ? context.excursionsColors.white
-                      : context.excursionsColors.orangeLight15,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: selected
+                        ? context.excursionsColors.white
+                        : context.excursionsColors.orangeLight15,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -2245,25 +2251,34 @@ class _ExcursionsSegmentButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           alignment: Alignment.center,
-          padding: const AppEdgeInsets.symmetric(horizontal: 10),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: AppBoxDecoration(
             color: selected
                 ? context.excursionsColors.primary
                 : context.excursionsColors.warmSurfaceHigh01,
             borderRadius: AppBorderRadius.circular(10),
-          ),
-          child: Text(
-            label,
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyle(
+            border: Border.all(
               color: selected
-                  ? context.excursionsColors.white
-                  : context.excursionsColors.orangeLight15,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              height: 1.15,
+                  ? context.excursionsColors.primary
+                  : context.excursionsColors.borderSoft,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyle(
+                color: selected
+                    ? context.excursionsColors.white
+                    : context.excursionsColors.orangeLight15,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+              ),
             ),
           ),
         ),
@@ -2405,7 +2420,7 @@ class ExcursionListCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      flex: 5,
+                      flex: 4,
                       child: _ExcursionCoverArt(
                         seed: seed,
                         categorySlug: excursion.categorySlug,
@@ -2413,9 +2428,9 @@ class ExcursionListCard extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      flex: 7,
+                      flex: 6,
                       child: Padding(
-                        padding: const AppEdgeInsets.fromLTRB(13, 11, 13, 11),
+                        padding: const AppEdgeInsets.fromLTRB(12, 10, 12, 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -2434,32 +2449,38 @@ class ExcursionListCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 7),
                             ],
-                            Text(
-                              displayTitle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyle(
-                                color: context.excursionsColors.textPrimary,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0,
-                                height: 1.16,
+                            Flexible(
+                              child: Text(
+                                displayTitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyle(
+                                  color: context.excursionsColors.textPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0,
+                                  height: 1.14,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              price,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyle(
-                                color: _excursionsPrimaryTextColor(context),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0,
-                                height: 1,
+                            const SizedBox(height: 5),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                price,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyle(
+                                  color: _excursionsPrimaryTextColor(context),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0,
+                                  height: 1,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 5),
                             Text(
                               meta.isEmpty ? category : meta,
                               maxLines: 1,

@@ -11,6 +11,7 @@ type Message struct {
 	SenderUserID              uuid.UUID
 	ClientMessageID           *uuid.UUID
 	Type                      string // "text", "file", "sticker", "system"
+	SendStatus                string // "SENT", "PENDING_ATTACHMENTS"
 	Content                   string
 	StickerID                 *uuid.UUID
 	StickerFileID             *string
@@ -54,6 +55,11 @@ type StoryReplyContext struct {
 func (c StoryReplyContext) IsZero() bool {
 	return c.StoryID == uuid.Nil && c.StoryAuthorUserID == uuid.Nil
 }
+
+const (
+	MessageSendStatusSent               = "SENT"
+	MessageSendStatusPendingAttachments = "PENDING_ATTACHMENTS"
+)
 
 const (
 	MessageModerationStatusVisible            = "VISIBLE"

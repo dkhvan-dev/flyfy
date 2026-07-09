@@ -51,6 +51,7 @@ type ChatTxRepository interface {
 	CreateParticipant(ctx context.Context, p *model.Participant) error
 	UpdateParticipant(ctx context.Context, p *model.Participant) error
 	CreateMessage(ctx context.Context, msg *model.Message) error
+	GetMessageByIDForUpdate(ctx context.Context, messageID uuid.UUID) (*model.Message, error)
 	UpdateMessage(ctx context.Context, msg *model.Message) error
 	DeleteMessage(ctx context.Context, messageID uuid.UUID) error
 	GetMessageReactionForUpdate(

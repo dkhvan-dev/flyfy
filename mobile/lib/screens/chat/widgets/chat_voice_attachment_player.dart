@@ -160,7 +160,6 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final scale = _voiceScale(context, widget.dense);
     final colors = AppDesignSystem.colorsFor(context);
 
@@ -168,8 +167,8 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
       padding: widget.padding ?? AppEdgeInsets.all(scale(12)),
       decoration: AppBoxDecoration(
         borderRadius: AppBorderRadius.circular(scale(widget.dense ? 18 : 22)),
-        color: widget.backgroundColor ?? colors.surfaceHigh,
-        border: Border.all(color: widget.borderColor ?? colors.borderSoft),
+        color: widget.backgroundColor ?? colors.transparent,
+        border: Border.all(color: widget.borderColor ?? colors.transparent),
       ),
       child: Row(
         children: [
@@ -193,7 +192,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                   height: scale(widget.dense ? 42 : 48),
                   decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: colors.primary,
+                    color: colors.secondary,
                   ),
                   child: Center(
                     child: busy
@@ -202,7 +201,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                             height: scale(18),
                             child: CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: colors.textPrimary,
+                              color: colors.onSecondary,
                             ),
                           )
                         : Icon(
@@ -210,7 +209,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: scale(widget.dense ? 27 : 30),
-                            color: colors.textPrimary,
+                            color: colors.onSecondary,
                           ),
                   ),
                 ),
@@ -222,17 +221,6 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.chatVoiceMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyle(
-                    fontSize: scale(widget.dense ? 14 : 15),
-                    fontWeight: FontWeight.w800,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: scale(widget.dense ? 7 : 8)),
                 StreamBuilder<Duration?>(
                   stream: _player.durationStream,
                   builder: (context, durationSnapshot) {
@@ -251,32 +239,28 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                                       duration.inMilliseconds)
                                   .clamp(0.0, 1.0);
 
-                        return Row(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: _ChatVoiceWaveform(
-                                progress: progress,
-                                dense: widget.dense,
-                                enabled: !_preparing,
-                                onSeekFraction: (fraction) =>
-                                    _seekToFraction(fraction, duration),
+                            _ChatVoiceWaveform(
+                              progress: progress,
+                              dense: widget.dense,
+                              enabled: !_preparing,
+                              onSeekFraction: (fraction) =>
+                                  _seekToFraction(fraction, duration),
+                            ),
+                            SizedBox(height: scale(3)),
+                            Text(
+                              _formatVoiceDuration(
+                                position == Duration.zero ? duration : position,
+                              ),
+                              style: AppTextStyle(
+                                fontSize: scale(widget.dense ? 14 : 16),
+                                fontWeight: FontWeight.w500,
+                                color: colors.textSecondary,
                               ),
                             ),
-                            if (duration.inMilliseconds > 0) ...[
-                              SizedBox(width: scale(10)),
-                              Text(
-                                _formatVoiceDuration(
-                                  position == Duration.zero
-                                      ? duration
-                                      : position,
-                                ),
-                                style: AppTextStyle(
-                                  fontSize: scale(widget.dense ? 11 : 12),
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ],
                           ],
                         );
                       },
@@ -346,8 +330,8 @@ class _ChatVoiceWaveform extends StatelessWidget {
                           decoration: AppBoxDecoration(
                             borderRadius: AppBorderRadius.circular(999),
                             color: i < activeBars
-                                ? colors.primary
-                                : colors.textDisabled.withValues(alpha: 0.36),
+                                ? colors.secondary
+                                : colors.textDisabled.withValues(alpha: 0.42),
                           ),
                         ),
                       ),

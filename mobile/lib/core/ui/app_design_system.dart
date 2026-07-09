@@ -1130,6 +1130,7 @@ class AppColors {
     required this.success,
     required this.warning,
     required this.danger,
+    required this.link,
     required this.transparent,
     required this.black,
     required this.white,
@@ -1165,6 +1166,7 @@ class AppColors {
   final Color success;
   final Color warning;
   final Color danger;
+  final Color link;
   final Color transparent;
   final Color black;
   final Color white;
@@ -1204,6 +1206,7 @@ abstract final class AppColorSchemes {
     success: AppPalette.success,
     warning: AppPalette.warning,
     danger: AppPalette.danger,
+    link: AppPalette.blueLight01,
     transparent: AppPalette.transparent,
     black: AppPalette.black,
     white: AppPalette.white,
@@ -1226,20 +1229,21 @@ abstract final class AppColorSchemes {
     backgroundWarm: Color(0xFFF6F8FB),
     surface: Color(0xFFFFFFFF),
     surfaceRaised: Color(0xFFFFFFFF),
-    surfaceHigh: Color(0xFFF8FAFC),
+    surfaceHigh: Color(0xFFF1F5F9),
     surfaceWarm: Color(0xFFFFF6E8),
     surfaceTeal: Color(0xFFE6F7F5),
     textPrimary: Color(0xFF111827),
     textSecondary: Color(0xFF475569),
     textMuted: Color(0xFF64748B),
     textDisabled: Color(0xFF94A3B8),
-    border: Color(0xFFE2E8F0),
-    borderSoft: Color(0x99E2E8F0),
+    border: Color(0xFFCBD5E1),
+    borderSoft: Color(0xFFCBD5E1),
     borderPrimary: Color(0x33FF9F0A),
     borderSecondary: Color(0x3300A99D),
     success: Color(0xFF15803D),
     warning: Color(0xFFB45309),
     danger: Color(0xFFDC2626),
+    link: AppPalette.blueSurfaceHigh10,
     transparent: AppPalette.transparent,
     black: AppPalette.black,
     white: AppPalette.white,
@@ -1555,7 +1559,7 @@ abstract final class AppButtonStyles {
       padding: AppInsets.button,
       foregroundColor: colors.secondary,
       disabledForegroundColor: colors.textDisabled,
-      side: BorderSide(color: colors.borderSecondary),
+      side: BorderSide(color: colors.borderSoft),
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
       textStyle: AppTypography.bodyStrongStyle,
     );

@@ -10099,13 +10099,13 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionDiscardDescription.
   ///
   /// In en, this message translates to:
-  /// **'Your excursion draft data will be lost. The form will open empty next time.'**
+  /// **'Unsaved excursion draft changes will be lost.'**
   String get createExcursionDiscardDescription;
 
   /// No description provided for @createExcursionDiscardConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Leave and discard'**
+  /// **'Leave'**
   String get createExcursionDiscardConfirm;
 
   /// No description provided for @createExcursionModeSwitchTitle.
@@ -13127,7 +13127,7 @@ abstract class AppLocalizations {
   /// No description provided for @qrScannerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Point your camera at the host QR to confirm that you arrived at the activity.'**
+  /// **'Point the camera at the QR'**
   String get qrScannerSubtitle;
 
   /// No description provided for @qrScannerReady.
@@ -15446,6 +15446,18 @@ abstract class AppLocalizations {
   /// **'Photo / Video'**
   String get chatAttachmentPhotoVideo;
 
+  /// No description provided for @chatAttachmentPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get chatAttachmentPhoto;
+
+  /// No description provided for @chatAttachmentVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get chatAttachmentVideo;
+
   /// No description provided for @chatAttachmentFile.
   ///
   /// In en, this message translates to:
@@ -15515,7 +15527,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatAttachmentVideoTooLong.
   ///
   /// In en, this message translates to:
-  /// **'Video is too long. Use a clip up to 5 minutes.'**
+  /// **'Video is too long. Use a clip up to 10 minutes.'**
   String get chatAttachmentVideoTooLong;
 
   /// No description provided for @chatComposerCameraButtonLabel.
@@ -15812,6 +15824,12 @@ abstract class AppLocalizations {
   /// **'Downloading...'**
   String get chatAttachmentDownloading;
 
+  /// No description provided for @chatAttachmentLoadingPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading attachment...'**
+  String get chatAttachmentLoadingPreview;
+
   /// No description provided for @chatAttachmentDownloaded.
   ///
   /// In en, this message translates to:
@@ -15859,6 +15877,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The attachment is too large. Use a file up to 25 MB.'**
   String get chatAttachmentTooLarge;
+
+  /// No description provided for @chatAttachmentImageLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send up to {count} images in one message.'**
+  String chatAttachmentImageLimit(int count);
+
+  /// No description provided for @chatAttachmentFileLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send up to {count} files in one message.'**
+  String chatAttachmentFileLimit(int count);
+
+  /// No description provided for @chatAttachmentVideoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send up to {count} videos in one message.'**
+  String chatAttachmentVideoLimit(int count);
 
   /// No description provided for @chatComposerHint.
   ///
@@ -15943,6 +15979,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voice message is too short.'**
   String get chatVoiceTooShort;
+
+  /// No description provided for @chatVoiceTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice message is too long. Maximum duration is 10 minutes.'**
+  String get chatVoiceTooLong;
 
   /// No description provided for @chatReactionSheetTitle.
   ///

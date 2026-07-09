@@ -28,6 +28,7 @@ import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
+import '../../features/chat/utils/chat_attachment_preview_cache.dart';
 import '../../features/chat/utils/chat_link_utils.dart';
 import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
@@ -38,6 +39,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/sticker_catalog_provider.dart';
 import 'chat_camera_screen.dart';
+import 'chat_file_viewer_screen.dart';
 import 'chat_image_viewer_screen.dart';
 import 'chat_participants_screen.dart';
 import 'chat_shared_content_screen.dart';
@@ -63,6 +65,7 @@ final class _ChatColors {
   Color get secondaryPressed => colors.secondaryPressed;
   Color get secondarySoft => colors.secondarySoft;
   Color get secondaryContainer => colors.secondaryContainer;
+  Color get onSecondary => colors.onSecondary;
   Color get success => colors.success;
   Color get warning => colors.warning;
   Color get danger => colors.danger;
@@ -90,6 +93,22 @@ final class _ChatColors {
   Color get composerControlBorder => colors.border;
   Color get composerControlIcon => colors.primary;
   Color get composerHintText => colors.textMuted;
+  Color composerSendButtonSurface(bool disabled) =>
+      disabled ? colors.textDisabled.withValues(alpha: 0.32) : colors.primary;
+  Color composerPanelTabSurface(bool selected) =>
+      selected ? colors.primary.withValues(alpha: 0.18) : colors.surfaceHigh;
+  Color composerPanelTabBorder(bool selected) =>
+      selected ? colors.primary.withValues(alpha: 0.42) : colors.border;
+  Color composerPanelTabText(bool selected) =>
+      selected ? colors.primary : colors.textSecondary;
+  Color get messageText => colors.textPrimary;
+  Color get messageLink => colors.link;
+  Color messageSurface(bool highlighted) => highlighted
+      ? colors.secondaryContainer.withValues(alpha: 0.34)
+      : colors.transparent;
+  Color messageBorder(bool highlighted) => highlighted
+      ? colors.secondary.withValues(alpha: 0.42)
+      : colors.transparent;
   Color get actionOnPrimary => colors.textPrimary;
   Color get transparent => colors.transparent;
   Color get black => colors.black;
@@ -138,6 +157,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   static const _maxChatAttachmentBytes = 25 * 1024 * 1024;
+  static const _maxChatImageAttachmentsPerMessage = 10;
+  static const _maxChatFileAttachmentsPerMessage = 10;
+  static const _maxChatVideoAttachmentsPerMessage = 10;
+  static const _maxChatVoiceRecordingDuration = Duration(minutes: 10);
+  static const _maxChatVideoAttachmentDuration = Duration(minutes: 10);
+  static const _attachmentPreviewWarmupLimit = 80;
+  static const _attachmentPreviewWarmupConcurrency = 6;
   static const _stickerImageWarmupLimit = 180;
   static const _stickerImageWarmupConcurrency = 6;
   static const _messageActionSheetMaxHeightFactor = 0.82;
@@ -163,7 +189,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _messageHighlightTimer;
   Timer? _voiceRecordingTimer;
   String? _messagingWindowTimerKey;
+  String? _attachmentPreviewWarmupKey;
   final List<_PickedChatAttachment> _pendingAttachments = [];
+  final Map<String, List<_PickedChatAttachment>>
+  _localPendingAttachmentsByMessageId = {};
+  final Map<String, _PendingAttachmentSendState>
+  _pendingAttachmentSendStateByMessageId = {};
   int _pendingAttachmentSeq = 0;
   bool _attachmentUploading = false;
   bool _voiceRecording = false;
@@ -285,43 +316,116 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty && attachments.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
+    if (_imageAttachmentCount(attachments) >
+        _maxChatImageAttachmentsPerMessage) {
+      await _showAttachmentError(
+        l10n.chatAttachmentImageLimit(_maxChatImageAttachmentsPerMessage),
+      );
+      return;
+    }
+    if (_videoAttachmentCount(attachments) >
+        _maxChatVideoAttachmentsPerMessage) {
+      await _showAttachmentError(
+        l10n.chatAttachmentVideoLimit(_maxChatVideoAttachmentsPerMessage),
+      );
+      return;
+    }
+    if (_fileAttachmentCount(attachments) > _maxChatFileAttachmentsPerMessage) {
+      await _showAttachmentError(
+        l10n.chatAttachmentFileLimit(_maxChatFileAttachmentsPerMessage),
+      );
+      return;
+    }
+    if (attachments.any(_isVideoTooLong)) {
+      await _showAttachmentError(l10n.chatAttachmentVideoTooLong);
+      return;
+    }
+
     final chatProvider = context.read<ChatProvider>();
 
-    final fileIds = <String>[];
-
-    try {
-      if (attachments.isNotEmpty) {
-        setState(() => _attachmentUploading = true);
-
-        for (final attachment in attachments) {
-          final upload = await _fileApi.createChatAttachmentUpload(
-            originalName: attachment.name,
-            contentType: attachment.contentType,
-            sizeBytes: attachment.bytes.lengthInBytes,
-          );
-          await _fileApi.uploadBinary(
-            upload: upload,
-            bytes: attachment.bytes,
-            contentType: attachment.contentType,
-          );
-          await _fileApi.completeUpload(upload.fileId);
-          fileIds.add(upload.fileId);
-        }
-      }
-
+    if (attachments.isEmpty) {
       final sent = await chatProvider.sendMessage(
         text,
-        type: fileIds.isEmpty ? 'text' : 'file',
-        fileIds: fileIds,
         replyToMessageId: replyToMessageId,
       );
 
       if (!mounted || !sent) return;
 
       _messageController.clear();
+      setState(() => _replyToMessage = null);
+      chatProvider.markAsRead();
+      return;
+    }
+
+    MessageVm? createdPendingMessage;
+    final fileIds = <String>[];
+
+    try {
+      setState(() => _attachmentUploading = true);
+      final pendingMessage = await chatProvider.createPendingAttachmentMessage(
+        text,
+        replyToMessageId: replyToMessageId,
+      );
+      if (!mounted) return;
+      if (pendingMessage == null) {
+        throw StateError('Pending chat message was not created');
+      }
+      createdPendingMessage = pendingMessage;
+
       setState(() {
+        _messageController.clear();
         _pendingAttachments.clear();
         _replyToMessage = null;
+        _localPendingAttachmentsByMessageId[pendingMessage.id] = attachments;
+        _pendingAttachmentSendStateByMessageId[pendingMessage.id] =
+            _PendingAttachmentSendState.uploading(
+              uploadedCount: 0,
+              totalCount: attachments.length,
+            );
+        _attachmentUploading = false;
+      });
+
+      for (final attachment in attachments) {
+        final upload = await _fileApi.createChatAttachmentUpload(
+          originalName: attachment.name,
+          contentType: attachment.contentType,
+          sizeBytes: attachment.bytes.lengthInBytes,
+        );
+        await _fileApi.uploadBinary(
+          upload: upload,
+          bytes: attachment.bytes,
+          contentType: attachment.contentType,
+        );
+        await _fileApi.completeUpload(upload.fileId);
+        fileIds.add(upload.fileId);
+        if (!mounted) return;
+        setState(() {
+          _pendingAttachmentSendStateByMessageId[pendingMessage.id] =
+              _PendingAttachmentSendState.uploading(
+                uploadedCount: fileIds.length,
+                totalCount: attachments.length,
+              );
+        });
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _pendingAttachmentSendStateByMessageId[pendingMessage.id] =
+            _PendingAttachmentSendState.sending(totalCount: attachments.length);
+      });
+
+      final completed = await chatProvider.completePendingMessageAttachments(
+        pendingMessage.id,
+        fileIds,
+      );
+      if (!mounted) return;
+      if (completed == null) {
+        throw StateError('Pending chat message was not completed');
+      }
+
+      setState(() {
+        _localPendingAttachmentsByMessageId.remove(pendingMessage.id);
+        _pendingAttachmentSendStateByMessageId.remove(pendingMessage.id);
       });
       for (final attachment in attachments) {
         unawaited(_deleteLocalAttachmentFile(attachment));
@@ -329,6 +433,15 @@ class _ChatScreenState extends State<ChatScreen> {
       chatProvider.markAsRead();
     } catch (e) {
       if (!mounted) return;
+      if (createdPendingMessage != null) {
+        setState(() {
+          _pendingAttachmentSendStateByMessageId[createdPendingMessage!.id] =
+              _PendingAttachmentSendState.failed(
+                uploadedCount: fileIds.length,
+                totalCount: attachments.length,
+              );
+        });
+      }
       final message = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.chatAttachmentUploadFailed;
@@ -358,25 +471,40 @@ class _ChatScreenState extends State<ChatScreen> {
       final attachments = <_PickedChatAttachment>[];
 
       switch (type) {
-        case _AttachmentPickType.gallery:
-          // pickMultipleMedia uses the system PHPicker (iOS) / PhotoPicker
-          // (Android 13+) — no runtime permission needed.
-          final picker = ImagePicker();
-          final picked = await picker.pickMultipleMedia();
-          if (!mounted || picked.isEmpty) return;
-          for (final x in picked) {
-            final att = await _attachmentFromXFile(x, ++_pendingAttachmentSeq);
-            if (!mounted) return;
-            if (att == null) {
-              await _showAttachmentError(l10n.chatAttachmentUnsupported);
-              return;
-            }
-            if (att.bytes.lengthInBytes > _maxChatAttachmentBytes) {
-              await _showAttachmentError(l10n.chatAttachmentTooLarge);
-              return;
-            }
-            attachments.add(att);
+        case _AttachmentPickType.galleryImage:
+          final remainingSlots = _remainingImageAttachmentSlots();
+          if (remainingSlots <= 0) {
+            await _showAttachmentError(
+              l10n.chatAttachmentImageLimit(_maxChatImageAttachmentsPerMessage),
+            );
+            return;
           }
+
+          final picker = ImagePicker();
+          final picked = await picker.pickMultiImage(limit: remainingSlots);
+          if (!mounted || picked.isEmpty) return;
+          final pickedAttachments = await _attachmentsFromXFiles(picked, l10n);
+          if (!mounted || pickedAttachments == null) return;
+          attachments.addAll(pickedAttachments);
+
+        case _AttachmentPickType.galleryVideo:
+          final remainingSlots = _remainingVideoAttachmentSlots();
+          if (remainingSlots <= 0) {
+            await _showAttachmentError(
+              l10n.chatAttachmentVideoLimit(_maxChatVideoAttachmentsPerMessage),
+            );
+            return;
+          }
+
+          final picker = ImagePicker();
+          final picked = await picker.pickMultiVideo(
+            maxDuration: _maxChatVideoAttachmentDuration,
+            limit: remainingSlots,
+          );
+          if (!mounted || picked.isEmpty) return;
+          final pickedAttachments = await _attachmentsFromXFiles(picked, l10n);
+          if (!mounted || pickedAttachments == null) return;
+          attachments.addAll(pickedAttachments);
 
         case _AttachmentPickType.file:
         case _AttachmentPickType.audio:
@@ -386,22 +514,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 : const <file_selector.XTypeGroup>[],
           );
           if (!mounted || picked.isEmpty) return;
-          for (final file in picked) {
-            final att = await _attachmentFromXFile(
-              file,
-              ++_pendingAttachmentSeq,
-            );
-            if (!mounted) return;
-            if (att == null) {
-              await _showAttachmentError(l10n.chatAttachmentUnsupported);
-              return;
-            }
-            if (att.bytes.lengthInBytes > _maxChatAttachmentBytes) {
-              await _showAttachmentError(l10n.chatAttachmentTooLarge);
-              return;
-            }
-            attachments.add(att);
-          }
+          final pickedAttachments = await _attachmentsFromXFiles(picked, l10n);
+          if (!mounted || pickedAttachments == null) return;
+          attachments.addAll(pickedAttachments);
       }
 
       if (!mounted || attachments.isEmpty) return;
@@ -412,10 +527,13 @@ class _ChatScreenState extends State<ChatScreen> {
           await _showAttachmentError(l10n.chatAttachmentTooLarge);
           return;
         }
+        if (_isVideoTooLong(att)) {
+          await _showAttachmentError(l10n.chatAttachmentVideoTooLong);
+          return;
+        }
       }
 
-      setState(() => _pendingAttachments.addAll(attachments));
-      _focusNode.requestFocus();
+      await _addPendingAttachmentsWithinMessageLimits(attachments);
     } catch (e) {
       if (!mounted) return;
       final message = e is DioException
@@ -423,6 +541,34 @@ class _ChatScreenState extends State<ChatScreen> {
           : l10n.chatAttachmentUploadFailed;
       await _showAttachmentError(message);
     }
+  }
+
+  Future<List<_PickedChatAttachment>?> _attachmentsFromXFiles(
+    Iterable<XFile> files,
+    AppLocalizations l10n,
+  ) async {
+    final attachments = <_PickedChatAttachment>[];
+    for (final file in files) {
+      final attachment = await _attachmentFromXFile(
+        file,
+        ++_pendingAttachmentSeq,
+      );
+      if (!mounted) return null;
+      if (attachment == null) {
+        await _showAttachmentError(l10n.chatAttachmentUnsupported);
+        return null;
+      }
+      if (attachment.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+        await _showAttachmentError(l10n.chatAttachmentTooLarge);
+        return null;
+      }
+      if (_isVideoTooLong(attachment)) {
+        await _showAttachmentError(l10n.chatAttachmentVideoTooLong);
+        return null;
+      }
+      attachments.add(attachment);
+    }
+    return attachments;
   }
 
   Future<void> _captureCameraAttachment() async {
@@ -439,8 +585,9 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final captured = await Navigator.of(context).push<XFile>(
         MaterialPageRoute(
-          builder: (_) =>
-              const ChatCameraScreen(maxVideoDuration: Duration(minutes: 5)),
+          builder: (_) => const ChatCameraScreen(
+            maxVideoDuration: _maxChatVideoAttachmentDuration,
+          ),
         ),
       );
 
@@ -459,9 +606,12 @@ class _ChatScreenState extends State<ChatScreen> {
         await _showAttachmentError(l10n.chatAttachmentTooLarge);
         return;
       }
+      if (_isVideoTooLong(attachment)) {
+        await _showAttachmentError(l10n.chatAttachmentVideoTooLong);
+        return;
+      }
 
-      setState(() => _pendingAttachments.add(attachment));
-      _focusNode.requestFocus();
+      await _addPendingAttachmentsWithinMessageLimits([attachment]);
     } catch (_) {
       if (!mounted) return;
       await _showAttachmentError(l10n.chatCameraCaptureFailed);
@@ -491,6 +641,10 @@ class _ChatScreenState extends State<ChatScreen> {
         _contentTypeForFileName(name) ??
         file.mimeType ??
         'application/octet-stream';
+    final duration = await _localVideoDuration(
+      path: file.path,
+      contentType: contentType,
+    );
 
     return _PickedChatAttachment(
       localId: localId,
@@ -498,7 +652,31 @@ class _ChatScreenState extends State<ChatScreen> {
       bytes: bytes,
       contentType: contentType,
       localPath: file.path,
+      duration: duration,
     );
+  }
+
+  Future<Duration?> _localVideoDuration({
+    required String path,
+    required String contentType,
+  }) async {
+    if (!contentType.startsWith('video/')) return null;
+
+    final normalizedPath = path.trim();
+    if (normalizedPath.isEmpty) return null;
+
+    final file = File(normalizedPath);
+    if (!await file.exists()) return null;
+
+    final controller = VideoPlayerController.file(file);
+    try {
+      await controller.initialize();
+      return controller.value.duration;
+    } catch (_) {
+      return null;
+    } finally {
+      await controller.dispose();
+    }
   }
 
   _PickedChatAttachment? _attachmentFromClipboardImage(
@@ -599,8 +777,125 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (!mounted || shouldSend != true) return;
 
-    setState(() => _pendingAttachments.add(attachment));
+    final added = await _addPendingAttachmentsWithinMessageLimits([
+      attachment,
+    ], requestFocus: false);
+    if (!added) return;
     await _handleSend();
+  }
+
+  int _remainingImageAttachmentSlots() {
+    final currentImageCount = _imageAttachmentCount(_pendingAttachments);
+    return math.max(0, _maxChatImageAttachmentsPerMessage - currentImageCount);
+  }
+
+  int _remainingVideoAttachmentSlots() {
+    final currentVideoCount = _videoAttachmentCount(_pendingAttachments);
+    return math.max(0, _maxChatVideoAttachmentsPerMessage - currentVideoCount);
+  }
+
+  int _remainingFileAttachmentSlots() {
+    final currentFileCount = _fileAttachmentCount(_pendingAttachments);
+    return math.max(0, _maxChatFileAttachmentsPerMessage - currentFileCount);
+  }
+
+  int _imageAttachmentCount(Iterable<_PickedChatAttachment> attachments) {
+    return attachments.where((attachment) => attachment.isImage).length;
+  }
+
+  int _videoAttachmentCount(Iterable<_PickedChatAttachment> attachments) {
+    return attachments.where((attachment) => attachment.isVideo).length;
+  }
+
+  int _fileAttachmentCount(Iterable<_PickedChatAttachment> attachments) {
+    return attachments.where((attachment) => attachment.isGenericFile).length;
+  }
+
+  bool _isVideoTooLong(_PickedChatAttachment attachment) {
+    final duration = attachment.duration;
+    return attachment.isVideo &&
+        duration != null &&
+        duration > _maxChatVideoAttachmentDuration;
+  }
+
+  Future<bool> _addPendingAttachmentsWithinMessageLimits(
+    List<_PickedChatAttachment> attachments, {
+    bool requestFocus = true,
+  }) async {
+    if (!mounted || attachments.isEmpty) return false;
+
+    final l10n = AppLocalizations.of(context)!;
+    final remainingImageSlots = _remainingImageAttachmentSlots();
+    final remainingVideoSlots = _remainingVideoAttachmentSlots();
+    final remainingFileSlots = _remainingFileAttachmentSlots();
+    final accepted = <_PickedChatAttachment>[];
+    var acceptedImageCount = 0;
+    var acceptedVideoCount = 0;
+    var acceptedFileCount = 0;
+    var rejectedImageCount = 0;
+    var rejectedVideoCount = 0;
+    var rejectedFileCount = 0;
+    var rejectedLongVideoCount = 0;
+
+    for (final attachment in attachments) {
+      if (attachment.isImage) {
+        if (acceptedImageCount >= remainingImageSlots) {
+          rejectedImageCount += 1;
+          unawaited(_deleteLocalAttachmentFile(attachment));
+          continue;
+        }
+        acceptedImageCount += 1;
+      } else if (attachment.isVideo) {
+        if (_isVideoTooLong(attachment)) {
+          rejectedLongVideoCount += 1;
+          unawaited(_deleteLocalAttachmentFile(attachment));
+          continue;
+        }
+        if (acceptedVideoCount >= remainingVideoSlots) {
+          rejectedVideoCount += 1;
+          unawaited(_deleteLocalAttachmentFile(attachment));
+          continue;
+        }
+        acceptedVideoCount += 1;
+      } else if (attachment.isGenericFile) {
+        if (acceptedFileCount >= remainingFileSlots) {
+          rejectedFileCount += 1;
+          unawaited(_deleteLocalAttachmentFile(attachment));
+          continue;
+        }
+        acceptedFileCount += 1;
+      }
+
+      accepted.add(attachment);
+    }
+
+    final rejectionMessage = rejectedLongVideoCount > 0
+        ? l10n.chatAttachmentVideoTooLong
+        : rejectedVideoCount > 0
+        ? l10n.chatAttachmentVideoLimit(_maxChatVideoAttachmentsPerMessage)
+        : rejectedFileCount > 0
+        ? l10n.chatAttachmentFileLimit(_maxChatFileAttachmentsPerMessage)
+        : rejectedImageCount > 0
+        ? l10n.chatAttachmentImageLimit(_maxChatImageAttachmentsPerMessage)
+        : null;
+
+    if (accepted.isEmpty) {
+      await _showAttachmentError(
+        rejectionMessage ?? l10n.chatAttachmentUploadFailed,
+      );
+      return false;
+    }
+
+    setState(() => _pendingAttachments.addAll(accepted));
+    if (requestFocus) {
+      _focusNode.requestFocus();
+    }
+
+    if (rejectionMessage != null) {
+      await _showAttachmentError(rejectionMessage);
+    }
+
+    return true;
   }
 
   void _removePendingAttachment(int localId) {
@@ -682,10 +977,16 @@ class _ChatScreenState extends State<ChatScreen> {
       _voiceRecordingTimer?.cancel();
       _voiceRecordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted || _voiceRecordingStartedAt == null) return;
+        final elapsed = DateTime.now().difference(_voiceRecordingStartedAt!);
+        if (elapsed >= _maxChatVoiceRecordingDuration) {
+          setState(() {
+            _voiceRecordingDuration = _maxChatVoiceRecordingDuration;
+          });
+          unawaited(_stopVoiceRecordingForPreview(maxDurationReached: true));
+          return;
+        }
         setState(() {
-          _voiceRecordingDuration = DateTime.now().difference(
-            _voiceRecordingStartedAt!,
-          );
+          _voiceRecordingDuration = elapsed;
         });
       });
     } catch (_) {
@@ -707,7 +1008,9 @@ class _ChatScreenState extends State<ChatScreen> {
     await _resetVoiceRecording(cancelRecorder: true);
   }
 
-  Future<void> _stopVoiceRecordingForPreview() async {
+  Future<void> _stopVoiceRecordingForPreview({
+    bool maxDurationReached = false,
+  }) async {
     if (!_voiceRecording || _voiceStopping) return;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
@@ -722,9 +1025,12 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final path = await _voiceRecorder.stop();
       final recordedAt = _voiceRecordingStartedAt;
-      final duration = recordedAt == null
+      final measuredDuration = recordedAt == null
           ? _voiceRecordingDuration
           : DateTime.now().difference(recordedAt);
+      final duration = maxDurationReached
+          ? _maxChatVoiceRecordingDuration
+          : measuredDuration;
 
       setState(() {
         _voiceRecording = false;
@@ -747,6 +1053,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (duration < const Duration(seconds: 1)) {
         await file.delete().catchError((_) => file);
         await _showAttachmentError(l10n.chatVoiceTooShort);
+        return;
+      }
+      if (!maxDurationReached && duration > _maxChatVoiceRecordingDuration) {
+        await file.delete().catchError((_) => file);
+        await _showAttachmentError(l10n.chatVoiceTooLong);
         return;
       }
 
@@ -963,6 +1274,28 @@ class _ChatScreenState extends State<ChatScreen> {
       stickers.map((sticker) => sticker.displayFileId),
       limit: limit,
       concurrency: _stickerImageWarmupConcurrency,
+    );
+  }
+
+  void _preloadAttachmentPreviews(List<MessageVm> messages) {
+    final fileIds = messages
+        .where((message) => !message.isDeleted && !message.isSystem)
+        .expand((message) => message.fileIds)
+        .map((fileId) => fileId.trim())
+        .where((fileId) => fileId.isNotEmpty)
+        .toList(growable: false);
+    if (fileIds.isEmpty) return;
+
+    final warmupKey = fileIds.take(_attachmentPreviewWarmupLimit).join(',');
+    if (warmupKey == _attachmentPreviewWarmupKey) return;
+    _attachmentPreviewWarmupKey = warmupKey;
+
+    unawaited(
+      ChatAttachmentPreviewCache.preload(
+        fileIds,
+        limit: _attachmentPreviewWarmupLimit,
+        concurrency: _attachmentPreviewWarmupConcurrency,
+      ),
     );
   }
 
@@ -1823,6 +2156,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
+              _preloadAttachmentPreviews(chat.messages);
               _markVisibleMessagesAsRead();
             }
           });
@@ -1853,6 +2187,10 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: _MessageList(
                   messages: chat.messages,
+                  pendingAttachmentsByMessageId:
+                      _localPendingAttachmentsByMessageId,
+                  pendingSendStateByMessageId:
+                      _pendingAttachmentSendStateByMessageId,
                   conversation: conv,
                   scrollController: _scrollController,
                   currentUserId: currentUserId,
@@ -1880,8 +2218,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   participants: conv.participants,
                   onSend: () => unawaited(_handleSend()),
                   onTyping: _handleTyping,
-                  onPickGallery: () =>
-                      _pickAttachments(_AttachmentPickType.gallery),
+                  onPickGalleryImage: () =>
+                      _pickAttachments(_AttachmentPickType.galleryImage),
+                  onPickGalleryVideo: () =>
+                      _pickAttachments(_AttachmentPickType.galleryVideo),
                   onPickFile: () => _pickAttachments(_AttachmentPickType.file),
                   onPickAudio: () =>
                       _pickAttachments(_AttachmentPickType.audio),
@@ -1924,12 +2264,61 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 // _AttachmentPickType drives _pickAttachments dispatch.
-//   - gallery: native multi-media picker (photos+videos), no runtime permission needed.
+//   - galleryImage: native gallery picker for multiple photos.
+//   - galleryVideo: native gallery picker for multiple videos.
 //   - file: arbitrary file via the platform file selector.
 //   - audio: audio file via the platform file selector.
-enum _AttachmentPickType { gallery, file, audio }
+enum _AttachmentPickType { galleryImage, galleryVideo, file, audio }
 
 enum _ComposerPanel { none, emoji, stickers }
+
+enum _PendingAttachmentSendPhase { uploading, sending, failed }
+
+class _PendingAttachmentSendState {
+  const _PendingAttachmentSendState._({
+    required this.phase,
+    required this.uploadedCount,
+    required this.totalCount,
+  });
+
+  factory _PendingAttachmentSendState.uploading({
+    required int uploadedCount,
+    required int totalCount,
+  }) {
+    return _PendingAttachmentSendState._(
+      phase: _PendingAttachmentSendPhase.uploading,
+      uploadedCount: uploadedCount,
+      totalCount: totalCount,
+    );
+  }
+
+  factory _PendingAttachmentSendState.sending({required int totalCount}) {
+    return _PendingAttachmentSendState._(
+      phase: _PendingAttachmentSendPhase.sending,
+      uploadedCount: totalCount,
+      totalCount: totalCount,
+    );
+  }
+
+  factory _PendingAttachmentSendState.failed({
+    required int uploadedCount,
+    required int totalCount,
+  }) {
+    return _PendingAttachmentSendState._(
+      phase: _PendingAttachmentSendPhase.failed,
+      uploadedCount: uploadedCount,
+      totalCount: totalCount,
+    );
+  }
+
+  final _PendingAttachmentSendPhase phase;
+  final int uploadedCount;
+  final int totalCount;
+
+  bool get isBusy =>
+      phase == _PendingAttachmentSendPhase.uploading ||
+      phase == _PendingAttachmentSendPhase.sending;
+}
 
 class _PickedChatAttachment {
   const _PickedChatAttachment({
@@ -1953,6 +2342,7 @@ class _PickedChatAttachment {
   bool get isImage => contentType.startsWith('image/');
   bool get isVideo => contentType.startsWith('video/');
   bool get isAudio => contentType.startsWith('audio/');
+  bool get isGenericFile => !isImage && !isVideo && !isAudio;
 
   String get extensionLabel {
     final dot = name.lastIndexOf('.');
@@ -2262,9 +2652,7 @@ class _DirectTopBarContent extends StatelessWidget {
                             letterSpacing: 0.4,
                             color: isOnline
                                 ? context.chatColors.secondary
-                                : context.chatColors.white.withValues(
-                                    alpha: 0.56,
-                                  ),
+                                : context.chatColors.textMuted,
                           ),
                         ),
                       ),
@@ -2486,6 +2874,8 @@ class _PinnedMessagesBar extends StatelessWidget {
 class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.messages,
+    required this.pendingAttachmentsByMessageId,
+    required this.pendingSendStateByMessageId,
     required this.conversation,
     required this.scrollController,
     required this.currentUserId,
@@ -2501,6 +2891,8 @@ class _MessageList extends StatelessWidget {
   });
 
   final List<MessageVm> messages;
+  final Map<String, List<_PickedChatAttachment>> pendingAttachmentsByMessageId;
+  final Map<String, _PendingAttachmentSendState> pendingSendStateByMessageId;
   final ConversationDetail conversation;
   final ScrollController scrollController;
   final String currentUserId;
@@ -2567,11 +2959,10 @@ class _MessageList extends StatelessWidget {
         _MessageBubble(
           messageKey: messageKeyForId(msg.id),
           message: msg,
+          pendingAttachments: pendingAttachmentsByMessageId[msg.id],
+          pendingSendState: pendingSendStateByMessageId[msg.id],
           isGroup: conversation.isGroup,
-          isMine: msg.senderUserId == currentUserId,
           isHighlighted: highlightedMessageId == msg.id,
-          readByOthers: _isReadByAnotherParticipant(msg, i),
-          showReadTicks: !conversation.isActivity,
           participants: conversation.participants,
           repliedMessage: msg.replyToMessageId == null
               ? null
@@ -2598,34 +2989,6 @@ class _MessageList extends StatelessWidget {
     }
 
     return items;
-  }
-
-  bool _isReadByAnotherParticipant(MessageVm message, int messageIndex) {
-    if (currentUserId.trim().isEmpty ||
-        message.senderUserId != currentUserId ||
-        message.isSystem) {
-      return false;
-    }
-
-    for (final participant in conversation.participants) {
-      if (participant.userId == currentUserId) {
-        continue;
-      }
-      final lastReadId = participant.lastReadMessageId?.trim() ?? '';
-      if (lastReadId.isEmpty) {
-        continue;
-      }
-      if (lastReadId == message.id) {
-        return true;
-      }
-
-      final readIndex = messages.indexWhere((m) => m.id == lastReadId);
-      if (readIndex >= 0 && readIndex <= messageIndex) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   String _dateLabelFor(DateTime dt, AppLocalizations l10n) {
@@ -4249,11 +4612,10 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.messageKey,
     required this.message,
+    required this.pendingAttachments,
+    required this.pendingSendState,
     required this.isGroup,
-    required this.isMine,
     required this.isHighlighted,
-    required this.readByOthers,
-    required this.showReadTicks,
     required this.participants,
     required this.repliedMessage,
     required this.onReply,
@@ -4267,11 +4629,10 @@ class _MessageBubble extends StatelessWidget {
 
   final GlobalKey messageKey;
   final MessageVm message;
+  final List<_PickedChatAttachment>? pendingAttachments;
+  final _PendingAttachmentSendState? pendingSendState;
   final bool isGroup;
-  final bool isMine;
   final bool isHighlighted;
-  final bool readByOthers;
-  final bool showReadTicks;
   final List<ParticipantInfo> participants;
   final MessageVm? repliedMessage;
   final VoidCallback onReply;
@@ -4324,109 +4685,50 @@ class _MessageBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Meta: name + time + ticks
                 Padding(
                   padding: AppEdgeInsets.only(
                     left: _scale(context, 4),
                     right: _scale(context, 4),
-                    bottom: _scale(context, 8),
+                    bottom: _scale(context, 4),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          senderName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyle(
-                            fontSize: _scale(context, isGroup ? 20 : 16),
-                            fontWeight: FontWeight.w800,
-                            height: 1,
-                            letterSpacing: -0.4,
-                            color: _nameColorFor(context, message.senderUserId),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _formatTime(message.sentAt),
-                            style: AppTextStyle(
-                              fontSize: _scale(context, 12),
-                              color: context.chatColors.white.withValues(
-                                alpha: 0.34,
-                              ),
-                            ),
-                          ),
-                          if (isMine && showReadTicks && !isDeleted)
-                            SizedBox(width: _scale(context, 6)),
-                          if (isMine && showReadTicks && !isDeleted)
-                            Text(
-                              readByOthers ? '✓✓' : '✓',
-                              style: AppTextStyle(
-                                fontSize: _scale(context, 13),
-                                fontWeight: FontWeight.w800,
-                                color: readByOthers
-                                    ? context.chatColors.secondary
-                                    : context.chatColors.white.withValues(
-                                        alpha: 0.35,
-                                      ),
-                                letterSpacing: -1,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+                  child: Text(
+                    senderName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle(
+                      fontSize: _scale(context, isGroup ? 20 : 16),
+                      fontWeight: FontWeight.w800,
+                      height: 1.05,
+                      letterSpacing: 0,
+                      color: _nameColorFor(context, message.senderUserId),
+                    ),
                   ),
                 ),
-                // Bubble
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 260),
                   curve: Curves.easeOutCubic,
                   width: isSticker
                       ? _scale(context, 184).clamp(156.0, 216.0).toDouble()
                       : double.infinity,
-                  padding: AppEdgeInsets.all(
-                    isSticker ? 0 : _scale(context, 20),
-                  ),
+                  padding: isSticker
+                      ? AppEdgeInsets.zero
+                      : AppEdgeInsets.symmetric(
+                          horizontal: _scale(context, 4),
+                          vertical: _scale(context, 2),
+                        ),
                   decoration: AppBoxDecoration(
                     borderRadius: AppBorderRadius.circular(
                       _scale(context, isSticker ? 24 : 22),
                     ),
-                    color: isSticker ? context.chatColors.transparent : null,
-                    gradient: isSticker
-                        ? null
-                        : isDeleted
-                        ? LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              context.chatColors.surfaceHigh,
-                              context.chatColors.surfaceHigh,
-                            ],
-                          )
-                        : LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              context.chatColors.surfaceHigh,
-                              context.chatColors.surfaceHigh,
-                            ],
-                          ),
+                    color: context.chatColors.messageSurface(isHighlighted),
                     border: Border.all(
-                      color: isHighlighted
-                          ? context.chatColors.primary.withValues(alpha: 0.72)
-                          : isSticker
-                          ? context.chatColors.transparent
-                          : context.chatColors.white.withValues(alpha: 0.05),
-                      width: isHighlighted ? 1.4 : 1,
+                      color: context.chatColors.messageBorder(isHighlighted),
+                      width: isHighlighted ? 1.2 : 0,
                     ),
                     boxShadow: isHighlighted
                         ? [
                             BoxShadow(
-                              color: context.chatColors.primary.withValues(
+                              color: context.chatColors.secondary.withValues(
                                 alpha: 0.22,
                               ),
                               blurRadius: 24,
@@ -4497,7 +4799,17 @@ class _MessageBubble extends StatelessWidget {
                       else if (!isDeleted && message.fileIds.isNotEmpty)
                         _MessageAttachments(fileIds: message.fileIds),
                       if (!isDeleted &&
-                          message.fileIds.isNotEmpty &&
+                          message.fileIds.isEmpty &&
+                          message.isPendingAttachmentUpload &&
+                          (pendingAttachments?.isNotEmpty ?? false))
+                        _PendingMessageAttachments(
+                          attachments: pendingAttachments!,
+                          state: pendingSendState,
+                        ),
+                      if (!isDeleted &&
+                          (message.fileIds.isNotEmpty ||
+                              (message.isPendingAttachmentUpload &&
+                                  (pendingAttachments?.isNotEmpty ?? false))) &&
                           message.content.trim().isNotEmpty)
                         SizedBox(height: _scale(context, 12)),
                       if (isDeleted)
@@ -4513,9 +4825,7 @@ class _MessageBubble extends StatelessWidget {
                                 fontStyle: FontStyle.italic,
                                 fontSize: _scale(context, 15),
                                 height: 1.4,
-                                color: context.chatColors.white.withValues(
-                                  alpha: 0.58,
-                                ),
+                                color: context.chatColors.textMuted,
                               ),
                             ),
                             if (message.isHiddenByModerator &&
@@ -4528,9 +4838,7 @@ class _MessageBubble extends StatelessWidget {
                                 style: AppTextStyle(
                                   fontSize: _scale(context, 14),
                                   height: 1.45,
-                                  color: context.chatColors.white.withValues(
-                                    alpha: 0.72,
-                                  ),
+                                  color: context.chatColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -4543,17 +4851,15 @@ class _MessageBubble extends StatelessWidget {
                           style: AppTextStyle(
                             fontSize: _scale(context, 16),
                             height: 1.5,
-                            color: context.chatColors.white.withValues(
-                              alpha: 0.98,
-                            ),
+                            color: context.chatColors.messageText,
                           ),
                           linkStyle: AppTextStyle(
                             fontSize: _scale(context, 16),
                             height: 1.5,
                             fontWeight: FontWeight.w800,
-                            color: context.chatColors.primary,
+                            color: context.chatColors.messageLink,
                             decoration: TextDecoration.underline,
-                            decorationColor: context.chatColors.primary,
+                            decorationColor: context.chatColors.messageLink,
                           ),
                         ),
                     ],
@@ -4589,7 +4895,7 @@ class _MessageBubble extends StatelessWidget {
                       style: AppTextStyle(
                         fontSize: _scale(context, 10),
                         fontStyle: FontStyle.italic,
-                        color: context.chatColors.white.withValues(alpha: 0.28),
+                        color: context.chatColors.textMuted,
                       ),
                     ),
                   ),
@@ -4617,10 +4923,6 @@ class _MessageBubble extends StatelessWidget {
         child: content,
       ),
     );
-  }
-
-  String _formatTime(DateTime dt) {
-    return DateFormat.Hm(l10n.localeName).format(dt.toLocal());
   }
 
   String _systemMessageText(String senderName, AppLocalizations l10n) {
@@ -4976,10 +5278,311 @@ class _MessageAttachments extends StatefulWidget {
   State<_MessageAttachments> createState() => _MessageAttachmentsState();
 }
 
+class _PendingMessageAttachments extends StatelessWidget {
+  const _PendingMessageAttachments({
+    required this.attachments,
+    required this.state,
+  });
+
+  final List<_PickedChatAttachment> attachments;
+  final _PendingAttachmentSendState? state;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = attachments
+        .where((attachment) => attachment.isImage || attachment.isVideo)
+        .toList(growable: false);
+    final files = attachments
+        .where((attachment) => !attachment.isImage && !attachment.isVideo)
+        .toList(growable: false);
+    final children = <Widget>[];
+
+    void addChild(Widget child) {
+      if (children.isNotEmpty) {
+        children.add(SizedBox(height: _scale(context, 10)));
+      }
+      children.add(child);
+    }
+
+    if (media.isNotEmpty) {
+      addChild(_PendingMessageMediaCollage(attachments: media));
+    }
+    for (final attachment in files) {
+      addChild(_PendingMessageFileRow(attachment: attachment));
+    }
+
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+        Positioned(
+          right: _scale(context, 10),
+          bottom: _scale(context, 10),
+          child: _PendingMessageStatusPill(state: state),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingMessageMediaCollage extends StatelessWidget {
+  const _PendingMessageMediaCollage({required this.attachments});
+
+  final List<_PickedChatAttachment> attachments;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleItems = attachments
+        .take(_ChatScreenState._maxChatImageAttachmentsPerMessage)
+        .toList(growable: false);
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
+
+    final gap = _scale(context, 6);
+    if (visibleItems.length == 1) {
+      return AspectRatio(
+        aspectRatio: 4 / 3,
+        child: _PendingMessageMediaTile(attachment: visibleItems.first),
+      );
+    }
+
+    if (visibleItems.length <= 3) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: visibleItems.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: visibleItems.length == 2 ? 2 : 3,
+          crossAxisSpacing: gap,
+          mainAxisSpacing: gap,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (context, index) {
+          return _PendingMessageMediaTile(attachment: visibleItems[index]);
+        },
+      );
+    }
+
+    final gridItems = visibleItems.skip(1).toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _PendingMessageMediaTile(attachment: visibleItems.first),
+        ),
+        SizedBox(height: gap),
+        GridView.builder(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: gridItems.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            childAspectRatio: 16 / 9,
+          ),
+          itemBuilder: (context, index) {
+            return _PendingMessageMediaTile(attachment: gridItems[index]);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingMessageMediaTile extends StatelessWidget {
+  const _PendingMessageMediaTile({required this.attachment});
+
+  final _PickedChatAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _PendingAttachmentPreview(attachment),
+          if (attachment.isVideo)
+            DecoratedBox(
+              decoration: AppBoxDecoration(
+                color: context.chatColors.black.withValues(alpha: 0.18),
+              ),
+              child: Center(
+                child: Container(
+                  width: _scale(context, 42),
+                  height: _scale(context, 42),
+                  decoration: AppBoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.chatColors.black.withValues(alpha: 0.48),
+                  ),
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color: context.chatColors.white,
+                    size: _scale(context, 28),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingMessageFileRow extends StatelessWidget {
+  const _PendingMessageFileRow({required this.attachment});
+
+  final _PickedChatAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minHeight: _scale(context, 64)),
+      padding: AppEdgeInsets.all(_scale(context, 12)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+        color: context.chatColors.surfaceHigh,
+        border: Border.all(color: context.chatColors.borderSoft),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: _scale(context, 42),
+            height: _scale(context, 42),
+            decoration: AppBoxDecoration(
+              shape: BoxShape.circle,
+              color: context.chatColors.primarySoft,
+            ),
+            child: Icon(
+              attachment.isAudio
+                  ? Icons.mic_rounded
+                  : Icons.insert_drive_file_rounded,
+              color: context.chatColors.primary,
+              size: _scale(context, 22),
+            ),
+          ),
+          SizedBox(width: _scale(context, 10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  attachment.isAudio
+                      ? AppLocalizations.of(context)!.chatVoicePreview
+                      : attachment.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: context.chatColors.textPrimary,
+                    fontSize: _scale(context, 13),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: _scale(context, 4)),
+                Text(
+                  '${_formatAttachmentSize(attachment.bytes.lengthInBytes)} | ${attachment.extensionLabel}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: context.chatColors.textSecondary,
+                    fontSize: _scale(context, 11),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingMessageStatusPill extends StatelessWidget {
+  const _PendingMessageStatusPill({required this.state});
+
+  final _PendingAttachmentSendState? state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final effectiveState =
+        state ??
+        _PendingAttachmentSendState.uploading(uploadedCount: 0, totalCount: 1);
+    final failed = effectiveState.phase == _PendingAttachmentSendPhase.failed;
+    final label = failed
+        ? l10n.chatAttachmentUploadFailed
+        : effectiveState.totalCount > 1
+        ? '${l10n.chatAttachmentUploading} ${effectiveState.uploadedCount}/${effectiveState.totalCount}'
+        : l10n.chatAttachmentUploading;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: _scale(context, 220)),
+      child: DecoratedBox(
+        decoration: AppBoxDecoration(
+          color: failed
+              ? context.chatColors.danger.withValues(alpha: 0.94)
+              : context.chatColors.black.withValues(alpha: 0.68),
+          borderRadius: AppBorderRadius.circular(_scale(context, 999)),
+          border: Border.all(
+            color: context.chatColors.white.withValues(alpha: 0.14),
+          ),
+        ),
+        child: Padding(
+          padding: AppEdgeInsets.symmetric(
+            horizontal: _scale(context, 10),
+            vertical: _scale(context, 7),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (effectiveState.isBusy)
+                SizedBox(
+                  width: _scale(context, 13),
+                  height: _scale(context, 13),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.chatColors.white,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: context.chatColors.white,
+                  size: _scale(context, 15),
+                ),
+              SizedBox(width: _scale(context, 6)),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: context.chatColors.white,
+                    fontSize: _scale(context, 11),
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageAttachmentsState extends State<_MessageAttachments> {
-  final _fileApi = FileApi();
   final _fileCache = ChatFileCache();
-  final Set<String> _busyFileIds = {};
+  final Map<String, CancelToken> _downloadCancelTokensByFileId = {};
+  final Map<String, _AttachmentDownloadProgress> _downloadProgressByFileId = {};
+  Set<String> _downloadedFileIds = {};
   late Future<List<_ChatAttachmentViewData>> _future;
 
   @override
@@ -4992,8 +5595,32 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
   void didUpdateWidget(covariant _MessageAttachments oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fileIds.join(',') != widget.fileIds.join(',')) {
+      final currentFileIds = widget.fileIds
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      _downloadedFileIds = _downloadedFileIds
+          .where(currentFileIds.contains)
+          .toSet();
+      for (final entry in _downloadCancelTokensByFileId.entries.toList()) {
+        if (!currentFileIds.contains(entry.key)) {
+          entry.value.cancel('attachment_removed');
+          _downloadCancelTokensByFileId.remove(entry.key);
+          _downloadProgressByFileId.remove(entry.key);
+        }
+      }
       _future = _load();
     }
+  }
+
+  @override
+  void dispose() {
+    for (final cancelToken in _downloadCancelTokensByFileId.values) {
+      cancelToken.cancel('attachment_widget_disposed');
+    }
+    _downloadCancelTokensByFileId.clear();
+    _downloadProgressByFileId.clear();
+    super.dispose();
   }
 
   Future<List<_ChatAttachmentViewData>> _load() async {
@@ -5002,42 +5629,45 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
         .where((id) => id.isNotEmpty)
         .toList(growable: false);
 
-    return Future.wait(ids.map(_loadOne));
+    final previews = await ChatAttachmentPreviewCache.loadMany(ids);
+    final byFileId = {for (final preview in previews) preview.fileId: preview};
+    return [
+      for (final fileId in ids)
+        _viewDataFromPreview(
+          byFileId[fileId] ?? ChatAttachmentPreviewData(fileId: fileId),
+        ),
+    ];
   }
 
-  Future<_ChatAttachmentViewData> _loadOne(String fileId) async {
-    FileMetadataVm? metadata;
-    Uint8List? imageBytes;
-    var downloaded = false;
+  _ChatAttachmentViewData _viewDataFromPreview(
+    ChatAttachmentPreviewData preview,
+  ) {
+    return _ChatAttachmentViewData(
+      fileId: preview.fileId,
+      metadata: preview.metadata,
+      imageBytes: preview.imageBytes,
+      downloaded: preview.downloaded,
+      previewLoading: preview.metadata == null,
+    );
+  }
 
-    try {
-      metadata = await _fileApi.getFileMetadata(fileId);
-      final localFile = await _fileCache.downloadedFile(
-        fileId,
-        metadata: metadata,
-      );
-      downloaded = localFile != null;
-
-      if (metadata.isImage && localFile != null) {
-        imageBytes = await localFile.file.readAsBytes();
-      } else if (metadata.isImage) {
-        final content = await _fileApi.downloadContent(fileId);
-        imageBytes = content.bytes.isEmpty ? null : content.bytes;
-      }
-    } catch (_) {
-      // Keep the message readable even if metadata is temporarily unavailable.
-    }
-
+  _ChatAttachmentViewData _placeholder(String fileId) {
+    final cached = ChatAttachmentPreviewCache.peek(fileId);
+    if (cached != null) return _viewDataFromPreview(cached);
     return _ChatAttachmentViewData(
       fileId: fileId,
-      metadata: metadata,
-      imageBytes: imageBytes,
-      downloaded: downloaded,
+      metadata: null,
+      imageBytes: null,
+      downloaded: false,
+      previewLoading: true,
     );
   }
 
   Future<void> _handleAttachmentTap(_ChatAttachmentViewData item) async {
-    if (_busyFileIds.contains(item.fileId)) return;
+    if (_downloadCancelTokensByFileId.containsKey(item.fileId)) {
+      _cancelAttachmentDownload(item.fileId);
+      return;
+    }
 
     if (item.downloaded) {
       await _openDownloadedAttachment(item);
@@ -5045,40 +5675,103 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    setState(() => _busyFileIds.add(item.fileId));
+    final cancelToken = CancelToken();
+    final initialTotalBytes =
+        item.metadata?.sizeBytes ?? item.imageBytes?.lengthInBytes ?? 0;
+    setState(() {
+      _downloadCancelTokensByFileId[item.fileId] = cancelToken;
+      _downloadProgressByFileId[item.fileId] = _AttachmentDownloadProgress(
+        receivedBytes: 0,
+        totalBytes: initialTotalBytes,
+      );
+    });
 
     try {
+      ChatDownloadedFile downloaded;
       if (item.imageBytes != null) {
-        await _fileCache.saveBytes(
+        _updateAttachmentDownloadProgress(
+          item.fileId,
+          item.imageBytes!.lengthInBytes,
+          item.imageBytes!.lengthInBytes,
+        );
+        downloaded = await _fileCache.saveBytes(
           item.fileId,
           bytes: item.imageBytes!,
           metadata: item.metadata,
         );
       } else {
-        await _fileCache.download(item.fileId, metadata: item.metadata);
+        downloaded = await _fileCache.download(
+          item.fileId,
+          metadata: item.metadata,
+          cancelToken: cancelToken,
+          onReceiveProgress: (receivedBytes, totalBytes) {
+            _updateAttachmentDownloadProgress(
+              item.fileId,
+              receivedBytes,
+              totalBytes,
+            );
+          },
+        );
       }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.chatAttachmentDownloaded),
-          backgroundColor: context.chatColors.surfaceWarm,
-        ),
+      ChatAttachmentPreviewCache.rememberDownloaded(
+        item.fileId,
+        metadata: downloaded.metadata ?? item.metadata,
+        imageBytes: item.imageBytes,
       );
+
+      if (!mounted || cancelToken.isCancelled) return;
       setState(() {
+        _downloadedFileIds = {..._downloadedFileIds, item.fileId};
         _future = _load();
       });
     } catch (e) {
       if (!mounted) return;
+      if (e is DioException && CancelToken.isCancel(e)) {
+        return;
+      }
       final message = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.chatAttachmentDownloadFailed;
       await showErrorDialog(context, title: l10n.error, message: message);
     } finally {
       if (mounted) {
-        setState(() => _busyFileIds.remove(item.fileId));
+        setState(() {
+          _downloadCancelTokensByFileId.remove(item.fileId);
+          _downloadProgressByFileId.remove(item.fileId);
+        });
       }
     }
+  }
+
+  void _cancelAttachmentDownload(String fileId) {
+    final normalizedFileId = fileId.trim();
+    if (normalizedFileId.isEmpty) return;
+    final cancelToken = _downloadCancelTokensByFileId.remove(normalizedFileId);
+    cancelToken?.cancel('user_cancelled_attachment_download');
+    if (!mounted) return;
+    setState(() => _downloadProgressByFileId.remove(normalizedFileId));
+  }
+
+  void _updateAttachmentDownloadProgress(
+    String fileId,
+    int receivedBytes,
+    int totalBytes,
+  ) {
+    if (!mounted) return;
+    final normalizedFileId = fileId.trim();
+    if (normalizedFileId.isEmpty ||
+        !_downloadCancelTokensByFileId.containsKey(normalizedFileId)) {
+      return;
+    }
+    final fallbackTotal =
+        _downloadProgressByFileId[normalizedFileId]?.totalBytes ?? 0;
+    final effectiveTotal = totalBytes > 0 ? totalBytes : fallbackTotal;
+    setState(() {
+      _downloadProgressByFileId[normalizedFileId] = _AttachmentDownloadProgress(
+        receivedBytes: receivedBytes < 0 ? 0 : receivedBytes,
+        totalBytes: effectiveTotal < 0 ? 0 : effectiveTotal,
+      );
+    });
   }
 
   Future<void> _openDownloadedAttachment(_ChatAttachmentViewData item) async {
@@ -5092,7 +5785,12 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
       if (!mounted) return;
 
       if (downloaded == null) {
-        setState(() => _future = _load());
+        setState(() {
+          _downloadedFileIds = _downloadedFileIds
+              .where((id) => id != item.fileId)
+              .toSet();
+          _future = _load();
+        });
         return;
       }
 
@@ -5107,13 +5805,10 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
         return;
       }
 
-      final result = await _fileCache.open(downloaded);
-      if (!mounted || result.isDone) return;
-
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: l10n.chatAttachmentOpenFailed,
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatFileViewerScreen(downloaded: downloaded),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -5125,34 +5820,131 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     }
   }
 
+  List<_ChatAttachmentViewData> _imageAttachmentItems(
+    List<_ChatAttachmentViewData> items,
+  ) {
+    return items
+        .where(
+          (item) =>
+              (item.metadata?.isImage ?? false) && item.imageBytes != null,
+        )
+        .toList(growable: false);
+  }
+
+  List<_ChatAttachmentViewData> _videoAttachmentItems(
+    List<_ChatAttachmentViewData> items,
+  ) {
+    return items
+        .where((item) => item.metadata?.isVideo ?? false)
+        .toList(growable: false);
+  }
+
+  List<_ChatAttachmentViewData> _fileAttachmentItems(
+    List<_ChatAttachmentViewData> items,
+  ) {
+    return items
+        .where((item) => _isFileAttachmentItem(item))
+        .toList(growable: false);
+  }
+
+  bool _isFileAttachmentItem(_ChatAttachmentViewData item) {
+    final metadata = item.metadata;
+    if (metadata == null) return false;
+    return !metadata.isImage && !metadata.isVideo && !metadata.isAudio;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<_ChatAttachmentViewData>>(
       future: _future,
       builder: (context, snapshot) {
-        final items =
+        final loadedItems =
             snapshot.data ??
             widget.fileIds
-                .map(
-                  (fileId) => _ChatAttachmentViewData(
-                    fileId: fileId,
-                    metadata: null,
-                    imageBytes: null,
-                    downloaded: false,
-                  ),
-                )
+                .map((fileId) => _placeholder(fileId.trim()))
+                .where((item) => item.fileId.isNotEmpty)
                 .toList(growable: false);
+        final items = loadedItems
+            .map(
+              (item) =>
+                  item.downloaded || _downloadedFileIds.contains(item.fileId)
+                  ? item.copyWith(downloaded: true)
+                  : item,
+            )
+            .toList(growable: false);
+        final imageItems = _imageAttachmentItems(items);
+        final videoItems = _videoAttachmentItems(items);
+        final fileItems = _fileAttachmentItems(items);
+        final busyFileIds = _downloadCancelTokensByFileId.keys.toSet();
+        final showSingleAttachmentProgress = items.length == 1;
+        final groupedFileIds = <String>{
+          if (imageItems.length > 1)
+            for (final item in imageItems) item.fileId,
+          if (videoItems.length > 1)
+            for (final item in videoItems) item.fileId,
+          if (fileItems.length > 1)
+            for (final item in fileItems) item.fileId,
+        };
+        final listItems = items
+            .where((item) => !groupedFileIds.contains(item.fileId))
+            .toList(growable: false);
+        final groupedChildren = <Widget>[];
+
+        void addGroupedChild(Widget child) {
+          if (groupedChildren.isNotEmpty) {
+            groupedChildren.add(SizedBox(height: _scale(context, 10)));
+          }
+          groupedChildren.add(child);
+        }
+
+        if (imageItems.length > 1) {
+          addGroupedChild(
+            _MessageImageCollage(
+              items: imageItems,
+              busyFileIds: busyFileIds,
+              downloadProgressByFileId: _downloadProgressByFileId,
+              onTap: _handleAttachmentTap,
+            ),
+          );
+        }
+        if (videoItems.length > 1) {
+          addGroupedChild(
+            _MessageVideoCollage(
+              items: videoItems,
+              busyFileIds: busyFileIds,
+              downloadProgressByFileId: _downloadProgressByFileId,
+              onTap: _handleAttachmentTap,
+            ),
+          );
+        }
+        if (fileItems.length > 1) {
+          addGroupedChild(
+            _MessageFileGroup(
+              items: fileItems,
+              busyFileIds: busyFileIds,
+              downloadProgressByFileId: _downloadProgressByFileId,
+              onTap: _handleAttachmentTap,
+            ),
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < items.length; i++) ...[
+            ...groupedChildren,
+            if (groupedChildren.isNotEmpty && listItems.isNotEmpty)
+              SizedBox(height: _scale(context, 10)),
+            for (var i = 0; i < listItems.length; i++) ...[
               _AttachmentTile(
-                item: items[i],
-                busy: _busyFileIds.contains(items[i].fileId),
-                onTap: () => _handleAttachmentTap(items[i]),
+                item: listItems[i],
+                busy: busyFileIds.contains(listItems[i].fileId),
+                downloadProgress:
+                    _downloadProgressByFileId[listItems[i].fileId],
+                showDownloadProgressLabel: showSingleAttachmentProgress,
+                onTap: () => _handleAttachmentTap(listItems[i]),
               ),
-              if (i != items.length - 1) SizedBox(height: _scale(context, 10)),
+              if (i != listItems.length - 1)
+                SizedBox(height: _scale(context, 10)),
             ],
           ],
         );
@@ -5165,11 +5957,15 @@ class _AttachmentTile extends StatelessWidget {
   const _AttachmentTile({
     required this.item,
     required this.busy,
+    required this.downloadProgress,
+    required this.showDownloadProgressLabel,
     required this.onTap,
   });
 
   final _ChatAttachmentViewData item;
   final bool busy;
+  final _AttachmentDownloadProgress? downloadProgress;
+  final bool showDownloadProgressLabel;
   final VoidCallback onTap;
 
   @override
@@ -5199,11 +5995,21 @@ class _AttachmentTile extends StatelessWidget {
                   gaplessPlayback: true,
                 ),
                 Positioned(
+                  left: _scale(context, 10),
+                  bottom: _scale(context, 10),
+                  child: _AttachmentDownloadProgressLabel(
+                    progress: showDownloadProgressLabel
+                        ? downloadProgress
+                        : null,
+                  ),
+                ),
+                Positioned(
                   right: _scale(context, 10),
                   bottom: _scale(context, 10),
                   child: _AttachmentDownloadBadge(
                     downloaded: item.downloaded,
                     busy: busy,
+                    progress: downloadProgress,
                   ),
                 ),
               ],
@@ -5214,14 +6020,528 @@ class _AttachmentTile extends StatelessWidget {
     }
 
     if (isVideo) {
-      return ChatVideoPreview(
-        fileId: item.fileId,
-        borderRadius: _scale(context, 18),
-        aspectRatio: 4 / 3,
+      return Stack(
+        children: [
+          ChatVideoPreview(
+            fileId: item.fileId,
+            borderRadius: _scale(context, 18),
+            aspectRatio: 4 / 3,
+          ),
+          Positioned(
+            left: _scale(context, 10),
+            bottom: _scale(context, 10),
+            child: _AttachmentDownloadProgressLabel(
+              progress: showDownloadProgressLabel ? downloadProgress : null,
+            ),
+          ),
+          Positioned(
+            right: _scale(context, 10),
+            bottom: _scale(context, 10),
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: _AttachmentDownloadBadge(
+                downloaded: item.downloaded,
+                busy: busy,
+                progress: downloadProgress,
+              ),
+            ),
+          ),
+        ],
       );
     }
 
-    return _AttachmentFileRow(item: item, busy: busy, onTap: onTap);
+    return _AttachmentFileRow(
+      item: item,
+      busy: busy,
+      downloadProgress: downloadProgress,
+      showDownloadProgressLabel: showDownloadProgressLabel,
+      onTap: onTap,
+    );
+  }
+}
+
+class _MessageImageCollage extends StatelessWidget {
+  const _MessageImageCollage({
+    required this.items,
+    required this.busyFileIds,
+    required this.downloadProgressByFileId,
+    required this.onTap,
+  });
+
+  final List<_ChatAttachmentViewData> items;
+  final Set<String> busyFileIds;
+  final Map<String, _AttachmentDownloadProgress> downloadProgressByFileId;
+  final Future<void> Function(_ChatAttachmentViewData item) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleItems = items
+        .take(_ChatScreenState._maxChatImageAttachmentsPerMessage)
+        .toList(growable: false);
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
+
+    final overflowCount = items.length - visibleItems.length;
+    final gap = _scale(context, 6);
+    final radius = _scale(context, 18);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (visibleItems.length == 1) {
+          return _MessageImageCollageTile(
+            item: visibleItems.first,
+            busy: busyFileIds.contains(visibleItems.first.fileId),
+            progress: downloadProgressByFileId[visibleItems.first.fileId],
+            borderRadius: radius,
+            onTap: onTap,
+          );
+        }
+
+        if (visibleItems.length == 2) {
+          return _buildTwoImageGrid(
+            context,
+            visibleItems,
+            gap,
+            radius,
+            overflowCount,
+          );
+        }
+
+        if (visibleItems.length == 3) {
+          return _buildThreeImageCollage(
+            context,
+            visibleItems,
+            gap,
+            radius,
+            overflowCount,
+          );
+        }
+
+        return _buildManyImageCollage(
+          context,
+          visibleItems,
+          gap,
+          radius,
+          overflowCount,
+        );
+      },
+    );
+  }
+
+  Widget _buildTwoImageGrid(
+    BuildContext context,
+    List<_ChatAttachmentViewData> visibleItems,
+    double gap,
+    double radius,
+    int overflowCount,
+  ) {
+    return Row(
+      children: [
+        for (var i = 0; i < visibleItems.length; i++) ...[
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: _MessageImageCollageTile(
+                item: visibleItems[i],
+                busy: busyFileIds.contains(visibleItems[i].fileId),
+                progress: downloadProgressByFileId[visibleItems[i].fileId],
+                borderRadius: radius,
+                overlayCount: i == visibleItems.length - 1 && overflowCount > 0
+                    ? overflowCount
+                    : null,
+                onTap: onTap,
+              ),
+            ),
+          ),
+          if (i != visibleItems.length - 1) SizedBox(width: gap),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildThreeImageCollage(
+    BuildContext context,
+    List<_ChatAttachmentViewData> visibleItems,
+    double gap,
+    double radius,
+    int overflowCount,
+  ) {
+    return AspectRatio(
+      aspectRatio: 4 / 3,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: _MessageImageCollageTile(
+              item: visibleItems[0],
+              busy: busyFileIds.contains(visibleItems[0].fileId),
+              progress: downloadProgressByFileId[visibleItems[0].fileId],
+              borderRadius: radius,
+              onTap: onTap,
+            ),
+          ),
+          SizedBox(width: gap),
+          Expanded(
+            child: Column(
+              children: [
+                for (var i = 1; i < visibleItems.length; i++) ...[
+                  Expanded(
+                    child: _MessageImageCollageTile(
+                      item: visibleItems[i],
+                      busy: busyFileIds.contains(visibleItems[i].fileId),
+                      progress:
+                          downloadProgressByFileId[visibleItems[i].fileId],
+                      borderRadius: radius,
+                      overlayCount:
+                          i == visibleItems.length - 1 && overflowCount > 0
+                          ? overflowCount
+                          : null,
+                      onTap: onTap,
+                    ),
+                  ),
+                  if (i != visibleItems.length - 1) SizedBox(height: gap),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManyImageCollage(
+    BuildContext context,
+    List<_ChatAttachmentViewData> visibleItems,
+    double gap,
+    double radius,
+    int overflowCount,
+  ) {
+    final gridItems = visibleItems.skip(1).toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _MessageImageCollageTile(
+            item: visibleItems.first,
+            busy: busyFileIds.contains(visibleItems.first.fileId),
+            progress: downloadProgressByFileId[visibleItems.first.fileId],
+            borderRadius: radius,
+            onTap: onTap,
+          ),
+        ),
+        SizedBox(height: gap),
+        GridView.builder(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: gridItems.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            childAspectRatio: 16 / 9,
+          ),
+          itemBuilder: (context, index) {
+            final item = gridItems[index];
+            final isLast = index == gridItems.length - 1;
+            return _MessageImageCollageTile(
+              item: item,
+              busy: busyFileIds.contains(item.fileId),
+              progress: downloadProgressByFileId[item.fileId],
+              borderRadius: radius,
+              overlayCount: isLast && overflowCount > 0 ? overflowCount : null,
+              onTap: onTap,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MessageImageCollageTile extends StatelessWidget {
+  const _MessageImageCollageTile({
+    required this.item,
+    required this.busy,
+    required this.progress,
+    required this.borderRadius,
+    required this.onTap,
+    this.overlayCount,
+  });
+
+  final _ChatAttachmentViewData item;
+  final bool busy;
+  final _AttachmentDownloadProgress? progress;
+  final double borderRadius;
+  final int? overlayCount;
+  final Future<void> Function(_ChatAttachmentViewData item) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final overlay = overlayCount ?? 0;
+
+    return GestureDetector(
+      onTap: () => onTap(item),
+      child: ClipRRect(
+        borderRadius: AppBorderRadius.circular(borderRadius),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.memory(
+              item.imageBytes!,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+            if (overlay > 0)
+              DecoratedBox(
+                decoration: AppBoxDecoration(
+                  color: context.chatColors.black.withValues(alpha: 0.48),
+                ),
+                child: Center(
+                  child: Text(
+                    '+$overlay',
+                    style: AppTextStyle(
+                      color: context.chatColors.white,
+                      fontSize: _scale(context, 24),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              right: _scale(context, 8),
+              bottom: _scale(context, 8),
+              child: _AttachmentDownloadBadge(
+                downloaded: item.downloaded,
+                busy: busy,
+                progress: progress,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageVideoCollage extends StatelessWidget {
+  const _MessageVideoCollage({
+    required this.items,
+    required this.busyFileIds,
+    required this.downloadProgressByFileId,
+    required this.onTap,
+  });
+
+  final List<_ChatAttachmentViewData> items;
+  final Set<String> busyFileIds;
+  final Map<String, _AttachmentDownloadProgress> downloadProgressByFileId;
+  final Future<void> Function(_ChatAttachmentViewData item) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleItems = items
+        .take(_ChatScreenState._maxChatVideoAttachmentsPerMessage)
+        .toList(growable: false);
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
+
+    final gap = _scale(context, 6);
+    final radius = _scale(context, 18);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: visibleItems.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            childAspectRatio: 16 / 9,
+          ),
+          itemBuilder: (context, index) {
+            final item = visibleItems[index];
+            return ClipRRect(
+              borderRadius: AppBorderRadius.circular(radius),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ChatVideoPreview(
+                    fileId: item.fileId,
+                    borderRadius: radius,
+                    aspectRatio: 16 / 9,
+                  ),
+                  Positioned(
+                    right: _scale(context, 8),
+                    bottom: _scale(context, 8),
+                    child: GestureDetector(
+                      onTap: () => onTap(item),
+                      behavior: HitTestBehavior.opaque,
+                      child: _AttachmentDownloadBadge(
+                        downloaded: item.downloaded,
+                        busy: busyFileIds.contains(item.fileId),
+                        progress: downloadProgressByFileId[item.fileId],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _MessageFileGroup extends StatelessWidget {
+  const _MessageFileGroup({
+    required this.items,
+    required this.busyFileIds,
+    required this.downloadProgressByFileId,
+    required this.onTap,
+  });
+
+  final List<_ChatAttachmentViewData> items;
+  final Set<String> busyFileIds;
+  final Map<String, _AttachmentDownloadProgress> downloadProgressByFileId;
+  final Future<void> Function(_ChatAttachmentViewData item) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleItems = items
+        .take(_ChatScreenState._maxChatFileAttachmentsPerMessage)
+        .toList(growable: false);
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gap = _scale(context, 8);
+        final crossAxisCount = constraints.maxWidth >= 340 ? 2 : 1;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: visibleItems.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            childAspectRatio: crossAxisCount == 1 ? 4.6 : 2.7,
+          ),
+          itemBuilder: (context, index) {
+            final item = visibleItems[index];
+            return _AttachmentFileCompactTile(
+              item: item,
+              busy: busyFileIds.contains(item.fileId),
+              downloadProgress: downloadProgressByFileId[item.fileId],
+              onTap: () => onTap(item),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AttachmentFileCompactTile extends StatelessWidget {
+  const _AttachmentFileCompactTile({
+    required this.item,
+    required this.busy,
+    required this.downloadProgress,
+    required this.onTap,
+  });
+
+  final _ChatAttachmentViewData item;
+  final bool busy;
+  final _AttachmentDownloadProgress? downloadProgress;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final metadata = item.metadata;
+    final l10n = AppLocalizations.of(context)!;
+    final originalName = metadata?.originalName.trim() ?? '';
+    final title = originalName.isNotEmpty
+        ? originalName
+        : l10n.chatSharedFileFallback(_shortFileId(item.fileId));
+    final meta = metadata == null
+        ? l10n.chatAttachmentLoadingPreview
+        : _formatAttachmentSize(metadata.sizeBytes);
+
+    return Material(
+      color: context.chatColors.surfaceRaised,
+      borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+        child: Padding(
+          padding: AppEdgeInsets.symmetric(
+            horizontal: _scale(context, 10),
+            vertical: _scale(context, 8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: _scale(context, 38),
+                height: _scale(context, 38),
+                decoration: AppBoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.chatColors.secondary,
+                ),
+                child: Center(
+                  child: busy
+                      ? SizedBox(
+                          width: _scale(context, 16),
+                          height: _scale(context, 16),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: context.chatColors.onSecondary,
+                          ),
+                        )
+                      : Icon(
+                          _attachmentIcon(metadata),
+                          color: context.chatColors.onSecondary,
+                          size: _scale(context, 21),
+                        ),
+                ),
+              ),
+              SizedBox(width: _scale(context, 9)),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle(
+                        fontSize: _scale(context, 12),
+                        fontWeight: FontWeight.w800,
+                        color: context.chatColors.messageText,
+                      ),
+                    ),
+                    SizedBox(height: _scale(context, 2)),
+                    Text(
+                      _downloadStatusLabel(downloadProgress) ?? meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle(
+                        fontSize: _scale(context, 11),
+                        color: context.chatColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -5313,11 +6633,15 @@ class _AttachmentFileRow extends StatelessWidget {
   const _AttachmentFileRow({
     required this.item,
     required this.busy,
+    required this.downloadProgress,
+    required this.showDownloadProgressLabel,
     required this.onTap,
   });
 
   final _ChatAttachmentViewData item;
   final bool busy;
+  final _AttachmentDownloadProgress? downloadProgress;
+  final bool showDownloadProgressLabel;
   final VoidCallback onTap;
 
   @override
@@ -5328,34 +6652,38 @@ class _AttachmentFileRow extends StatelessWidget {
         ? metadata!.originalName.trim()
         : l10n.chatSharedFileFallback(_shortFileId(item.fileId));
     final meta = metadata == null
-        ? l10n.chatSharedUnknownFile
-        : '${_formatAttachmentSize(metadata.sizeBytes)} | ${metadata.extensionLabel}';
+        ? l10n.chatAttachmentLoadingPreview
+        : _formatAttachmentSize(metadata.sizeBytes);
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: AppEdgeInsets.all(_scale(context, 12)),
-        decoration: AppBoxDecoration(
-          borderRadius: AppBorderRadius.circular(_scale(context, 18)),
-          color: context.chatColors.black.withValues(alpha: 0.14),
-          border: Border.all(
-            color: context.chatColors.white.withValues(alpha: 0.05),
-          ),
-        ),
+      child: Padding(
+        padding: AppEdgeInsets.symmetric(vertical: _scale(context, 6)),
         child: Row(
           children: [
             Container(
-              width: _scale(context, 46),
-              height: _scale(context, 46),
+              width: _scale(context, 56),
+              height: _scale(context, 56),
               decoration: AppBoxDecoration(
-                borderRadius: AppBorderRadius.circular(_scale(context, 14)),
-                color: context.chatColors.surfaceWarm,
+                shape: BoxShape.circle,
+                color: context.chatColors.secondary,
               ),
-              child: Icon(
-                _attachmentIcon(metadata),
-                color: _attachmentIconColor(context, metadata),
-                size: _scale(context, 26),
+              child: Center(
+                child: busy
+                    ? SizedBox(
+                        width: _scale(context, 20),
+                        height: _scale(context, 20),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: context.chatColors.onSecondary,
+                        ),
+                      )
+                    : Icon(
+                        _attachmentIcon(metadata),
+                        color: context.chatColors.onSecondary,
+                        size: _scale(context, 30),
+                      ),
               ),
             ),
             SizedBox(width: _scale(context, 12)),
@@ -5369,25 +6697,25 @@ class _AttachmentFileRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
                       fontSize: _scale(context, 15),
-                      fontWeight: FontWeight.w700,
-                      color: context.chatColors.primary,
+                      fontWeight: FontWeight.w800,
+                      color: context.chatColors.messageText,
                     ),
                   ),
                   SizedBox(height: _scale(context, 4)),
                   Text(
-                    '${_downloadStatusLabel(context, item.downloaded, busy)} | $meta',
+                    showDownloadProgressLabel
+                        ? _downloadStatusLabel(downloadProgress) ?? meta
+                        : meta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle(
-                      fontSize: _scale(context, 12),
-                      color: context.chatColors.primary.withValues(alpha: 0.72),
+                      fontSize: _scale(context, 13),
+                      color: context.chatColors.textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: _scale(context, 10)),
-            _AttachmentDownloadBadge(downloaded: item.downloaded, busy: busy),
           ],
         ),
       ),
@@ -5399,10 +6727,12 @@ class _AttachmentDownloadBadge extends StatelessWidget {
   const _AttachmentDownloadBadge({
     required this.downloaded,
     required this.busy,
+    required this.progress,
   });
 
   final bool downloaded;
   final bool busy;
+  final _AttachmentDownloadProgress? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -5411,33 +6741,106 @@ class _AttachmentDownloadBadge extends StatelessWidget {
       height: _scale(context, 34),
       decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: downloaded
-            ? context.chatColors.primary
-            : context.chatColors.surfaceHigh,
+        color: context.chatColors.primary,
         border: Border.all(
-          color: context.chatColors.white.withValues(alpha: 0.12),
+          color: context.chatColors.primaryPressed.withValues(alpha: 0.46),
         ),
       ),
       child: Center(
         child: busy
-            ? SizedBox(
-                width: _scale(context, 16),
-                height: _scale(context, 16),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: context.chatColors.white,
-                ),
+            ? Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: _scale(context, 18),
+                    height: _scale(context, 18),
+                    child: CircularProgressIndicator(
+                      value: progress?.fraction,
+                      strokeWidth: 2,
+                      color: context.chatColors.actionOnPrimary,
+                    ),
+                  ),
+                  Icon(
+                    Icons.close_rounded,
+                    size: _scale(context, 13),
+                    color: context.chatColors.actionOnPrimary,
+                  ),
+                ],
               )
             : Icon(
                 downloaded
                     ? Icons.open_in_full_rounded
                     : Icons.download_rounded,
                 size: _scale(context, 17),
-                color: context.chatColors.white,
+                color: context.chatColors.actionOnPrimary,
               ),
       ),
     );
   }
+}
+
+class _AttachmentDownloadProgressLabel extends StatelessWidget {
+  const _AttachmentDownloadProgressLabel({required this.progress});
+
+  final _AttachmentDownloadProgress? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _downloadStatusLabel(progress);
+    if (label == null) return const SizedBox.shrink();
+
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: context.chatColors.black.withValues(alpha: 0.62),
+        borderRadius: AppBorderRadius.circular(_scale(context, 999)),
+        border: Border.all(
+          color: context.chatColors.white.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Padding(
+        padding: AppEdgeInsets.symmetric(
+          horizontal: _scale(context, 9),
+          vertical: _scale(context, 6),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyle(
+            color: context.chatColors.white,
+            fontSize: _scale(context, 11),
+            fontWeight: FontWeight.w800,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttachmentDownloadProgress {
+  const _AttachmentDownloadProgress({
+    required this.receivedBytes,
+    required this.totalBytes,
+  });
+
+  final int receivedBytes;
+  final int totalBytes;
+
+  double? get fraction {
+    if (totalBytes <= 0) return null;
+    return (receivedBytes / totalBytes).clamp(0.0, 1.0);
+  }
+}
+
+String? _downloadStatusLabel(_AttachmentDownloadProgress? progress) {
+  if (progress == null) return null;
+  final receivedBytes = progress.receivedBytes < 0 ? 0 : progress.receivedBytes;
+  final totalBytes = progress.totalBytes;
+  if (totalBytes <= 0) {
+    return _formatAttachmentSize(receivedBytes);
+  }
+  return '${_formatAttachmentSize(receivedBytes)} / ${_formatAttachmentSize(totalBytes)}';
 }
 
 class _ChatAttachmentViewData {
@@ -5446,12 +6849,24 @@ class _ChatAttachmentViewData {
     required this.metadata,
     required this.imageBytes,
     required this.downloaded,
+    this.previewLoading = false,
   });
 
   final String fileId;
   final FileMetadataVm? metadata;
   final Uint8List? imageBytes;
   final bool downloaded;
+  final bool previewLoading;
+
+  _ChatAttachmentViewData copyWith({bool? downloaded}) {
+    return _ChatAttachmentViewData(
+      fileId: fileId,
+      metadata: metadata,
+      imageBytes: imageBytes,
+      downloaded: downloaded ?? this.downloaded,
+      previewLoading: previewLoading,
+    );
+  }
 }
 
 IconData _attachmentIcon(FileMetadataVm? metadata) {
@@ -5470,17 +6885,6 @@ IconData _attachmentIcon(FileMetadataVm? metadata) {
   if (metadata?.isVideo ?? false) return Icons.movie_rounded;
   if (metadata?.isImage ?? false) return Icons.image_rounded;
   return Icons.description_rounded;
-}
-
-Color _attachmentIconColor(BuildContext context, FileMetadataVm? metadata) {
-  final extension = metadata?.extensionLabel.toLowerCase() ?? '';
-  if (extension == 'zip' || extension == 'rar' || extension == '7z') {
-    return context.chatColors.secondary;
-  }
-  if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
-    return context.chatColors.primary;
-  }
-  return context.chatColors.primary;
 }
 
 String _formatAttachmentSize(int bytes) {
@@ -5522,14 +6926,6 @@ String _formatChatEventAt(BuildContext context, DateTime happenedAt) {
   return '$date ${l10n.chatReadAtSeparator} $time';
 }
 
-String _downloadStatusLabel(BuildContext context, bool downloaded, bool busy) {
-  final l10n = AppLocalizations.of(context)!;
-  if (busy) return l10n.chatAttachmentDownloading;
-  return downloaded
-      ? l10n.chatAttachmentDownloadedStatus
-      : l10n.chatAttachmentNotDownloadedStatus;
-}
-
 String _shortFileId(String id) {
   final value = id.trim();
   if (value.length <= 8) return value;
@@ -5569,13 +6965,12 @@ class _ChatAvatar extends StatelessWidget {
                 ],
               )
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: context.chatColors.black.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: _chatDarkThemeShadow(
+          context,
+          alpha: 0.25,
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
       ),
       foregroundDecoration: AppBoxDecoration(
         shape: BoxShape.circle,
@@ -6845,7 +8240,8 @@ class _ChatComposer extends StatelessWidget {
     required this.participants,
     required this.onSend,
     required this.onTyping,
-    required this.onPickGallery,
+    required this.onPickGalleryImage,
+    required this.onPickGalleryVideo,
     required this.onPickFile,
     required this.onPickAudio,
     required this.onCameraCapture,
@@ -6883,7 +8279,8 @@ class _ChatComposer extends StatelessWidget {
   final List<ParticipantInfo> participants;
   final VoidCallback onSend;
   final VoidCallback onTyping;
-  final VoidCallback onPickGallery;
+  final VoidCallback onPickGalleryImage;
+  final VoidCallback onPickGalleryVideo;
   final VoidCallback onPickFile;
   final VoidCallback onPickAudio;
   final VoidCallback onCameraCapture;
@@ -7156,7 +8553,9 @@ class _ChatComposer extends StatelessWidget {
                       onTap: disabled ? null : onSend,
                       child: _ComposerActionButtonSurface(
                         size: btnSize,
-                        color: context.chatColors.textMuted,
+                        color: context.chatColors.composerSendButtonSurface(
+                          disabled,
+                        ),
                         disabled: disabled,
                         busy: sending || attachmentUploading,
                         icon: Icons.send_rounded,
@@ -7185,13 +8584,18 @@ class _ChatComposer extends StatelessWidget {
     );
   }
 
-  // Paperclip sheet — gallery, file, audio.
+  // Paperclip sheet — gallery media, file, audio.
   void _showAttachSheet(BuildContext context, AppLocalizations l10n) {
     final actions = <_ComposerSheetAction>[
       _ComposerSheetAction(
-        icon: Icons.photo_library_rounded,
-        label: l10n.chatAttachmentPhotoVideo,
-        onSelected: onPickGallery,
+        icon: Icons.photo_rounded,
+        label: l10n.chatAttachmentPhoto,
+        onSelected: onPickGalleryImage,
+      ),
+      _ComposerSheetAction(
+        icon: Icons.video_library_rounded,
+        label: l10n.chatAttachmentVideo,
+        onSelected: onPickGalleryVideo,
       ),
       _ComposerSheetAction(
         icon: Icons.insert_drive_file_rounded,
@@ -7374,13 +8778,9 @@ class _ComposerPanelTabButton extends StatelessWidget {
           alignment: Alignment.center,
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(999),
-            color: selected
-                ? context.chatColors.primary.withValues(alpha: 0.18)
-                : context.chatColors.white.withValues(alpha: 0.06),
+            color: context.chatColors.composerPanelTabSurface(selected),
             border: Border.all(
-              color: selected
-                  ? context.chatColors.primary.withValues(alpha: 0.42)
-                  : context.chatColors.white.withValues(alpha: 0.06),
+              color: context.chatColors.composerPanelTabBorder(selected),
             ),
           ),
           child: Text(
@@ -7390,9 +8790,7 @@ class _ComposerPanelTabButton extends StatelessWidget {
             style: AppTextStyle(
               fontSize: _scale(context, 13),
               fontWeight: FontWeight.w800,
-              color: selected
-                  ? context.chatColors.primary
-                  : context.chatColors.white.withValues(alpha: 0.64),
+              color: context.chatColors.composerPanelTabText(selected),
             ),
           ),
         ),

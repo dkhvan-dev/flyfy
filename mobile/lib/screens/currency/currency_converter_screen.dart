@@ -25,9 +25,7 @@ class CurrencyConverterScreen extends StatefulWidget {
 
 class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   late final CurrencyApi _api = widget._api ?? CurrencyApi();
-  final TextEditingController _amountController = TextEditingController(
-    text: '15000',
-  );
+  final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
 
   List<CurrencyOption> _currencies = defaultCurrencyOptions;
@@ -56,7 +54,6 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _convertNow();
       _startDailyRateRefresh();
     });
   }
@@ -324,6 +321,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                               l10n: l10n,
                             ),
                             const SizedBox(height: 22),
+                            _NoticePanel(l10n: l10n),
+                            const SizedBox(height: 18),
                             _QuickSwitchSection(
                               pairs: _popularPairs,
                               selectedFrom: _fromCurrency,
@@ -333,8 +332,6 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                               onSelected: _selectPair,
                               l10n: l10n,
                             ),
-                            const SizedBox(height: 18),
-                            _NoticePanel(l10n: l10n),
                             const SizedBox(height: 18),
                             ContextualHelpSection(
                               surface: HelpCenterSurface.currencyConverter,
@@ -747,34 +744,44 @@ class _RateStatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppDesignSystem.colorsFor(context);
+    if (result == null && !isLoading) {
+      return const SizedBox.shrink();
+    }
+
     final rateText = result == null
-        ? l10n.currencyConverterInfoNotice
+        ? ''
         : '1 ${result!.sourceCurrency} = ${result!.rate} ${result!.targetCurrency}';
     final updatedText = _updatedText(context, result, l10n);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 380;
-        final leading = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.info_outline_rounded, color: colors.secondary, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                rateText,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 12.5,
-                  height: 1.35,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-          ],
-        );
+        final leading = rateText.isEmpty
+            ? null
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: colors.secondary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      rateText,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12.5,
+                        height: 1.35,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              );
 
         final trailing = AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
@@ -788,6 +795,8 @@ class _RateStatusRow extends StatelessWidget {
                     color: colors.secondary,
                   ),
                 )
+              : updatedText.isEmpty
+              ? const SizedBox.shrink(key: ValueKey('empty'))
               : Text(
                   updatedText,
                   key: ValueKey(updatedText),
@@ -807,7 +816,7 @@ class _RateStatusRow extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              leading,
+              ?leading,
               if (updatedText.isNotEmpty || isLoading) ...[
                 const SizedBox(height: 8),
                 trailing,
@@ -818,8 +827,11 @@ class _RateStatusRow extends StatelessWidget {
 
         return Row(
           children: [
-            Expanded(child: leading),
-            const SizedBox(width: 12),
+            if (leading != null) ...[
+              Expanded(child: leading),
+              const SizedBox(width: 12),
+            ] else
+              const Spacer(),
             Flexible(child: trailing),
           ],
         );

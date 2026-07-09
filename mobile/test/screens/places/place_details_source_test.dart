@@ -310,26 +310,37 @@ void main() {
     );
   });
 
-  test('reviews section uses tourist title and empty review CTA', () async {
-    final source = await File(
-      'lib/screens/places/place_details_screen.dart',
-    ).readAsString();
+  test(
+    'reviews section uses tourist title and authenticated empty review CTA',
+    () async {
+      final source = await File(
+        'lib/screens/places/place_details_screen.dart',
+      ).readAsString();
 
-    final reviewStart = source.indexOf('Widget _buildReviews');
-    expect(reviewStart, isNonNegative);
-    final reviewEnd = source.indexOf(
-      '  // ---------------------------------------------------------------------------\n  // Bottom CTA',
-      reviewStart,
-    );
-    expect(reviewEnd, isNonNegative);
-    final reviewSource = source.substring(reviewStart, reviewEnd);
+      final reviewStart = source.indexOf('Widget _buildReviews');
+      expect(reviewStart, isNonNegative);
+      final reviewEnd = source.indexOf(
+        '  // ---------------------------------------------------------------------------\n  // Bottom CTA',
+        reviewStart,
+      );
+      expect(reviewEnd, isNonNegative);
+      final reviewSource = source.substring(reviewStart, reviewEnd);
 
-    expect(reviewSource, contains('l10n.placeReviewsTitle'));
-    expect(reviewSource, contains('l10n.placeAddReview'));
-    expect(reviewSource, contains('ElevatedButton.icon'));
-    expect(reviewSource, isNot(contains('l10n.placeReviewsSection')));
-    expect(source, isNot(contains('Голоса путешественников')));
-  });
+      expect(reviewSource, contains('l10n.placeReviewsTitle'));
+      expect(reviewSource, contains('l10n.placeAddReview'));
+      expect(reviewSource, contains('ElevatedButton.icon'));
+      expect(
+        reviewSource,
+        contains(
+          'context.watch<AuthProvider>().state == AuthState.authenticated',
+        ),
+      );
+      expect(reviewSource, contains('final canCreateReview ='));
+      expect(reviewSource, contains('if (canCreateReview)'));
+      expect(reviewSource, isNot(contains('l10n.placeReviewsSection')));
+      expect(source, isNot(contains('Голоса путешественников')));
+    },
+  );
 
   test(
     'tourist reviews sit directly after practical visit content before help',
@@ -363,6 +374,35 @@ void main() {
         contentSource,
         isNot(contains('SizedBox(height: a.scale(hasStructuredVisitPlanning')),
       );
+    },
+  );
+
+  test(
+    'place review sheet stays visible above keyboard without double inset',
+    () async {
+      final source = await File(
+        'lib/screens/places/place_details_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('class _CreateReviewSheet');
+      expect(sheetStart, isNonNegative);
+
+      final sheetSource = source.substring(sheetStart);
+
+      expect(
+        sheetSource,
+        contains(
+          'final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;',
+        ),
+      );
+      expect(sheetSource, contains('final availableHeight ='));
+      expect(sheetSource, contains('maxHeight: availableHeight'));
+      expect(sheetSource, contains('.clamp(0.0, mq.size.height * 0.9)'));
+      expect(sheetSource, contains('ListView('));
+      expect(sheetSource, contains('keyboardDismissBehavior:'));
+      expect(sheetSource, isNot(contains('AnimatedPadding(')));
+      expect(sheetSource, isNot(contains('SingleChildScrollView(')));
+      expect(sheetSource, isNot(contains('mq.viewInsets.bottom')));
     },
   );
 

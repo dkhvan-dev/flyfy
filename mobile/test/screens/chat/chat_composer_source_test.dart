@@ -189,6 +189,40 @@ void main() {
   });
 
   test(
+    'inline emoji sticker tabs keep inactive tab visible in light theme',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+
+      final colorsStart = source.indexOf('final class _ChatColors');
+      final colorsEnd = source.indexOf('extension _ChatColorContext');
+      final tabStart = source.indexOf('class _ComposerPanelTabButton');
+      final gridStart = source.indexOf('class _EmojiGrid');
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(tabStart, isNonNegative);
+      expect(gridStart, greaterThan(tabStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final tabSource = source.substring(tabStart, gridStart);
+
+      expect(colorsSource, contains('composerPanelTabSurface(bool selected)'));
+      expect(colorsSource, contains('composerPanelTabBorder(bool selected)'));
+      expect(colorsSource, contains('composerPanelTabText(bool selected)'));
+      expect(colorsSource, contains(': colors.surfaceHigh'));
+      expect(colorsSource, contains(': colors.border'));
+      expect(colorsSource, contains(': colors.textSecondary'));
+
+      expect(tabSource, contains('composerPanelTabSurface(selected)'));
+      expect(tabSource, contains('composerPanelTabBorder(selected)'));
+      expect(tabSource, contains('composerPanelTabText(selected)'));
+      expect(tabSource, isNot(contains('context.chatColors.white')));
+    },
+  );
+
+  test(
     'chat camera and voice composer buttons share the same size token',
     () async {
       final source = await File(

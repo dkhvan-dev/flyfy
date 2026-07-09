@@ -149,9 +149,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       title: l10n.appThemeTitle,
       subtitle: l10n.appThemeSubtitle,
       icon: Icons.contrast_rounded,
-      initialChildSize: 0.56,
-      minChildSize: 0.42,
-      maxChildSize: 0.82,
+      initialChildSize: 0.64,
+      minChildSize: 0.52,
+      maxChildSize: 0.88,
       builder: (sheetContext) {
         final colors = AppDesignSystem.colorsFor(sheetContext);
         return RadioGroup<AppThemeModePreference>(

@@ -195,6 +195,39 @@ void main() {
   );
 
   test(
+    'create excursion header matches activity neutral header colors',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final topBarStart = source.indexOf('class _ExcursionTopBar');
+      final stepperStart = source.indexOf('class _ExcursionStepIndicator');
+      final inlineErrorStart = source.indexOf(
+        'class _InlineError',
+        stepperStart,
+      );
+      expect(topBarStart, isNonNegative);
+      expect(stepperStart, greaterThan(topBarStart));
+      expect(inlineErrorStart, greaterThan(stepperStart));
+
+      final topBarSource = source.substring(topBarStart, stepperStart);
+      final stepperSource = source.substring(stepperStart, inlineErrorStart);
+
+      expect(topBarSource, contains('MediaQuery.of(context)'));
+      expect(topBarSource, contains('textPrimary'));
+      expect(topBarSource, contains('titleSize'));
+      expect(topBarSource, isNot(contains('createExcursionColors.primary')));
+      expect(stepperSource, contains('border'));
+      expect(stepperSource, contains('context.createExcursionColors.border'));
+      expect(
+        stepperSource,
+        contains('context.createExcursionColors.orangeLight37'),
+      );
+    },
+  );
+
+  test(
     'create excursion visibility cards use the activity selected accent color',
     () async {
       final source = await File(
@@ -510,6 +543,35 @@ void main() {
   );
 
   test(
+    'create excursion itinerary editor constrains itself above the keyboard',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('class _AddItinerarySlotSheet');
+      expect(sheetStart, isNonNegative);
+
+      final sheetSource = source.substring(sheetStart);
+
+      expect(source, contains('double _modalMaxHeightAboveKeyboard('));
+      expect(sheetSource, contains('LayoutBuilder('));
+      expect(sheetSource, contains('_modalMaxHeightAboveKeyboard(context)'));
+      expect(sheetSource, contains('ConstrainedBox('));
+      expect(sheetSource, contains('SingleChildScrollView('));
+      expect(sheetSource, isNot(contains('16 + bottomInset')));
+      expect(
+        sheetSource,
+        isNot(
+          contains(
+            'final bottomInset = MediaQuery.viewInsetsOf(context).bottom',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'edit excursion can resubmit draft or rejected offers after changes',
     () async {
       final source = await File(
@@ -722,6 +784,31 @@ void main() {
   );
 
   test(
+    'create excursion itinerary slot sheet uses full device width',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('class _AddItinerarySlotSheet');
+      final sheetEnd = source.length;
+      expect(sheetStart, isNonNegative);
+      expect(sheetEnd, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, sheetEnd);
+      expect(
+        sheetSource,
+        contains('padding: const AppEdgeInsets.only(bottom: 16)'),
+      );
+      expect(sheetSource, contains('width: double.infinity'));
+      expect(
+        sheetSource,
+        isNot(contains('padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16)')),
+      );
+    },
+  );
+
+  test(
     'create excursion can upload a custom cover or reuse selected place cover',
     () async {
       final source = await File(
@@ -831,6 +918,29 @@ void main() {
     },
   );
 
+  test(
+    'create excursion cover copy truncates to avoid horizontal overflow',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final copyStart = source.indexOf('class _ExcursionCoverCardCopy');
+      final borderStart = source.indexOf(
+        'class _DashedExcursionCoverBorderPainter',
+        copyStart,
+      );
+      expect(copyStart, isNonNegative);
+      expect(borderStart, greaterThan(copyStart));
+
+      final copySource = source.substring(copyStart, borderStart);
+      expect(copySource, contains('ConstrainedBox('));
+      expect(copySource, contains('Flexible('));
+      expect(copySource, contains('maxLines: 1'));
+      expect(copySource, contains('overflow: TextOverflow.ellipsis'));
+    },
+  );
+
   test('create excursion edit mode hides shared product-only blocks', () async {
     final source = await File(
       'lib/screens/excursions/create_excursion_screen.dart',
@@ -876,7 +986,7 @@ void main() {
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
       final cardStart = source.indexOf('class _ItinerarySlotCard');
-      final cardEnd = source.indexOf('class _VisibilityCard', cardStart);
+      final cardEnd = source.indexOf('class _OutlineActionButton', cardStart);
 
       expect(cardStart, isNonNegative);
       expect(cardEnd, greaterThan(cardStart));
@@ -885,12 +995,59 @@ void main() {
 
       expect(
         cardSource,
-        contains('color: context.createExcursionColors.surfaceWarm'),
+        contains('color: context.createExcursionColors.surfaceHigh'),
+      );
+      expect(cardSource, contains('context.createExcursionColors.borderSoft'));
+      expect(cardSource, contains('context.createExcursionColors.textPrimary'));
+      expect(
+        cardSource,
+        contains('context.createExcursionColors.textSecondary'),
       );
       expect(
         cardSource,
         isNot(contains('color: context.createExcursionColors.primarySoft')),
       );
+      expect(
+        cardSource,
+        isNot(contains('color: context.createExcursionColors.white')),
+      );
+    },
+  );
+
+  test(
+    'create excursion included items sheet is full-width and readable',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf(
+        'class _ExcursionIncludedItemsEditorSheet',
+      );
+      final dialogStart = source.indexOf(
+        'class _ExcursionAmberConfirmDialog',
+        sheetStart,
+      );
+      expect(sheetStart, isNonNegative);
+      expect(dialogStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, dialogStart);
+
+      expect(sheetSource, contains('AppModalSheetFrame('));
+      expect(
+        sheetSource,
+        contains('onTapOutside: () => Navigator.of(context).maybePop()'),
+      );
+      expect(sheetSource, contains('width: double.infinity'));
+      expect(sheetSource, contains('context.createExcursionColors.surface'));
+      expect(sheetSource, contains('context.createExcursionColors.borderSoft'));
+      expect(
+        sheetSource,
+        contains('context.createExcursionColors.textPrimary'),
+      );
+      expect(sheetSource, contains('context.createExcursionColors.textMuted'));
+      expect(sheetSource, isNot(contains('left: 16')));
+      expect(sheetSource, isNot(contains('right: 16')));
     },
   );
 
@@ -1164,7 +1321,12 @@ void main() {
       expect(source, contains('Icons.warning_amber_rounded'));
       expect(source, contains('l10n.createExcursionDiscardTitle'));
       expect(source, contains('l10n.createExcursionDiscardConfirm'));
-      expect(source, contains('context.createExcursionColors.primary'));
+      expect(source, contains('context.createExcursionColors.orangeWash23'));
+      expect(source, contains('context.createExcursionColors.orangeLight13'));
+      expect(source, contains('context.createExcursionColors.orangeLight29'));
+      expect(source, contains('context.createExcursionColors.warmSurface81'));
+      expect(source, contains('context.createExcursionColors.textOnInverse'));
+      expect(ruSource, contains('"createExcursionDiscardConfirm": "Выйти"'));
       expect(enSource, contains('"createExcursionDiscardTitle"'));
       expect(ruSource, contains('"createExcursionDiscardTitle"'));
       expect(kkSource, contains('"createExcursionDiscardTitle"'));

@@ -491,19 +491,128 @@ void main() {
     },
   );
 
-  test('excursion grid cards keep a compact responsive aspect ratio', () async {
+  test('excursion grid cards keep a roomy responsive aspect ratio', () async {
     final source = await File(
       'lib/screens/excursions/excursions_screen.dart',
     ).readAsString();
 
     expect(source, contains('_excursionGridAspectRatioForWidth'));
-    expect(source, contains('return 0.70 + normalizedWidth * 0.12'));
+    expect(source, contains('return 0.64 + normalizedWidth * 0.10'));
     expect(source, contains('childAspectRatio: _gridAspectRatio(context)'));
     expect(source, isNot(contains('return 0.56')));
     expect(source, isNot(contains('return 0.60')));
-    expect(source, isNot(contains('return 0.66')));
     expect(source, isNot(contains('? 0.63')));
   });
+
+  test(
+    'excursion cards allow text column to shrink without bottom overflow',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class ExcursionListCard');
+      final coverStart = source.indexOf('class _ExcursionCoverArt');
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, coverStart);
+      expect(cardSource, contains('flex: 4'));
+      expect(cardSource, contains('flex: 6'));
+      expect(cardSource, contains('Flexible('));
+      expect(cardSource, contains('fit: BoxFit.scaleDown'));
+      expect(cardSource, contains('maxLines: 2'));
+    },
+  );
+
+  test(
+    'excursions filter sheet is compact and dismisses outside taps',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+      final sheetStart = source.indexOf('class _ExcursionsFiltersSheetState');
+      final sectionStart = source.indexOf('class _ExcursionsFilterSection');
+      final chipStart = source.indexOf('class _ExcursionsFilterChip');
+      final segmentStart = source.indexOf('class _ExcursionsSegmentButton');
+      final sortStart = source.indexOf('class _ExcursionsSortBar');
+      expect(sheetStart, isNonNegative);
+      expect(sectionStart, greaterThan(sheetStart));
+      expect(chipStart, greaterThan(sectionStart));
+      expect(segmentStart, greaterThan(chipStart));
+      expect(sortStart, greaterThan(segmentStart));
+
+      final sheetSource = source.substring(sheetStart, sectionStart);
+      final sectionSource = source.substring(sectionStart, chipStart);
+      final chipSource = source.substring(chipStart, segmentStart);
+      final segmentSource = source.substring(segmentStart, sortStart);
+
+      expect(sheetSource, contains('AppModalSheetFrame('));
+      expect(
+        sheetSource,
+        contains('onTapOutside: () => Navigator.of(context).maybePop(),'),
+      );
+      expect(sheetSource, contains('titleFontSize: 16'));
+      expect(sectionSource, contains('fontSize: 16'));
+      expect(chipSource, contains('constraints: const BoxConstraints('));
+      expect(chipSource, contains('maxWidth: 220'));
+      expect(chipSource, contains('fontSize: 13'));
+      expect(segmentSource, contains('FittedBox('));
+      expect(segmentSource, contains('fontSize: 13'));
+    },
+  );
+
+  test(
+    'excursions filter modal controls use visible light theme borders',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('class _ExcursionsFiltersSheetState');
+      final priceFieldStart = source.indexOf(
+        'class _ExcursionsPriceInputField',
+      );
+      final languageOptionStart = source.indexOf(
+        'class _ExcursionsLanguageOptionRow',
+      );
+      final chipStart = source.indexOf('class _ExcursionsFilterChip');
+      final segmentStart = source.indexOf('class _ExcursionsSegmentButton');
+      final sortStart = source.indexOf('class _ExcursionsSortBar');
+      expect(sheetStart, isNonNegative);
+      expect(priceFieldStart, greaterThan(sheetStart));
+      expect(languageOptionStart, greaterThan(priceFieldStart));
+      expect(chipStart, greaterThan(languageOptionStart));
+      expect(segmentStart, greaterThan(chipStart));
+      expect(sortStart, greaterThan(segmentStart));
+
+      final sheetSource = source.substring(sheetStart, priceFieldStart);
+      final priceFieldSource = source.substring(
+        priceFieldStart,
+        languageOptionStart,
+      );
+      final languageOptionSource = source.substring(
+        languageOptionStart,
+        chipStart,
+      );
+      final chipSource = source.substring(chipStart, segmentStart);
+      final segmentSource = source.substring(segmentStart, sortStart);
+
+      expect(sheetSource, isNot(contains('white.withValues(alpha: 0.06)')));
+      expect(priceFieldSource, contains('context.excursionsColors.border'));
+      expect(
+        priceFieldSource,
+        isNot(contains('white.withValues(alpha: 0.06)')),
+      );
+      expect(
+        languageOptionSource,
+        isNot(contains('white.withValues(alpha: 0.07)')),
+      );
+      expect(chipSource, contains('border: Border.all('));
+      expect(chipSource, contains('context.excursionsColors.borderSoft'));
+      expect(segmentSource, contains('border: Border.all('));
+      expect(segmentSource, contains('context.excursionsColors.borderSoft'));
+    },
+  );
 
   test(
     'excursion cards show starting price from the cheapest guide offer',

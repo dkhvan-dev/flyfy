@@ -13,9 +13,8 @@ import (
 )
 
 type ChecklistUseCase struct {
-	repo               ChecklistRepository
-	notificationSender ChecklistNotificationSender
-	now                func() time.Time
+	repo ChecklistRepository
+	now  func() time.Time
 }
 
 var (
@@ -41,12 +40,6 @@ const (
 var checklistReminderOffsets = []int{30, 14, 7, 2, 1}
 
 type ChecklistUseCaseOption func(*ChecklistUseCase)
-
-func WithChecklistNotificationSender(sender ChecklistNotificationSender) ChecklistUseCaseOption {
-	return func(uc *ChecklistUseCase) {
-		uc.notificationSender = sender
-	}
-}
 
 func WithChecklistClock(now func() time.Time) ChecklistUseCaseOption {
 	return func(uc *ChecklistUseCase) {
@@ -185,23 +178,6 @@ type DispatchChecklistNotificationsResult struct {
 	Scanned int
 	Sent    int
 	Skipped int
-}
-
-type ChecklistNotificationRequest struct {
-	IdempotencyKey  string
-	RecipientUserID string
-	Category        string
-	Priority        string
-	Title           string
-	Body            string
-	DeepLink        string
-	Data            map[string]string
-	CollapseKey     string
-	TTL             time.Duration
-}
-
-type ChecklistNotificationSender interface {
-	SendChecklistNotification(ctx context.Context, request ChecklistNotificationRequest) error
 }
 
 type CarryItemMatch struct {

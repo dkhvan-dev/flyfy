@@ -47,6 +47,29 @@ void main() {
     expect(source, isNot(contains('height: 700')));
   });
 
+  test(
+    'guide calendar header adapts compact widths without overflow',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_calendar_screen.dart',
+      ).readAsString();
+
+      final headerStart = source.indexOf('class _GuideCalendarHeader');
+      expect(headerStart, isNonNegative);
+
+      final headerSource = source.substring(headerStart);
+      expect(source, contains('_GuideCalendarHeader('));
+      expect(headerSource, contains('LayoutBuilder('));
+      expect(
+        headerSource,
+        contains('MediaQuery.textScalerOf(context).scale(1)'),
+      );
+      expect(headerSource, contains('Wrap('));
+      expect(headerSource, contains('FittedBox('));
+      expect(headerSource, contains('foregroundColor: colors.textPrimary'));
+    },
+  );
+
   test('guide calendar screen uses V2 colors only', () async {
     final source = await File(
       'lib/screens/excursions/guide_calendar_screen.dart',

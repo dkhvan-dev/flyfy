@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
+
 import '../../core/storage/secure_storage.dart';
 import 'models/attendance_queue_item.dart';
 
@@ -96,7 +98,28 @@ class AttendanceQueueRepository {
     await writeAll(updated);
   }
 
-  String generateScanId() => _generateUuidV4();
+  String scanIdForProof({
+    required String participantUserId,
+    required String type,
+    required String subjectId,
+    required String qrJti,
+  }) {
+    final material = [
+      'attendance-scan-v1',
+      _normalizeStableId(participantUserId),
+      _normalizeStableId(type),
+      _normalizeStableId(subjectId),
+      _normalizeStableId(qrJti),
+    ].join('|');
+    final digest = sha256.convert(utf8.encode(material)).bytes;
+    final bytes = Uint8List.fromList(digest.take(16).toList(growable: false));
+
+    // Version 8 keeps this custom SHA-256-based value parseable as a UUID.
+    bytes[6] = (bytes[6] & 0x0f) | 0x80;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    return _uuidFromBytes(bytes);
+  }
 
   String _generateUuidV4() {
     final bytes = Uint8List(16);
@@ -107,6 +130,10 @@ class AttendanceQueueRepository {
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
+    return _uuidFromBytes(bytes);
+  }
+
+  String _uuidFromBytes(Uint8List bytes) {
     final hex = bytes
         .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
         .join();
@@ -116,4 +143,6 @@ class AttendanceQueueRepository {
         '${hex.substring(16, 20)}-'
         '${hex.substring(20, 32)}';
   }
+
+  String _normalizeStableId(String value) => value.trim().toLowerCase();
 }

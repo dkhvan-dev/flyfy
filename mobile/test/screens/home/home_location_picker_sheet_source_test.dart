@@ -38,7 +38,7 @@ void main() {
   );
 
   test(
-    'home location picker apply footer stays close to bottom edge',
+    'home location picker applies city rows directly without redundant footer',
     () async {
       final source = await File(
         'lib/screens/home/widgets/home_location_picker_sheet.dart',
@@ -52,6 +52,11 @@ void main() {
 
       final buildSource = source.substring(buildStart, previewStart);
 
+      expect(source, contains('Future<void> _selectCity(ReferenceCity city)'));
+      expect(source, contains('selectCity('));
+      expect(source, contains('Navigator.of(context).pop(true)'));
+      expect(source, isNot(contains('AppFilterApplyButton')));
+      expect(source, isNot(contains('l10n.homeLocationApply')));
       expect(
         buildSource,
         contains(
@@ -60,8 +65,10 @@ void main() {
       );
       expect(
         buildSource,
-        contains(
-          'padding: AppEdgeInsets.fromLTRB(20, 12, 20, 16 + bottomInset)',
+        matches(
+          RegExp(
+            r'padding: AppEdgeInsets\.fromLTRB\(\s*20,\s*18,\s*20,\s*18 \+ bottomInset,\s*\)',
+          ),
         ),
       );
     },

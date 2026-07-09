@@ -7,6 +7,7 @@ class MessageVm {
   final String senderDisplayName;
   final String? senderAvatarFileId;
   final String type;
+  final String sendStatus;
   final String content;
   final List<String> fileIds;
   final String? stickerId;
@@ -32,6 +33,7 @@ class MessageVm {
     required this.senderDisplayName,
     this.senderAvatarFileId,
     required this.type,
+    this.sendStatus = 'SENT',
     required this.content,
     this.fileIds = const [],
     this.stickerId,
@@ -56,6 +58,8 @@ class MessageVm {
       moderationStatus.trim().toUpperCase() == 'HIDDEN_BY_MODERATION';
   bool get isEdited => editedAt != null;
   bool get hasFiles => fileIds.isNotEmpty;
+  bool get isPendingAttachmentUpload =>
+      sendStatus.trim().toUpperCase() == 'PENDING_ATTACHMENTS';
   bool get isSystem => type == 'system';
   bool get isForwarded =>
       (forwardedFromMessageId?.trim().isNotEmpty ?? false) ||
@@ -72,6 +76,7 @@ class MessageVm {
     String? senderDisplayName,
     String? senderAvatarFileId,
     String? type,
+    String? sendStatus,
     String? content,
     List<String>? fileIds,
     String? stickerId,
@@ -96,6 +101,7 @@ class MessageVm {
       senderDisplayName: senderDisplayName ?? this.senderDisplayName,
       senderAvatarFileId: senderAvatarFileId ?? this.senderAvatarFileId,
       type: type ?? this.type,
+      sendStatus: sendStatus ?? this.sendStatus,
       content: content ?? this.content,
       fileIds: fileIds ?? this.fileIds,
       stickerId: stickerId ?? this.stickerId,
@@ -128,6 +134,7 @@ class MessageVm {
       senderDisplayName: json['senderDisplayName'] as String,
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
+      sendStatus: json['sendStatus']?.toString() ?? 'SENT',
       content: json['content'] as String,
       fileIds:
           (json['fileIds'] as List<dynamic>?)

@@ -73,6 +73,34 @@ void main() {
     expect(statusSource, contains('colors.borderSecondary'));
   });
 
+  test('SupportTicketDetailScreen keeps chat header compact', () {
+    final source = File(
+      'lib/features/help_center/presentation/support_tickets_screen.dart',
+    ).readAsStringSync();
+
+    final extentStart = source.indexOf('final topOverlayExtent =');
+    final headerStart = source.indexOf('class _SupportTicketDetailHeader');
+    final shellStart = source.indexOf('class _HeaderShell');
+    final timelineStart = source.indexOf('class _SupportEpisodeDivider');
+    expect(extentStart, isNonNegative);
+    expect(headerStart, isNonNegative);
+    expect(shellStart, greaterThan(headerStart));
+    expect(timelineStart, greaterThan(shellStart));
+
+    final extentSource = source.substring(extentStart, headerStart);
+    final detailHeaderSource = source.substring(headerStart, shellStart);
+    final shellSource = source.substring(shellStart, timelineStart);
+
+    expect(extentSource, contains('(isCompact ? 104.0 : 116.0)'));
+    expect(extentSource, contains('(isCompact ? 126.0 : 136.0)'));
+    expect(detailHeaderSource, contains('subtitle: ticket == null'));
+    expect(detailHeaderSource, contains(': null,'));
+    expect(shellSource, contains('final String? subtitle;'));
+    expect(shellSource, contains('maxLines: 1'));
+    expect(shellSource, contains('fontSize: 24'));
+    expect(shellSource, isNot(contains('fontSize: 28')));
+  });
+
   testWidgets(
     'SupportTicketsScreen opens the unified support chat instead of ticket list',
     (tester) async {

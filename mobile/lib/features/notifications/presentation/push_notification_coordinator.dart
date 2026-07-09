@@ -41,11 +41,6 @@ enum PushNotificationChannel {
     name: 'Activity updates',
     description: 'Trips, excursions, bookings, and attendance updates',
   ),
-  checklists(
-    id: 'inflap_checklists',
-    name: 'Checklist reminders',
-    description: 'Trip readiness, packing, documents, and baggage reminders',
-  ),
   messages(
     id: 'inflap_messages',
     name: 'Messages',
@@ -201,10 +196,6 @@ class PushNotificationCoordinator {
         _value(data, 'postId').isNotEmpty) {
       return PushNotificationChannel.content;
     }
-    if (category.contains('checklist') ||
-        _value(data, 'checklistTripId').isNotEmpty) {
-      return PushNotificationChannel.checklists;
-    }
     if (category.contains('activity') ||
         category.contains('excursion') ||
         category.contains('booking') ||
@@ -355,7 +346,6 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
       PushNotificationChannel.messages => AndroidNotificationCategory.message,
       PushNotificationChannel.content => AndroidNotificationCategory.social,
       PushNotificationChannel.activity => AndroidNotificationCategory.event,
-      PushNotificationChannel.checklists => AndroidNotificationCategory.status,
       PushNotificationChannel.system => AndroidNotificationCategory.status,
     };
   }

@@ -1965,45 +1965,81 @@ class _ProfileStatCard extends StatelessWidget {
         highlighted: config.highlighted,
         radius: profileScaled(context, 20, min: 18, max: 22),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (config.isLoading)
-            SizedBox(
-              width: profileScaled(context, 24, min: 20, max: 24),
-              height: profileScaled(context, 24, min: 20, max: 24),
-              child: CircularProgressIndicator(
-                strokeWidth: 2.4,
-                color: context.profileColors.primary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableWidth = constraints.maxWidth;
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                flex: 3,
+                child: Center(
+                  child: config.isLoading
+                      ? SizedBox(
+                          width: profileScaled(context, 24, min: 20, max: 24),
+                          height: profileScaled(context, 24, min: 20, max: 24),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: context.profileColors.primary,
+                          ),
+                        )
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            config.value,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle(
+                              color: context.profileColors.primary,
+                              fontSize: profileScaled(
+                                context,
+                                24,
+                                min: 20,
+                                max: 28,
+                              ),
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ),
+                ),
               ),
-            )
-          else
-            Text(
-              config.value,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle(
-                color: context.profileColors.primary,
-                fontSize: profileScaled(context, 24, min: 20, max: 28),
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
+              SizedBox(height: profileScaled(context, 6, min: 4, max: 8)),
+              Flexible(
+                flex: 3,
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: availableWidth,
+                      child: Text(
+                        config.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyle(
+                          color: profileTextSoft,
+                          fontSize: profileScaled(
+                            context,
+                            11,
+                            min: 10,
+                            max: 11,
+                          ),
+                          fontWeight: FontWeight.w800,
+                          height: 1.16,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
-          Text(
-            config.label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyle(
-              color: profileTextSoft,
-              fontSize: profileScaled(context, 11, min: 10, max: 11),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
 

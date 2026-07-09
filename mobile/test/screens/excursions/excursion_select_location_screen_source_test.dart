@@ -21,6 +21,50 @@ void main() {
     },
   );
 
+  test(
+    'location selector keeps a two-column grid on compact Android phones',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_select_location_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('int _locationGridCrossAxisCount('));
+      expect(source, contains('maxWidth < 300 ? 1 : 2'));
+      expect(source, contains('_locationGridCrossAxisCount('));
+      expect(source, isNot(contains('constraints.maxWidth < 330 ? 1 : 2')));
+    },
+  );
+
+  test(
+    'location selector keeps place cover images clean in light theme',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_select_location_screen.dart',
+      ).readAsString();
+
+      final helperStart = source.indexOf(
+        'LinearGradient? _locationCoverOverlayGradient',
+      );
+      final cardStart = source.indexOf('class _PlaceSelectionCard');
+      final tagStart = source.indexOf('class _PlaceCategoryTag');
+      expect(helperStart, isNonNegative);
+      expect(cardStart, isNonNegative);
+      expect(tagStart, greaterThan(cardStart));
+
+      final helperSource = source.substring(helperStart, cardStart);
+      final cardSource = source.substring(cardStart, tagStart);
+
+      expect(helperSource, contains('Brightness.light'));
+      expect(helperSource, contains('return null;'));
+      expect(cardSource, contains('final coverOverlayGradient ='));
+      expect(cardSource, contains('if (coverOverlayGradient != null)'));
+      expect(
+        cardSource,
+        isNot(contains('colors.black.withValues(alpha: 0.42)')),
+      );
+    },
+  );
+
   test('location selector receives country from create screen', () async {
     final source = await File(
       'lib/screens/excursions/excursion_select_location_screen.dart',

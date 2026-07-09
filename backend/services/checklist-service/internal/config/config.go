@@ -10,12 +10,11 @@ import (
 )
 
 type Config struct {
-	App           AppConfig
-	HTTP          HTTPConfig
-	DB            DBConfig
-	Log           LogConfig
-	MTLS          transportauth.EnvConfig
-	Notifications NotificationConfig
+	App  AppConfig
+	HTTP HTTPConfig
+	DB   DBConfig
+	Log  LogConfig
+	MTLS transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -41,21 +40,6 @@ func (h HTTPConfig) InternalTLSAddress() string {
 
 type LogConfig struct {
 	Level string `env:"LOG_LEVEL, default=info"`
-}
-
-type NotificationConfig struct {
-	ServiceBaseURL       string        `env:"NOTIFICATION_SERVICE_BASE_URL"`
-	InternalServiceToken string        `env:"NOTIFICATION_INTERNAL_SERVICE_TOKEN"`
-	DispatchServiceToken string        `env:"CHECKLIST_INTERNAL_SERVICE_TOKEN"`
-	HTTPTimeout          time.Duration `env:"NOTIFICATION_HTTP_TIMEOUT, default=3s"`
-	DispatchEnabled      bool          `env:"CHECKLIST_NOTIFICATION_DISPATCH_ENABLED, default=true"`
-	DispatchInterval     time.Duration `env:"CHECKLIST_NOTIFICATION_DISPATCH_INTERVAL, default=1h"`
-	DispatchBatchSize    int           `env:"CHECKLIST_NOTIFICATION_DISPATCH_BATCH_SIZE, default=100"`
-	DispatchDefaultLang  string        `env:"CHECKLIST_NOTIFICATION_DEFAULT_LANG, default=ru"`
-}
-
-func (n NotificationConfig) IsSenderConfigured() bool {
-	return n.ServiceBaseURL != "" && n.InternalServiceToken != ""
 }
 
 type DBConfig struct {

@@ -154,6 +154,37 @@ void main() {
     expect(scaffoldSource, contains('borderRadius: surfaceBorderRadius'));
   });
 
+  test('app modal scaffold uses compact typography by default', () {
+    final source = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
+
+    final scaffoldStart = source.indexOf('class AppModalScaffold<T>');
+    final dialogCardStart = source.indexOf('class AppModalDialogCard');
+    final actionsStart = source.indexOf('class _AppModalActions<T>');
+    final actionSheetStart = source.indexOf('class _AppActionSheetList<T>');
+    expect(scaffoldStart, isNonNegative);
+    expect(dialogCardStart, greaterThan(scaffoldStart));
+    expect(actionsStart, greaterThan(dialogCardStart));
+    expect(actionSheetStart, greaterThan(actionsStart));
+
+    final scaffoldSource = source.substring(scaffoldStart, dialogCardStart);
+    final dialogSource = source.substring(dialogCardStart, actionsStart);
+    final actionButtonSource = source.substring(actionsStart, actionSheetStart);
+
+    expect(scaffoldSource, contains('fontSize: adaptive.isNarrow ? 18 : 20'));
+    expect(scaffoldSource, contains('maxLines: 2'));
+    expect(scaffoldSource, contains('fontSize: 13'));
+    expect(dialogSource, contains('fontSize: adaptive.isNarrow ? 18 : 20'));
+    expect(dialogSource, contains('fontSize: 13'));
+    expect(actionButtonSource, contains('TextStyle _modalActionTextStyle'));
+    expect(actionButtonSource, contains('fontSize: 14'));
+    expect(
+      actionButtonSource,
+      isNot(contains('fontSize: adaptive.isNarrow ? 20 : 22')),
+    );
+  });
+
   test('app modal dialogs cannot disable outside tap dismissal', () {
     final source = File(
       'lib/core/ui/app_modal_templates.dart',

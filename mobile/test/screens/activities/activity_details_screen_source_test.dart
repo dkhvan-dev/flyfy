@@ -392,7 +392,7 @@ void main() {
 
       final leaveStart = source.indexOf('Future<void> _handleLeave() async');
       final paymentStart = source.indexOf(
-        'Future<void> _openPayment',
+        'Future<bool> _openPayment',
         leaveStart,
       );
       expect(leaveStart, isNonNegative);
@@ -417,6 +417,59 @@ void main() {
       );
       expect(source, contains('_checklistCache.removeTripChecklist('));
       expect(source, contains('_activityChecklistTripId(widget.activityId),'));
+    },
+  );
+
+  test(
+    'leaving activity preserves details scroll position around reload',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains('final ScrollController _detailsScrollController ='),
+      );
+      expect(source, contains('_detailsScrollController.dispose();'));
+      expect(source, contains('controller: _detailsScrollController'));
+      expect(source, contains('double? _captureDetailsScrollOffset()'));
+      expect(
+        source,
+        contains('void _restoreDetailsScrollOffset(double? offset)'),
+      );
+
+      final leaveStart = source.indexOf('Future<void> _handleLeave() async');
+      final paymentStart = source.indexOf(
+        'Future<bool> _openPayment',
+        leaveStart,
+      );
+      expect(leaveStart, isNonNegative);
+      expect(paymentStart, greaterThan(leaveStart));
+
+      final leaveSource = source.substring(leaveStart, paymentStart);
+      expect(
+        leaveSource,
+        contains(
+          'final scrollOffsetBeforeLeave = _captureDetailsScrollOffset();',
+        ),
+      );
+      expect(
+        leaveSource,
+        contains('_restoreDetailsScrollOffset(scrollOffsetBeforeLeave);'),
+      );
+      expect(
+        leaveSource.indexOf(
+          'final scrollOffsetBeforeLeave = _captureDetailsScrollOffset();',
+        ),
+        lessThan(leaveSource.indexOf('setState(() => _pendingAction')),
+      );
+      expect(
+        leaveSource.lastIndexOf(
+          '_restoreDetailsScrollOffset(scrollOffsetBeforeLeave);',
+        ),
+        greaterThan(leaveSource.indexOf('await _reloadAfterAction')),
+      );
     },
   );
 
@@ -456,6 +509,131 @@ void main() {
       isNot(contains('activity.isFree\n        ? l10n.freeLabel')),
     );
   });
+
+  test('details footer total price block has a distinct surface', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final actionBarStart = source.indexOf('class _DetailsActionBar');
+    final priceBlockStart = source.indexOf('class _FooterPriceBlock');
+    final footerButtonStart = source.indexOf('enum _FooterButtonStyle');
+    expect(actionBarStart, isNonNegative);
+    expect(priceBlockStart, greaterThan(actionBarStart));
+    expect(footerButtonStart, greaterThan(priceBlockStart));
+
+    final actionBarSource = source.substring(actionBarStart, priceBlockStart);
+    final priceBlockSource = source.substring(
+      priceBlockStart,
+      footerButtonStart,
+    );
+
+    expect(
+      actionBarSource,
+      contains(': context.activityDetailsColors.textPrimary;'),
+    );
+    expect(priceBlockSource, contains('color: colors.surfaceHigh'));
+    expect(priceBlockSource, contains('border: Border.all('));
+    expect(priceBlockSource, contains('color: colors.border'));
+    expect(
+      priceBlockSource,
+      contains('padding: const AppEdgeInsets.symmetric'),
+    );
+  });
+
+  test('paid activity opens checkout before submitting join', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final handleJoinStart = source.indexOf('Future<void> _handleJoin() async');
+    final nextMethodStart = source.indexOf(
+      'Future<void> _handleContextualHelpAction',
+      handleJoinStart,
+    );
+    expect(handleJoinStart, isNonNegative);
+    expect(nextMethodStart, greaterThan(handleJoinStart));
+
+    final handleJoinSource = source.substring(handleJoinStart, nextMethodStart);
+    final checkoutStart = handleJoinSource.indexOf(
+      'final checkoutCompleted = await _ensureCheckoutBeforeJoin(activity);',
+    );
+    final submitJoinStart = handleJoinSource.indexOf('await _submitJoin(');
+    expect(checkoutStart, isNonNegative);
+    expect(submitJoinStart, greaterThan(checkoutStart));
+    expect(handleJoinSource, contains('!checkoutCompleted'));
+
+    expect(
+      source,
+      contains(
+        'Future<bool> _ensureCheckoutBeforeJoin(ActivityListItemVm? activity)',
+      ),
+    );
+    expect(source, contains('if (activity == null || activity.isFree)'));
+    expect(
+      source,
+      contains('return _openPayment(activity, hostName: hostName);'),
+    );
+  });
+
+  test('failed backend join resets local mock checkout state', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final submitJoinStart = source.indexOf('Future<bool> _submitJoin({');
+    final privateDialogStart = source.indexOf(
+      'Future<bool?> _showPrivateJoinDialog',
+      submitJoinStart,
+    );
+    expect(submitJoinStart, isNonNegative);
+    expect(privateDialogStart, greaterThan(submitJoinStart));
+
+    final submitJoinSource = source.substring(
+      submitJoinStart,
+      privateDialogStart,
+    );
+    final failureBranchStart = submitJoinSource.indexOf('if (!success) {');
+    final successReloadStart = submitJoinSource.indexOf(
+      'await _reloadAfterAction(includeJoined: true);',
+    );
+    expect(failureBranchStart, isNonNegative);
+    expect(successReloadStart, greaterThan(failureBranchStart));
+
+    final failureBranch = submitJoinSource.substring(
+      failureBranchStart,
+      successReloadStart,
+    );
+    expect(failureBranch, contains('_pendingAction = null'));
+    expect(failureBranch, contains('_isPaymentSuccessful = false'));
+  });
+
+  test(
+    'details footer shows payment action before joining paid activity',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final actionBarStart = source.indexOf('class _DetailsActionBar');
+      final priceBlockStart = source.indexOf('class _FooterPriceBlock');
+      expect(actionBarStart, isNonNegative);
+      expect(priceBlockStart, greaterThan(actionBarStart));
+
+      final actionBarSource = source.substring(actionBarStart, priceBlockStart);
+
+      expect(actionBarSource, contains('final shouldStartPaidCheckout ='));
+      expect(
+        actionBarSource,
+        contains('!isJoined && !isOwner && !activity.isFree'),
+      );
+      expect(actionBarSource, contains('shouldStartPaidCheckout'));
+      expect(actionBarSource, contains('label: l10n.activityPaymentPayButton'));
+      expect(actionBarSource, contains('icon: Icons.payments_rounded'));
+      expect(actionBarSource, contains('onTap: onJoin'));
+      expect(actionBarSource, contains('action: _FooterAction.join'));
+    },
+  );
 
   test(
     'details footer leaves page content visible behind edit action',

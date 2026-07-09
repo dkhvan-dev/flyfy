@@ -3,6 +3,139 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'chat gallery attachments use gallery pickers instead of recent files',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('case _AttachmentPickType.galleryImage:'));
+      expect(source, contains('case _AttachmentPickType.galleryVideo:'));
+      expect(source, contains('picker.pickMultiImage('));
+      expect(source, contains('picker.pickMultiVideo('));
+      expect(source, contains('ImagePicker()'));
+      expect(source, isNot(contains('pickMultipleMedia(')));
+    },
+  );
+
+  test(
+    'chat attachment downloads are cancellable with inline progress',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final cacheSource = await File(
+        'lib/core/files/chat_file_cache.dart',
+      ).readAsString();
+      final fileApiSource = await File(
+        'lib/core/network/file_api.dart',
+      ).readAsString();
+
+      final attachmentsStateStart = source.indexOf(
+        'class _MessageAttachmentsState',
+      );
+      final attachmentTileStart = source.indexOf('class _AttachmentTile');
+      expect(attachmentsStateStart, isNonNegative);
+      expect(attachmentTileStart, greaterThan(attachmentsStateStart));
+
+      final stateSource = source.substring(
+        attachmentsStateStart,
+        attachmentTileStart,
+      );
+      final tapStart = stateSource.indexOf('Future<void> _handleAttachmentTap');
+      final openStart = stateSource.indexOf(
+        'Future<void> _openDownloadedAttachment',
+      );
+      expect(tapStart, isNonNegative);
+      expect(openStart, greaterThan(tapStart));
+
+      final tapSource = stateSource.substring(tapStart, openStart);
+
+      expect(stateSource, contains('Map<String, _AttachmentDownloadProgress>'));
+      expect(stateSource, contains('Map<String, CancelToken>'));
+      expect(tapSource, contains('_cancelAttachmentDownload(item.fileId)'));
+      expect(tapSource, contains('cancelToken: cancelToken'));
+      expect(tapSource, contains('onReceiveProgress:'));
+      expect(tapSource, isNot(contains('showSnackBar')));
+      expect(tapSource, isNot(contains('chatAttachmentDownloaded')));
+      expect(source, contains('_AttachmentDownloadProgressLabel('));
+      expect(source, contains('_downloadProgressByFileId['));
+
+      expect(cacheSource, contains('CancelToken? cancelToken'));
+      expect(cacheSource, contains('ChatFileDownloadProgressCallback?'));
+      expect(fileApiSource, contains('CancelToken? cancelToken'));
+      expect(fileApiSource, contains('ProgressCallback? onReceiveProgress'));
+    },
+  );
+
+  test(
+    'chat sends attachments through server-side pending message flow',
+    () async {
+      final screenSource = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final providerSource = await File(
+        'lib/providers/chat_provider.dart',
+      ).readAsString();
+      final apiSource = await File(
+        'lib/core/network/chat_api.dart',
+      ).readAsString();
+      final modelSource = await File(
+        'lib/features/chat/models/message_vm.dart',
+      ).readAsString();
+
+      final sendStart = screenSource.indexOf('Future<void> _handleSend()');
+      final pickerStart = screenSource.indexOf(
+        '// _pickAttachments dispatches to the right native picker',
+      );
+      expect(sendStart, isNonNegative);
+      expect(pickerStart, greaterThan(sendStart));
+
+      final sendSource = screenSource.substring(sendStart, pickerStart);
+      final createPendingIndex = sendSource.indexOf(
+        'chatProvider.createPendingAttachmentMessage',
+      );
+      final localPreviewIndex = sendSource.indexOf(
+        '_localPendingAttachmentsByMessageId[pendingMessage.id]',
+      );
+      final uploadIndex = sendSource.indexOf(
+        '_fileApi.createChatAttachmentUpload',
+      );
+      final completeIndex = sendSource.indexOf(
+        'chatProvider.completePendingMessageAttachments',
+      );
+
+      expect(
+        screenSource,
+        contains('Map<String, List<_PickedChatAttachment>>'),
+      );
+      expect(screenSource, contains('_localPendingAttachmentsByMessageId'));
+      expect(
+        screenSource,
+        contains('Map<String, _PendingAttachmentSendState>'),
+      );
+      expect(screenSource, contains('_pendingAttachmentSendStateByMessageId'));
+      expect(createPendingIndex, isNonNegative);
+      expect(localPreviewIndex, greaterThan(createPendingIndex));
+      expect(uploadIndex, greaterThan(localPreviewIndex));
+      expect(completeIndex, greaterThan(uploadIndex));
+      expect(screenSource, contains('pendingAttachmentsByMessageId:'));
+      expect(screenSource, contains('_localPendingAttachmentsByMessageId'));
+      expect(screenSource, contains('pendingSendStateByMessageId:'));
+      expect(screenSource, contains('_pendingAttachmentSendStateByMessageId'));
+
+      expect(providerSource, contains('createPendingAttachmentMessage('));
+      expect(providerSource, contains('completePendingMessageAttachments('));
+      expect(apiSource, contains('createPendingAttachmentMessage('));
+      expect(apiSource, contains('completePendingMessageAttachments('));
+      expect(apiSource, contains("'deferFileUpload': true"));
+      expect(apiSource, contains('attachments/complete'));
+      expect(modelSource, contains('final String sendStatus'));
+      expect(modelSource, contains('bool get isPendingAttachmentUpload'));
+    },
+  );
+
   test('chat renders video attachments as inline video preview', () async {
     final source = await File(
       'lib/screens/chat/chat_screen.dart',
@@ -76,6 +209,101 @@ void main() {
     expect(viewerSource, contains('primaryVelocity'));
     expect(viewerSource, contains('Navigator.of(context).pop'));
   });
+
+  test(
+    'chat file attachments open in swipe dismissible fullscreen preview',
+    () async {
+      final screenSource = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final sharedSource = await File(
+        'lib/screens/chat/chat_shared_content_screen.dart',
+      ).readAsString();
+      final viewerFile = File('lib/screens/chat/chat_file_viewer_screen.dart');
+
+      expect(viewerFile.existsSync(), isTrue);
+
+      final viewerSource = await viewerFile.readAsString();
+
+      expect(screenSource, contains("import 'chat_file_viewer_screen.dart';"));
+      expect(sharedSource, contains("import 'chat_file_viewer_screen.dart';"));
+      expect(
+        screenSource,
+        contains('ChatFileViewerScreen(downloaded: downloaded)'),
+      );
+      expect(
+        sharedSource,
+        contains('ChatFileViewerScreen(downloaded: downloaded)'),
+      );
+      expect(viewerSource, contains('class ChatFileViewerScreen'));
+      expect(viewerSource, contains('AppFileOpener'));
+      expect(viewerSource, contains('_dismissBySwipeDown'));
+      expect(viewerSource, contains('onVerticalDragUpdate'));
+      expect(viewerSource, contains('onVerticalDragEnd'));
+      expect(viewerSource, contains('primaryVelocity'));
+      expect(viewerSource, contains('Navigator.of(context).pop'));
+    },
+  );
+
+  test(
+    'chat attachment previews use shared cache and never show unknown while loading metadata',
+    () async {
+      final screenSource = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final cacheFile = File(
+        'lib/features/chat/utils/chat_attachment_preview_cache.dart',
+      );
+      final en = await File('lib/l10n/app_en.arb').readAsString();
+      final ru = await File('lib/l10n/app_ru.arb').readAsString();
+      final kk = await File('lib/l10n/app_kk.arb').readAsString();
+      final generated = await File(
+        'lib/l10n/generated/app_localizations.dart',
+      ).readAsString();
+
+      expect(cacheFile.existsSync(), isTrue);
+      final cacheSource = await cacheFile.readAsString();
+
+      expect(
+        screenSource,
+        contains(
+          "import '../../features/chat/utils/chat_attachment_preview_cache.dart';",
+        ),
+      );
+      expect(
+        screenSource,
+        contains('_preloadAttachmentPreviews(chat.messages)'),
+      );
+      expect(screenSource, contains('ChatAttachmentPreviewCache.peek'));
+      expect(screenSource, contains('ChatAttachmentPreviewCache.loadMany'));
+      expect(
+        screenSource,
+        contains('ChatAttachmentPreviewCache.rememberDownloaded'),
+      );
+      expect(screenSource, contains('l10n.chatAttachmentLoadingPreview'));
+      expect(
+        screenSource,
+        isNot(
+          contains('metadata == null\n        ? l10n.chatSharedUnknownFile'),
+        ),
+      );
+      expect(cacheSource, contains('class ChatAttachmentPreviewCache'));
+      expect(cacheSource, contains('static ChatAttachmentPreviewData? peek'));
+      expect(
+        cacheSource,
+        contains('static Future<List<ChatAttachmentPreviewData>> loadMany'),
+      );
+      expect(cacheSource, contains('static void rememberDownloaded'));
+      expect(
+        cacheSource,
+        contains('Map<String, Future<ChatAttachmentPreviewData>>'),
+      );
+      expect(en, contains('"chatAttachmentLoadingPreview"'));
+      expect(ru, contains('"chatAttachmentLoadingPreview"'));
+      expect(kk, contains('"chatAttachmentLoadingPreview"'));
+      expect(generated, contains('String get chatAttachmentLoadingPreview'));
+    },
+  );
 
   test('fullscreen video viewer uses adaptive V2 colors directly', () async {
     final viewerSource = await File(
@@ -399,10 +627,10 @@ void main() {
 
     expect(playerSource, contains('app_design_system.dart'));
     expect(playerSource, contains('AppDesignSystem.colorsFor(context)'));
-    expect(playerSource, contains('colors.surfaceHigh'));
-    expect(playerSource, contains('colors.borderSoft'));
-    expect(playerSource, contains('colors.primary'));
-    expect(playerSource, contains('colors.textPrimary'));
+    expect(playerSource, contains('colors.transparent'));
+    expect(playerSource, contains('colors.secondary'));
+    expect(playerSource, contains('colors.onSecondary'));
+    expect(playerSource, contains('colors.textSecondary'));
     expect(playerSource, isNot(contains('AppPalette.')));
   });
 
@@ -529,6 +757,159 @@ void main() {
       expect(source, contains('LaunchMode.externalApplication'));
       expect(linkUtils, contains('chatUrlRegex'));
       expect(linkUtils, contains('externalUriForChatUrl'));
+    },
+  );
+
+  test(
+    'chat message body uses adaptive foreground and blue link colors',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final designSystem = await File(
+        'lib/core/ui/app_design_system.dart',
+      ).readAsString();
+
+      final colorsStart = source.indexOf('final class _ChatColors');
+      final colorsEnd = source.indexOf('extension _ChatColorContext');
+      final bubbleStart = source.indexOf('class _MessageBubble');
+      final systemMessageStart = source.indexOf('class _SystemMessageDivider');
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(bubbleStart, isNonNegative);
+      expect(systemMessageStart, greaterThan(bubbleStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final bubbleSource = source.substring(bubbleStart, systemMessageStart);
+      final messageTextStart = bubbleSource.indexOf('_HyperlinkedMessageText(');
+      final reactionsStart = bubbleSource.indexOf(
+        'if (!isDeleted && message.reactions.isNotEmpty)',
+      );
+
+      expect(messageTextStart, isNonNegative);
+      expect(reactionsStart, greaterThan(messageTextStart));
+
+      final messageTextSource = bubbleSource.substring(
+        messageTextStart,
+        reactionsStart,
+      );
+
+      expect(designSystem, contains('required this.link'));
+      expect(designSystem, contains('final Color link'));
+      expect(designSystem, contains('link: AppPalette.blueLight01'));
+      expect(designSystem, contains('link: AppPalette.blueSurfaceHigh10'));
+
+      expect(
+        colorsSource,
+        contains('Color get messageText => colors.textPrimary'),
+      );
+      expect(colorsSource, contains('Color get messageLink => colors.link'));
+
+      expect(
+        messageTextSource,
+        contains('color: context.chatColors.messageText'),
+      );
+      expect(
+        messageTextSource,
+        contains('color: context.chatColors.messageLink'),
+      );
+      expect(
+        messageTextSource,
+        contains('decorationColor: context.chatColors.messageLink'),
+      );
+      expect(
+        messageTextSource,
+        isNot(
+          contains(
+            'context.chatColors.white.withValues(\n                              alpha: 0.98',
+          ),
+        ),
+      );
+      expect(
+        messageTextSource,
+        isNot(contains('color: context.chatColors.primary')),
+      );
+    },
+  );
+
+  test(
+    'chat messages use flat messenger rows and secondary media accents',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final playerSource = await File(
+        'lib/screens/chat/widgets/chat_voice_attachment_player.dart',
+      ).readAsString();
+
+      final colorsStart = source.indexOf('final class _ChatColors');
+      final colorsEnd = source.indexOf('extension _ChatColorContext');
+      final bubbleStart = source.indexOf('class _MessageBubble');
+      final systemMessageStart = source.indexOf('class _SystemMessageDivider');
+      final fileRowStart = source.indexOf('class _AttachmentFileRow');
+      final fileBadgeStart = source.indexOf('class _AttachmentDownloadBadge');
+
+      expect(colorsStart, isNonNegative);
+      expect(colorsEnd, greaterThan(colorsStart));
+      expect(bubbleStart, isNonNegative);
+      expect(systemMessageStart, greaterThan(bubbleStart));
+      expect(fileRowStart, isNonNegative);
+      expect(fileBadgeStart, greaterThan(fileRowStart));
+
+      final colorsSource = source.substring(colorsStart, colorsEnd);
+      final bubbleSource = source.substring(bubbleStart, systemMessageStart);
+      final fileRowSource = source.substring(fileRowStart, fileBadgeStart);
+
+      expect(colorsSource, contains('Color messageSurface(bool highlighted)'));
+      expect(colorsSource, contains('Color messageBorder(bool highlighted)'));
+      expect(
+        colorsSource,
+        contains('Color get onSecondary => colors.onSecondary'),
+      );
+
+      expect(
+        bubbleSource,
+        contains('color: context.chatColors.messageSurface(isHighlighted)'),
+      );
+      expect(
+        bubbleSource,
+        contains('color: context.chatColors.messageBorder(isHighlighted)'),
+      );
+      expect(
+        bubbleSource,
+        contains(
+          'padding: isSticker\n                      ? AppEdgeInsets.zero\n                      : AppEdgeInsets.symmetric(',
+        ),
+      );
+      expect(bubbleSource, isNot(contains('LinearGradient(')));
+      expect(bubbleSource, isNot(contains('_formatTime(message.sentAt)')));
+      expect(bubbleSource, isNot(contains("readByOthers ? '✓✓' : '✓'")));
+
+      expect(fileRowSource, contains('color: context.chatColors.secondary'));
+      expect(fileRowSource, contains('color: context.chatColors.onSecondary'));
+      expect(fileRowSource, contains('color: context.chatColors.messageText'));
+      expect(fileRowSource, contains('color: context.chatColors.textMuted'));
+      expect(
+        fileRowSource,
+        contains('_formatAttachmentSize(metadata.sizeBytes)'),
+      );
+      expect(fileRowSource, contains('_downloadStatusLabel(downloadProgress)'));
+      expect(fileRowSource, isNot(contains('_AttachmentDownloadBadge')));
+      expect(fileRowSource, isNot(contains('metadata.extensionLabel')));
+
+      expect(
+        playerSource,
+        contains('color: widget.backgroundColor ?? colors.transparent'),
+      );
+      expect(
+        playerSource,
+        contains('color: widget.borderColor ?? colors.transparent'),
+      );
+      expect(playerSource, contains('color: colors.secondary'));
+      expect(playerSource, contains('color: colors.onSecondary'));
+      expect(playerSource, isNot(contains('color: colors.primary')));
+      expect(playerSource, isNot(contains('l10n.chatVoiceMessage')));
     },
   );
 
@@ -850,5 +1231,148 @@ void main() {
     );
     expect(source, contains('chatAttachmentCancel'));
     expect(source, isNot(contains('CupertinoActionSheet')));
+  });
+
+  test(
+    'chat renders multiple image attachments as an adaptive collage',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+
+      final messageAttachmentsStart = source.indexOf(
+        'class _MessageAttachments',
+      );
+      final attachmentTileStart = source.indexOf('class _AttachmentTile');
+      final collageStart = source.indexOf('class _MessageImageCollage');
+
+      expect(messageAttachmentsStart, isNonNegative);
+      expect(attachmentTileStart, greaterThan(messageAttachmentsStart));
+      expect(collageStart, greaterThan(attachmentTileStart));
+
+      final attachmentsSource = source.substring(
+        messageAttachmentsStart,
+        attachmentTileStart,
+      );
+      final collageSource = source.substring(collageStart);
+
+      expect(attachmentsSource, contains('_imageAttachmentItems(items)'));
+      expect(attachmentsSource, contains('_MessageImageCollage('));
+      expect(attachmentsSource, contains('groupedFileIds'));
+      expect(collageSource, contains('LayoutBuilder('));
+      expect(collageSource, contains('_buildTwoImageGrid'));
+      expect(collageSource, contains('_buildThreeImageCollage'));
+      expect(collageSource, contains('_buildManyImageCollage'));
+      expect(
+        collageSource,
+        contains('SliverGridDelegateWithFixedCrossAxisCount'),
+      );
+
+      final manyCollageStart = collageSource.indexOf(
+        'Widget _buildManyImageCollage',
+      );
+      final manyCollageEnd = collageSource.indexOf(
+        'class _MessageImageCollageTile',
+      );
+      expect(manyCollageStart, isNonNegative);
+      expect(manyCollageEnd, greaterThan(manyCollageStart));
+
+      final manyCollageSource = collageSource.substring(
+        manyCollageStart,
+        manyCollageEnd,
+      );
+      expect(manyCollageSource, contains('SizedBox(height: gap)'));
+      expect(manyCollageSource, contains('padding: EdgeInsets.zero'));
+      expect(
+        collageSource,
+        isNot(
+          contains(
+            'Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            for (var i = 0; i < items.length; i++)',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('chat limits one message to ten image attachments', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+    final en = await File('lib/l10n/app_en.arb').readAsString();
+    final ru = await File('lib/l10n/app_ru.arb').readAsString();
+    final kk = await File('lib/l10n/app_kk.arb').readAsString();
+    final generated = await File(
+      'lib/l10n/generated/app_localizations.dart',
+    ).readAsString();
+
+    expect(source, contains('_maxChatImageAttachmentsPerMessage = 10'));
+    expect(source, contains('_remainingImageAttachmentSlots('));
+    expect(source, contains('_addPendingAttachmentsWithinMessageLimits('));
+    expect(
+      source,
+      contains('chatAttachmentImageLimit(_maxChatImageAttachmentsPerMessage)'),
+    );
+    expect(en, contains('"chatAttachmentImageLimit"'));
+    expect(ru, contains('"chatAttachmentImageLimit"'));
+    expect(kk, contains('"chatAttachmentImageLimit"'));
+    expect(generated, contains('chatAttachmentImageLimit(int count)'));
+  });
+
+  test('chat enforces ten minute voice and video duration limits', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+    final en = await File('lib/l10n/app_en.arb').readAsString();
+    final ru = await File('lib/l10n/app_ru.arb').readAsString();
+    final kk = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('_maxChatVoiceRecordingDuration'));
+    expect(source, contains('_maxChatVideoAttachmentDuration'));
+    expect(source, contains('Duration(minutes: 10)'));
+    expect(
+      source,
+      contains('maxVideoDuration: _maxChatVideoAttachmentDuration'),
+    );
+    expect(
+      source,
+      contains('_stopVoiceRecordingForPreview(maxDurationReached: true)'),
+    );
+    expect(source, contains('VideoPlayerController.file'));
+    expect(source, contains('_localVideoDuration('));
+    expect(source, contains('chatAttachmentVideoTooLong'));
+    expect(en, contains('up to 10 minutes'));
+    expect(ru, contains('до 10 минут'));
+    expect(kk, contains('10 минутқа дейінгі'));
+  });
+
+  test('chat limits and groups files and video attachments', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+    final en = await File('lib/l10n/app_en.arb').readAsString();
+    final ru = await File('lib/l10n/app_ru.arb').readAsString();
+    final kk = await File('lib/l10n/app_kk.arb').readAsString();
+    final generated = await File(
+      'lib/l10n/generated/app_localizations.dart',
+    ).readAsString();
+
+    expect(source, contains('_maxChatFileAttachmentsPerMessage = 10'));
+    expect(source, contains('_maxChatVideoAttachmentsPerMessage = 10'));
+    expect(source, contains('_remainingFileAttachmentSlots('));
+    expect(source, contains('_remainingVideoAttachmentSlots('));
+    expect(source, contains('chatAttachmentFileLimit('));
+    expect(source, contains('chatAttachmentVideoLimit('));
+    expect(source, contains('_videoAttachmentItems(items)'));
+    expect(source, contains('_fileAttachmentItems(items)'));
+    expect(source, contains('_MessageVideoCollage('));
+    expect(source, contains('_MessageFileGroup('));
+    expect(en, contains('"chatAttachmentFileLimit"'));
+    expect(en, contains('"chatAttachmentVideoLimit"'));
+    expect(ru, contains('"chatAttachmentFileLimit"'));
+    expect(ru, contains('"chatAttachmentVideoLimit"'));
+    expect(kk, contains('"chatAttachmentFileLimit"'));
+    expect(kk, contains('"chatAttachmentVideoLimit"'));
+    expect(generated, contains('chatAttachmentFileLimit(int count)'));
+    expect(generated, contains('chatAttachmentVideoLimit(int count)'));
   });
 }

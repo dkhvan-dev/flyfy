@@ -219,7 +219,12 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
+                    padding: AppEdgeInsets.fromLTRB(
+                      20,
+                      18,
+                      20,
+                      18 + bottomInset,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -274,14 +279,6 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                             ),
                       ],
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: AppEdgeInsets.fromLTRB(20, 12, 20, 16 + bottomInset),
-                  child: AppFilterApplyButton(
-                    label: l10n.homeLocationApply,
-                    icon: Icons.check_rounded,
-                    onTap: () => Navigator.of(context).pop(false),
                   ),
                 ),
               ],

@@ -3067,143 +3067,165 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       elevation: 0,
-      insetPadding: const AppEdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      insetPadding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 24),
       backgroundColor: context.createActivityColors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: DecoratedBox(
-          decoration: AppBoxDecoration(
-            borderRadius: AppBorderRadius.circular(30),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.createActivityColors.warmSurface81,
-                context.createActivityColors.textOnInverse,
-              ],
-            ),
-            border: Border.all(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompactDialog = constraints.maxWidth < 360;
+          final icon = Container(
+            width: 54,
+            height: 54,
+            decoration: AppBoxDecoration(
               color: context.createActivityColors.primary.withValues(
-                alpha: 0.58,
+                alpha: 0.18,
               ),
-              width: 1.4,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: context.createActivityColors.black.withValues(
-                  alpha: 0.42,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: context.createActivityColors.primary.withValues(
+                  alpha: 0.72,
                 ),
-                blurRadius: 30,
-                offset: const Offset(0, 18),
+              ),
+            ),
+            child: Icon(
+              Icons.warning_amber_rounded,
+              color: context.createActivityColors.primary,
+              size: 30,
+            ),
+          );
+          final textContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyle(
+                  color: context.createActivityColors.orangeWash23,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                description,
+                style: AppTextStyle(
+                  color: context.createActivityColors.orangeLight13,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.38,
+                ),
               ),
             ],
-          ),
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          );
+          final header = isCompactDialog
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [icon, const SizedBox(height: 14), textContent],
+                )
+              : Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: AppBoxDecoration(
-                        color: context.createActivityColors.primary.withValues(
-                          alpha: 0.18,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: context.createActivityColors.primary
-                              .withValues(alpha: 0.72),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        color: context.createActivityColors.primary,
-                        size: 30,
-                      ),
-                    ),
+                    icon,
                     const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: AppTextStyle(
-                              color: context.createActivityColors.orangeWash23,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w900,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 9),
-                          Text(
-                            description,
-                            style: AppTextStyle(
-                              color: context.createActivityColors.orangeLight13,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1.38,
-                            ),
-                          ),
-                        ],
+                    Expanded(child: textContent),
+                  ],
+                );
+
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SizedBox(
+              width: double.infinity,
+              child: DecoratedBox(
+                decoration: AppBoxDecoration(
+                  borderRadius: AppBorderRadius.circular(30),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.createActivityColors.warmSurface81,
+                      context.createActivityColors.textOnInverse,
+                    ],
+                  ),
+                  border: Border.all(
+                    color: context.createActivityColors.primary.withValues(
+                      alpha: 0.58,
+                    ),
+                    width: 1.4,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.createActivityColors.black.withValues(
+                        alpha: 0.42,
                       ),
+                      blurRadius: 30,
+                      offset: const Offset(0, 18),
                     ),
                   ],
                 ),
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: onConfirm,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.createActivityColors.primary,
-                      foregroundColor: context.createActivityColors.textPrimary,
-                      padding: const AppEdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppBorderRadius.circular(18),
+                child: Padding(
+                  padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      header,
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: onConfirm,
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                context.createActivityColors.primary,
+                            foregroundColor:
+                                context.createActivityColors.textPrimary,
+                            padding: const AppEdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppBorderRadius.circular(18),
+                            ),
+                            textStyle: AppTextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          child: Text(
+                            confirmLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                      textStyle: AppTextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: onCancel,
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                context.createActivityColors.orangeLight29,
+                            padding: const AppEdgeInsets.symmetric(
+                              vertical: 13,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppBorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            cancelLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      confirmLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: onCancel,
-                    style: TextButton.styleFrom(
-                      foregroundColor:
-                          context.createActivityColors.orangeLight29,
-                      padding: const AppEdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppBorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      cancelLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -5478,156 +5500,179 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
   Widget build(BuildContext context) {
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.42;
 
-    return Padding(
-      padding: AppEdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        top: 48,
-      ),
-      child: Container(
-        decoration: AppBoxDecoration(
-          color: context.createActivityColors.warmSurface18,
-          borderRadius: AppBorderRadius.circular(28),
-          border: Border.all(
-            color: context.createActivityColors.outlineOverlayLight,
-          ),
-        ),
-        child: SafeArea(
-          top: false,
+    return AppModalSheetFrame(
+      useSafeArea: false,
+      onTapOutside: () => Navigator.of(context).maybePop(),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          width: double.infinity,
           child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: AppTextStyle(
-                          color: context.createActivityColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: context.createActivityColors.textCoolSecondary,
-                      ),
-                    ),
-                  ],
+            padding: AppEdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: DecoratedBox(
+                decoration: AppBoxDecoration(
+                  color: context.createActivityColors.warmSurface18,
+                  borderRadius: AppRadius.sheetTop,
+                  border: Border.all(
+                    color: context.createActivityColors.outlineOverlayLight,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxListHeight),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: widget.items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final entry = widget.items.entries.elementAt(index);
-                      final selected = entry.key == _selected;
-                      void selectItem() {
-                        setState(() => _selected = entry.key);
-                      }
-
-                      return Semantics(
-                        container: true,
-                        button: true,
-                        selected: selected,
-                        label: entry.value,
-                        onTap: selectItem,
-                        child: ExcludeSemantics(
-                          child: InkWell(
-                            borderRadius: AppBorderRadius.circular(18),
-                            onTap: selectItem,
-                            child: Container(
-                              padding: const AppEdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              decoration: AppBoxDecoration(
-                                color: selected
-                                    ? context.createActivityColors.primary
-                                          .withValues(alpha: 0.18)
-                                    : context.createActivityColors.surfaceHigh,
-                                borderRadius: AppBorderRadius.circular(18),
-                                border: Border.all(
-                                  color: selected
-                                      ? context.createActivityColors.primary
-                                      : context
-                                            .createActivityColors
-                                            .outlineOverlayLight,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    widget.iconForSlug(entry.key),
-                                    color: context.createActivityColors.primary,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      entry.value,
-                                      style: AppTextStyle(
-                                        color: context
-                                            .createActivityColors
-                                            .textPrimary,
-                                        fontSize: 15,
-                                        fontWeight: selected
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    selected
-                                        ? Icons.check_circle_rounded
-                                        : Icons.chevron_right_rounded,
-                                    color: selected
-                                        ? context.createActivityColors.primary
-                                        : context
-                                              .createActivityColors
-                                              .textCaption,
-                                  ),
-                                ],
+                child: Padding(
+                  padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.title,
+                              style: AppTextStyle(
+                                color: context.createActivityColors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _selected == null
-                        ? null
-                        : () => Navigator.of(context).pop(_selected),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.createActivityColors.primary,
-                      disabledBackgroundColor:
-                          context.createActivityColors.surfaceCoolLight,
-                      foregroundColor: context.createActivityColors.textPrimary,
-                      minimumSize: const Size.fromHeight(54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppBorderRadius.circular(18),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: context
+                                  .createActivityColors
+                                  .textCoolSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    child: Text(
-                      widget.actionLabel,
-                      style: AppTextStyle(fontWeight: FontWeight.w700),
-                    ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxListHeight),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: widget.items.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final entry = widget.items.entries.elementAt(index);
+                            final selected = entry.key == _selected;
+                            void selectItem() {
+                              setState(() => _selected = entry.key);
+                            }
+
+                            return Semantics(
+                              container: true,
+                              button: true,
+                              selected: selected,
+                              label: entry.value,
+                              onTap: selectItem,
+                              child: ExcludeSemantics(
+                                child: InkWell(
+                                  borderRadius: AppBorderRadius.circular(18),
+                                  onTap: selectItem,
+                                  child: Container(
+                                    padding: const AppEdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                    decoration: AppBoxDecoration(
+                                      color: selected
+                                          ? context.createActivityColors.primary
+                                                .withValues(alpha: 0.18)
+                                          : context
+                                                .createActivityColors
+                                                .surfaceHigh,
+                                      borderRadius: AppBorderRadius.circular(
+                                        18,
+                                      ),
+                                      border: Border.all(
+                                        color: selected
+                                            ? context
+                                                  .createActivityColors
+                                                  .primary
+                                            : context
+                                                  .createActivityColors
+                                                  .outlineOverlayLight,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          widget.iconForSlug(entry.key),
+                                          color: context
+                                              .createActivityColors
+                                              .primary,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            entry.value,
+                                            style: AppTextStyle(
+                                              color: context
+                                                  .createActivityColors
+                                                  .textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: selected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          selected
+                                              ? Icons.check_circle_rounded
+                                              : Icons.chevron_right_rounded,
+                                          color: selected
+                                              ? context
+                                                    .createActivityColors
+                                                    .primary
+                                              : context
+                                                    .createActivityColors
+                                                    .textCaption,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _selected == null
+                              ? null
+                              : () => Navigator.of(context).pop(_selected),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                context.createActivityColors.primary,
+                            disabledBackgroundColor:
+                                context.createActivityColors.surfaceCoolLight,
+                            foregroundColor:
+                                context.createActivityColors.textPrimary,
+                            minimumSize: const Size.fromHeight(54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppBorderRadius.circular(18),
+                            ),
+                          ),
+                          child: Text(
+                            widget.actionLabel,
+                            style: AppTextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

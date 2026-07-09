@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app_file_opener.dart';
 import '../network/file_api.dart';
+
+typedef ChatFileDownloadProgressCallback =
+    void Function(int receivedBytes, int totalBytes);
 
 class ChatDownloadedFile {
   const ChatDownloadedFile({required this.file, required this.metadata});
@@ -58,6 +62,8 @@ class ChatFileCache {
   Future<ChatDownloadedFile> download(
     String fileId, {
     FileMetadataVm? metadata,
+    CancelToken? cancelToken,
+    ChatFileDownloadProgressCallback? onReceiveProgress,
   }) async {
     final normalizedId = fileId.trim();
     if (normalizedId.isEmpty) {
@@ -68,7 +74,11 @@ class ChatFileCache {
     final existing = await downloadedFile(normalizedId, metadata: metadata);
     if (existing != null) return existing;
 
-    final content = await _fileApi.downloadContent(normalizedId);
+    final content = await _fileApi.downloadContent(
+      normalizedId,
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
+    );
     if (content.bytes.isEmpty) {
       throw StateError('Downloaded file is empty');
     }

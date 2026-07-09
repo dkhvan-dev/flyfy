@@ -10,6 +10,14 @@ import 'models/place_vm.dart';
 
 const double placeTypographyScaleFactor = 0.8;
 const int _defaultExternalPlaceImageTargetWidth = 480;
+const double _minDiscoverGridTwoColumnWidth = 300;
+
+int placeDiscoverGridColumnCount(double crossAxisExtent) {
+  if (!crossAxisExtent.isFinite || crossAxisExtent <= 0) {
+    return 1;
+  }
+  return crossAxisExtent < _minDiscoverGridTwoColumnWidth ? 1 : 2;
+}
 
 String localizedPlaceCategoryLabel(AppLocalizations l10n, String? category) {
   final normalized = category?.trim().toUpperCase() ?? '';

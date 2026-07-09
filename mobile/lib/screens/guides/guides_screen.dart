@@ -20,6 +20,7 @@ import '../../features/guides/data/guide_discovery_api.dart';
 import '../../features/guides/guide_filter_options.dart';
 import '../../features/guides/guide_localization.dart';
 import '../../features/guides/guide_search.dart';
+import '../../features/guides/guide_ui.dart';
 import '../../features/guides/models/public_guide_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
@@ -712,13 +713,6 @@ class _GuidesSortBar extends StatelessWidget {
   }
 }
 
-int _guideGridColumnCount({required double width, required double textScale}) {
-  if (textScale >= 1.3 && width < 600) return 1;
-  if (width < 335) return 1;
-  if (width >= 680) return 3;
-  return 2;
-}
-
 class _GuidesGrid extends StatelessWidget {
   const _GuidesGrid({required this.guides, required this.onGuideTap});
 
@@ -730,8 +724,8 @@ class _GuidesGrid extends StatelessWidget {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final columns = _guideGridColumnCount(
-          width: constraints.crossAxisExtent,
+        final columns = guideGridColumnCount(
+          crossAxisExtent: constraints.crossAxisExtent,
           textScale: textScale,
         );
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
@@ -769,8 +763,8 @@ class _GuidesSkeletonGrid extends StatelessWidget {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final columns = _guideGridColumnCount(
-          width: constraints.crossAxisExtent,
+        final columns = guideGridColumnCount(
+          crossAxisExtent: constraints.crossAxisExtent,
           textScale: textScale,
         );
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;

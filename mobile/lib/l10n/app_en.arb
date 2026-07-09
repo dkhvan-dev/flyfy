@@ -2117,8 +2117,8 @@
   "createExcursionAutosaveHint": "Progress is saved locally while you create the offer",
   "createExcursionAutosaveRestored": "Local draft restored",
   "createExcursionDiscardTitle": "Leave without saving?",
-  "createExcursionDiscardDescription": "Your excursion draft data will be lost. The form will open empty next time.",
-  "createExcursionDiscardConfirm": "Leave and discard",
+  "createExcursionDiscardDescription": "Unsaved excursion draft changes will be lost.",
+  "createExcursionDiscardConfirm": "Leave",
   "createExcursionModeSwitchTitle": "Switch route type?",
   "createExcursionModeSwitchDescription": "Data from the current route type will be cleared. Other excursion details will stay in place.",
   "createExcursionModeSwitchCancel": "Stay here",
@@ -2785,7 +2785,7 @@
     }
   },
   "qrScannerTitle": "Scan QR",
-  "qrScannerSubtitle": "Point your camera at the host QR to confirm that you arrived at the activity.",
+  "qrScannerSubtitle": "Point the camera at the QR",
   "qrScannerReady": "Point the camera at the QR code",
   "qrScannerInvalidCode": "This is not an Inflap activity QR",
   "qrScannerSessionUnavailable": "Current session is unavailable. Reopen the screen and try again.",
@@ -3255,6 +3255,8 @@
   },
   "chatSystemUpdate": "System update",
   "chatAttachmentPhotoVideo": "Photo / Video",
+  "chatAttachmentPhoto": "Photo",
+  "chatAttachmentVideo": "Video",
   "chatAttachmentFile": "File",
   "chatLastMessagePhoto": "Photo",
   "chatLastMessageVideo": "Video",
@@ -3266,7 +3268,7 @@
   "chatAttachmentCameraTitle": "Camera",
   "chatAttachmentAttachTitle": "Attach",
   "chatAttachmentCancel": "Cancel",
-  "chatAttachmentVideoTooLong": "Video is too long. Use a clip up to 5 minutes.",
+  "chatAttachmentVideoTooLong": "Video is too long. Use a clip up to 10 minutes.",
   "chatComposerCameraButtonLabel": "Camera",
   "chatComposerAttachButtonLabel": "Attach file",
   "chatComposerEmojiButtonLabel": "Emoji and stickers",
@@ -3316,6 +3318,7 @@
   "chatCameraTrimFailed": "Could not trim this video. Try a different trim range or send the original.",
   "chatAttachmentUploading": "Uploading attachment...",
   "chatAttachmentDownloading": "Downloading...",
+  "chatAttachmentLoadingPreview": "Loading attachment...",
   "chatAttachmentDownloaded": "Downloaded. Tap again to open.",
   "chatAttachmentDownloadedStatus": "Downloaded",
   "chatAttachmentNotDownloadedStatus": "Tap to download",
@@ -3324,6 +3327,30 @@
   "chatAttachmentUploadFailed": "Failed to upload the attachment. Please try again.",
   "chatAttachmentUnsupported": "This file type is not supported for chat attachments.",
   "chatAttachmentTooLarge": "The attachment is too large. Use a file up to 25 MB.",
+  "chatAttachmentImageLimit": "You can send up to {count} images in one message.",
+  "@chatAttachmentImageLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentFileLimit": "You can send up to {count} files in one message.",
+  "@chatAttachmentFileLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAttachmentVideoLimit": "You can send up to {count} videos in one message.",
+  "@chatAttachmentVideoLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatComposerHint": "Message...",
   "chatComposerClosedHint": "Chat is closed",
   "chatActivityChatClosed": "This chat is now read-only.",
@@ -3338,6 +3365,7 @@
   "chatVoiceRecordFailed": "Failed to record the voice message. Please try again.",
   "chatVoicePlaybackFailed": "Could not play this voice message.",
   "chatVoiceTooShort": "Voice message is too short.",
+  "chatVoiceTooLong": "Voice message is too long. Maximum duration is 10 minutes.",
   "chatReactionSheetTitle": "Reaction",
   "chatReactionFailed": "Could not update the reaction. Please try again.",
   "chatCopyAction": "Copy",

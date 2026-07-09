@@ -24,12 +24,14 @@ class AppFilterSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppDesignSystem.colorsFor(context);
-    final textScaler = MediaQuery.textScalerOf(context);
-    final effectiveHeight = height ?? 46;
-    final effectiveHorizontalPadding = horizontalPadding ?? 18;
-    final effectiveTitleSize = titleFontSize ?? 16;
-    final effectiveClearSize = clearFontSize ?? 12;
-    final reservedActionWidth = textScaler.scale(86);
+    final effectiveHeight = height ?? 48;
+    final effectiveHorizontalPadding = horizontalPadding ?? 16;
+    final effectiveTitleSize = (titleFontSize ?? 15).clamp(13, 15).toDouble();
+    final effectiveClearSize = (clearFontSize ?? 11.5)
+        .clamp(10.5, 12)
+        .toDouble();
+    final normalizedTitle = title.trim().toUpperCase();
+    final normalizedClearLabel = clearLabel.trim().toUpperCase();
 
     return Container(
       height: effectiveHeight,
@@ -37,26 +39,32 @@ class AppFilterSheetHeader extends StatelessWidget {
       decoration: AppBoxDecoration(
         border: Border(bottom: BorderSide(color: colors.borderSoft)),
       ),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
         children: [
-          Padding(
-            padding: AppEdgeInsets.symmetric(horizontal: reservedActionWidth),
-            child: Text(
-              title.toUpperCase(),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle(
-                color: colors.textPrimary,
-                fontSize: effectiveTitleSize,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                alignment: Alignment.centerLeft,
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  normalizedTitle,
+                  textAlign: TextAlign.start,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
+                    fontSize: effectiveTitleSize,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.centerRight,
+          const SizedBox(width: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 132),
             child: TextButton(
               onPressed: onClear,
               style: TextButton.styleFrom(
@@ -66,7 +74,7 @@ class AppFilterSheetHeader extends StatelessWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                clearLabel.toUpperCase(),
+                normalizedClearLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyle(
@@ -106,7 +114,7 @@ class AppFilterApplyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppDesignSystem.colorsFor(context);
-    final effectiveFontSize = fontSize ?? 17;
+    final effectiveFontSize = (fontSize ?? 14).clamp(13, 15).toDouble();
     final effectiveIconSize = (effectiveFontSize + 1).clamp(16, 20).toDouble();
 
     return SizedBox(

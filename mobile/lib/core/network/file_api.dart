@@ -272,7 +272,11 @@ class FileApi {
     return url.isEmpty ? null : url;
   }
 
-  Future<FileContentVm> downloadContent(String fileId) async {
+  Future<FileContentVm> downloadContent(
+    String fileId, {
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
     final trimmed = fileId.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError.value(fileId, 'fileId', 'File id is required');
@@ -280,6 +284,8 @@ class FileApi {
 
     final response = await _apiClient.dio.get<List<int>>(
       '/files/$trimmed/content',
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
       options: Options(responseType: ResponseType.bytes),
     );
     return FileContentVm(

@@ -178,6 +178,35 @@ void main() {
     expect(kkArb, contains('"createActivityDiscardTitle"'));
   });
 
+  test('create activity discard dialog uses a wider compact layout', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final dialogStart = source.indexOf('class _ActivityAmberConfirmDialog');
+    final mapButtonStart = source.indexOf('class _MapExpandButton');
+
+    expect(dialogStart, isNonNegative);
+    expect(mapButtonStart, greaterThan(dialogStart));
+
+    final dialogSource = source.substring(dialogStart, mapButtonStart);
+
+    expect(
+      dialogSource,
+      contains(
+        'insetPadding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 24)',
+      ),
+    );
+    expect(dialogSource, contains('BoxConstraints(maxWidth: 520)'));
+    expect(dialogSource, contains('LayoutBuilder('));
+    expect(
+      dialogSource,
+      contains('final isCompactDialog = constraints.maxWidth < 360;'),
+    );
+    expect(dialogSource, contains('final header = isCompactDialog'));
+    expect(dialogSource, contains('? Column('));
+    expect(dialogSource, contains('width: double.infinity'));
+  });
+
   test(
     'create activity splits price amount and currency into separate fields',
     () async {
@@ -1251,6 +1280,25 @@ void main() {
 
     expect(sheetSource, contains('MediaQuery.sizeOf(context).height'));
     expect(sheetSource, isNot(contains('maxHeight: 360')));
+  });
+
+  test('create activity picker sheets use full-width modal frame', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+
+    final sheetStart = source.indexOf('class _CategoryPickerSheet');
+    expect(sheetStart, isNonNegative);
+
+    final sheetSource = source.substring(sheetStart);
+    expect(sheetSource, contains('AppModalSheetFrame('));
+    expect(
+      sheetSource,
+      contains('onTapOutside: () => Navigator.of(context).maybePop()'),
+    );
+    expect(sheetSource, contains('width: double.infinity'));
+    expect(sheetSource, isNot(contains('left: 16')));
+    expect(sheetSource, isNot(contains('right: 16')));
   });
 
   test('edit activity locks meeting address one hour before start', () async {

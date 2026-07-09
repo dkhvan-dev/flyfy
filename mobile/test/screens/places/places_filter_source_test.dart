@@ -132,6 +132,7 @@ void main() {
 
       final rangeSource = sheetSource.substring(rangeStart, priceStart);
       final selectedChipSource = sheetSource.substring(chipStart, ratingStart);
+      final ratingSource = sheetSource.substring(ratingStart);
 
       expect(
         rangeSource,
@@ -150,6 +151,11 @@ void main() {
       expect(
         selectedChipSource,
         contains('color: selected ? colors.primary : colors.surfaceRaised'),
+      );
+      expect(ratingSource, contains('border: Border.all('));
+      expect(
+        ratingSource,
+        contains('selected ? colors.primary : colors.borderSoft'),
       );
     },
   );

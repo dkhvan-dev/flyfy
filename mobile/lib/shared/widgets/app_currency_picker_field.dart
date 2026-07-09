@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/core/ui/app_modal_templates.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../formatters/app_money_formatter.dart';
-import 'package:inflap/core/ui/app_modal_templates.dart';
 
 class AppCurrencyPickerField extends StatelessWidget {
   const AppCurrencyPickerField({
@@ -39,63 +39,10 @@ class AppCurrencyPickerField extends StatelessWidget {
       context: context,
       isDismissible: true,
       backgroundColor: colors.transparent,
-      builder: (context) {
-        final sheetColors = AppDesignSystem.colorsFor(context);
-        final l10n = AppLocalizations.of(context)!;
-        final selected = normalizeAppCurrencyCodeOrDefault(selectedCode);
-        return SafeArea(
-          child: Padding(
-            padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: DecoratedBox(
-              decoration: AppBoxDecoration(
-                color: sheetColors.surface,
-                borderRadius: AppBorderRadius.circular(28),
-                border: Border.all(color: sheetColors.borderSoft),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const AppEdgeInsets.all(12),
-                itemCount: appCurrencyOptions.length,
-                separatorBuilder: (_, _) =>
-                    Divider(height: 1, color: sheetColors.borderSoft),
-                itemBuilder: (context, index) {
-                  final option = appCurrencyOptions[index];
-                  final isSelected = option.code == selected;
-                  return ListTile(
-                    onTap: () => Navigator.of(context).pop(option.code),
-                    leading: CircleAvatar(
-                      backgroundColor: isSelected
-                          ? sheetColors.primary
-                          : sheetColors.surfaceHigh,
-                      foregroundColor: sheetColors.textPrimary,
-                      child: Text(option.symbol),
-                    ),
-                    title: Text(
-                      option.label(l10n),
-                      style: AppTextStyle(
-                        color: sheetColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(
-                            Icons.check_circle_rounded,
-                            color: sheetColors.primary,
-                          )
-                        : Text(
-                            option.code,
-                            style: AppTextStyle(
-                              color: sheetColors.textMuted,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
+      requestFocus: true,
+      builder: (context) => _AppCurrencyPickerSheet(
+        selectedCode: normalizeAppCurrencyCodeOrDefault(selectedCode),
+      ),
     );
 
     if (result != null && result != normalizeAppCurrencyCode(selectedCode)) {
@@ -193,6 +140,230 @@ class AppCurrencyPickerField extends StatelessWidget {
       ],
     );
   }
+}
+
+class _AppCurrencyPickerSheet extends StatefulWidget {
+  const _AppCurrencyPickerSheet({required this.selectedCode});
+
+  final String selectedCode;
+
+  @override
+  State<_AppCurrencyPickerSheet> createState() =>
+      _AppCurrencyPickerSheetState();
+}
+
+class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<AppCurrencyOption> _visibleOptions(AppLocalizations l10n) {
+    final query = _normalizeCurrencyPickerQuery(_searchController.text);
+    if (query.isEmpty) return appCurrencyOptions;
+
+    return appCurrencyOptions
+        .where((option) {
+          final label = option.label(l10n);
+          final searchable = _normalizeCurrencyPickerQuery(
+            '${option.code} ${option.symbol} $label',
+          );
+          return searchable.contains(query);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppDesignSystem.colorsFor(context);
+    final l10n = AppLocalizations.of(context)!;
+    final visibleOptions = _visibleOptions(l10n);
+
+    return AppModalSheetFrame(
+      useSafeArea: false,
+      onTapOutside: () => Navigator.of(context).maybePop(),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          width: double.infinity,
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                var maxHeight = _currencyPickerMaxHeightAboveKeyboard(context);
+                if (constraints.maxHeight.isFinite) {
+                  maxHeight = maxHeight
+                      .clamp(0.0, constraints.maxHeight)
+                      .toDouble();
+                }
+
+                return ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: DecoratedBox(
+                    decoration: AppBoxDecoration(
+                      color: colors.surface,
+                      borderRadius: AppRadius.sheetTop,
+                      border: Border.all(color: colors.borderSoft),
+                    ),
+                    child: Padding(
+                      padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 5,
+                            decoration: AppBoxDecoration(
+                              color: colors.borderSoft,
+                              borderRadius: AppBorderRadius.circular(999),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _searchController,
+                            autofocus: true,
+                            textInputAction: TextInputAction.search,
+                            onChanged: (_) => setState(() {}),
+                            style: AppTextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            decoration: AppInputDecoration(
+                              hintText: l10n.profileCurrencySearchHint,
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: colors.textMuted,
+                              ),
+                              hintStyle: AppTextStyle(
+                                color: colors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              filled: true,
+                              fillColor: colors.surfaceRaised,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: AppBorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: colors.borderSoft,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: AppBorderRadius.circular(18),
+                                borderSide: BorderSide(
+                                  color: colors.borderPrimary,
+                                  width: 1.3,
+                                ),
+                              ),
+                              contentPadding: const AppEdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Flexible(
+                            child: visibleOptions.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const AppEdgeInsets.symmetric(
+                                        vertical: 28,
+                                      ),
+                                      child: Text(
+                                        l10n.profileCurrencyNoResults,
+                                        textAlign: TextAlign.center,
+                                        style: AppTextStyle(
+                                          color: colors.textSecondary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    shrinkWrap: true,
+                                    itemCount: visibleOptions.length,
+                                    separatorBuilder: (_, _) => Divider(
+                                      height: 1,
+                                      color: colors.borderSoft,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final option = visibleOptions[index];
+                                      final isSelected =
+                                          option.code == widget.selectedCode;
+                                      return ListTile(
+                                        onTap: () => Navigator.of(
+                                          context,
+                                        ).pop(option.code),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              AppBorderRadius.circular(16),
+                                        ),
+                                        leading: CircleAvatar(
+                                          backgroundColor: isSelected
+                                              ? colors.primary
+                                              : colors.surfaceHigh,
+                                          foregroundColor: colors.textPrimary,
+                                          child: Text(option.symbol),
+                                        ),
+                                        title: Text(
+                                          option.label(l10n),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyle(
+                                            color: colors.textPrimary,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        trailing: isSelected
+                                            ? Icon(
+                                                Icons.check_circle_rounded,
+                                                color: colors.primary,
+                                              )
+                                            : Text(
+                                                option.code,
+                                                style: AppTextStyle(
+                                                  color: colors.textMuted,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+double _currencyPickerMaxHeightAboveKeyboard(BuildContext context) {
+  final mediaQuery = MediaQuery.of(context);
+  final keyboardInset = mediaQuery.viewInsets.bottom;
+  final availableHeight =
+      mediaQuery.size.height - keyboardInset - mediaQuery.viewPadding.top - 24;
+  final preferredHeight = keyboardInset > 0
+      ? availableHeight
+      : mediaQuery.size.height * 0.72;
+  final upperBound = mediaQuery.size.height * 0.86;
+  final lowerBound = upperBound < 260 ? upperBound : 260.0;
+
+  return preferredHeight.clamp(lowerBound, upperBound).toDouble();
+}
+
+String _normalizeCurrencyPickerQuery(String value) {
+  return value.trim().toLowerCase();
 }
 
 class AppCurrencyOption {

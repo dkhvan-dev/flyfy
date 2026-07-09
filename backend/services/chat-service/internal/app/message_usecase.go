@@ -99,9 +99,17 @@ type SendMessageInput struct {
 	Type                string
 	Content             string
 	FileIDs             []string
+	DeferFileUpload     bool
 	StickerID           *uuid.UUID
 	ReplyToMessageID    *uuid.UUID
 	StoryReply          *model.StoryReplyContext
+}
+
+type CompletePendingMessageAttachmentsInput struct {
+	ConversationID uuid.UUID
+	MessageID      uuid.UUID
+	SenderUserID   uuid.UUID
+	FileIDs        []string
 }
 
 type ForwardMessageInput struct {
@@ -130,6 +138,13 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	fileIDs := normalizeMessageFileIDs(input.FileIDs)
 	storyReply := normalizedStoryReply(input.StoryReply)
 	stickerID := input.StickerID
+	deferFileUpload := input.DeferFileUpload
+	if deferFileUpload {
+		if stickerID != nil || len(fileIDs) > 0 {
+			return nil, ErrInvalidMessageType
+		}
+		messageType = messageTypeFile
+	}
 	if stickerID != nil {
 		messageType = messageTypeSticker
 	}
@@ -276,6 +291,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		SenderUserID:          input.SenderUserID,
 		ClientMessageID:       normalizedClientMessageID(input.ClientMessageID),
 		Type:                  messageType,
+		SendStatus:            model.MessageSendStatusSent,
 		Content:               input.Content,
 		StickerID:             stickerID,
 		StickerFileID:         stickerFileID,
@@ -289,10 +305,16 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		ModerationRevision:    1,
 		SentAt:                now,
 	}
+	if deferFileUpload {
+		msg.SendStatus = model.MessageSendStatusPendingAttachments
+	}
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
 		if err := txRepo.CreateMessage(ctx, msg); err != nil {
 			return err
+		}
+		if deferFileUpload {
+			return nil
 		}
 
 		if len(fileIDs) > 0 {
@@ -331,8 +353,105 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	msg.SenderDisplayName = input.SenderDisplayName
 	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
 
+	if msg.SendStatus == model.MessageSendStatusSent {
+		u.publishMessageSent(input.ConversationID, msg)
+	}
+
+	return msg, nil
+}
+
+func (u *MessageUseCase) CompletePendingMessageAttachments(
+	ctx context.Context,
+	input CompletePendingMessageAttachmentsInput,
+) (*model.Message, error) {
+	fileIDs := normalizeMessageFileIDs(input.FileIDs)
+	if len(fileIDs) == 0 {
+		return nil, ErrInvalidMessageType
+	}
+	if len(fileIDs) > maxFilesPerMessage {
+		return nil, ErrTooManyFiles
+	}
+
+	participant, err := u.repo.GetParticipant(ctx, input.ConversationID, input.SenderUserID)
+	if err != nil {
+		return nil, err
+	}
+	if participant == nil || participant.LeftAt != nil {
+		return nil, ErrNotParticipant
+	}
+
+	now := time.Now().UTC()
+	var completed *model.Message
+	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
+		msg, err := txRepo.GetMessageByIDForUpdate(ctx, input.MessageID)
+		if err != nil {
+			return err
+		}
+		if msg == nil ||
+			msg.ConversationID != input.ConversationID ||
+			msg.SenderUserID != input.SenderUserID ||
+			msg.DeletedAt != nil {
+			return ErrMessageNotFound
+		}
+		if msg.SendStatus != model.MessageSendStatusPendingAttachments {
+			return ErrInvalidMessageType
+		}
+
+		if err := txRepo.CreateMessageFiles(ctx, msg.ID, fileIDs); err != nil {
+			return err
+		}
+		msg.Type = messageTypeFile
+		msg.SendStatus = model.MessageSendStatusSent
+		if err := txRepo.UpdateMessage(ctx, msg); err != nil {
+			return err
+		}
+
+		conv, err := txRepo.GetConversationByIDForUpdate(ctx, input.ConversationID)
+		if err != nil {
+			return err
+		}
+		if conv == nil {
+			return ErrConversationNotFound
+		}
+		conv.LastActivityAt = now
+		if err := txRepo.UpdateConversation(ctx, conv); err != nil {
+			return err
+		}
+		if err := txRepo.CreateChatNotificationOutbox(ctx, newChatNotificationOutbox(
+			chatNotificationEventMessage,
+			input.ConversationID,
+			msg.ID,
+			input.SenderUserID,
+			"",
+			now,
+		)); err != nil {
+			return err
+		}
+
+		copyValue := *msg
+		completed = &copyValue
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if completed == nil {
+		return nil, ErrMessageNotFound
+	}
+
+	completed.FileIDs = fileIDs
+	enrichMessages(ctx, u.profileResolver, []*model.Message{completed})
+	u.publishMessageSent(input.ConversationID, completed)
+	return completed, nil
+}
+
+func (u *MessageUseCase) publishMessageSent(conversationID uuid.UUID, msg *model.Message) {
+	if u == nil || u.publisher == nil || msg == nil {
+		return
+	}
+	fileIDs := append([]string(nil), msg.FileIDs...)
 	go func() {
-		evt := event.New("message.sent", input.ConversationID, event.MessageSentPayload{
+		evt := event.New("message.sent", conversationID, event.MessageSentPayload{
 			MessageID:                 msg.ID,
 			ClientMessageID:           msg.ClientMessageID,
 			SenderUserID:              msg.SenderUserID,
@@ -343,7 +462,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			FileIDs:                   fileIDs,
 			StickerID:                 msg.StickerID,
 			StickerFileID:             msg.StickerFileID,
-			ReplyToMessageID:          input.ReplyToMessageID,
+			ReplyToMessageID:          msg.ReplyToMessageID,
 			StoryReply:                eventStoryReplyFromModel(msg.StoryReply),
 			ForwardedFromMessageID:    msg.ForwardedFromMessageID,
 			ForwardedFromSenderUserID: msg.ForwardedFromSenderUserID,
@@ -355,8 +474,6 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			log.Error().Err(pubErr).Msg("failed to publish message.sent event")
 		}
 	}()
-
-	return msg, nil
 }
 
 func normalizedStoryReply(value *model.StoryReplyContext) *model.StoryReplyContext {
@@ -1052,6 +1169,18 @@ func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actor
 	if err != nil {
 		return nil, err
 	}
+
+	visibleMessages := msgs[:0]
+	for _, msg := range msgs {
+		if msg == nil {
+			continue
+		}
+		if msg.SendStatus == model.MessageSendStatusPendingAttachments && msg.SenderUserID != actorUserID {
+			continue
+		}
+		visibleMessages = append(visibleMessages, msg)
+	}
+	msgs = visibleMessages
 
 	for _, msg := range msgs {
 		msg.FileIDs, _ = u.repo.GetMessageFileIDs(ctx, msg.ID)

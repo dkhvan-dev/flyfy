@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -185,15 +184,13 @@ func TestSearchCarryItemMatchesUserFriendlyRussianQueries(t *testing.T) {
 	}
 }
 
-func TestDispatchDueChecklistNotificationsSendsCriticalReadinessNotification(t *testing.T) {
+func TestDispatchDueChecklistNotificationsDoesNotSendAutomaticChecklistPushes(t *testing.T) {
 	ctx := context.Background()
 	now := time.Date(2026, time.January, 9, 8, 0, 0, 0, time.UTC)
 	repo := NewMemoryChecklistRepository(seedTestCatalog())
-	sender := &fakeChecklistNotificationSender{}
 	uc := NewChecklistUseCase(
 		repo,
 		WithChecklistClock(func() time.Time { return now }),
-		WithChecklistNotificationSender(sender),
 	)
 
 	startAt := time.Date(2026, time.January, 12, 10, 0, 0, 0, time.UTC)
@@ -222,35 +219,8 @@ func TestDispatchDueChecklistNotificationsSendsCriticalReadinessNotification(t *
 	if err != nil {
 		t.Fatalf("DispatchDueChecklistNotifications returned error: %v", err)
 	}
-	if result.Scanned != 1 || result.Sent != 1 || result.Skipped != 0 {
+	if result.Scanned != 1 || result.Sent != 0 || result.Skipped != 1 {
 		t.Fatalf("unexpected dispatch result: %#v", result)
-	}
-	if len(sender.sent) != 1 {
-		t.Fatalf("expected one notification, got %#v", sender.sent)
-	}
-
-	notification := sender.sent[0]
-	if notification.Category != "checklist" || notification.Priority != "high" {
-		t.Fatalf("unexpected notification category/priority: %#v", notification)
-	}
-	if notification.IdempotencyKey != "checklist:11111111-1111-1111-1111-111111111111:trip-bali-jan:critical_readiness:2026-01-09" {
-		t.Fatalf("unexpected idempotency key: %q", notification.IdempotencyKey)
-	}
-	if notification.Title != "Проверьте документы для поездки" {
-		t.Fatalf("unexpected title: %q", notification.Title)
-	}
-	if !strings.Contains(notification.Body, "Bali, ID") || !strings.Contains(notification.Body, "Паспорт / ID") {
-		t.Fatalf("expected localized destination and first action in body, got %q", notification.Body)
-	}
-	if !strings.HasPrefix(notification.DeepLink, "/travel-checklist?") ||
-		!strings.Contains(notification.DeepLink, "tripId=trip-bali-jan") {
-		t.Fatalf("unexpected deep link: %q", notification.DeepLink)
-	}
-	if notification.Data["checklistTripId"] != "trip-bali-jan" ||
-		notification.Data["type"] != "checklist_critical_readiness" ||
-		notification.Data["cityName"] != "Bali" ||
-		notification.TTL != 24*time.Hour {
-		t.Fatalf("unexpected notification payload: %#v", notification)
 	}
 }
 
@@ -258,11 +228,9 @@ func TestDispatchDueChecklistNotificationsSkipsReadyTrips(t *testing.T) {
 	ctx := context.Background()
 	now := time.Date(2026, time.January, 9, 8, 0, 0, 0, time.UTC)
 	repo := NewMemoryChecklistRepository(seedTestCatalog())
-	sender := &fakeChecklistNotificationSender{}
 	uc := NewChecklistUseCase(
 		repo,
 		WithChecklistClock(func() time.Time { return now }),
-		WithChecklistNotificationSender(sender),
 	)
 
 	checklist := createTestTripChecklist(
@@ -292,9 +260,6 @@ func TestDispatchDueChecklistNotificationsSkipsReadyTrips(t *testing.T) {
 	}
 	if result.Scanned != 1 || result.Sent != 0 || result.Skipped != 1 {
 		t.Fatalf("unexpected dispatch result: %#v", result)
-	}
-	if len(sender.sent) != 0 {
-		t.Fatalf("expected no notifications for ready trip, got %#v", sender.sent)
 	}
 }
 
@@ -682,16 +647,4 @@ func seedTestCatalog() model.CatalogSeed {
 			},
 		},
 	}
-}
-
-type fakeChecklistNotificationSender struct {
-	sent []ChecklistNotificationRequest
-}
-
-func (s *fakeChecklistNotificationSender) SendChecklistNotification(
-	_ context.Context,
-	request ChecklistNotificationRequest,
-) error {
-	s.sent = append(s.sent, request)
-	return nil
 }

@@ -47,6 +47,65 @@ void main() {
     },
   );
 
+  test(
+    'currency converter starts without default amount or initial conversion',
+    () async {
+      final source = await File(
+        'lib/screens/currency/currency_converter_screen.dart',
+      ).readAsString();
+      final initStart = source.indexOf('void initState()');
+      final dependenciesStart = source.indexOf('void didChangeDependencies()');
+
+      expect(initStart, isNonNegative);
+      expect(dependenciesStart, greaterThan(initStart));
+
+      final initSource = source.substring(initStart, dependenciesStart);
+
+      expect(
+        source,
+        contains(
+          'final TextEditingController _amountController = TextEditingController();',
+        ),
+      );
+      expect(source, isNot(contains("text: '15000'")));
+      expect(initSource, isNot(contains('_convertNow();')));
+      expect(initSource, contains('_startDailyRateRefresh();'));
+    },
+  );
+
+  test(
+    'currency converter places the rates notice before quick switch',
+    () async {
+      final source = await File(
+        'lib/screens/currency/currency_converter_screen.dart',
+      ).readAsString();
+
+      final exchangeStackStart = source.indexOf('_ExchangeStack(');
+      final noticePanelStart = source.indexOf('_NoticePanel(l10n: l10n)');
+      final quickSwitchStart = source.indexOf('_QuickSwitchSection(');
+      final contextualHelpStart = source.indexOf('ContextualHelpSection(');
+
+      expect(exchangeStackStart, isNonNegative);
+      expect(noticePanelStart, greaterThan(exchangeStackStart));
+      expect(quickSwitchStart, greaterThan(noticePanelStart));
+      expect(contextualHelpStart, greaterThan(quickSwitchStart));
+
+      final rateStatusStart = source.indexOf('class _RateStatusRow');
+      final quickSwitchClassStart = source.indexOf('class _QuickSwitchSection');
+      expect(rateStatusStart, isNonNegative);
+      expect(quickSwitchClassStart, greaterThan(rateStatusStart));
+
+      final rateStatusSource = source.substring(
+        rateStatusStart,
+        quickSwitchClassStart,
+      );
+      expect(
+        rateStatusSource,
+        isNot(contains('l10n.currencyConverterInfoNotice')),
+      );
+    },
+  );
+
   test('currency picker search icon uses accent color', () async {
     final source = await File(
       'lib/screens/currency/currency_converter_screen.dart',
