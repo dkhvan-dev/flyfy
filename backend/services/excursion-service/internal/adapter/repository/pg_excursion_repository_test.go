@@ -54,6 +54,129 @@ func TestUpdateExcursionUsesContiguousPlaceholders(t *testing.T) {
 	}
 }
 
+func TestExcursionProductReviewStatsUseLiveProductReviews(t *testing.T) {
+	for _, fragment := range []string{
+		"AVG(review.rating)",
+		"COUNT(*)::int AS reviews_count",
+		"review.product_id = excursion_products.id",
+		"review.deleted_at IS NULL",
+	} {
+		if !strings.Contains(excursionProductReviewStatsJoin, fragment) {
+			t.Fatalf("product review stats query missing %q", fragment)
+		}
+	}
+}
+
+func TestExcursionProductCardMediaFallsBackToPublishedOffer(t *testing.T) {
+	for _, fragment := range []string{
+		"o.product_id = excursion_products.id",
+		"o.status = 'PUBLISHED'",
+		"o.visibility = 'PUBLIC'",
+		"o.deleted_at IS NULL",
+		"o.cover_file_id IS NOT NULL",
+		"cardinality(o.photo_file_ids) > 0",
+		"ORDER BY o.price_amount ASC, o.updated_at DESC, o.id ASC",
+	} {
+		if !strings.Contains(excursionProductRepresentativeOfferMediaJoin, fragment) {
+			t.Fatalf("representative offer media query missing %q", fragment)
+		}
+	}
+
+	for _, fragment := range []string{
+		"WHEN NULLIF(BTRIM(cover_image_url), '') IS NOT NULL THEN NULL",
+		"representative_offer_media.fallback_cover_file_id",
+		"representative_offer_media.fallback_photo_file_ids[1]",
+		"THEN ARRAY[representative_offer_media.fallback_cover_file_id]",
+	} {
+		if !strings.Contains(excursionProductCardSelectColumns, fragment) {
+			t.Fatalf("product card media selection missing %q", fragment)
+		}
+	}
+}
+
+func TestPGExcursionTranslationJobsEnqueueIsIdempotent(t *testing.T) {
+	exec := &translationSQLRecordingExecutor{}
+	fields := map[string]string{"title": "Старт", "description": "Описание маршрута"}
+	job := model.ExcursionTranslationJob{
+		ID:             uuid.New(),
+		ExcursionID:    uuid.New(),
+		EntityType:     model.ExcursionTranslationEntityItineraryItem,
+		EntityID:       uuid.New(),
+		SourceLanguage: "ru",
+		TargetLanguage: "en",
+		SourceFields:   fields,
+		SourceHash:     model.HashExcursionTranslationSource("ru", fields),
+		Status:         model.ExcursionTranslationJobPending,
+		MaxAttempts:    5,
+		NextRunAt:      time.Now().UTC(),
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+
+	if err := enqueueExcursionTranslationJobs(context.Background(), exec, []model.ExcursionTranslationJob{job}); err != nil {
+		t.Fatalf("enqueueExcursionTranslationJobs() error = %v", err)
+	}
+	if !strings.Contains(exec.lastQuery, "ON CONFLICT (entity_type, entity_id, target_language, source_hash) DO UPDATE") ||
+		!strings.Contains(exec.lastQuery, "WHERE excursion_translation_jobs.status = 'FAILED'") {
+		t.Fatalf("enqueue query is not idempotent: %s", exec.lastQuery)
+	}
+}
+
+func TestPGExcursionTranslationJobsClaimUsesSkipLocked(t *testing.T) {
+	for _, fragment := range []string{
+		"FOR UPDATE SKIP LOCKED",
+		"status = 'PENDING'",
+		"status = 'PROCESSING'",
+		"locked_at <= NOW() - $3::interval",
+	} {
+		if !strings.Contains(claimExcursionTranslationJobsQuery, fragment) {
+			t.Fatalf("claim query missing %q", fragment)
+		}
+	}
+}
+
+func TestPGExcursionTranslationJobsCompleteOnlyProcessing(t *testing.T) {
+	exec := &translationSQLRecordingExecutor{}
+	if err := completeExcursionTranslationJob(context.Background(), exec, uuid.New(), "azure"); err != nil {
+		t.Fatalf("completeExcursionTranslationJob() error = %v", err)
+	}
+	if !strings.Contains(exec.lastQuery, "status = 'PROCESSING'") {
+		t.Fatalf("completion query is not state guarded: %s", exec.lastQuery)
+	}
+}
+
+func TestPGExcursionTranslationJobsRetryBackoff(t *testing.T) {
+	for _, fragment := range []string{
+		"attempts + 1 >= max_attempts",
+		"ELSE 'PENDING'",
+		"attempts = attempts + 1",
+		"next_run_at = $3",
+		"status = 'PROCESSING'",
+	} {
+		if !strings.Contains(failExcursionTranslationJobQuery, fragment) {
+			t.Fatalf("failure query missing %q", fragment)
+		}
+	}
+}
+
+func TestPGExcursionTranslationJobsMarkStale(t *testing.T) {
+	exec := &translationSQLRecordingExecutor{}
+	entityID := uuid.New()
+	if err := markExcursionTranslationJobsStale(
+		context.Background(),
+		exec,
+		uuid.New(),
+		[]uuid.UUID{entityID},
+	); err != nil {
+		t.Fatalf("markExcursionTranslationJobsStale() error = %v", err)
+	}
+	for _, fragment := range []string{"status = 'STALE'", "status IN ('PENDING', 'PROCESSING')", "entity_id = ANY($2::uuid[])"} {
+		if !strings.Contains(exec.lastQuery, fragment) {
+			t.Fatalf("stale query missing %q: %s", fragment, exec.lastQuery)
+		}
+	}
+}
+
 func TestInsertExcursionScheduleSlotUsesContiguousPlaceholders(t *testing.T) {
 	slot := validRepositoryScheduleSlot(t)
 
@@ -463,6 +586,34 @@ func TestCombinedRouteRepairMigrationRestoresMissingRouteMetadataColumns(t *test
 	}
 }
 
+func TestRouteKindNormalizationMigrationRepairsLegacyProductSchema(t *testing.T) {
+	migration := readMigration(t, "101_normalize_excursion_product_route_kind.up.sql")
+	required := []string{
+		"ALTER COLUMN route_kind SET DEFAULT 'SINGLE_PLACE'",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_route_kind",
+		"attname = 'attraction_ids'",
+		"SET place_ids = attraction_ids",
+		"attname = 'attraction_names'",
+		"SET place_names = attraction_names",
+		"SET route_kind = 'SINGLE_PLACE'",
+		"WHERE route_kind = 'SINGLE_ATTRACTION'",
+		"CHECK (route_kind IN ('SINGLE_PLACE', 'COMBINED_ROUTE')) NOT VALID",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_single_attraction_shape",
+		"CHECK (route_kind <> 'COMBINED_ROUTE' OR place_ids IS NULL OR CARDINALITY(place_ids) >= 2) NOT VALID",
+		"VALIDATE CONSTRAINT chk_excursion_products_route_kind",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(migration, fragment) {
+			t.Fatalf("route kind normalization migration missing %q\n%s", fragment, migration)
+		}
+	}
+
+	downMigration := readMigration(t, "101_normalize_excursion_product_route_kind.down.sql")
+	if !strings.Contains(downMigration, "Intentionally irreversible") {
+		t.Fatalf("route kind normalization down should be intentionally irreversible:\n%s", downMigration)
+	}
+}
+
 func TestProductLocationBackfillMigrationUsesLinkedOfferLocation(t *testing.T) {
 	migration := readMigration(t, "024_backfill_excursion_product_location_from_offers.up.sql")
 	required := []string{
@@ -733,6 +884,62 @@ func TestGetProductCoverImageURLUsesLegacyOfferProductCover(t *testing.T) {
 		!strings.Contains(exec.query, "excursion_products") ||
 		!strings.Contains(exec.query, "legacy_excursion_id") {
 		t.Fatalf("query does not join offer to product cover:\n%s", exec.query)
+	}
+}
+
+func TestGetProductPhotoCollectionsReturnEmptySlicesWhenProductHasNoPhotos(t *testing.T) {
+	excursionID := uuid.New()
+
+	fileIDs, err := getProductPhotoFileIDs(
+		context.Background(),
+		&singleQueryRowExecutor{row: errorRow{err: pgx.ErrNoRows}},
+		excursionID,
+	)
+	if err != nil {
+		t.Fatalf("getProductPhotoFileIDs() error = %v", err)
+	}
+	if fileIDs == nil || len(fileIDs) != 0 {
+		t.Fatalf("product photo file ids = %#v, want non-nil empty slice", fileIDs)
+	}
+
+	imageURLs, err := getProductPhotoImageURLs(
+		context.Background(),
+		&singleQueryRowExecutor{row: errorRow{err: pgx.ErrNoRows}},
+		excursionID,
+	)
+	if err != nil {
+		t.Fatalf("getProductPhotoImageURLs() error = %v", err)
+	}
+	if imageURLs == nil || len(imageURLs) != 0 {
+		t.Fatalf("product photo image urls = %#v, want non-nil empty slice", imageURLs)
+	}
+}
+
+func TestSyncExcursionMarketplaceCoalescesNilPhotoArrays(t *testing.T) {
+	exec := &marketplaceRecordingExecutor{
+		queryRows: []uuid.UUID{uuid.New(), uuid.New()},
+	}
+	if err := syncExcursionMarketplace(
+		context.Background(),
+		exec,
+		validRepositoryExcursion(t),
+		port.ExcursionRelations{},
+	); err != nil {
+		t.Fatalf("syncExcursionMarketplace() error = %v", err)
+	}
+	if len(exec.queryRowQueries) != 2 {
+		t.Fatalf("QueryRow calls = %d, want 2", len(exec.queryRowQueries))
+	}
+	for _, fragment := range []string{
+		"COALESCE($31::UUID[], '{}'::UUID[])",
+		"COALESCE($32::TEXT[], '{}'::TEXT[])",
+	} {
+		if !strings.Contains(exec.queryRowQueries[0], fragment) {
+			t.Fatalf("product upsert missing %q:\n%s", fragment, exec.queryRowQueries[0])
+		}
+	}
+	if !strings.Contains(exec.queryRowQueries[1], "COALESCE($31::UUID[], '{}'::UUID[])") {
+		t.Fatalf("offer upsert does not coalesce empty photo ids:\n%s", exec.queryRowQueries[1])
 	}
 }
 
@@ -1047,6 +1254,25 @@ func containsArgument(args []any, want string) bool {
 
 type placeholderCheckingExecutor struct{}
 
+type translationSQLRecordingExecutor struct {
+	lastQuery string
+	lastArgs  []any
+}
+
+func (e *translationSQLRecordingExecutor) Exec(
+	_ context.Context,
+	query string,
+	arguments ...any,
+) (pgconn.CommandTag, error) {
+	e.lastQuery = query
+	e.lastArgs = append([]any(nil), arguments...)
+	return pgconn.NewCommandTag("UPDATE 1"), nil
+}
+
+func (*translationSQLRecordingExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
+	return nil
+}
+
 func (placeholderCheckingExecutor) Exec(_ context.Context, query string, arguments ...any) (pgconn.CommandTag, error) {
 	if err := validateContiguousPlaceholders(query, len(arguments)); err != nil {
 		return pgconn.CommandTag{}, err
@@ -1170,8 +1396,9 @@ func (e *marketplacePlaceholderExecutor) QueryRow(_ context.Context, query strin
 }
 
 type marketplaceRecordingExecutor struct {
-	queryRows    []uuid.UUID
-	queryRowArgs [][]any
+	queryRows       []uuid.UUID
+	queryRowArgs    [][]any
+	queryRowQueries []string
 }
 
 func (e *marketplaceRecordingExecutor) Exec(_ context.Context, query string, arguments ...any) (pgconn.CommandTag, error) {
@@ -1188,6 +1415,7 @@ func (e *marketplaceRecordingExecutor) QueryRow(_ context.Context, query string,
 	if len(e.queryRows) == 0 {
 		return errorRow{err: fmt.Errorf("unexpected QueryRow call")}
 	}
+	e.queryRowQueries = append(e.queryRowQueries, query)
 	e.queryRowArgs = append(e.queryRowArgs, append([]any(nil), arguments...))
 	id := e.queryRows[0]
 	e.queryRows = e.queryRows[1:]

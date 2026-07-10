@@ -84,6 +84,8 @@ void main() {
         'currency': 'USD',
         'cityName': 'Almaty',
         'coverFileId': 'cover-file-id',
+        'ratingAvg': 4.75,
+        'reviewsCount': 12,
         'createdAt': '2026-05-10T09:30:00Z',
       });
 
@@ -94,6 +96,8 @@ void main() {
       expect(excursion.maxGroupSize, 8);
       expect(excursion.languageCodes, ['en', 'ru']);
       expect(excursion.tags, ['mountains', 'photo']);
+      expect(excursion.ratingAvg, 4.75);
+      expect(excursion.reviewsCount, 12);
       expect(excursion.createdAt, DateTime.utc(2026, 5, 10, 9, 30));
     },
   );
@@ -350,6 +354,199 @@ void main() {
     );
   });
 
+  test('uses productTranslations as detail copy fallback', () {
+    final excursion = ExcursionVm.fromJson(const {
+      'id': 'excursion-product-1',
+      'title': 'Charyn Canyon',
+      'summary': 'Shared route',
+      'description': 'Shared description',
+      'productTranslations': {
+        'ru': {
+          'title': 'Чарынский каньон',
+          'summary': 'Общий маршрут',
+          'description': 'Описание общего маршрута',
+        },
+      },
+    });
+
+    expect(excursion.translations['ru']?.title, 'Чарынский каньон');
+    expect(
+      localizedExcursionDescription(languageCode: 'ru', excursion: excursion),
+      'Описание общего маршрута',
+    );
+  });
+
+  test('prefers live localized place copy over excursion snapshot', () {
+    const excursion = ExcursionVm(
+      id: 'excursion-product-live-place',
+      landmarkId: 'place-1',
+      title: 'Snapshot title',
+      summary: 'Snapshot summary',
+      description: 'Snapshot description',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      priceAmount: 0,
+      currency: 'KZT',
+      translations: {
+        'en': ExcursionLocalizedCopyVm(
+          title: 'Stale localized title',
+          description: 'Stale localized description.',
+        ),
+      },
+    );
+    final place = PlaceVm.fromJson(const {
+      'id': 'place-1',
+      'locale': 'en',
+      'defaultLocale': 'ru',
+      'title': 'Current attraction title',
+      'description': 'Current attraction description.',
+      'countryCode': 'KZ',
+      'cityId': 'almaty',
+      'category': 'NATURE',
+      'rating': 0,
+      'reviewCount': 0,
+      'source': 'SYSTEM',
+      'status': 'PUBLISHED',
+      'translations': {
+        'en': {
+          'title': 'Current attraction title',
+          'description': 'Current attraction description.',
+        },
+      },
+    });
+
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'en',
+        excursion: excursion,
+        place: place,
+      ),
+      'Current attraction title',
+    );
+    expect(
+      localizedExcursionDescription(
+        languageCode: 'en',
+        excursion: excursion,
+        place: place,
+      ),
+      'Current attraction description.',
+    );
+  });
+
+  test('parses machine translation info for excursion details notice', () {
+    final excursion = ExcursionVm.fromJson(const {
+      'id': 'excursion-product-1',
+      'title': 'Чарынский каньон',
+      'summary': 'Маршрут по каньону',
+      'status': 'PUBLISHED',
+      'visibility': 'PUBLIC',
+      'translationInfo': {
+        'translated': true,
+        'sourceLanguage': 'ru',
+        'targetLanguages': ['en', 'kk'],
+        'provider': 'azure_translator',
+      },
+    });
+
+    expect(excursion.translationInfo.translated, isTrue);
+    expect(excursion.translationInfo.sourceLanguage, 'ru');
+    expect(excursion.translationInfo.targetLanguages, ['en', 'kk']);
+    expect(excursion.translationInfo.shouldShowNotice('en'), isTrue);
+    expect(excursion.translationInfo.shouldShowNotice('ru'), isFalse);
+  });
+
+  test('parses async translation info from details response', () {
+    final excursion = ExcursionVm.fromJson(const {
+      'id': 'excursion-product-async',
+      'title': 'Чарынский каньон',
+      'summary': 'Маршрут по каньону',
+      'status': 'PUBLISHED',
+      'visibility': 'PUBLIC',
+      'translationInfo': {
+        'status': 'PARTIAL',
+        'sourceLanguage': 'ru',
+        'currentLanguage': 'en',
+        'isTranslated': false,
+        'availableLanguages': ['ru'],
+        'pendingLanguages': ['en'],
+        'failedLanguages': ['kk'],
+      },
+    });
+
+    expect(excursion.translationInfo.status, 'PARTIAL');
+    expect(excursion.translationInfo.currentLanguage, 'en');
+    expect(excursion.translationInfo.availableLanguages, ['ru']);
+    expect(excursion.translationInfo.pendingLanguages, ['en']);
+    expect(excursion.translationInfo.failedLanguages, ['kk']);
+    expect(
+      excursion.translationInfo.noticeState('en'),
+      ExcursionTranslationNoticeState.pending,
+    );
+    expect(
+      excursion.translationInfo.noticeState('kk'),
+      ExcursionTranslationNoticeState.unavailable,
+    );
+  });
+
+  test('infers machine translation info from offer itinerary translations', () {
+    final excursion = ExcursionVm.fromJson(
+      const {
+        'id': 'excursion-product-1',
+        'title': 'Charyn Canyon',
+        'summary': 'Shared route',
+        'description': 'Shared product copy',
+        'status': 'PUBLISHED',
+        'visibility': 'PUBLIC',
+      },
+      offers: const [
+        ExcursionOfferVm(
+          id: 'offer-1',
+          productId: 'excursion-product-1',
+          guideProfileId: 'guide-profile-1',
+          guideUserId: 'guide-user-1',
+          title: 'Авторский маршрут',
+          summary: 'Маршрут по каньону',
+          description: 'Русское описание предложения.',
+          status: 'PUBLISHED',
+          visibility: 'PUBLIC',
+          durationMinutes: 180,
+          maxGroupSize: 6,
+          meetingPoint: 'Charyn entrance',
+          priceAmount: 120,
+          currency: 'KZT',
+          itinerary: [
+            ExcursionItineraryItemVm(
+              id: 'step-1',
+              sortOrder: 0,
+              startOffsetMinutes: 0,
+              title: 'Чарынский каньон',
+              description: 'Русское описание маршрута.',
+              translations: {
+                'ru': ExcursionItineraryLocalizedCopyVm(
+                  title: 'Чарынский каньон',
+                  description: 'Русское описание маршрута.',
+                ),
+                'en': ExcursionItineraryLocalizedCopyVm(
+                  title: 'Charyn Canyon',
+                  description: 'English route description.',
+                ),
+                'kk': ExcursionItineraryLocalizedCopyVm(
+                  title: 'Шарын шатқалы',
+                  description: 'Қазақша маршрут сипаттамасы.',
+                ),
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+
+    expect(excursion.translationInfo.translated, isTrue);
+    expect(excursion.translationInfo.sourceLanguage, 'ru');
+    expect(excursion.translationInfo.targetLanguages, ['en', 'kk']);
+    expect(excursion.translationInfo.shouldShowNotice('en'), isTrue);
+  });
+
   test('parses combined route product and itinerary stop fields', () {
     final excursion = ExcursionVm.fromJson(const {
       'id': 'route-product-1',
@@ -415,6 +612,69 @@ void main() {
           )
           .routeKind,
       'COMBINED_ROUTE',
+    );
+  });
+
+  test('localizes a combined route title from all route places', () {
+    const excursion = ExcursionVm(
+      id: 'combined-route-product',
+      title: 'Урочище Бозжыра + Чарынский каньон',
+      summary: 'Составной маршрут',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      priceAmount: 0,
+      currency: 'KZT',
+      routeKind: 'COMBINED_ROUTE',
+      placeIds: ['bozjyra', 'charyn'],
+      placeNames: ['Урочище Бозжыра', 'Чарынский каньон'],
+      stopCount: 2,
+    );
+    final placesById = <String, PlaceVm>{
+      'bozjyra': _localizedRoutePlace(
+        id: 'bozjyra',
+        ru: 'Урочище Бозжыра',
+        en: 'Bozjyra Tract',
+        kk: 'Бозжыра шатқалы',
+      ),
+      'charyn': _localizedRoutePlace(
+        id: 'charyn',
+        ru: 'Чарынский каньон',
+        en: 'Charyn Canyon',
+        kk: 'Шарын шатқалы',
+      ),
+    };
+
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'en',
+        excursion: excursion,
+        placesById: placesById,
+      ),
+      'Bozjyra Tract + Charyn Canyon',
+    );
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'kk',
+        excursion: excursion,
+        placesById: placesById,
+      ),
+      'Бозжыра шатқалы + Шарын шатқалы',
+    );
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'ru',
+        excursion: excursion,
+        placesById: placesById,
+      ),
+      'Урочище Бозжыра + Чарынский каньон',
+    );
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'en',
+        excursion: excursion,
+        placesById: {'bozjyra': placesById['bozjyra']!},
+      ),
+      excursion.title,
     );
   });
 
@@ -501,5 +761,25 @@ void main() {
       ),
       'Charyn Canyon',
     );
+  });
+}
+
+PlaceVm _localizedRoutePlace({
+  required String id,
+  required String ru,
+  required String en,
+  required String kk,
+}) {
+  return PlaceVm.fromJson({
+    'id': id,
+    'locale': 'en',
+    'defaultLocale': 'ru',
+    'title': en,
+    'description': '',
+    'translations': {
+      'ru': {'title': ru, 'description': ''},
+      'en': {'title': en, 'description': ''},
+      'kk': {'title': kk, 'description': ''},
+    },
   });
 }

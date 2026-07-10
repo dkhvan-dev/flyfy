@@ -274,8 +274,10 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     context.go('/profile');
   }
 
-  void _openCreateOffer() {
-    context.push('/excursions/create');
+  Future<void> _openCreateOffer() async {
+    final saved = await context.push<ExcursionVm>('/excursions/create');
+    if (!mounted || saved == null) return;
+    await _refreshAfterOfferMutation(saved);
   }
 
   void _openGuideCalendar() {
@@ -286,13 +288,34 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     context.push('/profile/guide-dashboard/reviews');
   }
 
-  void _openOfferEditor(ExcursionVm excursion) {
+  Future<void> _openOfferEditor(ExcursionVm excursion) async {
     final editId = _editableExcursionId(excursion);
     if (editId.isEmpty) return;
-    context.push(
+    final saved = await context.push<ExcursionVm>(
       '/excursions/${Uri.encodeComponent(editId)}/edit',
       extra: excursion,
     );
+    if (!mounted || saved == null) return;
+    await _refreshAfterOfferMutation(saved);
+  }
+
+  Future<void> _refreshAfterOfferMutation(ExcursionVm fallback) async {
+    final provider = context.read<ExcursionProvider>();
+    await provider.refreshGuideDashboardData();
+    if (!mounted) return;
+
+    final updated = _dashboardOfferAfterMutation(
+      provider.myGuideExcursions,
+      fallback,
+    );
+    setState(() {
+      _activeSection = GuideDashboardSection.offers;
+      _offerStatusFilter = _offerTabForStatus(
+        updated,
+        fallback: _offerStatusFilter ?? GuideOfferDashboardTab.active,
+      );
+      _offersPage = 1;
+    });
   }
 
   Future<void> _openBookingDetailsSheet(
@@ -1259,10 +1282,31 @@ ExcursionVm _dashboardOfferAfterMutation(
   ExcursionVm fallback,
 ) {
   final fallbackId = _editableExcursionId(fallback);
-  if (fallbackId.isEmpty) return fallback;
-  for (final item in items) {
-    if (_editableExcursionId(item) == fallbackId) {
-      return item;
+  if (fallbackId.isNotEmpty) {
+    for (final item in items) {
+      if (_editableExcursionId(item) == fallbackId) {
+        return item;
+      }
+    }
+  }
+
+  final fallbackLandmarkId = (fallback.landmarkId ?? '').trim();
+  if (fallbackLandmarkId.isNotEmpty) {
+    for (final item in items) {
+      if ((item.landmarkId ?? '').trim() == fallbackLandmarkId &&
+          !_isArchivedOffer(item)) {
+        return item;
+      }
+    }
+  }
+
+  final fallbackRouteFingerprint = (fallback.routeFingerprint ?? '').trim();
+  if (fallbackRouteFingerprint.isNotEmpty) {
+    for (final item in items) {
+      if ((item.routeFingerprint ?? '').trim() == fallbackRouteFingerprint &&
+          !_isArchivedOffer(item)) {
+        return item;
+      }
     }
   }
   return fallback;

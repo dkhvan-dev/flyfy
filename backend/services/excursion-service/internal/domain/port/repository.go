@@ -48,6 +48,8 @@ type ExcursionRelations struct {
 	ProductCoverImageURL  *string
 	ProductPhotoFileIDs   []uuid.UUID
 	ProductPhotoImageURLs []string
+	TranslationJobs       []model.ExcursionTranslationJob
+	StaleTranslationJobs  bool
 }
 
 type ExcursionProductFilter struct {

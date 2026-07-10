@@ -397,7 +397,7 @@ void main() {
   );
 
   test(
-    'excursions list resolves localized place text for landmark excursions',
+    'excursions list resolves localized place text for every route kind',
     () async {
       final source = await File(
         'lib/screens/excursions/excursions_screen.dart',
@@ -412,11 +412,14 @@ void main() {
         contains("import '../../features/places/models/place_vm.dart';"),
       );
       expect(source, contains('final PlaceApi _placeApi'));
-      expect(source, contains('Map<String, PlaceVm> _localizedLandmarks'));
-      expect(source, contains('_scheduleResolveLocalizedLandmarks'));
-      expect(source, contains('_loadLocalizedLandmark'));
+      expect(source, contains('Map<String, PlaceVm> _localizedPlaces'));
+      expect(source, contains('_scheduleResolveLocalizedPlaces'));
+      expect(source, contains('_loadLocalizedPlace'));
+      expect(source, contains('...excursion.placeIds.map('));
       expect(source, contains('locale: lang'));
       expect(source, contains('localizedLandmark:'));
+      expect(source, contains('localizedPlacesById: _localizedPlaces'));
+      expect(source, contains('placesById: _localizedPlaces'));
       expect(source, contains('localizedExcursionTitle('));
       expect(source, contains('localizedExcursionLandmarkName('));
     },
@@ -458,6 +461,9 @@ void main() {
       expect(coverSource, contains('_excursionCoverScrimGradient(context)'));
       expect(coverSource, contains('if (scrimGradient != null)'));
       expect(coverSource, contains('_excursionRatingBadgeBackground(context)'));
+      expect(coverSource, contains('if (rating != null)'));
+      expect(coverSource, contains('rating!.toStringAsFixed(1)'));
+      expect(coverSource, isNot(contains("'4.9'")));
       expect(coverSource, contains('context.excursionsColors.textPrimary'));
     },
   );

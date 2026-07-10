@@ -37,6 +37,26 @@ void main() {
   });
 
   test(
+    'guide dashboard refreshes after create and edit screens return a result',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("await context.push<ExcursionVm>('/excursions/create')"),
+      );
+      expect(source, contains('Future<void> _openOfferEditor'));
+      expect(source, contains('await context.push<ExcursionVm>('));
+      expect(source, contains('Future<void> _refreshAfterOfferMutation'));
+      expect(source, contains('await provider.refreshGuideDashboardData()'));
+      expect(source, contains('_offerStatusFilter = _offerTabForStatus('));
+      expect(source, contains('_offersPage = 1'));
+    },
+  );
+
+  test(
     'guide dashboard screen uses full-width section tabs and status filters',
     () async {
       final source = await File(

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"kz/inflap/backend/services/guide-service/internal/domain/model"
 	"kz/inflap/backend/services/guide-service/internal/domain/port"
 )
+
+const publicUserProfileAttachTimeout = 750 * time.Millisecond
 
 type GuideAggregate struct {
 	Profile             *model.GuideProfile
@@ -245,13 +248,21 @@ func (u *GuideUseCase) attachPublicUserProfile(ctx context.Context, aggregate *G
 		return
 	}
 
-	profile, err := u.userClient.GetUserProfile(ctx, aggregate.Profile.UserID)
+	profileCtx, cancel := context.WithTimeout(ctx, publicUserProfileAttachTimeout)
+	profile, err := u.userClient.GetUserProfile(profileCtx, aggregate.Profile.UserID)
+	profileCtxErr := profileCtx.Err()
+	cancel()
 	if err == nil && profile != nil {
 		aggregate.UserProfile = profile
 		return
 	}
+	if profileCtxErr != nil || ctx.Err() != nil || errors.Is(err, context.DeadlineExceeded) {
+		return
+	}
 
-	profiles, err := u.userClient.GetPublicUserProfiles(ctx, []uuid.UUID{aggregate.Profile.UserID})
+	profilesCtx, cancel := context.WithTimeout(ctx, publicUserProfileAttachTimeout)
+	profiles, err := u.userClient.GetPublicUserProfiles(profilesCtx, []uuid.UUID{aggregate.Profile.UserID})
+	cancel()
 	if err != nil {
 		return
 	}

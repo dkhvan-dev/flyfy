@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	grpcadapter "kz/inflap/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/excursion-service/internal/adapter/http"
+	metricsadapter "kz/inflap/backend/services/excursion-service/internal/adapter/metrics"
 	notificationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/excursion-service/internal/adapter/payment"
 	placeadapter "kz/inflap/backend/services/excursion-service/internal/adapter/place"
@@ -75,9 +77,13 @@ func main() {
 	}
 	defer fileManagerClient.Close()
 
-	translator, err := newTranslationClient(cfg)
+	translator, closeTranslationAuth, err := newTranslationClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("initialize translation-service client")
+	}
+	defer closeTranslationAuth()
+	if cfg.Translation.WorkerEnabled && translator == nil {
+		log.Fatal().Msg("TRANSLATION_SERVICE_URL is required when excursion translation worker is enabled")
 	}
 	placeHTTPClient, err := newPlaceServiceHTTPClient(cfg)
 	if err != nil {
@@ -129,6 +135,7 @@ func main() {
 		defer trustClient.Close()
 	}
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
+		WithAsyncTranslationConfig(cfg.Translation.AsyncEnabled, cfg.Translation.MaxAttempts).
 		WithUserProfileResolver(userClient).
 		WithPlaceRatingUpdater(placeRatingClient).
 		WithExcursionChatGateway(chatClient).
@@ -152,9 +159,11 @@ func main() {
 		)
 		excursionUC.SetSearchIndexer(searchIndexer)
 	}
+	translationMetrics := metricsadapter.NewExcursionTranslation()
 	handler := httpadapter.NewHandler(excursionUC, fileManagerClient)
 
 	mux := http.NewServeMux()
+	mux.Handle("GET /metrics", translationMetrics)
 	handler.Register(mux)
 	httpHandler := httpadapter.Chain(cfg, withTechBreakMaintenance(mux, cfg.Switches, cfg.MTLS, cfg.Security.InternalServiceToken, "EXCURSION"))
 
@@ -177,8 +186,35 @@ func main() {
 	internalMTLSServer := newInternalExcursionMTLSServer(cfg, httpHandler, tlsConfig)
 
 	backgroundCtx, stopBackground := context.WithCancel(ctx)
-	defer stopBackground()
-	go runExcursionLifecycleTicker(backgroundCtx, excursionUC, cfg.Attendance)
+	var backgroundWG sync.WaitGroup
+	backgroundWG.Add(1)
+	go func() {
+		defer backgroundWG.Done()
+		runExcursionLifecycleTicker(backgroundCtx, excursionUC, cfg.Attendance)
+	}()
+	translationWorker := app.NewExcursionTranslationWorker(
+		app.ExcursionTranslationWorkerConfig{
+			Enabled:        cfg.Translation.WorkerEnabled,
+			WorkerID:       excursionTranslationWorkerID(),
+			BatchSize:      cfg.Translation.WorkerBatchSize,
+			PollInterval:   cfg.Translation.WorkerInterval,
+			RequestTimeout: cfg.Translation.RequestTimeout,
+			RetryBaseDelay: cfg.Translation.RetryBaseDelay,
+			LockTimeout:    cfg.Translation.WorkerLockTimeout,
+		},
+		repo,
+		translator,
+		translationMetrics,
+	)
+	if cfg.Translation.WorkerEnabled {
+		backgroundWG.Add(1)
+		go func() {
+			defer backgroundWG.Done()
+			if runErr := translationWorker.Run(backgroundCtx); runErr != nil {
+				log.Error().Err(runErr).Msg("excursion translation worker stopped")
+			}
+		}()
+	}
 
 	errCh := make(chan error, 2)
 	go func() {
@@ -211,6 +247,7 @@ func main() {
 			log.Fatal().Err(err).Msg("http server failed")
 		}
 	}
+	stopBackground()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -221,6 +258,16 @@ func main() {
 		if err := internalMTLSServer.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("internal mTLS HTTP shutdown failed")
 		}
+	}
+	backgroundDone := make(chan struct{})
+	go func() {
+		backgroundWG.Wait()
+		close(backgroundDone)
+	}()
+	select {
+	case <-backgroundDone:
+	case <-shutdownCtx.Done():
+		log.Warn().Msg("background workers did not stop before shutdown deadline")
 	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
@@ -311,20 +358,56 @@ func newPaymentServiceClient(cfg *config.Config) (*paymentadapter.Client, error)
 	)
 }
 
-func newTranslationClient(cfg *config.Config) (*translationadapter.Client, error) {
+func newTranslationClient(cfg *config.Config) (*translationadapter.Client, func(), error) {
+	if strings.TrimSpace(cfg.Translation.BaseURL) == "" {
+		return nil, func() {}, nil
+	}
 	translationHTTPClient, err := transportauth.NewHTTPClient(
 		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Translation.BaseURL)),
-		cfg.Translation.Timeout,
+		cfg.Translation.RequestTimeout,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("initialize translation-service mTLS transport: %w", err)
+		return nil, func() {}, fmt.Errorf("initialize translation-service mTLS transport: %w", err)
+	}
+	options := []translationadapter.Option{translationadapter.WithHTTPClient(translationHTTPClient)}
+	closeAuth := func() {}
+	if cfg.TokenService.Enabled() {
+		source, sourceErr := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+			Target:        cfg.TokenService.Target,
+			ServiceID:     cfg.TokenService.ServiceID,
+			ServiceSecret: cfg.TokenService.ServiceSecret,
+			CallTimeout:   cfg.TokenService.CallTimeout,
+			TransportAuth: cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.TokenService.Target)),
+		})
+		if sourceErr != nil {
+			return nil, func() {}, fmt.Errorf("initialize translation service token source: %w", sourceErr)
+		}
+		options = append(options, translationadapter.WithServiceTokenSource(source))
+		closeAuth = func() {
+			if closeErr := source.Close(); closeErr != nil {
+				log.Warn().Err(closeErr).Msg("close translation service token source")
+			}
+		}
+		log.Info().Str("service_id", cfg.TokenService.ServiceID).Msg("translation service JWT auth enabled")
+	} else if cfg.App.IsProduction() {
+		return nil, func() {}, errors.New("TOKEN_SERVICE_SECRET is required for translation-service calls in production")
+	} else {
+		log.Warn().Msg("translation service JWT auth disabled; using legacy internal token")
 	}
 	return translationadapter.NewClient(
 		cfg.Translation.BaseURL,
-		cfg.Translation.Timeout,
+		cfg.Translation.RequestTimeout,
 		cfg.Security.InternalServiceToken,
-		translationadapter.WithHTTPClient(translationHTTPClient),
-	), nil
+		options...,
+	), closeAuth, nil
+}
+
+func excursionTranslationWorkerID() string {
+	hostname, err := os.Hostname()
+	if err != nil || strings.TrimSpace(hostname) == "" {
+		hostname = "unknown-host"
+	}
+	return fmt.Sprintf("%s:%d", hostname, os.Getpid())
 }
 
 func runExcursionLifecycleTicker(
@@ -447,7 +530,11 @@ func newGuideServiceClient(cfg *config.Config) (*guideadapter.Client, error) {
 			cfg.App.Name,
 		)),
 	)
-	return guideadapter.New(cfg.GuideService.Target, grpcOptions...)
+	return guideadapter.NewWithTimeout(
+		cfg.GuideService.Target,
+		cfg.GuideService.VerifyTimeout,
+		grpcOptions...,
+	)
 }
 
 func newFileManagerClient(cfg *config.Config) (*filemanageradapter.Client, error) {

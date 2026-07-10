@@ -8,6 +8,7 @@ class CreateExcursionRequest {
     required this.priceAmount,
     required this.currency,
     required this.itinerary,
+    this.sourceLanguage = 'ru',
     this.landmarkId,
     this.landmarkName,
     this.visibility = 'PUBLIC',
@@ -29,6 +30,7 @@ class CreateExcursionRequest {
   });
 
   final String? landmarkId;
+  final String sourceLanguage;
   final String? landmarkName;
   final String categorySlug;
   final Map<String, CreateExcursionLocalizedCopyRequest> productTranslations;
@@ -72,6 +74,7 @@ class CreateExcursionRequest {
     final normalizedProductPhotoImageUrls = _cleanList(productPhotoImageUrls);
 
     return {
+      'sourceLanguage': sourceLanguage.trim().toLowerCase(),
       if (_isPresent(landmarkId)) 'landmarkId': landmarkId!.trim(),
       if (_isPresent(landmarkName)) 'landmarkName': landmarkName!.trim(),
       'categorySlug': categorySlug.trim().toLowerCase(),

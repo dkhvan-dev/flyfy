@@ -9,7 +9,21 @@ String? resolveExcursionCoverUrl(ExcursionVm excursion) {
     return _resolveExcursionCoverImageUrl(directUrl);
   }
 
-  return resolvePublicFileContentUrl((excursion.coverFileId ?? '').trim());
+  final coverFileUrl = resolvePublicFileContentUrl(
+    (excursion.coverFileId ?? '').trim(),
+  );
+  if (coverFileUrl != null) return coverFileUrl;
+
+  for (final fileId in excursion.photoFileIds) {
+    final photoUrl = resolvePublicFileContentUrl(fileId.trim());
+    if (photoUrl != null) return photoUrl;
+  }
+  for (final imageUrl in excursion.photoImageUrls) {
+    final normalized = imageUrl.trim();
+    if (normalized.isNotEmpty) return resolveExcursionImageUrl(normalized);
+  }
+
+  return null;
 }
 
 List<String> resolveExcursionPhotoUrls(ExcursionVm excursion) {

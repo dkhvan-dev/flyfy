@@ -9292,6 +9292,54 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get excursionDetailsLanguage;
 
+  /// No description provided for @excursionDetailsTranslatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary was automatically translated from {sourceLanguage}'**
+  String excursionDetailsTranslatedNotice(Object sourceLanguage);
+
+  /// No description provided for @excursionDetailsShowOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show original'**
+  String get excursionDetailsShowOriginal;
+
+  /// No description provided for @excursionDetailsShowTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show translation'**
+  String get excursionDetailsShowTranslation;
+
+  /// No description provided for @excursionDetailsTranslationPendingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing original itinerary · Translation is being prepared'**
+  String get excursionDetailsTranslationPendingNotice;
+
+  /// No description provided for @excursionDetailsTranslationUnavailableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing original itinerary · Auto-translation is temporarily unavailable'**
+  String get excursionDetailsTranslationUnavailableNotice;
+
+  /// No description provided for @excursionTranslationSourceLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get excursionTranslationSourceLanguageEnglish;
+
+  /// No description provided for @excursionTranslationSourceLanguageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get excursionTranslationSourceLanguageRussian;
+
+  /// No description provided for @excursionTranslationSourceLanguageKazakh.
+  ///
+  /// In en, this message translates to:
+  /// **'Kazakh'**
+  String get excursionTranslationSourceLanguageKazakh;
+
   /// No description provided for @excursionLanguageEnglish.
   ///
   /// In en, this message translates to:
@@ -9843,6 +9891,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update offer'**
   String get createExcursionUpdateFailed;
+
+  /// No description provided for @createExcursionExistingDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion already exists'**
+  String get createExcursionExistingDraftTitle;
+
+  /// No description provided for @createExcursionExistingDraftDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an editable excursion for this place. Replace it with the data from this form and submit it for review?'**
+  String get createExcursionExistingDraftDescription;
+
+  /// No description provided for @createExcursionExistingDraftConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Update and submit'**
+  String get createExcursionExistingDraftConfirm;
+
+  /// No description provided for @createExcursionExistingDraftSaveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an editable excursion for this place. Replace it with the data from this form?'**
+  String get createExcursionExistingDraftSaveDescription;
+
+  /// No description provided for @createExcursionExistingDraftSaveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Update draft'**
+  String get createExcursionExistingDraftSaveConfirm;
+
+  /// No description provided for @createExcursionExistingActiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an active excursion for this place. Open it from the guide dashboard.'**
+  String get createExcursionExistingActiveDescription;
+
+  /// No description provided for @createExcursionDraftSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft was saved, but it could not be submitted for review. {error} You can retry without creating a duplicate.'**
+  String createExcursionDraftSubmitFailed(Object error);
 
   /// No description provided for @createExcursionCoverSection.
   ///

@@ -5092,6 +5092,34 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionDetailsLanguage => 'Язык';
 
   @override
+  String excursionDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Маршрут переведен автоматически с $sourceLanguage';
+  }
+
+  @override
+  String get excursionDetailsShowOriginal => 'Показать оригинал';
+
+  @override
+  String get excursionDetailsShowTranslation => 'Показать перевод';
+
+  @override
+  String get excursionDetailsTranslationPendingNotice =>
+      'Показываем оригинал маршрута · Перевод готовится';
+
+  @override
+  String get excursionDetailsTranslationUnavailableNotice =>
+      'Показываем оригинал маршрута · Автоперевод временно недоступен';
+
+  @override
+  String get excursionTranslationSourceLanguageEnglish => 'английского';
+
+  @override
+  String get excursionTranslationSourceLanguageRussian => 'русского';
+
+  @override
+  String get excursionTranslationSourceLanguageKazakh => 'казахского';
+
+  @override
   String get excursionLanguageEnglish => 'Английский';
 
   @override
@@ -5396,6 +5424,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createExcursionUpdateFailed => 'Не удалось обновить предложение';
+
+  @override
+  String get createExcursionExistingDraftTitle => 'Экскурсия уже существует';
+
+  @override
+  String get createExcursionExistingDraftDescription =>
+      'Для этого места у вас уже есть редактируемая экскурсия. Заменить ее данными из этой формы и отправить на проверку?';
+
+  @override
+  String get createExcursionExistingDraftConfirm => 'Обновить и отправить';
+
+  @override
+  String get createExcursionExistingDraftSaveDescription =>
+      'Для этого места у вас уже есть редактируемая экскурсия. Заменить ее данными из этой формы?';
+
+  @override
+  String get createExcursionExistingDraftSaveConfirm => 'Обновить черновик';
+
+  @override
+  String get createExcursionExistingActiveDescription =>
+      'Для этого места у вас уже есть активная экскурсия. Откройте ее в кабинете гида.';
+
+  @override
+  String createExcursionDraftSubmitFailed(Object error) {
+    return 'Черновик сохранен, но отправить его на проверку не удалось. $error Повторная попытка не создаст дубликат.';
+  }
 
   @override
   String get createExcursionCoverSection => 'Обложка экскурсии';

@@ -1,17 +1,21 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"kz/inflap/backend/services/excursion-service/internal/app"
 	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
 	"kz/inflap/backend/services/excursion-service/internal/domain/model"
@@ -105,7 +109,7 @@ func (h *Handler) CreateExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to create excursion")
 		return
 	}
-	writeJSON(w, http.StatusCreated, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusCreated, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) UpdateExcursion(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +137,7 @@ func (h *Handler) UpdateExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to update excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) PublishExcursion(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +154,7 @@ func (h *Handler) PublishExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to publish excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ApproveExcursionModeration(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +174,7 @@ func (h *Handler) ApproveExcursionModeration(w http.ResponseWriter, r *http.Requ
 		h.writeUseCaseError(w, r, err, "failed to approve excursion moderation")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) RejectExcursionModeration(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +204,7 @@ func (h *Handler) RejectExcursionModeration(w http.ResponseWriter, r *http.Reque
 		h.writeUseCaseError(w, r, err, "failed to reject excursion moderation")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ArchiveExcursion(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +221,7 @@ func (h *Handler) ArchiveExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to archive excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) DeleteExcursion(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +250,7 @@ func (h *Handler) GetExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to get excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) GetMyExcursion(w http.ResponseWriter, r *http.Request) {
@@ -263,7 +267,7 @@ func (h *Handler) GetMyExcursion(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to get excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ListExcursions(w http.ResponseWriter, r *http.Request) {
@@ -310,7 +314,7 @@ func (h *Handler) GetModerationExcursion(w http.ResponseWriter, r *http.Request)
 		h.writeUseCaseError(w, r, err, "failed to get moderation excursion")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ArchiveGuideExcursionOffers(w http.ResponseWriter, r *http.Request) {
@@ -336,7 +340,7 @@ func (h *Handler) ListExcursionProducts(w http.ResponseWriter, r *http.Request) 
 		h.writeUseCaseError(w, r, err, "failed to list excursion products")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionProductListResponse(aggregates, requestedLimit))
+	writeJSON(w, http.StatusOK, toExcursionProductListResponse(aggregates, requestedLimit, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) GetExcursionProduct(w http.ResponseWriter, r *http.Request) {
@@ -349,7 +353,7 @@ func (h *Handler) GetExcursionProduct(w http.ResponseWriter, r *http.Request) {
 		h.writeUseCaseError(w, r, err, "failed to get excursion product")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionProductCardResponse(aggregate))
+	writeJSON(w, http.StatusOK, toExcursionProductCardResponse(aggregate, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ListExcursionProductOffers(w http.ResponseWriter, r *http.Request) {
@@ -364,7 +368,7 @@ func (h *Handler) ListExcursionProductOffers(w http.ResponseWriter, r *http.Requ
 		h.writeUseCaseError(w, r, err, "failed to list excursion offers")
 		return
 	}
-	writeJSON(w, http.StatusOK, toExcursionOfferListResponse(aggregates, requestedLimit))
+	writeJSON(w, http.StatusOK, toExcursionOfferListResponse(aggregates, requestedLimit, requestedExcursionLanguage(r)))
 }
 
 func (h *Handler) ListGuideExcursionLanguages(w http.ResponseWriter, r *http.Request) {
@@ -1309,6 +1313,7 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 	}
 	return app.CreateExcursionInput{
 		ActorUserID:           actorUserID,
+		SourceLanguage:        req.SourceLanguage,
 		LandmarkID:            landmarkID,
 		LandmarkName:          req.LandmarkName,
 		CategorySlug:          req.CategorySlug,
@@ -1345,6 +1350,7 @@ func toUpdateInput(actorUserID uuid.UUID, excursionID uuid.UUID, req dto.UpdateE
 	return app.UpdateExcursionInput{
 		ActorUserID:           createInput.ActorUserID,
 		ExcursionID:           excursionID,
+		SourceLanguage:        createInput.SourceLanguage,
 		LandmarkID:            createInput.LandmarkID,
 		LandmarkName:          createInput.LandmarkName,
 		CategorySlug:          createInput.CategorySlug,
@@ -1576,7 +1582,11 @@ func toExcursionListResponse(items []*app.ExcursionAggregate, requestedLimit int
 	return resp
 }
 
-func toExcursionProductListResponse(items []*app.ExcursionProductCardAggregate, requestedLimit int) dto.ExcursionProductListResponse {
+func toExcursionProductListResponse(
+	items []*app.ExcursionProductCardAggregate,
+	requestedLimit int,
+	requestedLanguages ...string,
+) dto.ExcursionProductListResponse {
 	hasMore := len(items) > requestedLimit
 	if hasMore {
 		items = items[:requestedLimit]
@@ -1586,12 +1596,15 @@ func toExcursionProductListResponse(items []*app.ExcursionProductCardAggregate, 
 		HasMore: hasMore,
 	}
 	for _, item := range items {
-		resp.Items = append(resp.Items, toExcursionProductCardResponse(item))
+		resp.Items = append(resp.Items, toExcursionProductCardResponse(item, requestedLanguages...))
 	}
 	return resp
 }
 
-func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate) dto.ExcursionProductCardResponse {
+func toExcursionProductCardResponse(
+	aggregate *app.ExcursionProductCardAggregate,
+	requestedLanguages ...string,
+) dto.ExcursionProductCardResponse {
 	item := aggregate.Product
 	coverImageURL := (*string)(nil)
 	if item.CoverFileID != nil {
@@ -1617,6 +1630,7 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 		Summary:              item.Summary,
 		Description:          item.Description,
 		Translations:         toDTOTranslations(item.Translations),
+		TranslationInfo:      toExcursionProductTranslationInfo(item, requestedLanguages...),
 		CategorySlug:         item.CategorySlug,
 		Status:               string(item.Status),
 		Visibility:           string(item.Visibility),
@@ -1636,12 +1650,18 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 		OffersCount:          item.OffersCount,
 		PublishedOffersCount: item.PublishedOffersCount,
 		NextAvailableAt:      formatOptionalTime(item.NextAvailableAt),
+		RatingAvg:            item.RatingAvg,
+		ReviewsCount:         item.ReviewsCount,
 		CreatedAt:            item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:            item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 
-func toExcursionOfferListResponse(items []*app.ExcursionOfferAggregate, requestedLimit int) dto.ExcursionOfferListResponse {
+func toExcursionOfferListResponse(
+	items []*app.ExcursionOfferAggregate,
+	requestedLimit int,
+	requestedLanguages ...string,
+) dto.ExcursionOfferListResponse {
 	hasMore := len(items) > requestedLimit
 	if hasMore {
 		items = items[:requestedLimit]
@@ -1651,12 +1671,15 @@ func toExcursionOfferListResponse(items []*app.ExcursionOfferAggregate, requeste
 		HasMore: hasMore,
 	}
 	for _, item := range items {
-		resp.Items = append(resp.Items, toExcursionOfferResponse(item))
+		resp.Items = append(resp.Items, toExcursionOfferResponse(item, requestedLanguages...))
 	}
 	return resp
 }
 
-func toExcursionOfferResponse(aggregate *app.ExcursionOfferAggregate) dto.ExcursionOfferResponse {
+func toExcursionOfferResponse(
+	aggregate *app.ExcursionOfferAggregate,
+	requestedLanguages ...string,
+) dto.ExcursionOfferResponse {
 	item := aggregate.Offer
 	return dto.ExcursionOfferResponse{
 		ID:                       item.ID.String(),
@@ -1672,6 +1695,7 @@ func toExcursionOfferResponse(aggregate *app.ExcursionOfferAggregate) dto.Excurs
 		Summary:                  item.Summary,
 		Description:              item.Description,
 		Translations:             toDTOTranslations(item.Translations),
+		TranslationInfo:          toExcursionOfferTranslationInfo(aggregate, requestedLanguages...),
 		Status:                   string(item.Status),
 		Visibility:               string(item.Visibility),
 		DurationMinutes:          item.DurationMinutes,
@@ -1728,7 +1752,7 @@ func toGuideUserIDListResponse(guideUserIDs []uuid.UUID) dto.GuideUserIDListResp
 	return resp
 }
 
-func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionResponse {
+func toExcursionResponse(aggregate *app.ExcursionAggregate, requestedLanguages ...string) dto.ExcursionResponse {
 	item := aggregate.Excursion
 	effectiveCoverFileID := aggregate.CoverFileID
 	if effectiveCoverFileID == nil {
@@ -1786,6 +1810,7 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 		IncludedItems:            includedItemTexts(aggregate.IncludedItems),
 		IncludedItemTranslations: includedItemTranslations(aggregate.IncludedItems),
 		Itinerary:                toItineraryResponse(aggregate.Itinerary),
+		TranslationInfo:          toExcursionTranslationInfo(aggregate, requestedLanguages...),
 		PublishingDecision:       string(item.PublishingDecision),
 		GuideTrustScore:          item.GuideTrustScore,
 		PublishRiskScore:         item.PublishRiskScore,
@@ -1835,6 +1860,441 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func toExcursionTranslationInfo(
+	aggregate *app.ExcursionAggregate,
+	requestedLanguages ...string,
+) *dto.ExcursionTranslationInfo {
+	if aggregate == nil || aggregate.Excursion == nil {
+		return nil
+	}
+
+	sourceLanguage, _ := model.NormalizeExcursionTranslationLanguage(aggregate.Excursion.SourceLanguage)
+	if sourceLanguage == "" {
+		sourceLanguage = inferExcursionSourceLanguage(aggregate)
+	}
+	if sourceLanguage == "" {
+		return nil
+	}
+
+	currentLanguage := sourceLanguage
+	if len(requestedLanguages) > 0 {
+		if normalized, ok := model.NormalizeExcursionTranslationLanguage(requestedLanguages[0]); ok {
+			currentLanguage = normalized
+		}
+	}
+
+	available := map[string]struct{}{sourceLanguage: {}}
+	for _, target := range excursionTranslationTargetsForResponse(sourceLanguage) {
+		if itineraryHasCompleteLanguage(aggregate.Itinerary, target) {
+			available[target] = struct{}{}
+		}
+	}
+	if len(aggregate.Itinerary) == 0 {
+		collectExcursionTranslationTargets(aggregate.Excursion.ProductTranslations, sourceLanguage, available)
+		collectExcursionTranslationTargets(aggregate.Excursion.Translations, sourceLanguage, available)
+	}
+
+	pending := make(map[string]struct{})
+	failed := make(map[string]struct{})
+	provider := ""
+	for _, job := range aggregate.TranslationJobs {
+		switch job.Status {
+		case model.ExcursionTranslationJobPending, model.ExcursionTranslationJobProcessing:
+			pending[job.TargetLanguage] = struct{}{}
+		case model.ExcursionTranslationJobFailed:
+			failed[job.TargetLanguage] = struct{}{}
+		case model.ExcursionTranslationJobCompleted:
+			if provider == "" && job.Provider != nil {
+				provider = strings.TrimSpace(*job.Provider)
+			}
+		}
+	}
+	status := model.NormalizeExcursionTranslationStatus(string(aggregate.Excursion.TranslationStatus))
+	if status == model.ExcursionTranslationNone && len(available) > 1 {
+		status = model.ExcursionTranslationCompleted
+	}
+	return newExcursionTranslationInfo(
+		status,
+		sourceLanguage,
+		currentLanguage,
+		available,
+		pending,
+		failed,
+		provider,
+	)
+}
+
+func newExcursionTranslationInfo(
+	status model.ExcursionTranslationStatus,
+	sourceLanguage string,
+	currentLanguage string,
+	available map[string]struct{},
+	pending map[string]struct{},
+	failed map[string]struct{},
+	provider string,
+) *dto.ExcursionTranslationInfo {
+	availableLanguages := sortedExcursionLanguageSet(available)
+	pendingLanguages := sortedExcursionLanguageSet(pending)
+	failedLanguages := sortedExcursionLanguageSet(failed)
+	_, currentAvailable := available[currentLanguage]
+	isTranslated := currentLanguage != "" && currentLanguage != sourceLanguage && currentAvailable
+	targetLanguages := make([]string, 0, len(availableLanguages))
+	for _, language := range availableLanguages {
+		if language != sourceLanguage {
+			targetLanguages = append(targetLanguages, language)
+		}
+	}
+	return &dto.ExcursionTranslationInfo{
+		Status:             string(status),
+		SourceLanguage:     sourceLanguage,
+		CurrentLanguage:    currentLanguage,
+		IsTranslated:       isTranslated,
+		AvailableLanguages: availableLanguages,
+		PendingLanguages:   pendingLanguages,
+		FailedLanguages:    failedLanguages,
+		Provider:           provider,
+		Translated:         len(targetLanguages) > 0,
+		TargetLanguages:    targetLanguages,
+	}
+}
+
+func itineraryHasCompleteLanguage(items []*model.ExcursionItineraryItem, language string) bool {
+	if len(items) == 0 {
+		return false
+	}
+	for _, item := range items {
+		if item == nil || !item.HasCompleteTranslationForLanguage(language) {
+			return false
+		}
+	}
+	return true
+}
+
+func excursionTranslationTargetsForResponse(sourceLanguage string) []string {
+	targets := make([]string, 0, 2)
+	for _, language := range model.SupportedExcursionTranslationLanguages() {
+		if language != sourceLanguage {
+			targets = append(targets, language)
+		}
+	}
+	return targets
+}
+
+func sortedExcursionLanguageSet(values map[string]struct{}) []string {
+	result := make([]string, 0, len(values))
+	for language := range values {
+		if normalized, ok := model.NormalizeExcursionTranslationLanguage(language); ok {
+			result = append(result, normalized)
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
+func toExcursionProductTranslationInfo(
+	item *model.ExcursionProductCard,
+	requestedLanguages ...string,
+) *dto.ExcursionTranslationInfo {
+	if item == nil {
+		return nil
+	}
+
+	sourceLanguage, _ := model.NormalizeExcursionTranslationLanguage(item.TranslationSourceLanguage)
+	if sourceLanguage == "" {
+		sourceLanguage = inferExcursionProductSourceLanguage(item)
+	}
+	if sourceLanguage == "" {
+		return nil
+	}
+
+	currentLanguage := sourceLanguage
+	if len(requestedLanguages) > 0 {
+		if normalized, ok := model.NormalizeExcursionTranslationLanguage(requestedLanguages[0]); ok {
+			currentLanguage = normalized
+		}
+	}
+	available := map[string]struct{}{sourceLanguage: {}}
+	collectExcursionTranslationTargets(item.Translations, sourceLanguage, available)
+	pending := stringSliceToLanguageSet(item.TranslationPendingLanguages)
+	failed := stringSliceToLanguageSet(item.TranslationFailedLanguages)
+	status := model.NormalizeExcursionTranslationStatus(string(item.TranslationStatus))
+	if status == model.ExcursionTranslationNone && len(available) > 1 {
+		status = model.ExcursionTranslationCompleted
+	}
+	return newExcursionTranslationInfo(
+		status,
+		sourceLanguage,
+		currentLanguage,
+		available,
+		pending,
+		failed,
+		"translation_service",
+	)
+}
+
+func toExcursionOfferTranslationInfo(
+	aggregate *app.ExcursionOfferAggregate,
+	requestedLanguages ...string,
+) *dto.ExcursionTranslationInfo {
+	if aggregate == nil || aggregate.Offer == nil {
+		return nil
+	}
+	item := aggregate.Offer
+	sourceLanguage, _ := model.NormalizeExcursionTranslationLanguage(item.TranslationSourceLanguage)
+	if sourceLanguage == "" {
+		sourceLanguage = inferExcursionProductSourceLanguage(&model.ExcursionProductCard{
+			Title:        item.Title,
+			Summary:      item.Summary,
+			Description:  item.Description,
+			Translations: item.Translations,
+		})
+	}
+	if sourceLanguage == "" {
+		for _, itineraryItem := range aggregate.Itinerary {
+			if inferred := inferItinerarySourceLanguage(itineraryItem); inferred != "" {
+				sourceLanguage = inferred
+				break
+			}
+		}
+	}
+	if sourceLanguage == "" {
+		return nil
+	}
+
+	currentLanguage := sourceLanguage
+	if len(requestedLanguages) > 0 {
+		if normalized, ok := model.NormalizeExcursionTranslationLanguage(requestedLanguages[0]); ok {
+			currentLanguage = normalized
+		}
+	}
+	available := map[string]struct{}{sourceLanguage: {}}
+	for _, target := range excursionTranslationTargetsForResponse(sourceLanguage) {
+		if itineraryHasCompleteLanguage(aggregate.Itinerary, target) {
+			available[target] = struct{}{}
+		}
+	}
+	if len(aggregate.Itinerary) == 0 {
+		collectExcursionTranslationTargets(item.Translations, sourceLanguage, available)
+	}
+	status := model.NormalizeExcursionTranslationStatus(string(item.TranslationStatus))
+	if status == model.ExcursionTranslationNone && len(available) > 1 {
+		status = model.ExcursionTranslationCompleted
+	}
+	return newExcursionTranslationInfo(
+		status,
+		sourceLanguage,
+		currentLanguage,
+		available,
+		stringSliceToLanguageSet(item.TranslationPendingLanguages),
+		stringSliceToLanguageSet(item.TranslationFailedLanguages),
+		"translation_service",
+	)
+}
+
+func stringSliceToLanguageSet(values []string) map[string]struct{} {
+	result := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		if normalized, ok := model.NormalizeExcursionTranslationLanguage(value); ok {
+			result[normalized] = struct{}{}
+		}
+	}
+	return result
+}
+
+func inferExcursionSourceLanguage(aggregate *app.ExcursionAggregate) string {
+	if aggregate == nil || aggregate.Excursion == nil {
+		return ""
+	}
+	item := aggregate.Excursion
+
+	for _, translations := range []model.ExcursionTranslations{
+		item.ProductTranslations,
+		item.Translations,
+	} {
+		source := inferExcursionLocalizedCopySourceLanguage(item, translations)
+		if source != "" {
+			return source
+		}
+	}
+
+	for _, item := range aggregate.Itinerary {
+		if item == nil {
+			continue
+		}
+		source := inferItinerarySourceLanguage(item)
+		if source != "" {
+			return source
+		}
+	}
+	return ""
+}
+
+func inferExcursionProductSourceLanguage(item *model.ExcursionProductCard) string {
+	translations := model.NormalizeExcursionTranslations(item.Translations)
+	if len(translations) == 0 {
+		return ""
+	}
+
+	baseTitle := normalizeTranslatedTextForCompare(item.Title)
+	baseSummary := normalizeTranslatedTextForCompare(item.Summary)
+	baseDescription := normalizeTranslatedTextForCompare(item.Description)
+	if baseTitle == "" && baseSummary == "" && baseDescription == "" {
+		return ""
+	}
+
+	for _, locale := range []string{"en", "ru", "kk"} {
+		copy, ok := translations[locale]
+		if !ok {
+			continue
+		}
+		if excursionCopyMatchesBase(copy, baseTitle, baseSummary, baseDescription) {
+			return locale
+		}
+	}
+	return ""
+}
+
+func inferExcursionLocalizedCopySourceLanguage(
+	item *model.Excursion,
+	translations model.ExcursionTranslations,
+) string {
+	normalizedTranslations := model.NormalizeExcursionTranslations(translations)
+	if len(normalizedTranslations) == 0 {
+		return ""
+	}
+
+	baseTitle := normalizeTranslatedTextForCompare(item.Title)
+	baseSummary := normalizeTranslatedTextForCompare(item.Summary)
+	baseDescription := normalizeTranslatedTextForCompare(item.Description)
+	if baseTitle == "" && baseSummary == "" && baseDescription == "" {
+		return ""
+	}
+
+	for _, locale := range []string{"en", "ru", "kk"} {
+		copy, ok := normalizedTranslations[locale]
+		if !ok {
+			continue
+		}
+		if excursionCopyMatchesBase(copy, baseTitle, baseSummary, baseDescription) {
+			return locale
+		}
+	}
+	return ""
+}
+
+func inferItinerarySourceLanguage(item *model.ExcursionItineraryItem) string {
+	if item == nil {
+		return ""
+	}
+	translations := model.NormalizeExcursionItineraryTranslations(item.Translations)
+	if len(translations) == 0 {
+		return ""
+	}
+
+	baseTitle := normalizeTranslatedTextForCompare(item.Title)
+	baseDescription := normalizeTranslatedTextForCompare(item.Description)
+	if baseTitle == "" && baseDescription == "" {
+		return ""
+	}
+
+	for _, locale := range []string{"en", "ru", "kk"} {
+		copy, ok := translations[locale]
+		if !ok {
+			continue
+		}
+		if translationCopyMatchesBase(copy, baseTitle, baseDescription) {
+			return locale
+		}
+	}
+	return ""
+}
+
+func collectExcursionTranslationTargets(
+	translations model.ExcursionTranslations,
+	sourceLanguage string,
+	targets map[string]struct{},
+) {
+	for locale, copy := range model.NormalizeExcursionTranslations(translations) {
+		target := normalizeExcursionResponseLanguage(locale)
+		if target == "" || target == sourceLanguage {
+			continue
+		}
+		if strings.TrimSpace(copy.Title) == "" &&
+			strings.TrimSpace(copy.Summary) == "" &&
+			strings.TrimSpace(copy.Description) == "" {
+			continue
+		}
+		targets[target] = struct{}{}
+	}
+}
+
+func collectItineraryTranslationTargets(
+	translations model.ExcursionItineraryTranslations,
+	sourceLanguage string,
+	targets map[string]struct{},
+) {
+	for locale, copy := range model.NormalizeExcursionItineraryTranslations(translations) {
+		target := normalizeExcursionResponseLanguage(locale)
+		if target == "" || target == sourceLanguage {
+			continue
+		}
+		if strings.TrimSpace(copy.Title) == "" && strings.TrimSpace(copy.Description) == "" {
+			continue
+		}
+		targets[target] = struct{}{}
+	}
+}
+
+func excursionCopyMatchesBase(copy model.ExcursionLocalizedCopy, baseTitle string, baseSummary string, baseDescription string) bool {
+	title := normalizeTranslatedTextForCompare(copy.Title)
+	summary := normalizeTranslatedTextForCompare(copy.Summary)
+	description := normalizeTranslatedTextForCompare(copy.Description)
+	titleMatches := baseTitle == "" || title == baseTitle
+	summaryMatches := baseSummary == "" || summary == baseSummary
+	descriptionMatches := baseDescription == "" || description == baseDescription
+	return titleMatches && summaryMatches && descriptionMatches
+}
+
+func translationCopyMatchesBase(copy model.ExcursionItineraryLocalizedCopy, baseTitle string, baseDescription string) bool {
+	title := normalizeTranslatedTextForCompare(copy.Title)
+	description := normalizeTranslatedTextForCompare(copy.Description)
+	titleMatches := baseTitle == "" || title == baseTitle
+	descriptionMatches := baseDescription == "" || description == baseDescription
+	return titleMatches && descriptionMatches
+}
+
+func normalizeTranslatedTextForCompare(value string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+}
+
+func normalizeExcursionResponseLanguage(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	if index := strings.IndexAny(normalized, "-_"); index >= 0 {
+		normalized = normalized[:index]
+	}
+	switch normalized {
+	case "en", "ru", "kk":
+		return normalized
+	default:
+		return ""
+	}
+}
+
+func requestedExcursionLanguage(r *http.Request) string {
+	if r == nil {
+		return "ru"
+	}
+	for _, headerValue := range []string{r.Header.Get("X-Language"), r.Header.Get("Accept-Language")} {
+		for _, candidate := range strings.Split(headerValue, ",") {
+			language := strings.TrimSpace(strings.SplitN(candidate, ";", 2)[0])
+			if normalized, ok := model.NormalizeExcursionTranslationLanguage(language); ok {
+				return normalized
+			}
+		}
+	}
+	return "ru"
 }
 
 func toExcursionBookingGuestsQuoteResponse(quote app.ExcursionBookingGuestsQuote) dto.ExcursionBookingGuestsQuoteResponse {
@@ -2110,9 +2570,24 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, app.ErrExcursionBookingIdempotencyConflict),
 		errors.Is(err, app.ErrExcursionScheduleConflict):
 		writeError(w, http.StatusConflict, err.Error())
-	case errors.Is(err, app.ErrExcursionTranslationFailed),
-		errors.Is(err, app.ErrPaymentGatewayUnavailable):
+	case errors.Is(err, app.ErrExcursionTranslationFailed):
+		log.Warn().
+			Err(err).
+			Str("request_id", RequestIDFromContext(r.Context())).
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("synchronous excursion translation failed")
 		writeError(w, http.StatusServiceUnavailable, err.Error())
+	case errors.Is(err, app.ErrPaymentGatewayUnavailable):
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+	case isUpstreamTimeout(err):
+		log.Warn().
+			Err(err).
+			Str("request_id", RequestIDFromContext(r.Context())).
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("upstream service timed out")
+		writeError(w, http.StatusServiceUnavailable, "upstream service timed out")
 	case errors.Is(err, app.ErrPaymentChargeFailed),
 		errors.Is(err, app.ErrPaymentRefundFailed):
 		writeError(w, http.StatusConflict, err.Error())
@@ -2141,6 +2616,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, model.ErrInvalidExcursionPrice),
 		errors.Is(err, model.ErrInvalidExcursionCurrency),
 		errors.Is(err, model.ErrInvalidExcursionPublishingDecision),
+		errors.Is(err, model.ErrInvalidExcursionTranslationLanguage),
 		errors.Is(err, model.ErrExcursionLanguageRequired),
 		errors.Is(err, model.ErrExcursionItineraryRequired),
 		errors.Is(err, model.ErrExcursionNotPendingReview),
@@ -2201,6 +2677,14 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 			Msg(fallback)
 		writeError(w, http.StatusInternalServerError, fallback)
 	}
+}
+
+func isUpstreamTimeout(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	st, ok := status.FromError(err)
+	return ok && st.Code() == codes.DeadlineExceeded
 }
 
 func parseActorUserID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
@@ -2526,16 +3010,17 @@ func buildErrorResponse(service string, status int, message string) errorRespons
 			Kind:    "technical",
 		}
 	}
-	title, publicMessage := localizedBusinessError(status)
+	code := errorCodeFromMessage(message)
+	title, publicMessage := localizedBusinessError(status, code)
 	return errorResponse{
 		Error:   title,
 		Message: publicMessage,
-		Code:    service + "." + errorCodeFromMessage(message),
+		Code:    service + "." + code,
 		Kind:    "business",
 	}
 }
 
-func localizedBusinessError(status int) (string, string) {
+func localizedBusinessError(status int, code string) (string, string) {
 	switch status {
 	case http.StatusUnauthorized:
 		return "Требуется авторизация", "Войдите в аккаунт и повторите запрос."
@@ -2544,6 +3029,9 @@ func localizedBusinessError(status int) (string, string) {
 	case http.StatusNotFound:
 		return "Данные не найдены", "Запрошенные данные не найдены."
 	case http.StatusConflict:
+		if code == "excursion_already_exists_for_this_guide_and_place" {
+			return "Экскурсия уже существует", "Для этого места у вас уже есть активная экскурсия. Откройте ее в кабинете гида."
+		}
 		return "Конфликт данных", "Данные уже изменились или действие недоступно в текущем состоянии."
 	case http.StatusTooManyRequests:
 		return "Слишком много запросов", "Попробуйте повторить запрос чуть позже."

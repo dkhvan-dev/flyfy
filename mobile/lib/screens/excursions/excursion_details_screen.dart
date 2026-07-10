@@ -38,6 +38,8 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/routing_provider.dart';
+import '../../shared/reference/app_location_label_resolver.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 import '../../shared/widgets/app_map_card.dart';
 import '../../shared/widgets/trip_preparation_cta.dart';
 import '../map/map_screen.dart';
@@ -191,10 +193,11 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   final ProfileApi _profileApi = ProfileApi();
   final ChatApi _chatApi = ChatApi();
   final HelpCenterApi _helpCenterApi = HelpCenterApi();
-  PlaceVm? _localizedLandmark;
-  String? _localizedLandmarkId;
-  String? _localizedLandmarkLocale;
-  String? _loadingLocalizedLandmarkId;
+  final AppLocationLabelResolver _locationLabelResolver =
+      AppLocationLabelResolver();
+  Map<String, PlaceVm> _localizedPlaces = const {};
+  final Set<String> _loadingLocalizedPlaceKeys = <String>{};
+  String? _localizedPlacesLocale;
   Map<String, UserProfileVm> _resolvedProfiles = const {};
   final Set<String> _resolvingGuideUserIds = <String>{};
   List<ExcursionOfferVm> _visibleOffers = const [];
@@ -227,10 +230,9 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.excursionId == widget.excursionId) return;
 
-    _localizedLandmark = null;
-    _localizedLandmarkId = null;
-    _localizedLandmarkLocale = null;
-    _loadingLocalizedLandmarkId = null;
+    _localizedPlaces = const {};
+    _loadingLocalizedPlaceKeys.clear();
+    _localizedPlacesLocale = null;
     _resolvedProfiles = const {};
     _resolvingGuideUserIds.clear();
     _visibleOffers = const [];
@@ -517,8 +519,15 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
     final meetingPoint = excursion.meetingPoint.trim();
     final cityName = excursion.cityName?.trim();
+    final languageCode = Localizations.localeOf(context).languageCode;
     return MapTarget(
-      title: excursion.title,
+      title: localizedExcursionTitle(
+        languageCode: languageCode,
+        excursion: excursion,
+        place: _localizedLandmarkFor(excursion),
+        placesById: _localizedPlaces,
+        fallback: excursion.title,
+      ),
       subtitle: meetingPoint.isNotEmpty
           ? meetingPoint
           : cityName?.isNotEmpty == true
@@ -718,50 +727,50 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     return excursion.offers;
   }
 
-  void _scheduleLoadLocalizedLandmark(ExcursionVm excursion) {
-    final landmarkId = excursion.landmarkId?.trim();
-    if (landmarkId == null || landmarkId.isEmpty) {
-      _localizedLandmark = null;
-      _localizedLandmarkId = null;
-      _localizedLandmarkLocale = null;
-      _loadingLocalizedLandmarkId = null;
-      return;
-    }
-
+  void _scheduleLoadLocalizedPlaces(ExcursionVm excursion) {
     final lang = Localizations.localeOf(context).languageCode;
-    if (_localizedLandmarkId == landmarkId &&
-        _localizedLandmarkLocale == lang &&
-        _localizedLandmark != null) {
-      return;
+    if (_localizedPlacesLocale != lang) {
+      _localizedPlacesLocale = lang;
+      _localizedPlaces = const {};
+      _loadingLocalizedPlaceKeys.clear();
     }
-    if (_loadingLocalizedLandmarkId == '$landmarkId:$lang') return;
 
-    _loadingLocalizedLandmarkId = '$landmarkId:$lang';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_loadLocalizedLandmark(landmarkId, lang));
-    });
+    final placeIds = <String>{
+      excursion.landmarkId?.trim() ?? '',
+      ...excursion.placeIds.map((placeId) => placeId.trim()),
+    }..remove('');
+    for (final placeId in placeIds) {
+      final requestKey = '$placeId:$lang';
+      if (_localizedPlaces.containsKey(placeId) ||
+          !_loadingLocalizedPlaceKeys.add(requestKey)) {
+        continue;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadLocalizedPlace(placeId, lang));
+      });
+    }
   }
 
-  Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
+  Future<void> _loadLocalizedPlace(String placeId, String lang) async {
+    final requestKey = '$placeId:$lang';
     try {
-      final place = await _placeApi.getPlace(landmarkId, locale: lang);
-      if (!mounted || _loadingLocalizedLandmarkId != '$landmarkId:$lang') {
-        return;
-      }
+      final place = await _placeApi.getPlace(placeId, locale: lang);
+      if (!mounted || _localizedPlacesLocale != lang) return;
 
       setState(() {
-        _localizedLandmark = place;
-        _localizedLandmarkId = landmarkId;
-        _localizedLandmarkLocale = lang;
-        _loadingLocalizedLandmarkId = null;
+        _localizedPlaces = {..._localizedPlaces, placeId: place};
+        _loadingLocalizedPlaceKeys.remove(requestKey);
       });
     } catch (_) {
-      if (!mounted || _loadingLocalizedLandmarkId != '$landmarkId:$lang') {
-        return;
-      }
+      if (!mounted || _localizedPlacesLocale != lang) return;
 
-      setState(() => _loadingLocalizedLandmarkId = null);
+      setState(() => _loadingLocalizedPlaceKeys.remove(requestKey));
     }
+  }
+
+  PlaceVm? _localizedLandmarkFor(ExcursionVm excursion) {
+    final landmarkId = excursion.landmarkId?.trim() ?? '';
+    return landmarkId.isEmpty ? null : _localizedPlaces[landmarkId];
   }
 
   void _replaceVisibleOffers(
@@ -830,7 +839,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             return const _ExcursionDetailsLoading();
           }
 
-          _scheduleLoadLocalizedLandmark(excursion);
+          _scheduleLoadLocalizedPlaces(excursion);
           final offers = _offersFor(excursion);
           final selectedOffer = _selectedOfferFor(excursion, offers);
           final displayExcursion = selectedOffer == null
@@ -897,7 +906,9 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
           return ExcursionDetailsContent(
             excursion: displayExcursion,
-            localizedLandmark: _localizedLandmark,
+            localizedLandmark: _localizedLandmarkFor(excursion),
+            localizedPlacesById: _localizedPlaces,
+            locationLabelResolver: _locationLabelResolver,
             offers: offers,
             excursionReviews: provider.excursionReviewsForProduct(excursion.id),
             selectedOffer: selectedOffer,
@@ -953,7 +964,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   }
 }
 
-class ExcursionDetailsContent extends StatelessWidget {
+class ExcursionDetailsContent extends StatefulWidget {
   const ExcursionDetailsContent({
     super.key,
     required this.excursion,
@@ -985,12 +996,16 @@ class ExcursionDetailsContent extends StatelessWidget {
     this.onOffersChanged,
     this.onReviewLongPress,
     this.localizedLandmark,
+    this.localizedPlacesById = const {},
+    this.locationLabelResolver,
     this.activeChecklistBooking,
     this.helpCenterApi,
   });
 
   final ExcursionVm excursion;
   final PlaceVm? localizedLandmark;
+  final Map<String, PlaceVm> localizedPlacesById;
+  final AppLocationLabelResolver? locationLabelResolver;
   final List<ExcursionOfferVm>? offers;
   final List<ExcursionReviewVm> excursionReviews;
   final ExcursionOfferVm? selectedOffer;
@@ -1023,32 +1038,65 @@ class ExcursionDetailsContent extends StatelessWidget {
   final ValueChanged<ExcursionReviewVm>? onReviewLongPress;
 
   @override
+  State<ExcursionDetailsContent> createState() =>
+      _ExcursionDetailsContentState();
+}
+
+class _ExcursionDetailsContentState extends State<ExcursionDetailsContent> {
+  bool _showOriginalItinerary = false;
+
+  @override
+  void didUpdateWidget(covariant ExcursionDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.excursion.id != widget.excursion.id ||
+        oldWidget.excursion.translationInfo.sourceLanguage !=
+            widget.excursion.translationInfo.sourceLanguage) {
+      _showOriginalItinerary = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final activeSelectedOffer = selectedOffer;
-    final visibleOffers = offers ?? excursion.offers;
+    final appLanguageCode = Localizations.localeOf(context).languageCode;
+    final translationInfo = widget.excursion.translationInfo;
+    final translationNoticeState = translationInfo.noticeState(appLanguageCode);
+    final itineraryLanguageCode = switch (translationNoticeState) {
+      ExcursionTranslationNoticeState.translated =>
+        _showOriginalItinerary
+            ? translationInfo.sourceLanguage
+            : appLanguageCode,
+      ExcursionTranslationNoticeState.pending ||
+      ExcursionTranslationNoticeState.unavailable =>
+        translationInfo.sourceLanguage,
+      ExcursionTranslationNoticeState.none => appLanguageCode,
+    };
+    final activeSelectedOffer = widget.selectedOffer;
+    final visibleOffers = widget.offers ?? widget.excursion.offers;
     final showBottomBookingNotice =
-        !showBookingAction &&
-        !showEditOfferAction &&
-        bookingUnavailableMessage != null;
-    final bottomAction = showBookingAction || showEditOfferAction
+        !widget.showBookingAction &&
+        !widget.showEditOfferAction &&
+        widget.bookingUnavailableMessage != null;
+    final bottomAction = widget.showBookingAction || widget.showEditOfferAction
         ? _ExcursionCheckoutBar(
-            excursion: excursion,
-            label: showEditOfferAction
+            excursion: widget.excursion,
+            label: widget.showEditOfferAction
                 ? l10n.excursionDetailsEditOffer
                 : l10n.excursionDetailsBook,
-            icon: showEditOfferAction
+            icon: widget.showEditOfferAction
                 ? Icons.edit_rounded
                 : Icons.chevron_right_rounded,
-            helperText: showBookingAction
+            helperText: widget.showBookingAction
                 ? l10n.excursionDetailsBookingSeatCheckNote
                 : null,
-            showPrice: showCheckoutPrice && showBookingAction,
-            onTap: showEditOfferAction ? onEditOfferTap : onBookTap,
+            showPrice: widget.showCheckoutPrice && widget.showBookingAction,
+            onTap: widget.showEditOfferAction
+                ? widget.onEditOfferTap
+                : widget.onBookTap,
           )
         : showBottomBookingNotice
         ? _ExcursionBookingUnavailableNotice(
-            message: bookingUnavailableMessage!,
+            message: widget.bookingUnavailableMessage!,
           )
         : null;
 
@@ -1073,8 +1121,8 @@ class ExcursionDetailsContent extends StatelessWidget {
                 child: Padding(
                   padding: const AppEdgeInsets.fromLTRB(24, 10, 24, 0),
                   child: _ExcursionDetailsTopBar(
-                    onBackTap: onBackTap,
-                    onNotificationsTap: onNotificationsTap,
+                    onBackTap: widget.onBackTap,
+                    onNotificationsTap: widget.onNotificationsTap,
                   ),
                 ),
               ),
@@ -1092,9 +1140,13 @@ class ExcursionDetailsContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _ExcursionHero(
-                        excursion: excursion,
+                        excursion: widget.excursion,
                         selectedOffer: activeSelectedOffer,
-                        localizedLandmark: localizedLandmark,
+                        localizedLandmark: widget.localizedLandmark,
+                        localizedPlacesById: widget.localizedPlacesById,
+                        locationLabelResolver: widget.locationLabelResolver,
+                        contentLanguageCode: appLanguageCode,
+                        reviews: widget.excursionReviews,
                       ),
                       Padding(
                         padding: const AppEdgeInsets.fromLTRB(24, 26, 24, 0),
@@ -1102,61 +1154,67 @@ class ExcursionDetailsContent extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _ExcursionStatsGrid(
-                              excursion: excursion,
+                              excursion: widget.excursion,
                               selectedOffer: activeSelectedOffer,
                             ),
                             const SizedBox(height: 24),
                             TripPreparationCta(
                               title: l10n.travelChecklistCtaTitle,
                               subtitle: l10n.travelChecklistCtaSubtitle,
-                              actionLabel: activeChecklistBooking == null
+                              actionLabel: widget.activeChecklistBooking == null
                                   ? l10n.travelChecklistPreviewAction
                                   : l10n.travelChecklistOpen,
-                              onTap: activeChecklistBooking == null
-                                  ? (onChecklistPreviewTap ?? onBookTap)
-                                  : (onFullChecklistTap ?? onBookTap),
+                              onTap: widget.activeChecklistBooking == null
+                                  ? (widget.onChecklistPreviewTap ??
+                                        widget.onBookTap)
+                                  : (widget.onFullChecklistTap ??
+                                        widget.onBookTap),
                             ),
-                            if (helpCenterApi != null) ...[
+                            if (widget.helpCenterApi != null) ...[
                               const SizedBox(height: 24),
                               ContextualHelpSection(
-                                api: helpCenterApi,
+                                api: widget.helpCenterApi,
                                 surface: HelpCenterSurface.excursionDetails,
                                 tags: [
                                   'excursions',
                                   'guides',
-                                  if (showCheckoutPrice) 'payments',
-                                  if ((excursion.categorySlug ?? '')
+                                  if (widget.showCheckoutPrice) 'payments',
+                                  if ((widget.excursion.categorySlug ?? '')
                                       .trim()
                                       .isNotEmpty)
-                                    excursion.categorySlug!.trim(),
+                                    widget.excursion.categorySlug!.trim(),
                                 ],
-                                userState: showMessageGuide
+                                userState: widget.showMessageGuide
                                     ? 'traveler'
                                     : 'guide',
-                                supportContext: {'excursion_id': excursion.id},
-                                onActionSelected: onHelpActionSelected,
+                                supportContext: {
+                                  'excursion_id': widget.excursion.id,
+                                },
+                                onActionSelected: widget.onHelpActionSelected,
                               ),
                             ],
                             const SizedBox(height: 40),
                             _ExcursionExperienceSection(
-                              excursion: excursion,
-                              localizedLandmark: localizedLandmark,
+                              excursion: widget.excursion,
+                              localizedLandmark: widget.localizedLandmark,
+                              contentLanguageCode: appLanguageCode,
                             ),
                             const SizedBox(height: 44),
                             _ExcursionOffersSection(
-                              excursion: excursion,
+                              excursion: widget.excursion,
                               offers: visibleOffers,
-                              selectedOffer: selectedOffer,
-                              currentUserId: currentUserId,
-                              isCurrentUserGuide: isCurrentUserGuide,
-                              enableRemoteOffers: enableRemoteOffers,
-                              offerProfiles: offerProfiles,
-                              showMessageGuide: showMessageGuide,
-                              isMessageGuideLoading: isMessageGuideLoading,
-                              onOfferSelected: onOfferSelected,
-                              onOfferProfileTap: onOfferProfileTap,
-                              onMessageGuideTap: onMessageGuideTap,
-                              onOffersChanged: onOffersChanged,
+                              selectedOffer: widget.selectedOffer,
+                              currentUserId: widget.currentUserId,
+                              isCurrentUserGuide: widget.isCurrentUserGuide,
+                              enableRemoteOffers: widget.enableRemoteOffers,
+                              offerProfiles: widget.offerProfiles,
+                              showMessageGuide: widget.showMessageGuide,
+                              isMessageGuideLoading:
+                                  widget.isMessageGuideLoading,
+                              onOfferSelected: widget.onOfferSelected,
+                              onOfferProfileTap: widget.onOfferProfileTap,
+                              onMessageGuideTap: widget.onMessageGuideTap,
+                              onOffersChanged: widget.onOffersChanged,
                             ),
                             if (activeSelectedOffer != null &&
                                 activeSelectedOffer
@@ -1165,25 +1223,39 @@ class ExcursionDetailsContent extends StatelessWidget {
                               const SizedBox(height: 44),
                               _ExcursionSelectedOfferIncludedSection(
                                 selectedOffer: activeSelectedOffer,
+                                languageCode: appLanguageCode,
                               ),
                             ],
                             const SizedBox(height: 44),
                             _ExcursionMapPreview(
-                              excursion: excursion,
-                              isBuildingRoute: isBuildingRoute,
-                              onRoutePreviewTap: onRoutePreviewTap,
+                              excursion: widget.excursion,
+                              locationLabelResolver:
+                                  widget.locationLabelResolver,
+                              isBuildingRoute: widget.isBuildingRoute,
+                              onRoutePreviewTap: widget.onRoutePreviewTap,
                             ),
                             const SizedBox(height: 44),
                             _ExcursionItinerarySection(
-                              excursion: excursion,
-                              localizedLandmark: localizedLandmark,
+                              excursion: widget.excursion,
+                              localizedLandmark: widget.localizedLandmark,
+                              languageCode: itineraryLanguageCode,
+                              translationNoticeState: translationNoticeState,
+                              translationSourceLanguage:
+                                  translationInfo.sourceLanguage,
+                              showingOriginal: _showOriginalItinerary,
+                              onToggleTranslation: () {
+                                setState(() {
+                                  _showOriginalItinerary =
+                                      !_showOriginalItinerary;
+                                });
+                              },
                             ),
-                            if (excursionReviews.isNotEmpty) ...[
+                            if (widget.excursionReviews.isNotEmpty) ...[
                               const SizedBox(height: 44),
                               _ExcursionReviewsSection(
-                                reviews: excursionReviews,
-                                currentUserId: currentUserId,
-                                onReviewLongPress: onReviewLongPress,
+                                reviews: widget.excursionReviews,
+                                currentUserId: widget.currentUserId,
+                                onReviewLongPress: widget.onReviewLongPress,
                               ),
                             ],
                           ],
@@ -1312,32 +1384,24 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-LinearGradient? _excursionHeroOverlayGradient(BuildContext context) {
-  if (Theme.of(context).brightness == Brightness.light) {
-    return null;
-  }
-
-  return LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      context.excursionDetailsColors.black.withValues(alpha: 0.2),
-      context.excursionDetailsColors.black.withValues(alpha: 0.12),
-      context.excursionDetailsColors.warmInk37,
-    ],
-  );
-}
-
 class _ExcursionHero extends StatefulWidget {
   const _ExcursionHero({
     required this.excursion,
     required this.selectedOffer,
     required this.localizedLandmark,
+    required this.localizedPlacesById,
+    required this.locationLabelResolver,
+    required this.contentLanguageCode,
+    required this.reviews,
   });
 
   final ExcursionVm excursion;
   final ExcursionOfferVm? selectedOffer;
   final PlaceVm? localizedLandmark;
+  final Map<String, PlaceVm> localizedPlacesById;
+  final AppLocationLabelResolver? locationLabelResolver;
+  final String contentLanguageCode;
+  final List<ExcursionReviewVm> reviews;
 
   @override
   State<_ExcursionHero> createState() => _ExcursionHeroState();
@@ -1358,113 +1422,207 @@ class _ExcursionHeroState extends State<_ExcursionHero> {
   @override
   Widget build(BuildContext context) {
     final imageUrls = _heroImageUrls(widget.excursion, widget.selectedOffer);
-    final label = _categoryLabel(context, widget.excursion.categorySlug);
+    final fallbackTitle = _categoryLabel(
+      context,
+      widget.excursion.categorySlug,
+    );
     final title = localizedExcursionTitle(
-      languageCode: Localizations.localeOf(context).languageCode,
+      languageCode: widget.contentLanguageCode,
       excursion: widget.excursion,
       place: widget.localizedLandmark,
-      fallback: label,
+      placesById: widget.localizedPlacesById,
+      fallback: fallbackTitle,
     );
-    final overlayGradient = _excursionHeroOverlayGradient(context);
+    final location = widget.excursion.cityName?.trim() ?? '';
+    final hasCityReference =
+        (widget.excursion.departureCityId?.trim().isNotEmpty ?? false) ||
+        location.isNotEmpty;
+    final offerDuration = widget.selectedOffer?.durationMinutes ?? 0;
+    final durationMinutes = offerDuration > 0
+        ? offerDuration
+        : widget.excursion.durationMinutes;
+    final durationLabel = _formatDuration(context, durationMinutes);
+    final averageRating = _averageRating(widget.reviews);
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    final canDisplayCity =
+        hasCityReference &&
+        (widget.locationLabelResolver != null || location.isNotEmpty);
+    final hasOverlayBadges = canDisplayCity || durationLabel.isNotEmpty;
 
-    return SizedBox(
-      height: 236,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (imageUrls.isNotEmpty)
-            PageView.builder(
-              key: ValueKey(imageUrls.join('|')),
-              itemCount: imageUrls.length,
-              onPageChanged: (index) {
-                setState(() => _currentImageIndex = index);
-              },
-              itemBuilder: (context, index) {
-                return Image.network(
-                  imageUrls[index],
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const _ExcursionHeroFallback(),
-                );
-              },
-            )
-          else
-            const _ExcursionHeroFallback(),
-          if (overlayGradient != null)
-            DecoratedBox(
-              decoration: AppBoxDecoration(gradient: overlayGradient),
-            ),
-          Padding(
-            padding: const AppEdgeInsets.fromLTRB(24, 46, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyle(
-                    color: context.excursionDetailsColors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.9,
-                    height: 1,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AspectRatio(
+          key: const ValueKey('excursion-hero-media'),
+          aspectRatio: 16 / 9,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const _ExcursionHeroFallback(),
+              if (imageUrls.isNotEmpty)
+                PageView.builder(
+                  key: ValueKey(imageUrls.join('|')),
+                  itemCount: imageUrls.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentImageIndex = index);
+                  },
+                  itemBuilder: (context, index) {
+                    return Image.network(
+                      imageUrls[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const _ExcursionHeroFallback(),
+                    );
+                  },
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      child: Text(
-                        title,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyle(
-                          color: context.excursionDetailsColors.textPrimary,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                          letterSpacing: 0,
+              if (hasOverlayBadges)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 112,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            context.excursionDetailsColors.transparent,
+                            context.excursionDetailsColors.black.withValues(
+                              alpha: 0.12,
+                            ),
+                            context.excursionDetailsColors.black.withValues(
+                              alpha: 0.46,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    if (imageUrls.length > 1) ...[
-                      Center(
+              if (imageUrls.length > 1)
+                Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: hasOverlayBadges ? 62 : 14,
+                  child: Center(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        color: context.excursionDetailsColors.scrim.withValues(
+                          alpha: 0.58,
+                        ),
+                        borderRadius: AppBorderRadius.circular(999),
+                      ),
+                      child: Padding(
+                        padding: const AppEdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 7,
+                        ),
                         child: _ExcursionHeroImageIndicator(
                           count: imageUrls.length,
                           activeIndex: _currentImageIndex,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                    ],
-                    _HeroMetaPill(
-                      icon: Icons.schedule_rounded,
-                      label: _formatDuration(
-                        context,
-                        widget.excursion.durationMinutes,
-                      ).toUpperCase(),
                     ),
-                    const _HeroMetaPill(
-                      icon: Icons.star_rounded,
-                      label: '4.9',
-                      accentIcon: true,
-                    ),
-                  ],
+                  ),
+                ),
+              if (hasOverlayBadges)
+                Positioned(
+                  key: const ValueKey('excursion-hero-badges'),
+                  left: 16,
+                  right: 16,
+                  bottom: 14,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cityMaxWidth = math.max(
+                        120.0,
+                        math.min(210.0, constraints.maxWidth * 0.62),
+                      );
+                      return Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          if (canDisplayCity)
+                            _ExcursionHeroBadge(
+                              backgroundColor:
+                                  context.excursionDetailsColors.primary,
+                              foregroundColor:
+                                  context.excursionDetailsColors.onPrimary,
+                              maxWidth: cityMaxWidth,
+                              child: widget.locationLabelResolver == null
+                                  ? Text(
+                                      location,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : AppLocalizedLocationText(
+                                      countryCode: widget.excursion.countryCode,
+                                      cityId: widget.excursion.departureCityId,
+                                      cityName: widget.excursion.cityName,
+                                      fallbackText: location,
+                                      includeCountry: false,
+                                      resolver: widget.locationLabelResolver,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                            ),
+                          if (durationLabel.isNotEmpty)
+                            _ExcursionHeroBadge(
+                              backgroundColor: context
+                                  .excursionDetailsColors
+                                  .white
+                                  .withValues(alpha: 0.94),
+                              foregroundColor:
+                                  context.excursionDetailsColors.black,
+                              child: Text(durationLabel),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          key: const ValueKey('excursion-hero-metadata'),
+          padding: const AppEdgeInsets.fromLTRB(24, 22, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyle(
+                  color: context.excursionDetailsColors.textPrimary,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  height: 1.08,
+                  letterSpacing: 0,
+                ),
+              ),
+              if (averageRating != null) ...[
+                const SizedBox(height: 16),
+                _ExcursionHeroMetaItem(
+                  icon: Icons.star_rounded,
+                  label: NumberFormat('0.0', localeName).format(averageRating),
                 ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  double? _averageRating(List<ExcursionReviewVm> reviews) {
+    final ratings = reviews
+        .map((review) => review.rating)
+        .where((rating) => rating.isFinite && rating >= 1 && rating <= 5)
+        .toList(growable: false);
+    if (ratings.isEmpty) {
+      return null;
+    }
+    return ratings.reduce((sum, rating) => sum + rating) / ratings.length;
   }
 
   List<String> _heroImageUrls(
@@ -1519,36 +1677,75 @@ class _ExcursionHeroImageIndicator extends StatelessWidget {
   }
 }
 
-class _HeroMetaPill extends StatelessWidget {
-  const _HeroMetaPill({
-    required this.icon,
-    required this.label,
-    this.accentIcon = false,
+class _ExcursionHeroBadge extends StatelessWidget {
+  const _ExcursionHeroBadge({
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.child,
+    this.maxWidth,
   });
+
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Widget child;
+  final double? maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: backgroundColor,
+        borderRadius: AppBorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: context.excursionDetailsColors.black.withValues(alpha: 0.24),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.symmetric(horizontal: 13, vertical: 7),
+        child: ConstrainedBox(
+          constraints: maxWidth == null
+              ? const BoxConstraints()
+              : BoxConstraints(maxWidth: maxWidth!),
+          child: DefaultTextStyle(
+            style: AppTextStyle(
+              color: foregroundColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+              letterSpacing: 0,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExcursionHeroMetaItem extends StatelessWidget {
+  const _ExcursionHeroMetaItem({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final bool accentIcon;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: accentIcon
-              ? context.excursionDetailsColors.primary
-              : context.excursionDetailsColors.orangeSoft14,
-          size: 18,
-        ),
+        Icon(icon, color: context.excursionDetailsColors.primary, size: 18),
         const SizedBox(width: 5),
         Text(
           label.isEmpty ? '-' : label,
           style: AppTextStyle(
-            color: context.excursionDetailsColors.orangeSoft14,
-            fontSize: 13,
+            color: context.excursionDetailsColors.textPrimary,
+            fontSize: 14,
             fontWeight: FontWeight.w800,
+            letterSpacing: 0,
           ),
         ),
       ],
@@ -1782,14 +1979,112 @@ class _ExcursionStatCard extends StatelessWidget {
   }
 }
 
+class _ExcursionTranslationNotice extends StatelessWidget {
+  const _ExcursionTranslationNotice({
+    required this.sourceLanguage,
+    required this.state,
+    required this.showingOriginal,
+    required this.onToggle,
+  });
+
+  final String sourceLanguage;
+  final ExcursionTranslationNoticeState state;
+  final bool showingOriginal;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sourceLabel = localizedExcursionTranslationSourceLanguageLabel(
+      l10n,
+      sourceLanguage,
+    );
+    final noticeText = switch (state) {
+      ExcursionTranslationNoticeState.translated =>
+        l10n.excursionDetailsTranslatedNotice(sourceLabel),
+      ExcursionTranslationNoticeState.pending =>
+        l10n.excursionDetailsTranslationPendingNotice,
+      ExcursionTranslationNoticeState.unavailable =>
+        l10n.excursionDetailsTranslationUnavailableNotice,
+      ExcursionTranslationNoticeState.none => '',
+    };
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: AppBoxDecoration(
+        color: context.excursionDetailsColors.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(16),
+        border: Border.all(
+          color: context.excursionDetailsColors.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(
+            Icons.translate_rounded,
+            size: 18,
+            color: context.excursionDetailsColors.primary,
+          ),
+          Text(
+            noticeText,
+            style: AppTextStyle(
+              color: context.excursionDetailsColors.textPrimary,
+              fontSize: 13,
+              height: 1.24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+          if (state == ExcursionTranslationNoticeState.translated) ...[
+            Text(
+              '·',
+              style: AppTextStyle(
+                color: context.excursionDetailsColors.textPrimary,
+                fontSize: 13,
+                height: 1.24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+            TextButton(
+              onPressed: onToggle,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                padding: const AppEdgeInsets.symmetric(horizontal: 4),
+                foregroundColor: context.excursionDetailsColors.primary,
+              ),
+              child: Text(
+                showingOriginal
+                    ? l10n.excursionDetailsShowTranslation
+                    : l10n.excursionDetailsShowOriginal,
+                style: const AppTextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _ExcursionExperienceSection extends StatelessWidget {
   const _ExcursionExperienceSection({
     required this.excursion,
     required this.localizedLandmark,
+    required this.contentLanguageCode,
   });
 
   final ExcursionVm excursion;
   final PlaceVm? localizedLandmark;
+  final String contentLanguageCode;
 
   void _openLandmarkDetails(BuildContext context) {
     final landmarkId = (excursion.landmarkId ?? '').trim();
@@ -1806,7 +2101,7 @@ class _ExcursionExperienceSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final hasLandmarkId = (excursion.landmarkId ?? '').trim().isNotEmpty;
     final description = localizedExcursionDescription(
-      languageCode: Localizations.localeOf(context).languageCode,
+      languageCode: contentLanguageCode,
       excursion: excursion,
       place: localizedLandmark,
       fallback: l10n.excursionDetailsNoDescription,
@@ -1830,14 +2125,17 @@ class _ExcursionExperienceSection extends StatelessWidget {
 }
 
 class _ExcursionSelectedOfferIncludedSection extends StatelessWidget {
-  const _ExcursionSelectedOfferIncludedSection({required this.selectedOffer});
+  const _ExcursionSelectedOfferIncludedSection({
+    required this.selectedOffer,
+    required this.languageCode,
+  });
 
   final ExcursionOfferVm selectedOffer;
+  final String languageCode;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final languageCode = Localizations.localeOf(context).languageCode;
     final features = _resolveExcursionIncludedFeatures(
       selectedOffer.localizedIncludedItems(languageCode),
       languageCode,
@@ -3695,14 +3993,18 @@ class _ExcursionOfferCard extends StatelessWidget {
                           children: [
                             if (onProfileTap != null)
                               OutlinedButton.icon(
+                                key: const ValueKey(
+                                  'excursion-guide-profile-action',
+                                ),
                                 onPressed: onProfileTap,
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: context
                                       .excursionDetailsColors
                                       .textPrimary,
                                   side: BorderSide(
-                                    color: context.excursionDetailsColors.white
-                                        .withValues(alpha: 0.12),
+                                    color:
+                                        context.excursionDetailsColors.border,
+                                    width: 1.2,
                                   ),
                                   minimumSize: const Size(0, 48),
                                   shape: RoundedRectangleBorder(
@@ -3942,11 +4244,13 @@ class _GuideAvatar extends StatelessWidget {
 class _ExcursionMapPreview extends StatelessWidget {
   const _ExcursionMapPreview({
     required this.excursion,
+    required this.locationLabelResolver,
     required this.isBuildingRoute,
     required this.onRoutePreviewTap,
   });
 
   final ExcursionVm excursion;
+  final AppLocationLabelResolver? locationLabelResolver;
   final bool isBuildingRoute;
   final VoidCallback onRoutePreviewTap;
 
@@ -3957,10 +4261,15 @@ class _ExcursionMapPreview extends StatelessWidget {
       excursion.latitude ?? 43.238949,
       excursion.longitude ?? 76.889709,
     );
-    final label = excursion.meetingPoint.trim().isNotEmpty
-        ? excursion.meetingPoint.trim()
-        : excursion.cityName?.trim().isNotEmpty == true
-        ? excursion.cityName!.trim()
+    final meetingPoint = excursion.meetingPoint.trim();
+    final cityName = excursion.cityName?.trim() ?? '';
+    final hasCityReference =
+        (excursion.departureCityId?.trim().isNotEmpty ?? false) ||
+        cityName.isNotEmpty;
+    final label = meetingPoint.isNotEmpty
+        ? meetingPoint
+        : cityName.isNotEmpty
+        ? cityName
         : l10n.excursionDetailsMapPreview;
 
     return ClipRRect(
@@ -4039,16 +4348,37 @@ class _ExcursionMapPreview extends StatelessWidget {
                       horizontal: 9,
                       vertical: 7,
                     ),
-                    child: Text(
-                      label.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyle(
-                        color: context.excursionDetailsColors.orangeLight25,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                    child:
+                        meetingPoint.isEmpty &&
+                            hasCityReference &&
+                            locationLabelResolver != null
+                        ? AppLocalizedLocationText(
+                            countryCode: excursion.countryCode,
+                            cityId: excursion.departureCityId,
+                            cityName: excursion.cityName,
+                            fallbackText: label,
+                            includeCountry: false,
+                            resolver: locationLabelResolver,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle(
+                              color:
+                                  context.excursionDetailsColors.orangeLight25,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          )
+                        : Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle(
+                              color:
+                                  context.excursionDetailsColors.orangeLight25,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -4069,17 +4399,26 @@ class _ExcursionItinerarySection extends StatelessWidget {
   const _ExcursionItinerarySection({
     required this.excursion,
     required this.localizedLandmark,
+    required this.languageCode,
+    required this.translationNoticeState,
+    required this.translationSourceLanguage,
+    required this.showingOriginal,
+    required this.onToggleTranslation,
   });
 
   final ExcursionVm excursion;
   final PlaceVm? localizedLandmark;
+  final String languageCode;
+  final ExcursionTranslationNoticeState translationNoticeState;
+  final String translationSourceLanguage;
+  final bool showingOriginal;
+  final VoidCallback onToggleTranslation;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final languageCode = Localizations.localeOf(context).languageCode;
     final summary = localizedExcursionSummary(
-      languageCode: languageCode,
+      languageCode: Localizations.localeOf(context).languageCode,
       excursion: excursion,
       place: localizedLandmark,
     );
@@ -4099,31 +4438,47 @@ class _ExcursionItinerarySection extends StatelessWidget {
 
     return _ExcursionSection(
       title: l10n.excursionDetailsItinerary,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Positioned(
-            left: 13,
-            top: 15,
-            bottom: 10,
-            child: Container(
-              width: 1,
-              color: context.excursionDetailsColors.primary.withValues(
-                alpha: 0.42,
-              ),
+          if (excursion.itinerary.isNotEmpty &&
+              translationNoticeState !=
+                  ExcursionTranslationNoticeState.none) ...[
+            _ExcursionTranslationNotice(
+              sourceLanguage: translationSourceLanguage,
+              state: translationNoticeState,
+              showingOriginal: showingOriginal,
+              onToggle: onToggleTranslation,
             ),
-          ),
-          Column(
+            const SizedBox(height: 24),
+          ],
+          Stack(
             children: [
-              for (var index = 0; index < steps.length; index++) ...[
-                _ExcursionItineraryStep(
-                  step: steps[index],
-                  index: index,
-                  totalSteps: steps.length,
-                  isFirst: index == 0,
-                  languageCode: languageCode,
+              Positioned(
+                left: 13,
+                top: 15,
+                bottom: 10,
+                child: Container(
+                  width: 1,
+                  color: context.excursionDetailsColors.primary.withValues(
+                    alpha: 0.42,
+                  ),
                 ),
-                if (index != steps.length - 1) const SizedBox(height: 30),
-              ],
+              ),
+              Column(
+                children: [
+                  for (var index = 0; index < steps.length; index++) ...[
+                    _ExcursionItineraryStep(
+                      step: steps[index],
+                      index: index,
+                      totalSteps: steps.length,
+                      isFirst: index == 0,
+                      languageCode: languageCode,
+                    ),
+                    if (index != steps.length - 1) const SizedBox(height: 30),
+                  ],
+                ],
+              ),
             ],
           ),
         ],

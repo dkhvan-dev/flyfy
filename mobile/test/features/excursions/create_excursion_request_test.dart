@@ -4,6 +4,7 @@ import 'package:inflap/features/excursions/models/create_excursion_request.dart'
 void main() {
   test('serializes place based guide offer payload for excursion-service', () {
     final request = CreateExcursionRequest(
+      sourceLanguage: 'en',
       landmarkId: 'place-id',
       landmarkName: 'Medeu',
       categorySlug: 'adventure',
@@ -55,6 +56,7 @@ void main() {
     );
 
     expect(request.toJson(), {
+      'sourceLanguage': 'en',
       'landmarkId': 'place-id',
       'landmarkName': 'Medeu',
       'categorySlug': 'adventure',

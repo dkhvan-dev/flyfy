@@ -1,55 +1,55 @@
 x-mtls-admin-panel-volumes: &mtls-admin-panel-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/admin-panel:/opt/inflap/secrets/mtls/admin-panel:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/admin-panel:/opt/inflap/secrets/mtls/admin-panel:ro
 x-mtls-anti-fraud-service-volumes: &mtls-anti-fraud-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/anti-fraud-service:/opt/inflap/secrets/mtls/anti-fraud-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/anti-fraud-service:/opt/inflap/secrets/mtls/anti-fraud-service:ro
 x-mtls-api-gateway-volumes: &mtls-api-gateway-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/api-gateway:/opt/inflap/secrets/mtls/api-gateway:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/api-gateway:/opt/inflap/secrets/mtls/api-gateway:ro
 x-mtls-activity-service-volumes: &mtls-activity-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/activity-service:/opt/inflap/secrets/mtls/activity-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/activity-service:/opt/inflap/secrets/mtls/activity-service:ro
 x-mtls-auth-service-volumes: &mtls-auth-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/auth-service:/opt/inflap/secrets/mtls/auth-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/auth-service:/opt/inflap/secrets/mtls/auth-service:ro
 x-mtls-chat-service-volumes: &mtls-chat-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/chat-service:/opt/inflap/secrets/mtls/chat-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/chat-service:/opt/inflap/secrets/mtls/chat-service:ro
 x-mtls-checklist-service-volumes: &mtls-checklist-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/checklist-service:/opt/inflap/secrets/mtls/checklist-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/checklist-service:/opt/inflap/secrets/mtls/checklist-service:ro
 x-mtls-currency-service-volumes: &mtls-currency-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/currency-service:/opt/inflap/secrets/mtls/currency-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/currency-service:/opt/inflap/secrets/mtls/currency-service:ro
 x-mtls-excursion-service-volumes: &mtls-excursion-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/excursion-service:/opt/inflap/secrets/mtls/excursion-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/excursion-service:/opt/inflap/secrets/mtls/excursion-service:ro
 x-mtls-feed-service-volumes: &mtls-feed-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/feed-service:/opt/inflap/secrets/mtls/feed-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/feed-service:/opt/inflap/secrets/mtls/feed-service:ro
 x-mtls-file-manager-service-volumes: &mtls-file-manager-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/file-manager-service:/opt/inflap/secrets/mtls/file-manager-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/file-manager-service:/opt/inflap/secrets/mtls/file-manager-service:ro
 x-mtls-guide-service-volumes: &mtls-guide-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/guide-service:/opt/inflap/secrets/mtls/guide-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/guide-service:/opt/inflap/secrets/mtls/guide-service:ro
 x-mtls-notification-service-volumes: &mtls-notification-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
 x-mtls-payment-service-volumes: &mtls-payment-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/payment-service:/opt/inflap/secrets/mtls/payment-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/payment-service:/opt/inflap/secrets/mtls/payment-service:ro
 x-mtls-place-service-volumes: &mtls-place-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/place-service:/opt/inflap/secrets/mtls/place-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/place-service:/opt/inflap/secrets/mtls/place-service:ro
 x-mtls-reference-service-volumes: &mtls-reference-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/reference-service:/opt/inflap/secrets/mtls/reference-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/reference-service:/opt/inflap/secrets/mtls/reference-service:ro
 x-mtls-routing-service-volumes: &mtls-routing-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/routing-service:/opt/inflap/secrets/mtls/routing-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/routing-service:/opt/inflap/secrets/mtls/routing-service:ro
 x-mtls-search-service-volumes: &mtls-search-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/search-service:/opt/inflap/secrets/mtls/search-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/search-service:/opt/inflap/secrets/mtls/search-service:ro
 x-mtls-sticker-service-volumes: &mtls-sticker-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/sticker-service:/opt/inflap/secrets/mtls/sticker-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/sticker-service:/opt/inflap/secrets/mtls/sticker-service:ro
 x-mtls-support-service-volumes: &mtls-support-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/support-service:/opt/inflap/secrets/mtls/support-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/support-service:/opt/inflap/secrets/mtls/support-service:ro
 x-mtls-switches-service-volumes: &mtls-switches-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/switches-service:/opt/inflap/secrets/mtls/switches-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/switches-service:/opt/inflap/secrets/mtls/switches-service:ro
 x-mtls-token-service-volumes: &mtls-token-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
 x-mtls-translation-service-volumes: &mtls-translation-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
 x-mtls-trust-service-volumes: &mtls-trust-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/trust-service:/opt/inflap/secrets/mtls/trust-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/trust-service:/opt/inflap/secrets/mtls/trust-service:ro
 x-mtls-user-route-service-volumes: &mtls-user-route-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/user-route-service:/opt/inflap/secrets/mtls/user-route-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/user-route-service:/opt/inflap/secrets/mtls/user-route-service:ro
 x-mtls-user-service-volumes: &mtls-user-service-volumes
-  - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/user-service:/opt/inflap/secrets/mtls/user-service:ro
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/user-service:/opt/inflap/secrets/mtls/user-service:ro
 
 services:
   # ============================================
@@ -872,8 +872,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/token-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/token-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/token-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/translation-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,translation-service,user-service}
 
       JWT_ISSUER: tourism-inflap/token-service
       JWT_ACCESS_TTL: 30m
@@ -895,7 +895,7 @@ services:
       NOTIFICATION_SERVICE_TIMEOUT: 2s
     volumes:
       - token_service_keys:/var/lib/inflap/token-service
-      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
+      - ${MTLS_SECRETS_DIR:-./secrets/mtls}/token-service:/opt/inflap/secrets/mtls/token-service:ro
     depends_on:
       token-postgres:
         condition: service_healthy
@@ -1509,38 +1509,96 @@ services:
   # ============================================
   # Translation Service
   # ============================================
+  translation-postgres:
+    image: postgres:17-alpine
+    container_name: translation-postgres
+    environment:
+      POSTGRES_DB: translation_service_db
+      POSTGRES_USER: translation_service
+      POSTGRES_PASSWORD: translation_secret_dev
+    ports:
+      - "${TRANSLATION_POSTGRES_HOST_PORT:-5456}:5432"
+    volumes:
+      - translation_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/translation-service/migrations:/migrations/translation-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U translation_service -d translation_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  translation-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: translation-postgres-migrator
+    environment:
+      PGHOST: translation-postgres
+      PGPORT: 5432
+      POSTGRES_DB: translation_service_db
+      POSTGRES_USER: translation_service
+      POSTGRES_PASSWORD: translation_secret_dev
+    volumes:
+      - ./init-scripts/024_translation_service_migrate.sh:/usr/local/bin/024_translation_service_migrate.sh:ro
+      - ../backend/services/translation-service/migrations:/migrations/translation-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/024_translation_service_migrate.sh"]
+    depends_on:
+      translation-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
   translation-service:
     build:
       context: ..
       dockerfile: ./backend/services/translation-service/Dockerfile
     container_name: translation-service
+    depends_on:
+      translation-postgres:
+        condition: service_healthy
+      translation-postgres-migrator:
+        condition: service_completed_successfully
     ports:
       - "8094:8094"
     expose:
       - "${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9497}"
     environment:
       APP_ENV: development
+      LOG_LEVEL: debug
       HTTP_PORT: 8094
       INTERNAL_HTTP_TLS_PORT: ${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
-      TRANSLATION_MODEL_NAME: facebook/m2m100_418M
-      TRANSLATION_SUPPORTED_LANGUAGES: en,ru,kk
-      TRANSLATION_MAX_BATCH_SIZE: 16
-      TRANSLATION_MAX_INPUT_TOKENS: 256
-      TRANSLATION_MAX_OUTPUT_TOKENS: 256
-      TRANSLATION_NUM_BEAMS: 2
-      TRANSLATION_CACHE_MAX_ITEMS: 20000
-      TRANSLATION_PRELOAD_MODEL: "true"
+      DATABASE_URL: postgres://translation_service:translation_secret_dev@translation-postgres:5432/translation_service_db?sslmode=disable
+      TRANSLATION_BILLING_MODE: ${TRANSLATION_BILLING_MODE:-free_only}
+      TRANSLATION_MONTHLY_CHARACTER_LIMIT: ${TRANSLATION_MONTHLY_CHARACTER_LIMIT:-2000000}
+      TRANSLATION_QUOTA_WARNING_THRESHOLD: ${TRANSLATION_QUOTA_WARNING_THRESHOLD:-0.80}
+      TRANSLATION_QUOTA_CRITICAL_THRESHOLD: ${TRANSLATION_QUOTA_CRITICAL_THRESHOLD:-0.95}
+      TRANSLATION_PROVIDER: ${TRANSLATION_PROVIDER:-azure_translator}
+      AZURE_TRANSLATOR_ENDPOINT: ${AZURE_TRANSLATOR_ENDPOINT:-https://api.cognitive.microsofttranslator.com}
+      AZURE_TRANSLATOR_KEY: ${AZURE_TRANSLATOR_KEY:-}
+      AZURE_TRANSLATOR_REGION: ${AZURE_TRANSLATOR_REGION:-}
+      AZURE_TRANSLATOR_TIMEOUT: ${AZURE_TRANSLATOR_TIMEOUT:-5s}
+      SERVICE_AUTH_ISSUER: tourism-inflap/token-service
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
       MTLS_MODE: ${TRANSLATION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/ca.crt
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/client.key
       MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/excursion-service}
       MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-excursion-service}
-    volumes:
-      - translation_hf_cache:/models/huggingface
-      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
+    volumes: *mtls-translation-service-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8094/health/ready >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1564,8 +1622,6 @@ services:
         condition: service_started
       file-manager-service:
         condition: service_started
-      translation-service:
-        condition: service_healthy
       anti-fraud-service:
         condition: service_started
       trust-service:
@@ -1585,7 +1641,7 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8093
-      INTERNAL_HTTP_TLS_PORT: ${EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9493}
 
       DB_HOST: excursion-postgres
       DB_PORT: 5432
@@ -1608,9 +1664,18 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       GUIDE_SERVICE_GRPC_TARGET: ${GUIDE_SERVICE_INTERNAL_GRPC_TARGET:-dns:///guide-service:9095}
+      GUIDE_SERVICE_VERIFY_TIMEOUT: ${GUIDE_SERVICE_VERIFY_TIMEOUT:-8s}
       FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
       TRANSLATION_SERVICE_URL: ${TRANSLATION_SERVICE_INTERNAL_HTTP_URL:-http://translation-service:8094}
       TRANSLATION_SERVICE_TIMEOUT: 20s
+      EXCURSION_ASYNC_TRANSLATION_ENABLED: ${EXCURSION_ASYNC_TRANSLATION_ENABLED:-true}
+      EXCURSION_TRANSLATION_WORKER_ENABLED: ${EXCURSION_TRANSLATION_WORKER_ENABLED:-false}
+      EXCURSION_TRANSLATION_WORKER_BATCH_SIZE: ${EXCURSION_TRANSLATION_WORKER_BATCH_SIZE:-10}
+      EXCURSION_TRANSLATION_WORKER_INTERVAL: ${EXCURSION_TRANSLATION_WORKER_INTERVAL:-2s}
+      EXCURSION_TRANSLATION_MAX_ATTEMPTS: ${EXCURSION_TRANSLATION_MAX_ATTEMPTS:-5}
+      EXCURSION_TRANSLATION_RETRY_BASE_DELAY: ${EXCURSION_TRANSLATION_RETRY_BASE_DELAY:-30s}
+      EXCURSION_TRANSLATION_REQUEST_TIMEOUT: ${EXCURSION_TRANSLATION_REQUEST_TIMEOUT:-8s}
+      EXCURSION_TRANSLATION_LOCK_TIMEOUT: ${EXCURSION_TRANSLATION_LOCK_TIMEOUT:-2m}
 
       ANTI_FRAUD_ENABLED: "true"
       ANTI_FRAUD_BASE_URL: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_URL:-http://anti-fraud-service:8096}
@@ -1694,6 +1759,35 @@ services:
       TOKEN_SERVICE_SECRET: ${EXCURSION_SERVICE_TOKEN_SERVICE_SECRET:-excursion-service-secret}
       TOKEN_SERVICE_CALL_TIMEOUT: 3s
     volumes: *mtls-excursion-service-volumes
+    restart: "no"
+    networks:
+      - inflap-network
+
+  excursion-translation-backfill:
+    build:
+      context: ..
+      dockerfile: ./backend/services/excursion-service/Dockerfile
+    container_name: excursion-translation-backfill
+    profiles:
+      - translation-backfill
+    depends_on:
+      excursion-postgres:
+        condition: service_healthy
+      excursion-postgres-migrator:
+        condition: service_completed_successfully
+    entrypoint: ["/app/excursion-service-backfill-translations"]
+    environment:
+      DB_HOST: excursion-postgres
+      DB_PORT: 5432
+      DB_NAME: excursion_service_db
+      DB_USER: excursion_service
+      DB_PASSWORD: excursion_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 5
+      DB_MIN_CONNS: 1
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 30m
+      EXCURSION_TRANSLATION_MAX_ATTEMPTS: ${EXCURSION_TRANSLATION_MAX_ATTEMPTS:-5}
     restart: "no"
     networks:
       - inflap-network
@@ -1970,12 +2064,12 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8088
-      INTERNAL_HTTP_TLS_PORT: ${CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${CHAT_SERVICE_INTERNAL_HTTP_TLS_PORT:-9488}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 120s
       HTTP_IDLE_TIMEOUT: 120s
       GRPC_PORT: 9097
-      INTERNAL_GRPC_TLS_PORT: ${CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT:-0}
+      INTERNAL_GRPC_TLS_PORT: ${CHAT_SERVICE_INTERNAL_GRPC_TLS_PORT:-9447}
 
       DB_HOST: chat-postgres
       DB_PORT: 5432
@@ -2052,7 +2146,7 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8097
-      INTERNAL_HTTP_TLS_PORT: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9448}
       HTTP_READ_TIMEOUT: 10s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2125,7 +2219,7 @@ services:
       HMS_CLIENT_SECRET_FILE: ${HMS_CLIENT_SECRET_FILE:-}
       HMS_TIMEOUT: 5s
     volumes:
-      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
+      - ${MTLS_SECRETS_DIR:-./secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
       - ../backend/services/notification-service/run/secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
       - ../backend/services/notification-service/run/secrets/notification-token-encryption-key-base64:/run/secrets/notification-token-encryption-key-base64:ro
       - ../backend/services/notification-service/run/secrets/notification-token-hash-key-base64:/run/secrets/notification-token-hash-key-base64:ro
@@ -2709,7 +2803,7 @@ services:
       APP_NAME: anti-fraud-service
       APP_ENV: development
       HTTP_PORT: 8096
-      INTERNAL_HTTP_TLS_PORT: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${ANTI_FRAUD_SERVICE_INTERNAL_HTTP_TLS_PORT:-9446}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2812,7 +2906,7 @@ services:
       APP_ENV: development
 
       HTTP_PORT: 8092
-      INTERNAL_HTTP_TLS_PORT: ${STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${STICKER_SERVICE_INTERNAL_HTTP_TLS_PORT:-9492}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 30s
       HTTP_IDLE_TIMEOUT: 120s
@@ -3396,8 +3490,8 @@ volumes:
   nats_data:
   place_postgres_data:
   search_postgres_data:
+  translation_postgres_data:
   payment_postgres_data:
   anti_fraud_postgres_data:
   sticker_postgres_data:
   token_service_keys:
-  translation_hf_cache:

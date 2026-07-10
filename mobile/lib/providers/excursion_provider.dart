@@ -10,6 +10,7 @@ import '../features/excursions/models/create_excursion_request.dart';
 import '../features/excursions/models/excursion_booking_vm.dart';
 import '../features/excursions/models/excursion_schedule_vm.dart';
 import '../features/excursions/models/excursion_vm.dart';
+import '../features/excursions/guide_offer_status.dart';
 import '../features/profile/data/guide_api.dart';
 import '../features/profile/models/guide_profile_vm.dart';
 
@@ -59,6 +60,7 @@ class ExcursionProvider extends ChangeNotifier {
 
   ExcursionActionState _actionState = ExcursionActionState.idle;
   String? _actionErrorMessage;
+  String? _actionErrorCode;
   ExcursionVm? _lastCreatedExcursion;
   ExcursionBookingVm? _lastCreatedExcursionBooking;
 
@@ -113,6 +115,10 @@ class ExcursionProvider extends ChangeNotifier {
 
   ExcursionActionState get actionState => _actionState;
   String? get actionErrorMessage => _actionErrorMessage;
+  String? get actionErrorCode => _actionErrorCode;
+  bool get hasActiveExcursionForPlaceConflict =>
+      _actionErrorCode ==
+      'excursion.excursion_already_exists_for_this_guide_and_place';
   ExcursionVm? get lastCreatedExcursion => _lastCreatedExcursion;
   ExcursionBookingVm? get lastCreatedExcursionBooking =>
       _lastCreatedExcursionBooking;
@@ -591,6 +597,7 @@ class ExcursionProvider extends ChangeNotifier {
   void resetActionState() {
     _actionState = ExcursionActionState.idle;
     _actionErrorMessage = null;
+    _actionErrorCode = null;
     notifyListeners();
   }
 
@@ -599,15 +606,19 @@ class ExcursionProvider extends ChangeNotifier {
   ) async {
     _actionState = ExcursionActionState.loading;
     _actionErrorMessage = null;
+    _actionErrorCode = null;
+    _lastCreatedExcursion = null;
     notifyListeners();
 
     try {
       final created = await _excursionApi.createExcursion(request);
       _lastCreatedExcursion = created;
+      _upsertGuideDashboardExcursion(created);
       _actionState = ExcursionActionState.success;
       return _lastCreatedExcursion;
     } on DioException catch (e) {
       _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionErrorCode = DioErrorMapper.backendCode(e);
       _actionState = ExcursionActionState.error;
       return null;
     } catch (_) {
@@ -617,6 +628,29 @@ class ExcursionProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  Future<ExcursionVm?> findActiveExcursionForCreateRequest(
+    CreateExcursionRequest request,
+  ) async {
+    final landmarkId = (request.landmarkId ?? '').trim();
+    if (landmarkId.isEmpty) return null;
+
+    try {
+      final excursions = await _loadAllGuideDashboardExcursions();
+      for (final excursion in excursions) {
+        final existingLandmarkId = (excursion.landmarkId ?? '').trim();
+        if (existingLandmarkId != landmarkId) continue;
+        if (isArchivedGuideOffer(excursion) ||
+            isCancelledGuideOffer(excursion)) {
+          continue;
+        }
+        return excursion;
+      }
+    } catch (_) {
+      // Preserve the original create conflict if recovery lookup is unavailable.
+    }
+    return null;
   }
 
   Future<ExcursionVm?> submitExcursionForPublishing(String excursionId) async {
@@ -634,6 +668,7 @@ class ExcursionProvider extends ChangeNotifier {
       final submitted = await _excursionApi.publishExcursion(
         trimmedExcursionId,
       );
+      _upsertGuideDashboardExcursion(submitted);
       final refreshedProduct = await _refreshProductAfterMutation(
         submitted,
         preferredLandmarkId: submitted.landmarkId,
@@ -698,6 +733,7 @@ class ExcursionProvider extends ChangeNotifier {
         legacyExcursionId,
         request,
       );
+      _upsertGuideDashboardExcursion(updated);
       final refreshedProduct = await _refreshProductAfterMutation(
         updated,
         preferredProductId: _detailExcursionId,

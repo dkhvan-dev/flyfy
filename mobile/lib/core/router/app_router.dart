@@ -86,6 +86,10 @@ class AppRouter {
         final location = state.uri.path;
         final isLoggedIn = authState == AuthState.authenticated;
         final isInitial = authState == AuthState.initial;
+        final isAuthenticationRoute =
+            location == '/login' ||
+            location == '/otp' ||
+            location == '/password-reset';
 
         final isPublicRoute = _isPublicRoute(location);
 
@@ -93,14 +97,21 @@ class AppRouter {
           return null;
         }
 
+        if (authState == AuthState.sessionExpired && !isAuthenticationRoute) {
+          return Uri(
+            path: '/login',
+            queryParameters: {
+              'from': state.uri.toString(),
+              'reason': 'session-expired',
+            },
+          ).toString();
+        }
+
         if (!isLoggedIn && !isPublicRoute) {
           return '/login?from=${Uri.encodeComponent(location)}';
         }
 
-        if (isLoggedIn &&
-            (location == '/login' ||
-                location == '/otp' ||
-                location == '/password-reset')) {
+        if (isLoggedIn && isAuthenticationRoute) {
           return '/';
         }
 

@@ -40,12 +40,15 @@ class ExcursionVm {
     this.includedItemTranslations = const {},
     this.itinerary = const [],
     this.translations = const {},
+    this.translationInfo = ExcursionTranslationInfoVm.none,
     this.publishingDecision = '',
     this.guideTrustScore = 0,
     this.publishRiskScore = 0,
     this.moderationReasonCodes = const [],
     this.submittedForReviewAt,
     this.publishedOffersCount = 0,
+    this.ratingAvg = 0,
+    this.reviewsCount = 0,
     this.offers = const [],
     this.createdAt,
   });
@@ -90,12 +93,15 @@ class ExcursionVm {
   final Map<String, List<String>> includedItemTranslations;
   final List<ExcursionItineraryItemVm> itinerary;
   final Map<String, ExcursionLocalizedCopyVm> translations;
+  final ExcursionTranslationInfoVm translationInfo;
   final String publishingDecision;
   final int guideTrustScore;
   final int publishRiskScore;
   final List<String> moderationReasonCodes;
   final DateTime? submittedForReviewAt;
   final int publishedOffersCount;
+  final double ratingAvg;
+  final int reviewsCount;
   final List<ExcursionOfferVm> offers;
   final DateTime? createdAt;
 
@@ -158,13 +164,20 @@ class ExcursionVm {
       includedItems: offer.includedItems,
       includedItemTranslations: offer.includedItemTranslations,
       itinerary: offer.itinerary,
-      translations: translations,
+      translations: offer.translations.isNotEmpty
+          ? offer.translations
+          : translations,
+      translationInfo: offer.translationInfo.hasState
+          ? offer.translationInfo
+          : translationInfo,
       publishingDecision: publishingDecision,
       guideTrustScore: guideTrustScore,
       publishRiskScore: publishRiskScore,
       moderationReasonCodes: moderationReasonCodes,
       submittedForReviewAt: submittedForReviewAt,
       publishedOffersCount: publishedOffersCount,
+      ratingAvg: ratingAvg,
+      reviewsCount: reviewsCount,
       offers: offers,
       createdAt: createdAt,
     );
@@ -178,6 +191,7 @@ class ExcursionVm {
     final primaryOffer = parsedOffers.isNotEmpty ? parsedOffers.first : null;
     final languageCodes = _stringList(json['languageCodes']);
     final includedItems = _stringList(json['includedItems']);
+    final translationInfo = _translationInfo(json, parsedOffers);
 
     return ExcursionVm(
       id: (json['id'] as String?) ?? '',
@@ -239,6 +253,7 @@ class ExcursionVm {
       ),
       itinerary: _itinerary(json['itinerary']),
       translations: _translations(json),
+      translationInfo: translationInfo,
       publishingDecision: (json['publishingDecision'] as String?) ?? '',
       guideTrustScore: (json['guideTrustScore'] as num?)?.toInt() ?? 0,
       publishRiskScore: (json['publishRiskScore'] as num?)?.toInt() ?? 0,
@@ -249,6 +264,8 @@ class ExcursionVm {
       publishedOffersCount:
           (json['publishedOffersCount'] as num?)?.toInt() ??
           parsedOffers.length,
+      ratingAvg: (json['ratingAvg'] as num?)?.toDouble() ?? 0,
+      reviewsCount: (json['reviewsCount'] as num?)?.toInt() ?? 0,
       offers: parsedOffers,
       createdAt: DateTime.tryParse(
         (json['createdAt'] as String?) ?? '',
@@ -287,7 +304,10 @@ class ExcursionVm {
   static Map<String, ExcursionLocalizedCopyVm> _translations(
     Map<String, dynamic> json,
   ) {
-    final value = json['translations'] ?? json['localizedContent'];
+    final value =
+        json['translations'] ??
+        json['productTranslations'] ??
+        json['localizedContent'];
     if (value is! Map<String, dynamic>) return const {};
 
     final entries = <String, ExcursionLocalizedCopyVm>{};
@@ -324,6 +344,224 @@ class ExcursionVm {
     return Map.unmodifiable(result);
   }
 
+  static ExcursionTranslationInfoVm _translationInfo(
+    Map<String, dynamic> json,
+    List<ExcursionOfferVm> offers,
+  ) {
+    if (offers.isNotEmpty && offers.first.translationInfo.hasState) {
+      return offers.first.translationInfo;
+    }
+    final explicit = ExcursionTranslationInfoVm.fromJson(
+      json['translationInfo'],
+    );
+    if (explicit.hasState) {
+      return explicit;
+    }
+
+    final sourceLanguage = _inferTranslationSourceLanguage(json, offers);
+    if (sourceLanguage.isEmpty) {
+      return ExcursionTranslationInfoVm.none;
+    }
+
+    final targetLanguages = <String>{};
+    _collectCopyTranslationTargets(
+      _translations(json),
+      sourceLanguage,
+      targetLanguages,
+    );
+    for (final offer in offers) {
+      _collectCopyTranslationTargets(
+        offer.translations,
+        sourceLanguage,
+        targetLanguages,
+      );
+      for (final item in offer.itinerary) {
+        _collectItineraryTranslationTargets(
+          item.translations,
+          sourceLanguage,
+          targetLanguages,
+        );
+      }
+    }
+
+    if (targetLanguages.isEmpty) {
+      return ExcursionTranslationInfoVm.none;
+    }
+
+    final orderedTargets = targetLanguages.toList(growable: false)..sort();
+    return ExcursionTranslationInfoVm(
+      translated: true,
+      sourceLanguage: sourceLanguage,
+      targetLanguages: orderedTargets,
+      provider: 'translation_service',
+    );
+  }
+
+  static String _inferTranslationSourceLanguage(
+    Map<String, dynamic> json,
+    List<ExcursionOfferVm> offers,
+  ) {
+    final productSource = _inferCopyTranslationSourceLanguage(
+      title: (json['title'] as String?) ?? '',
+      summary: (json['summary'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
+      translations: _translations(json),
+    );
+    if (productSource.isNotEmpty) {
+      return productSource;
+    }
+
+    for (final offer in offers) {
+      final offerSource = _inferCopyTranslationSourceLanguage(
+        title: offer.title,
+        summary: offer.summary,
+        description: offer.description,
+        translations: offer.translations,
+      );
+      if (offerSource.isNotEmpty) {
+        return offerSource;
+      }
+
+      for (final item in offer.itinerary) {
+        final itinerarySource = _inferItineraryTranslationSourceLanguage(item);
+        if (itinerarySource.isNotEmpty) {
+          return itinerarySource;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  static String _inferCopyTranslationSourceLanguage({
+    required String title,
+    required String summary,
+    required String description,
+    required Map<String, ExcursionLocalizedCopyVm> translations,
+  }) {
+    if (translations.isEmpty) return '';
+
+    final baseTitle = _normalizeTranslatedTextForCompare(title);
+    final baseSummary = _normalizeTranslatedTextForCompare(summary);
+    final baseDescription = _normalizeTranslatedTextForCompare(description);
+    if (baseTitle.isEmpty && baseSummary.isEmpty && baseDescription.isEmpty) {
+      return '';
+    }
+
+    for (final locale in _supportedTranslationLocales) {
+      final copy = translations[locale];
+      if (copy == null) continue;
+      if (_copyMatchesBase(
+        copy,
+        baseTitle: baseTitle,
+        baseSummary: baseSummary,
+        baseDescription: baseDescription,
+      )) {
+        return locale;
+      }
+    }
+    return '';
+  }
+
+  static String _inferItineraryTranslationSourceLanguage(
+    ExcursionItineraryItemVm item,
+  ) {
+    if (item.translations.isEmpty) return '';
+
+    final baseTitle = _normalizeTranslatedTextForCompare(item.title);
+    final baseDescription = _normalizeTranslatedTextForCompare(
+      item.description,
+    );
+    if (baseTitle.isEmpty && baseDescription.isEmpty) {
+      return '';
+    }
+
+    for (final locale in _supportedTranslationLocales) {
+      final copy = item.translations[locale];
+      if (copy == null) continue;
+      if (_itineraryCopyMatchesBase(
+        copy,
+        baseTitle: baseTitle,
+        baseDescription: baseDescription,
+      )) {
+        return locale;
+      }
+    }
+    return '';
+  }
+
+  static void _collectCopyTranslationTargets(
+    Map<String, ExcursionLocalizedCopyVm> translations,
+    String sourceLanguage,
+    Set<String> targets,
+  ) {
+    for (final entry in translations.entries) {
+      final language = _normalizeSupportedTranslationLocale(entry.key);
+      if (language.isEmpty || language == sourceLanguage) continue;
+      if (entry.value.isEmpty) continue;
+      targets.add(language);
+    }
+  }
+
+  static void _collectItineraryTranslationTargets(
+    Map<String, ExcursionItineraryLocalizedCopyVm> translations,
+    String sourceLanguage,
+    Set<String> targets,
+  ) {
+    for (final entry in translations.entries) {
+      final language = _normalizeSupportedTranslationLocale(entry.key);
+      if (language.isEmpty || language == sourceLanguage) continue;
+      if (entry.value.isEmpty) continue;
+      targets.add(language);
+    }
+  }
+
+  static bool _copyMatchesBase(
+    ExcursionLocalizedCopyVm copy, {
+    required String baseTitle,
+    required String baseSummary,
+    required String baseDescription,
+  }) {
+    final title = _normalizeTranslatedTextForCompare(copy.title);
+    final summary = _normalizeTranslatedTextForCompare(copy.summary);
+    final description = _normalizeTranslatedTextForCompare(copy.description);
+    final titleMatches = baseTitle.isEmpty || title == baseTitle;
+    final summaryMatches = baseSummary.isEmpty || summary == baseSummary;
+    final descriptionMatches =
+        baseDescription.isEmpty || description == baseDescription;
+    return titleMatches && summaryMatches && descriptionMatches;
+  }
+
+  static bool _itineraryCopyMatchesBase(
+    ExcursionItineraryLocalizedCopyVm copy, {
+    required String baseTitle,
+    required String baseDescription,
+  }) {
+    final title = _normalizeTranslatedTextForCompare(copy.title);
+    final description = _normalizeTranslatedTextForCompare(copy.description);
+    final titleMatches = baseTitle.isEmpty || title == baseTitle;
+    final descriptionMatches =
+        baseDescription.isEmpty || description == baseDescription;
+    return titleMatches && descriptionMatches;
+  }
+
+  static String _normalizeTranslatedTextForCompare(String value) {
+    return value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((item) {
+          return item.isNotEmpty;
+        })
+        .join(' ');
+  }
+
+  static String _normalizeSupportedTranslationLocale(String value) {
+    final normalized = _normalizeLocale(value).split('-').first;
+    return _supportedTranslationLocales.contains(normalized) ? normalized : '';
+  }
+
+  static const _supportedTranslationLocales = ['en', 'ru', 'kk'];
+
   List<String> localizedIncludedItems(String languageCode) {
     final normalized = _normalizeLocale(languageCode);
     final localized =
@@ -339,6 +577,139 @@ class ExcursionVm {
       }
       return localized[index].trim();
     }, growable: false);
+  }
+}
+
+enum ExcursionTranslationNoticeState { none, translated, pending, unavailable }
+
+class ExcursionTranslationInfoVm {
+  const ExcursionTranslationInfoVm({
+    this.status = 'NONE',
+    this.translated = false,
+    this.sourceLanguage = '',
+    this.currentLanguage = '',
+    this.isTranslated = false,
+    this.availableLanguages = const [],
+    this.pendingLanguages = const [],
+    this.failedLanguages = const [],
+    this.targetLanguages = const [],
+    this.provider = '',
+  });
+
+  static const none = ExcursionTranslationInfoVm();
+
+  final String status;
+  final bool translated;
+  final String sourceLanguage;
+  final String currentLanguage;
+  final bool isTranslated;
+  final List<String> availableLanguages;
+  final List<String> pendingLanguages;
+  final List<String> failedLanguages;
+  final List<String> targetLanguages;
+  final String provider;
+
+  bool get hasState =>
+      sourceLanguage.isNotEmpty &&
+      (status != 'NONE' ||
+          translated ||
+          currentLanguage.isNotEmpty ||
+          availableLanguages.isNotEmpty ||
+          pendingLanguages.isNotEmpty ||
+          failedLanguages.isNotEmpty);
+
+  factory ExcursionTranslationInfoVm.fromJson(Object? value) {
+    if (value is! Map<String, dynamic>) return none;
+
+    final sourceLanguage = _normalizeLocale(
+      value['sourceLanguage']?.toString() ?? '',
+    ).split('-').first;
+    final currentLanguage = _normalizeLocale(
+      value['currentLanguage']?.toString() ?? '',
+    ).split('-').first;
+    final legacyTargets = _normalizedLanguages(value['targetLanguages']);
+    final parsedAvailable = _normalizedLanguages(value['availableLanguages']);
+    final available = <String>{...parsedAvailable};
+    if (sourceLanguage.isNotEmpty) available.add(sourceLanguage);
+    available.addAll(legacyTargets);
+    final targetLanguages = legacyTargets.isNotEmpty
+        ? legacyTargets
+        : available
+              .where((language) => language != sourceLanguage)
+              .toList(growable: false);
+    final isTranslated = value['isTranslated'] == true;
+    final translated =
+        value['translated'] == true ||
+        isTranslated ||
+        targetLanguages.isNotEmpty;
+    final rawStatus = value['status']?.toString().trim().toUpperCase() ?? '';
+
+    return ExcursionTranslationInfoVm(
+      status: rawStatus.isNotEmpty
+          ? rawStatus
+          : translated
+          ? 'COMPLETED'
+          : 'NONE',
+      translated: translated,
+      sourceLanguage: sourceLanguage,
+      currentLanguage: currentLanguage,
+      isTranslated: isTranslated,
+      availableLanguages: available.toList(growable: false)..sort(),
+      pendingLanguages: _normalizedLanguages(value['pendingLanguages']),
+      failedLanguages: _normalizedLanguages(value['failedLanguages']),
+      targetLanguages: targetLanguages,
+      provider: value['provider']?.toString().trim() ?? '',
+    );
+  }
+
+  ExcursionTranslationNoticeState noticeState(String effectiveAppLanguage) {
+    final source = _normalizeLocale(sourceLanguage).split('-').first;
+    final target = _normalizeLocale(effectiveAppLanguage).split('-').first;
+    if (source.isEmpty || target.isEmpty || source == target) {
+      return ExcursionTranslationNoticeState.none;
+    }
+    final available = availableLanguages
+        .map(_normalizeLocale)
+        .map((language) => language.split('-').first)
+        .contains(target);
+    final legacyAvailable = targetLanguages
+        .map(_normalizeLocale)
+        .map((language) => language.split('-').first)
+        .contains(target);
+    if (available ||
+        legacyAvailable ||
+        (isTranslated && currentLanguage == target)) {
+      return ExcursionTranslationNoticeState.translated;
+    }
+    final failed = failedLanguages
+        .map(_normalizeLocale)
+        .map((language) => language.split('-').first)
+        .contains(target);
+    if (failed || status == 'FAILED' || status == 'DISABLED') {
+      return ExcursionTranslationNoticeState.unavailable;
+    }
+    final pending = pendingLanguages
+        .map(_normalizeLocale)
+        .map((language) => language.split('-').first)
+        .contains(target);
+    if (pending || status == 'PENDING' || status == 'PARTIAL') {
+      return ExcursionTranslationNoticeState.pending;
+    }
+    return ExcursionTranslationNoticeState.none;
+  }
+
+  bool shouldShowNotice(String effectiveAppLanguage) {
+    return noticeState(effectiveAppLanguage) !=
+        ExcursionTranslationNoticeState.none;
+  }
+
+  static List<String> _normalizedLanguages(Object? value) {
+    final result = <String>{};
+    for (final language in ExcursionVm._stringList(value)) {
+      final normalized = _normalizeLocale(language).split('-').first;
+      if (normalized.isNotEmpty) result.add(normalized);
+    }
+    return result.toList(growable: false)..sort();
   }
 }
 
@@ -398,6 +769,7 @@ class ExcursionOfferVm {
     this.includedItemTranslations = const {},
     this.itinerary = const [],
     this.translations = const {},
+    this.translationInfo = ExcursionTranslationInfoVm.none,
   });
 
   final String id;
@@ -429,6 +801,7 @@ class ExcursionOfferVm {
   final Map<String, List<String>> includedItemTranslations;
   final List<ExcursionItineraryItemVm> itinerary;
   final Map<String, ExcursionLocalizedCopyVm> translations;
+  final ExcursionTranslationInfoVm translationInfo;
 
   factory ExcursionOfferVm.fromJson(Map<String, dynamic> json) {
     return ExcursionOfferVm(
@@ -464,6 +837,9 @@ class ExcursionOfferVm {
       ),
       itinerary: ExcursionVm._itinerary(json['itinerary']),
       translations: ExcursionVm._translations(json),
+      translationInfo: ExcursionTranslationInfoVm.fromJson(
+        json['translationInfo'],
+      ),
     );
   }
 

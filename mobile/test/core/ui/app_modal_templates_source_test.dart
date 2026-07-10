@@ -22,12 +22,30 @@ void main() {
     expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
     expect(source, contains('bool isScrollControlled = true'));
     expect(source, contains('bool isDismissible = true'));
+    expect(source, contains('bool extendToBottom = false'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('AppButtonStyles.primary(colors)'));
     expect(source, isNot(contains('AppPalette.')));
     expect(source, isNot(contains('AlertDialog(')));
     expect(source, isNot(contains('AppColor(')));
     expect(source, isNot(contains('AppColors.')));
+  });
+
+  test('custom app modal sheets can opt into edge-to-bottom surfaces', () {
+    final source = File(
+      'lib/core/ui/app_modal_templates.dart',
+    ).readAsStringSync();
+    final sheetStart = source.indexOf('Future<T?> showAppModalBottomSheet<T>');
+    final actionSheetStart = source.indexOf('Future<T?> showAppActionSheet<T>');
+    final sheetSource = source.substring(sheetStart, actionSheetStart);
+
+    expect(sheetSource, contains('final customContentBottomInset'));
+    expect(sheetSource, contains('extendToBottom'));
+    expect(sheetSource, contains('? 0.0'));
+    expect(
+      sheetSource,
+      contains('AppEdgeInsets.only(bottom: customContentBottomInset)'),
+    );
   });
 
   test('app modal bottom sheets use full viewport width by default', () {

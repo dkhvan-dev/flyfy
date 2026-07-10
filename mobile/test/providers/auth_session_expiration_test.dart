@@ -10,7 +10,7 @@ import 'package:inflap/providers/session_provider.dart';
 
 void main() {
   test(
-    'AuthProvider marks user unauthenticated when session expires',
+    'AuthProvider requires reauthentication synchronously when session expires',
     () async {
       final events = AuthSessionEvents();
       final storage = _MemorySecureStorage(
@@ -31,11 +31,11 @@ void main() {
       expect(provider.state, AuthState.authenticated);
 
       events.notifySessionExpired();
-      await Future<void>.delayed(Duration.zero);
 
+      expect(provider.state, AuthState.sessionExpired);
+
+      provider.continueAsGuest();
       expect(provider.state, AuthState.unauthenticated);
-      expect(await storage.getAccessToken(), isNull);
-      expect(await storage.getRefreshToken(), isNull);
       provider.dispose();
     },
   );

@@ -1930,6 +1930,19 @@
     }
   },
   "excursionDetailsLanguage": "Язык",
+  "excursionDetailsTranslatedNotice": "Маршрут переведен автоматически с {sourceLanguage}",
+  "@excursionDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "excursionDetailsShowOriginal": "Показать оригинал",
+  "excursionDetailsShowTranslation": "Показать перевод",
+  "excursionDetailsTranslationPendingNotice": "Показываем оригинал маршрута · Перевод готовится",
+  "excursionDetailsTranslationUnavailableNotice": "Показываем оригинал маршрута · Автоперевод временно недоступен",
+  "excursionTranslationSourceLanguageEnglish": "английского",
+  "excursionTranslationSourceLanguageRussian": "русского",
+  "excursionTranslationSourceLanguageKazakh": "казахского",
   "excursionLanguageEnglish": "Английский",
   "excursionLanguageRussian": "Русский",
   "excursionLanguageKazakh": "Казахский",
@@ -2059,6 +2072,18 @@
   "createExcursionUpdateSuccess": "Предложение обновлено",
   "createExcursionFailed": "Не удалось создать экскурсию",
   "createExcursionUpdateFailed": "Не удалось обновить предложение",
+  "createExcursionExistingDraftTitle": "Экскурсия уже существует",
+  "createExcursionExistingDraftDescription": "Для этого места у вас уже есть редактируемая экскурсия. Заменить ее данными из этой формы и отправить на проверку?",
+  "createExcursionExistingDraftConfirm": "Обновить и отправить",
+  "createExcursionExistingDraftSaveDescription": "Для этого места у вас уже есть редактируемая экскурсия. Заменить ее данными из этой формы?",
+  "createExcursionExistingDraftSaveConfirm": "Обновить черновик",
+  "createExcursionExistingActiveDescription": "Для этого места у вас уже есть активная экскурсия. Откройте ее в кабинете гида.",
+  "createExcursionDraftSubmitFailed": "Черновик сохранен, но отправить его на проверку не удалось. {error} Повторная попытка не создаст дубликат.",
+  "@createExcursionDraftSubmitFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "createExcursionCoverSection": "Обложка экскурсии",
   "createExcursionCoverUploadTitle": "Загрузить изображение экскурсии",
   "createExcursionCoverChangeAction": "Изменить изображение экскурсии",

@@ -256,51 +256,38 @@ void main() {
   );
 
   test(
-    'excursion details hero disables cover fade overlay in light theme',
+    'excursion details hero keeps title outside and badges over media',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
       ).readAsString();
-      final helperStart = source.indexOf(
-        'LinearGradient? _excursionHeroOverlayGradient',
-      );
       final heroStart = source.indexOf('class _ExcursionHero');
       final indicatorStart = source.indexOf(
         'class _ExcursionHeroImageIndicator',
         heroStart,
       );
 
-      expect(helperStart, isNonNegative);
       expect(heroStart, isNonNegative);
       expect(indicatorStart, greaterThan(heroStart));
 
-      final helperSource = source.substring(helperStart, heroStart);
       final heroSource = source.substring(heroStart, indicatorStart);
-
-      expect(helperSource, contains('Brightness.light'));
-      expect(helperSource, contains('return null;'));
       expect(
-        helperSource,
-        contains('context.excursionDetailsColors.warmInk37'),
+        heroSource,
+        contains("key: const ValueKey('excursion-hero-media')"),
       );
       expect(
         heroSource,
-        contains(
-          'final overlayGradient = _excursionHeroOverlayGradient(context)',
-        ),
+        contains("key: const ValueKey('excursion-hero-badges')"),
       );
-      expect(heroSource, contains('if (overlayGradient != null)'));
-      expect(heroSource, contains('gradient: overlayGradient'));
       expect(
         heroSource,
-        isNot(
-          contains(
-            'DecoratedBox(\n'
-            '            decoration: AppBoxDecoration(\n'
-            '              gradient: LinearGradient(',
-          ),
-        ),
+        contains("key: const ValueKey('excursion-hero-metadata')"),
       );
+      expect(heroSource, contains('final fallbackTitle = _categoryLabel('));
+      expect(heroSource, contains('fallback: fallbackTitle'));
+      expect(heroSource, isNot(contains('Text(\n                label,')));
+      expect(source, isNot(contains('_excursionHeroOverlayGradient')));
+      expect(heroSource, isNot(contains("label: '4.9'")));
     },
   );
 
@@ -372,7 +359,7 @@ void main() {
       expect(source, contains('excursionDetailsNoAvailableSlots'));
       expect(source, contains('excursionDetailsCheckingSchedule'));
       expect(source, contains('excursionDetailsBookingSeatCheckNote'));
-      expect(source, contains('helperText: showBookingAction'));
+      expect(source, contains('helperText: widget.showBookingAction'));
     },
   );
 
@@ -501,9 +488,12 @@ void main() {
       );
       expect(source, isNot(contains('_ExcursionChecklistPreviewSheet')));
       expect(source, contains('travelChecklistPreviewAction'));
-      expect(source, contains('activeChecklistBooking == null'));
-      expect(source, contains('actionLabel: activeChecklistBooking == null'));
-      expect(source, contains('onTap: activeChecklistBooking == null'));
+      expect(source, contains('widget.activeChecklistBooking == null'));
+      expect(
+        source,
+        contains('actionLabel: widget.activeChecklistBooking == null'),
+      );
+      expect(source, contains('onTap: widget.activeChecklistBooking == null'));
       expect(source, isNot(contains("tripId: 'excursion:\$excursionId'")));
     },
   );
@@ -563,7 +553,9 @@ void main() {
 
       expect(
         source,
-        contains('showPrice: showCheckoutPrice && showBookingAction'),
+        contains(
+          'showPrice: widget.showCheckoutPrice && widget.showBookingAction',
+        ),
       );
       expect(source, contains('required this.showPrice'));
       expect(source, contains('final bool showPrice'));
@@ -654,7 +646,9 @@ void main() {
       );
       expect(
         source,
-        contains('showPrice: showCheckoutPrice && showBookingAction'),
+        contains(
+          'showPrice: widget.showCheckoutPrice && widget.showBookingAction',
+        ),
       );
     },
   );
@@ -853,7 +847,7 @@ void main() {
   );
 
   test(
-    'excursion details resolves localized place text for landmark excursions',
+    'excursion details resolves localized place text for every route kind',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -868,12 +862,30 @@ void main() {
         contains("import '../../features/places/models/place_vm.dart';"),
       );
       expect(source, contains('final PlaceApi _placeApi'));
-      expect(source, contains('PlaceVm? _localizedLandmark'));
-      expect(source, contains('_loadLocalizedLandmark'));
+      expect(source, contains('Map<String, PlaceVm> _localizedPlaces'));
+      expect(source, contains('_scheduleLoadLocalizedPlaces'));
+      expect(source, contains('_loadLocalizedPlace'));
+      expect(source, contains('...excursion.placeIds.map('));
       expect(source, contains('locale: lang'));
       expect(source, contains('localizedLandmark:'));
+      expect(source, contains('localizedPlacesById: _localizedPlaces'));
+      expect(source, contains('placesById: widget.localizedPlacesById'));
       expect(source, contains('localizedExcursionTitle('));
       expect(source, contains('localizedExcursionDescription('));
+      expect(source, contains('contentLanguageCode: appLanguageCode'));
+      expect(source, contains('languageCode: appLanguageCode'));
+      expect(source, contains('languageCode: itineraryLanguageCode'));
+      expect(source, contains('_showOriginalItinerary'));
+
+      final itineraryStart = source.indexOf('class _ExcursionItinerarySection');
+      final itineraryEnd = source.indexOf(
+        'class _ExcursionItineraryStep',
+        itineraryStart,
+      );
+      expect(itineraryStart, greaterThanOrEqualTo(0));
+      expect(itineraryEnd, greaterThan(itineraryStart));
+      final itinerarySource = source.substring(itineraryStart, itineraryEnd);
+      expect(itinerarySource, contains('_ExcursionTranslationNotice('));
     },
   );
 

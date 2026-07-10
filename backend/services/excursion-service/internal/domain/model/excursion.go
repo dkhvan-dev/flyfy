@@ -95,6 +95,8 @@ type Excursion struct {
 	Translations        ExcursionTranslations
 	CategorySlug        string
 	ProductTranslations ExcursionTranslations
+	SourceLanguage      string
+	TranslationStatus   ExcursionTranslationStatus
 
 	Status     enum.ExcursionStatus
 	Visibility enum.ExcursionVisibility
@@ -144,6 +146,8 @@ type NewExcursionParams struct {
 	Translations         ExcursionTranslations
 	CategorySlug         string
 	ProductTranslations  ExcursionTranslations
+	SourceLanguage       string
+	TranslationStatus    ExcursionTranslationStatus
 	Visibility           enum.ExcursionVisibility
 
 	DurationMinutes int
@@ -163,6 +167,13 @@ type NewExcursionParams struct {
 
 func NewExcursion(params NewExcursionParams) (*Excursion, error) {
 	now := time.Now().UTC()
+	sourceLanguage, ok := NormalizeExcursionTranslationLanguage(params.SourceLanguage)
+	if !ok {
+		if strings.TrimSpace(params.SourceLanguage) != "" {
+			return nil, ErrInvalidExcursionTranslationLanguage
+		}
+		sourceLanguage = "ru"
+	}
 	visibility := params.Visibility
 	if strings.TrimSpace(string(visibility)) == "" {
 		visibility = enum.ExcursionVisibilityPublic
@@ -188,6 +199,8 @@ func NewExcursion(params NewExcursionParams) (*Excursion, error) {
 		Translations:          NormalizeExcursionTranslations(params.Translations),
 		CategorySlug:          NormalizeSlug(params.CategorySlug),
 		ProductTranslations:   NormalizeExcursionTranslations(params.ProductTranslations),
+		SourceLanguage:        sourceLanguage,
+		TranslationStatus:     NormalizeExcursionTranslationStatus(string(params.TranslationStatus)),
 		Status:                enum.ExcursionStatusDraft,
 		Visibility:            visibility,
 		DurationMinutes:       params.DurationMinutes,
@@ -295,6 +308,16 @@ func (t *Excursion) ApplyGuideSnapshot(
 	t.GuideSearchText = normalizeGuideSnapshotText(searchText)
 }
 
+func (t *Excursion) SetTranslationState(sourceLanguage string, status ExcursionTranslationStatus) error {
+	normalizedSource, ok := NormalizeExcursionTranslationLanguage(sourceLanguage)
+	if !ok {
+		return ErrInvalidExcursionTranslationLanguage
+	}
+	t.SourceLanguage = normalizedSource
+	t.TranslationStatus = NormalizeExcursionTranslationStatus(string(status))
+	return nil
+}
+
 func (t *Excursion) Validate() error {
 	if t.ID == uuid.Nil {
 		return ErrInvalidExcursionID
@@ -321,6 +344,9 @@ func (t *Excursion) Validate() error {
 	}
 	if err := validateExcursionTranslations(t.ProductTranslations); err != nil {
 		return err
+	}
+	if _, ok := NormalizeExcursionTranslationLanguage(t.SourceLanguage); !ok {
+		return ErrInvalidExcursionTranslationLanguage
 	}
 	if strings.TrimSpace(t.CategorySlug) == "" {
 		return ErrInvalidExcursionCategory

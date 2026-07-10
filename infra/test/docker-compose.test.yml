@@ -136,7 +136,7 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      INFLAP_POSTGRES_DATABASES: ${INFLAP_POSTGRES_DATABASES:-auth_db token_service_db user_service_db guide_service_db file_manager_service_db activity_service_db excursion_service_db feed_service_db chat_service_db notification_service_db payment_service_db place_service_db sticker_service_db checklist_service_db switches_service_db trust_service_db anti_fraud_service_db support_service_db admin_panel_db user_route_service_db search_service_db}
+      INFLAP_POSTGRES_DATABASES: ${INFLAP_POSTGRES_DATABASES:-auth_db token_service_db user_service_db guide_service_db file_manager_service_db activity_service_db excursion_service_db feed_service_db chat_service_db notification_service_db payment_service_db place_service_db sticker_service_db checklist_service_db switches_service_db trust_service_db anti_fraud_service_db support_service_db admin_panel_db user_route_service_db search_service_db translation_service_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -634,6 +634,7 @@ services:
       INTERNAL_HTTP_TLS_PORT: ${EXCURSION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       DB_NAME: excursion_service_db
       GUIDE_SERVICE_GRPC_TARGET: ${GUIDE_SERVICE_INTERNAL_GRPC_TARGET:-dns:///guide-service:9095}
+      GUIDE_SERVICE_VERIFY_TIMEOUT: ${GUIDE_SERVICE_VERIFY_TIMEOUT:-8s}
       GUIDE_SERVICE_URL: ${GUIDE_SERVICE_INTERNAL_HTTP_URL:-http://guide-service:8085}
       GUIDE_SERVICE_HTTP_TIMEOUT: 10s
       USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
@@ -644,6 +645,14 @@ services:
       NOTIFICATION_SERVICE_HTTP_URL: ${NOTIFICATION_SERVICE_INTERNAL_HTTP_URL:-http://notification-service:8097}
       PAYMENT_SERVICE_HTTP_URL: ${PAYMENT_SERVICE_INTERNAL_HTTP_URL:-http://payment-service:8091}
       TRANSLATION_SERVICE_URL: ${TRANSLATION_SERVICE_INTERNAL_HTTP_URL:-http://translation-service:8094}
+      EXCURSION_ASYNC_TRANSLATION_ENABLED: ${EXCURSION_ASYNC_TRANSLATION_ENABLED:-true}
+      EXCURSION_TRANSLATION_WORKER_ENABLED: ${EXCURSION_TRANSLATION_WORKER_ENABLED:-false}
+      EXCURSION_TRANSLATION_WORKER_BATCH_SIZE: ${EXCURSION_TRANSLATION_WORKER_BATCH_SIZE:-10}
+      EXCURSION_TRANSLATION_WORKER_INTERVAL: ${EXCURSION_TRANSLATION_WORKER_INTERVAL:-2s}
+      EXCURSION_TRANSLATION_MAX_ATTEMPTS: ${EXCURSION_TRANSLATION_MAX_ATTEMPTS:-5}
+      EXCURSION_TRANSLATION_RETRY_BASE_DELAY: ${EXCURSION_TRANSLATION_RETRY_BASE_DELAY:-30s}
+      EXCURSION_TRANSLATION_REQUEST_TIMEOUT: ${EXCURSION_TRANSLATION_REQUEST_TIMEOUT:-8s}
+      EXCURSION_TRANSLATION_LOCK_TIMEOUT: ${EXCURSION_TRANSLATION_LOCK_TIMEOUT:-2m}
       EXCURSION_ATTENDANCE_QR_SIGNING_SECRET: ${EXCURSION_ATTENDANCE_QR_SIGNING_SECRET:?EXCURSION_ATTENDANCE_QR_SIGNING_SECRET is required}
       TRUST_SERVICE_GRPC_TARGET: ${TRUST_SERVICE_INTERNAL_GRPC_TARGET:-trust-service:9096}
       ANTI_FRAUD_ENABLED: ${ANTI_FRAUD_ENABLED:-false}
@@ -1310,17 +1319,32 @@ services:
     restart: unless-stopped
     group_add:
       - "${MTLS_CERT_GROUP_ID:-1001}"
-    profiles:
-      - ml
     networks:
       - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
     expose:
       - "${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-9497}"
     environment:
       APP_ENV: test
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_PORT: 8094
       INTERNAL_HTTP_TLS_PORT: ${TRANSLATION_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN is required}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/translation_service_db?sslmode=disable
+      TRANSLATION_BILLING_MODE: ${TRANSLATION_BILLING_MODE:-free_only}
+      TRANSLATION_MONTHLY_CHARACTER_LIMIT: ${TRANSLATION_MONTHLY_CHARACTER_LIMIT:-2000000}
+      TRANSLATION_QUOTA_WARNING_THRESHOLD: ${TRANSLATION_QUOTA_WARNING_THRESHOLD:-0.80}
+      TRANSLATION_QUOTA_CRITICAL_THRESHOLD: ${TRANSLATION_QUOTA_CRITICAL_THRESHOLD:-0.95}
+      TRANSLATION_PROVIDER: ${TRANSLATION_PROVIDER:-azure_translator}
+      AZURE_TRANSLATOR_ENDPOINT: ${AZURE_TRANSLATOR_ENDPOINT:-https://api.cognitive.microsofttranslator.com}
+      AZURE_TRANSLATOR_KEY: ${AZURE_TRANSLATOR_KEY:-}
+      AZURE_TRANSLATOR_REGION: ${AZURE_TRANSLATOR_REGION:-}
+      AZURE_TRANSLATOR_TIMEOUT: ${AZURE_TRANSLATOR_TIMEOUT:-5s}
+      SERVICE_AUTH_ISSUER: ${SERVICE_AUTH_ISSUER:-inflap/test-token-service}
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: ${SERVICE_AUTH_JWKS_CACHE_TTL:-5m}
       MTLS_MODE: ${TRANSLATION_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/ca.crt
@@ -1328,9 +1352,13 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/server.key
       MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/excursion-service}
       MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-excursion-service}
-    volumes:
-      - translation_models:/models
-      - ${MTLS_SECRETS_DIR:-/opt/inflap/secrets/mtls}/translation-service:/opt/inflap/secrets/mtls/translation-service:ro
+    volumes: *mtls-translation-service-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8094/health/ready >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 networks:
   public:
@@ -1345,5 +1373,4 @@ volumes:
   redis_data:
   nats_data:
   minio_data:
-  translation_models:
   token_service_keys:

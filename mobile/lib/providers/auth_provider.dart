@@ -9,7 +9,7 @@ import '../core/network/api_client.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../core/storage/secure_storage.dart';
 
-enum AuthState { initial, authenticated, unauthenticated }
+enum AuthState { initial, authenticated, unauthenticated, sessionExpired }
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider({
@@ -40,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
        _googleAuthTokenProvider =
            googleAuthTokenProvider ?? GoogleAuthService() {
     _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
-      unawaited(_handleSessionExpired());
+      _handleSessionExpired();
     });
   }
 
@@ -131,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
       _lastPrimaryEmailHint = result.primaryEmailHint;
       _clearPendingEmailRegistration();
 
-      _state = AuthState.authenticated;
+      _markAuthenticated();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -161,7 +161,7 @@ class AuthProvider extends ChangeNotifier {
       _lastPrimaryEmailHint = result.primaryEmailHint;
       _clearPendingEmailRegistration();
 
-      _state = AuthState.authenticated;
+      _markAuthenticated();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -250,7 +250,7 @@ class AuthProvider extends ChangeNotifier {
       _lastPrimaryEmailHint = result.primaryEmailHint ?? email.trim();
       _clearPendingEmailRegistration();
 
-      _state = AuthState.authenticated;
+      _markAuthenticated();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -371,7 +371,7 @@ class AuthProvider extends ChangeNotifier {
       _lastPrimaryEmailHint = result.primaryEmailHint;
       _clearPendingEmailRegistration();
 
-      _state = AuthState.authenticated;
+      _markAuthenticated();
       return true;
     } on GoogleAuthException catch (e) {
       _errorMessage = e.message;
@@ -405,7 +405,7 @@ class AuthProvider extends ChangeNotifier {
       _lastPrimaryEmailHint = result.primaryEmailHint;
       _clearPendingEmailRegistration();
 
-      _state = AuthState.authenticated;
+      _markAuthenticated();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -438,13 +438,32 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _handleSessionExpired() async {
-    await _secureStorage.deleteTokens();
+  void continueAsGuest() {
+    if (_state == AuthState.unauthenticated) return;
+    _state = AuthState.unauthenticated;
+    notifyListeners();
+  }
+
+  void _handleSessionExpired() {
+    final nextState = switch (_state) {
+      AuthState.authenticated ||
+      AuthState.sessionExpired => AuthState.sessionExpired,
+      AuthState.initial ||
+      AuthState.unauthenticated => AuthState.unauthenticated,
+    };
+
     _lastPrimaryPhoneHint = null;
     _lastPrimaryEmailHint = null;
     _clearPendingEmailRegistration();
-    _state = AuthState.unauthenticated;
-    notifyListeners();
+    _errorMessage = null;
+    if (_state != nextState) {
+      _state = nextState;
+      notifyListeners();
+    }
+  }
+
+  void _markAuthenticated() {
+    _state = AuthState.authenticated;
   }
 
   void _clearPendingEmailRegistration() {

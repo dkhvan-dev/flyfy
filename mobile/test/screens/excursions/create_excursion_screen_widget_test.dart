@@ -46,6 +46,69 @@ void main() {
   });
 
   testWidgets(
+    'itinerary sheet reaches screen bottom and keeps confirm above Android navigation',
+    (tester) async {
+      const navigationBarHeight = 48.0;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => ExcursionProvider()),
+            ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+          ],
+          child: MaterialApp(
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  padding: const EdgeInsets.only(bottom: navigationBarHeight),
+                  viewPadding: const EdgeInsets.only(
+                    bottom: navigationBarHeight,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const CreateExcursionScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final addSlot = find.text('Add Time Slot');
+      await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+      await tester.pump();
+      expect(addSlot, findsOneWidget);
+      await tester.tap(addSlot);
+      await tester.pumpAndSettle();
+
+      final surface = find.byKey(
+        const ValueKey('excursion-itinerary-slot-sheet-surface'),
+      );
+      final confirm = find.byKey(
+        const ValueKey('excursion-itinerary-slot-confirm'),
+      );
+      expect(surface, findsOneWidget);
+      expect(confirm, findsOneWidget);
+      expect(tester.getBottomRight(surface).dy, closeTo(844, 0.1));
+      expect(
+        tester.getBottomRight(confirm).dy,
+        lessThanOrEqualTo(844 - navigationBarHeight),
+      );
+    },
+  );
+
+  testWidgets(
     'opens edit mode with initial excursion after localizations are ready',
     (tester) async {
       await tester.pumpWidget(

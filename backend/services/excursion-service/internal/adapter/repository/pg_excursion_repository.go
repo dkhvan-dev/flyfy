@@ -157,7 +157,7 @@ const excursionSelectColumns = `
 	guide_rating_avg, guide_reviews_count, guide_experience_years,
 	guide_display_name, guide_nickname, guide_first_name, guide_last_name, guide_search_text,
 	landmark_id, landmark_name,
-	title, summary, description, translations, product_translations, category_slug,
+	title, summary, description, translations, product_translations, source_language, translation_status, category_slug,
 	status, visibility,
 	duration_minutes, max_group_size,
 	country_code, city_name, departure_city_id, meeting_point, latitude, longitude, map_url,
@@ -174,10 +174,59 @@ const excursionProductCardSelectColumns = `
 	title, summary, description, translations, category_slug,
 	status, visibility,
 	duration_minutes,
-	country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id, cover_image_url,
-	photo_file_ids, photo_image_urls,
+	country_code, city_name, departure_city_id, latitude, longitude, map_url,
+	CASE
+		WHEN cover_file_id IS NOT NULL THEN cover_file_id
+		WHEN NULLIF(BTRIM(cover_image_url), '') IS NOT NULL THEN NULL
+		ELSE COALESCE(
+			photo_file_ids[1],
+			representative_offer_media.fallback_cover_file_id,
+			representative_offer_media.fallback_photo_file_ids[1]
+		)
+	END AS cover_file_id,
+	cover_image_url,
+	CASE
+		WHEN cardinality(photo_file_ids) > 0 THEN photo_file_ids
+		WHEN cardinality(representative_offer_media.fallback_photo_file_ids) > 0
+			THEN representative_offer_media.fallback_photo_file_ids
+		WHEN representative_offer_media.fallback_cover_file_id IS NOT NULL
+			THEN ARRAY[representative_offer_media.fallback_cover_file_id]
+		ELSE ARRAY[]::uuid[]
+	END AS photo_file_ids,
+	photo_image_urls,
 	min_price_amount, currency, offers_count, published_offers_count, next_available_at,
+	review_stats.rating_avg, review_stats.reviews_count,
 	created_at, updated_at
+`
+
+const excursionProductReviewStatsJoin = `
+	LEFT JOIN LATERAL (
+		SELECT
+			COALESCE(ROUND(AVG(review.rating)::numeric, 2)::float8, 0) AS rating_avg,
+			COUNT(*)::int AS reviews_count
+		FROM excursion_reviews AS review
+		WHERE review.product_id = excursion_products.id
+		  AND review.deleted_at IS NULL
+	) AS review_stats ON TRUE
+`
+
+const excursionProductRepresentativeOfferMediaJoin = `
+	LEFT JOIN LATERAL (
+		SELECT
+			o.cover_file_id AS fallback_cover_file_id,
+			o.photo_file_ids AS fallback_photo_file_ids
+		FROM excursion_offers AS o
+		WHERE o.product_id = excursion_products.id
+		  AND o.status = 'PUBLISHED'
+		  AND o.visibility = 'PUBLIC'
+		  AND o.deleted_at IS NULL
+		  AND (
+			o.cover_file_id IS NOT NULL
+			OR cardinality(o.photo_file_ids) > 0
+		  )
+		ORDER BY o.price_amount ASC, o.updated_at DESC, o.id ASC
+		LIMIT 1
+	) AS representative_offer_media ON TRUE
 `
 
 const excursionOfferSelectColumns = `
@@ -186,6 +235,36 @@ const excursionOfferSelectColumns = `
 	guide_rating_avg, guide_reviews_count, guide_experience_years,
 	guide_display_name, guide_search_text,
 	title, summary, description, translations,
+	COALESCE((
+		SELECT excursion.source_language
+		FROM excursions AS excursion
+		WHERE excursion.id = excursion_offers.legacy_excursion_id
+	), 'ru') AS translation_source_language,
+	COALESCE((
+		SELECT excursion.translation_status
+		FROM excursions AS excursion
+		WHERE excursion.id = excursion_offers.legacy_excursion_id
+	), 'NONE') AS translation_status,
+	ARRAY(
+		SELECT DISTINCT job.target_language
+		FROM excursion_translation_jobs AS job
+		JOIN excursion_itinerary_items AS itinerary_item
+		  ON itinerary_item.id = job.entity_id
+		 AND itinerary_item.excursion_id = job.excursion_id
+		WHERE job.excursion_id = excursion_offers.legacy_excursion_id
+		  AND job.status IN ('PENDING', 'PROCESSING')
+		ORDER BY job.target_language
+	) AS translation_pending_languages,
+	ARRAY(
+		SELECT DISTINCT job.target_language
+		FROM excursion_translation_jobs AS job
+		JOIN excursion_itinerary_items AS itinerary_item
+		  ON itinerary_item.id = job.entity_id
+		 AND itinerary_item.excursion_id = job.excursion_id
+		WHERE job.excursion_id = excursion_offers.legacy_excursion_id
+		  AND job.status = 'FAILED'
+		ORDER BY job.target_language
+	) AS translation_failed_languages,
 	status, visibility,
 	duration_minutes, max_group_size, meeting_point, latitude, longitude, map_url,
 	price_amount, currency, cover_file_id, photo_file_ids,
@@ -760,6 +839,9 @@ func (r *PGExcursionRepository) CreateExcursionAggregate(ctx context.Context, it
 	if err = replaceExcursionRelations(ctx, tx, item.ID, relations); err != nil {
 		return err
 	}
+	if err = enqueueExcursionTranslationJobs(ctx, tx, relations.TranslationJobs); err != nil {
+		return err
+	}
 	if err = syncExcursionMarketplace(ctx, tx, item, relations); err != nil {
 		return err
 	}
@@ -781,7 +863,15 @@ func (r *PGExcursionRepository) UpdateExcursionAggregate(ctx context.Context, it
 	if err = updateExcursion(ctx, tx, item); err != nil {
 		return err
 	}
+	if relations.StaleTranslationJobs {
+		if err = markExcursionTranslationJobsStale(ctx, tx, item.ID, nil); err != nil {
+			return err
+		}
+	}
 	if err = replaceExcursionRelations(ctx, tx, item.ID, relations); err != nil {
+		return err
+	}
+	if err = enqueueExcursionTranslationJobs(ctx, tx, relations.TranslationJobs); err != nil {
 		return err
 	}
 	if err = syncExcursionMarketplace(ctx, tx, item, relations); err != nil {
@@ -1098,6 +1188,10 @@ func (r *PGExcursionRepository) LoadExcursionRelations(ctx context.Context, excu
 	if err != nil {
 		return port.ExcursionRelations{}, err
 	}
+	translationJobs, err := listCurrentExcursionTranslationJobs(ctx, r.pool, excursionID)
+	if err != nil {
+		return port.ExcursionRelations{}, err
+	}
 	coverFileID, err := r.getCoverFileID(ctx, excursionID)
 	if err != nil {
 		return port.ExcursionRelations{}, err
@@ -1133,6 +1227,7 @@ func (r *PGExcursionRepository) LoadExcursionRelations(ctx context.Context, excu
 		ProductCoverImageURL:  productCoverImageURL,
 		ProductPhotoFileIDs:   productPhotoFileIDs,
 		ProductPhotoImageURLs: productPhotoImageURLs,
+		TranslationJobs:       translationJobs,
 	}, nil
 }
 
@@ -1161,6 +1256,8 @@ func (r *PGExcursionRepository) ListExcursionProductCards(ctx context.Context, f
 	base := `
 		SELECT ` + excursionProductCardSelectColumns + `
 		FROM excursion_products
+		` + excursionProductReviewStatsJoin + `
+		` + excursionProductRepresentativeOfferMediaJoin + `
 		WHERE status = 'PUBLISHED' AND visibility = 'PUBLIC'
 	`
 	parts := []string{base}
@@ -1280,6 +1377,8 @@ func (r *PGExcursionRepository) GetExcursionProductCardByID(ctx context.Context,
 	query := `
 		SELECT ` + excursionProductCardSelectColumns + `
 		FROM excursion_products
+		` + excursionProductReviewStatsJoin + `
+		` + excursionProductRepresentativeOfferMediaJoin + `
 		WHERE id = $1 AND status = 'PUBLISHED' AND visibility <> 'PRIVATE'
 		LIMIT 1
 	`
@@ -2627,7 +2726,7 @@ func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			price_amount, currency,
 			publishing_decision, guide_trust_score, publish_risk_score, moderation_reason_codes, submitted_for_review_at,
 			published_at, deleted_at, revision, created_at, updated_at,
-			translations, product_translations
+			translations, product_translations, source_language, translation_status
 		) VALUES (
 			$1, $2, $3,
 			$4, $5, $6,
@@ -2640,7 +2739,7 @@ func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			$29, $30,
 			$31, $32, $33, $34, $35,
 			$36, $37, $38, $39, $40,
-			$41::jsonb, $42::jsonb
+			$41::jsonb, $42::jsonb, $43, $44
 		)
 	`
 	_, err := exec.Exec(ctx, query, excursionArgs(item)...)
@@ -3133,7 +3232,9 @@ func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			revision = $38,
 			updated_at = $39,
 			translations = $40::jsonb,
-			product_translations = $41::jsonb
+			product_translations = $41::jsonb,
+			source_language = $42,
+			translation_status = $43
 		WHERE id = $1
 	`
 	tag, err := exec.Exec(ctx, query, updateExcursionArgs(item)...)
@@ -3193,6 +3294,8 @@ func excursionArgs(item *model.Excursion) []any {
 		item.UpdatedAt,
 		excursionTranslationsJSON(item.Translations),
 		excursionTranslationsJSON(item.ProductTranslations),
+		item.SourceLanguage,
+		string(item.TranslationStatus),
 	}
 }
 
@@ -3239,6 +3342,8 @@ func updateExcursionArgs(item *model.Excursion) []any {
 		item.UpdatedAt,
 		excursionTranslationsJSON(item.Translations),
 		excursionTranslationsJSON(item.ProductTranslations),
+		item.SourceLanguage,
+		string(item.TranslationStatus),
 	}
 }
 
@@ -3454,7 +3559,8 @@ func upsertExcursionProduct(
 			$20, $21, $22::jsonb,
 			$23, $24, $25, $26,
 			$27, $28, $29, $30,
-			$31, $32
+			COALESCE($31::UUID[], '{}'::UUID[]),
+			COALESCE($32::TEXT[], '{}'::TEXT[])
 		)
 		ON CONFLICT (canonical_key) DO UPDATE
 		SET
@@ -3561,7 +3667,7 @@ func upsertExcursionOffer(ctx context.Context, exec dbExecutor, productID uuid.U
 			$16, $17, $18, $19, $20, $21,
 			$22, $23, $24,
 			$25, $26, $27, $28, $29, $30::jsonb,
-			$31
+			COALESCE($31::UUID[], '{}'::UUID[])
 		)
 		ON CONFLICT (legacy_excursion_id) DO UPDATE
 		SET
@@ -4215,9 +4321,12 @@ func getProductPhotoFileIDs(ctx context.Context, queryer queryRower, excursionID
 	var fileIDs []uuid.UUID
 	if err := queryer.QueryRow(ctx, query, excursionID).Scan(&fileIDs); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return []uuid.UUID{}, nil
 		}
 		return nil, fmt.Errorf("get excursion product photos: %w", err)
+	}
+	if fileIDs == nil {
+		return []uuid.UUID{}, nil
 	}
 	return fileIDs, nil
 }
@@ -4234,9 +4343,12 @@ func getProductPhotoImageURLs(ctx context.Context, queryer queryRower, excursion
 	var imageURLs []string
 	if err := queryer.QueryRow(ctx, query, excursionID).Scan(&imageURLs); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return []string{}, nil
 		}
 		return nil, fmt.Errorf("get excursion product photo urls: %w", err)
+	}
+	if imageURLs == nil {
+		return []string{}, nil
 	}
 	return imageURLs, nil
 }
@@ -4252,6 +4364,8 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 		visibilityRaw          string
 		translationsRaw        []byte
 		productTranslationsRaw []byte
+		sourceLanguageRaw      string
+		translationStatusRaw   string
 		publishingDecisionRaw  string
 	)
 	err := row.Scan(
@@ -4273,6 +4387,8 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 		&item.Description,
 		&translationsRaw,
 		&productTranslationsRaw,
+		&sourceLanguageRaw,
+		&translationStatusRaw,
 		&item.CategorySlug,
 		&statusRaw,
 		&visibilityRaw,
@@ -4306,6 +4422,8 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 	item.PublishingDecision = model.ExcursionPublishingDecision(publishingDecisionRaw)
 	item.Translations = scanExcursionTranslations(translationsRaw)
 	item.ProductTranslations = scanExcursionTranslations(productTranslationsRaw)
+	item.SourceLanguage = sourceLanguageRaw
+	item.TranslationStatus = model.NormalizeExcursionTranslationStatus(translationStatusRaw)
 	return &item, nil
 }
 
@@ -4353,6 +4471,8 @@ func scanExcursionProductCard(row excursionScanner) (*model.ExcursionProductCard
 		&item.OffersCount,
 		&item.PublishedOffersCount,
 		&item.NextAvailableAt,
+		&item.RatingAvg,
+		&item.ReviewsCount,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	); err != nil {
@@ -4367,10 +4487,11 @@ func scanExcursionProductCard(row excursionScanner) (*model.ExcursionProductCard
 
 func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 	var (
-		item            model.ExcursionOffer
-		statusRaw       string
-		visibilityRaw   string
-		translationsRaw []byte
+		item                 model.ExcursionOffer
+		statusRaw            string
+		visibilityRaw        string
+		translationsRaw      []byte
+		translationStatusRaw string
 	)
 	if err := row.Scan(
 		&item.ID,
@@ -4387,6 +4508,10 @@ func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 		&item.Summary,
 		&item.Description,
 		&translationsRaw,
+		&item.TranslationSourceLanguage,
+		&translationStatusRaw,
+		&item.TranslationPendingLanguages,
+		&item.TranslationFailedLanguages,
 		&statusRaw,
 		&visibilityRaw,
 		&item.DurationMinutes,
@@ -4410,6 +4535,7 @@ func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 	item.Status = enum.ExcursionStatus(statusRaw)
 	item.Visibility = enum.ExcursionVisibility(visibilityRaw)
 	item.Translations = scanExcursionTranslations(translationsRaw)
+	item.TranslationStatus = model.NormalizeExcursionTranslationStatus(translationStatusRaw)
 	return &item, nil
 }
 

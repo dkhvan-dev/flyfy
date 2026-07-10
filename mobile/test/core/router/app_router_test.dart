@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inflap/core/auth/auth_session_events.dart';
 import 'package:inflap/core/navigation/android_back_swipe_scope.dart';
 import 'package:inflap/core/router/app_router.dart';
 import 'package:inflap/core/storage/secure_storage.dart';
@@ -440,6 +441,52 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const ValueKey('services-screen')), findsOneWidget);
+  });
+
+  testWidgets('expired session redirects from a public route to login', (
+    tester,
+  ) async {
+    final events = AuthSessionEvents();
+    final authProvider = AuthProvider(
+      secureStorage: _AuthenticatedSecureStorage(),
+      authSessionEvents: events,
+    );
+    await authProvider.checkAuthStatus();
+    final router = AppRouter.router(authProvider);
+    addTearDown(() async {
+      router.dispose();
+      authProvider.dispose();
+      await events.dispose();
+    });
+
+    router.go('/services');
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('services-screen')), findsOneWidget);
+
+    events.notifySessionExpired();
+    await tester.pumpAndSettle();
+
+    expect(authProvider.state, AuthState.sessionExpired);
+    expect(find.byKey(const ValueKey('login-form')), findsOneWidget);
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('from', '/services'),
+    );
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('reason', 'session-expired'),
+    );
   });
 }
 

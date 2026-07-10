@@ -47,6 +47,42 @@ void main() {
     },
   );
 
+  test('falls back to the first gallery file when cover fields are absent', () {
+    const firstPhotoId = '9b392dbf-716d-4f77-918f-46d8de277d8c';
+    const excursion = ExcursionVm(
+      id: 'excursion-gallery-file',
+      title: 'Mountain Excursion',
+      summary: 'Summary',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      priceAmount: 0,
+      currency: 'KZT',
+      photoFileIds: [firstPhotoId, 'second-photo'],
+    );
+
+    expect(
+      resolveExcursionCoverUrl(excursion),
+      '${AppConfig.apiBaseUrl}/public/files/$firstPhotoId/content',
+    );
+  });
+
+  test('falls back to the first gallery image url', () {
+    const excursion = ExcursionVm(
+      id: 'excursion-gallery-url',
+      title: 'Mountain Excursion',
+      summary: 'Summary',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      priceAmount: 0,
+      currency: 'KZT',
+      photoImageUrls: ['/media/first.jpg', '/media/second.jpg'],
+    );
+
+    final origin = Uri.parse(AppConfig.apiBaseUrl).origin;
+
+    expect(resolveExcursionCoverUrl(excursion), '$origin/media/first.jpg');
+  });
+
   test('resolves owned excursion covers from file ids before public routes', () {
     const excursion = ExcursionVm(
       id: 'excursion-1',

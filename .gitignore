@@ -30,6 +30,7 @@ go.work.sum
 
 # Local secrets
 **/run/secrets/
+deploy/secrets/
 **/*service-account*.json
 
 # Editor/IDE

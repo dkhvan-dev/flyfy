@@ -520,6 +520,7 @@ Future<T?> showAppModalBottomSheet<T>({
   AnimationStyle? sheetAnimationStyle,
   bool? requestFocus,
   bool showCloseButton = true,
+  bool extendToBottom = false,
   double initialChildSize = 0.58,
   double minChildSize = 0.28,
   double maxChildSize = 0.92,
@@ -537,8 +538,13 @@ Future<T?> showAppModalBottomSheet<T>({
           : systemBottomPadding;
 
       if (title == null) {
+        final customContentBottomInset = keyboardInset > 0
+            ? keyboardInset
+            : extendToBottom
+            ? 0.0
+            : systemBottomPadding;
         return Padding(
-          padding: AppEdgeInsets.only(bottom: effectiveBottomInset),
+          padding: AppEdgeInsets.only(bottom: customContentBottomInset),
           child: SizedBox(
             width: double.infinity,
             child: content ?? const SizedBox.shrink(),

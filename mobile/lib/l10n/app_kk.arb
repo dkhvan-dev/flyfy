@@ -1930,6 +1930,19 @@
     }
   },
   "excursionDetailsLanguage": "Тіл",
+  "excursionDetailsTranslatedNotice": "Маршрут {sourceLanguage} тілінен автоматты түрде аударылды",
+  "@excursionDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "excursionDetailsShowOriginal": "Түпнұсқаны көрсету",
+  "excursionDetailsShowTranslation": "Аударманы көрсету",
+  "excursionDetailsTranslationPendingNotice": "Маршруттың түпнұсқасы көрсетіліп тұр · Аударма дайындалып жатыр",
+  "excursionDetailsTranslationUnavailableNotice": "Маршруттың түпнұсқасы көрсетіліп тұр · Автоматты аударма уақытша қолжетімсіз",
+  "excursionTranslationSourceLanguageEnglish": "ағылшын",
+  "excursionTranslationSourceLanguageRussian": "орыс",
+  "excursionTranslationSourceLanguageKazakh": "қазақ",
   "excursionLanguageEnglish": "Ағылшын",
   "excursionLanguageRussian": "Орыс",
   "excursionLanguageKazakh": "Қазақ",
@@ -2059,6 +2072,18 @@
   "createExcursionUpdateSuccess": "Ұсыныс жаңартылды",
   "createExcursionFailed": "Экскурсияны жасау мүмкін болмады",
   "createExcursionUpdateFailed": "Ұсынысты жаңарту мүмкін болмады",
+  "createExcursionExistingDraftTitle": "Экскурсия бұрыннан бар",
+  "createExcursionExistingDraftDescription": "Бұл орын үшін өңдеуге болатын экскурсияңыз бар. Оны осы формадағы деректермен ауыстырып, тексеруге жіберу керек пе?",
+  "createExcursionExistingDraftConfirm": "Жаңарту және жіберу",
+  "createExcursionExistingDraftSaveDescription": "Бұл орын үшін өңдеуге болатын экскурсияңыз бар. Оны осы формадағы деректермен ауыстыру керек пе?",
+  "createExcursionExistingDraftSaveConfirm": "Черновикті жаңарту",
+  "createExcursionExistingActiveDescription": "Бұл орын үшін белсенді экскурсияңыз бар. Оны гид кабинетінен ашыңыз.",
+  "createExcursionDraftSubmitFailed": "Черновик сақталды, бірақ оны тексеруге жіберу мүмкін болмады. {error} Қайталап көру дубликат жасамайды.",
+  "@createExcursionDraftSubmitFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "createExcursionCoverSection": "Экскурсия қаптамасы",
   "createExcursionCoverUploadTitle": "Экскурсия суретін жүктеу",
   "createExcursionCoverChangeAction": "Экскурсия суретін өзгерту",

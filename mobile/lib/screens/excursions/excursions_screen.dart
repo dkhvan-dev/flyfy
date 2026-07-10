@@ -27,7 +27,9 @@ import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
+import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
 final class _ExcursionsColors {
@@ -455,12 +457,14 @@ double? _parseExcursionPriceInput(String value) {
 
 class _ExcursionsScreenState extends State<ExcursionsScreen> {
   final PlaceApi _placeApi = PlaceApi();
+  final AppLocationLabelResolver _locationLabelResolver =
+      AppLocationLabelResolver();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  Map<String, PlaceVm> _localizedLandmarks = const {};
-  final Set<String> _loadingLocalizedLandmarkIds = <String>{};
-  String? _localizedLandmarksLocale;
+  Map<String, PlaceVm> _localizedPlaces = const {};
+  final Set<String> _loadingLocalizedPlaceIds = <String>{};
+  String? _localizedPlacesLocale;
   bool _hasAppliedDefaultCityFilter = false;
   _ExcursionsSortMode _sortMode = _ExcursionsSortMode.createdAt;
   _ExcursionsSortDirection _sortDirection = _ExcursionsSortDirection.desc;
@@ -484,10 +488,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     super.didChangeDependencies();
 
     final lang = Localizations.localeOf(context).languageCode;
-    if (_localizedLandmarksLocale == lang) return;
-    _localizedLandmarksLocale = lang;
-    _localizedLandmarks = const {};
-    _loadingLocalizedLandmarkIds.clear();
+    if (_localizedPlacesLocale == lang) return;
+    _localizedPlacesLocale = lang;
+    _localizedPlaces = const {};
+    _loadingLocalizedPlaceIds.clear();
   }
 
   @override
@@ -606,50 +610,54 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     );
   }
 
-  void _scheduleResolveLocalizedLandmarks(List<ExcursionVm> excursions) {
+  void _scheduleResolveLocalizedPlaces(List<ExcursionVm> excursions) {
     if (!mounted) return;
 
     final lang = Localizations.localeOf(context).languageCode;
-    final ids = <String>[];
+    final ids = <String>{};
     for (final excursion in excursions) {
-      final landmarkId = excursion.landmarkId?.trim();
-      if (landmarkId == null ||
-          landmarkId.isEmpty ||
-          _localizedLandmarks.containsKey(landmarkId) ||
-          _loadingLocalizedLandmarkIds.contains(landmarkId)) {
-        continue;
+      final candidateIds = <String>[
+        excursion.landmarkId?.trim() ?? '',
+        ...excursion.placeIds.map((placeId) => placeId.trim()),
+      ];
+      for (final placeId in candidateIds) {
+        if (placeId.isEmpty ||
+            _localizedPlaces.containsKey(placeId) ||
+            _loadingLocalizedPlaceIds.contains(placeId)) {
+          continue;
+        }
+        ids.add(placeId);
       }
-      ids.add(landmarkId);
     }
     if (ids.isEmpty) return;
 
-    for (final landmarkId in ids.take(16)) {
-      _loadingLocalizedLandmarkIds.add(landmarkId);
+    for (final placeId in ids.take(16)) {
+      _loadingLocalizedPlaceIds.add(placeId);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_loadLocalizedLandmark(landmarkId, lang));
+        unawaited(_loadLocalizedPlace(placeId, lang));
       });
     }
   }
 
-  Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
+  Future<void> _loadLocalizedPlace(String placeId, String lang) async {
     try {
-      final place = await _placeApi.getPlace(landmarkId, locale: lang);
-      if (!mounted || _localizedLandmarksLocale != lang) return;
+      final place = await _placeApi.getPlace(placeId, locale: lang);
+      if (!mounted || _localizedPlacesLocale != lang) return;
 
       setState(() {
-        _localizedLandmarks = {..._localizedLandmarks, landmarkId: place};
-        _loadingLocalizedLandmarkIds.remove(landmarkId);
+        _localizedPlaces = {..._localizedPlaces, placeId: place};
+        _loadingLocalizedPlaceIds.remove(placeId);
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _loadingLocalizedLandmarkIds.remove(landmarkId));
+      setState(() => _loadingLocalizedPlaceIds.remove(placeId));
     }
   }
 
   PlaceVm? _localizedLandmarkFor(ExcursionVm excursion) {
     final landmarkId = excursion.landmarkId?.trim();
     if (landmarkId == null || landmarkId.isEmpty) return null;
-    return _localizedLandmarks[landmarkId];
+    return _localizedPlaces[landmarkId];
   }
 
   Future<void> _onCreateExcursionTap() async {
@@ -775,7 +783,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
             Expanded(
               child: Consumer<ExcursionProvider>(
                 builder: (context, provider, _) {
-                  _scheduleResolveLocalizedLandmarks(provider.excursions);
+                  _scheduleResolveLocalizedPlaces(provider.excursions);
                   final visibleExcursions = _visibleExcursions(
                     provider.excursions,
                   );
@@ -897,6 +905,8 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   localizedLandmark: _localizedLandmarkFor(
                                     visibleExcursions[index],
                                   ),
+                                  localizedPlacesById: _localizedPlaces,
+                                  locationLabelResolver: _locationLabelResolver,
                                   seed: index,
                                   onTap: () => _openExcursionDetails(
                                     visibleExcursions[index],
@@ -967,11 +977,13 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
         languageCode: lang,
         excursion: a,
         place: _localizedLandmarkFor(a),
+        placesById: _localizedPlaces,
       );
       final bTitle = localizedExcursionTitle(
         languageCode: lang,
         excursion: b,
         place: _localizedLandmarkFor(b),
+        placesById: _localizedPlaces,
       );
       return aTitle.compareTo(bTitle);
     });
@@ -1050,6 +1062,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
         languageCode: lang,
         excursion: excursion,
         place: landmark,
+        placesById: _localizedPlaces,
       ),
       localizedExcursionSummary(
         languageCode: lang,
@@ -1176,10 +1189,18 @@ DateTime _excursionCreatedAtFor(ExcursionVm excursion) {
 }
 
 double _excursionRatingFor(ExcursionVm excursion) {
-  if (excursion.offers.isEmpty) return 0;
-  return excursion.offers
-      .map((offer) => offer.guideRatingAvg)
-      .fold<double>(0, math.max);
+  return _excursionRatingForDisplay(excursion) ?? 0;
+}
+
+double? _excursionRatingForDisplay(ExcursionVm excursion) {
+  final rating = excursion.ratingAvg;
+  if (excursion.reviewsCount <= 0 ||
+      !rating.isFinite ||
+      rating < 1 ||
+      rating > 5) {
+    return null;
+  }
+  return rating;
 }
 
 class ExcursionsBottomNavigation extends StatelessWidget {
@@ -2367,6 +2388,8 @@ class ExcursionListCard extends StatelessWidget {
     required this.languageCode,
     required this.seed,
     this.localizedLandmark,
+    this.localizedPlacesById = const {},
+    this.locationLabelResolver,
     this.onTap,
   });
 
@@ -2374,6 +2397,8 @@ class ExcursionListCard extends StatelessWidget {
   final String languageCode;
   final int seed;
   final PlaceVm? localizedLandmark;
+  final Map<String, PlaceVm> localizedPlacesById;
+  final AppLocationLabelResolver? locationLabelResolver;
   final VoidCallback? onTap;
 
   @override
@@ -2383,18 +2408,25 @@ class ExcursionListCard extends StatelessWidget {
     final meta = _formatMeta(context, excursion, duration);
     final price = _formatPrice(context, excursion);
     final category = _categoryLabel(l10n, excursion.categorySlug);
+    final rating = _excursionRatingForDisplay(excursion);
     final displayTitle = localizedExcursionTitle(
       languageCode: languageCode,
       excursion: excursion,
       place: localizedLandmark,
+      placesById: localizedPlacesById,
       fallback: category,
     );
     final location = _primaryLocation(excursion, displayTitle, category);
+    final hasCityReference =
+        (excursion.departureCityId?.trim().isNotEmpty ?? false) ||
+        (excursion.cityName?.trim().isNotEmpty ?? false);
     final semanticLabel = [
       displayTitle,
       if (location.isNotEmpty) location,
       price,
       if (meta.isNotEmpty) meta,
+      if (rating != null)
+        '${l10n.excursionsSortRating} ${rating.toStringAsFixed(1)}',
     ].join(', ');
 
     return Semantics(
@@ -2425,6 +2457,7 @@ class ExcursionListCard extends StatelessWidget {
                         seed: seed,
                         categorySlug: excursion.categorySlug,
                         imageUrl: resolveExcursionCoverUrl(excursion),
+                        rating: rating,
                       ),
                     ),
                     Expanded(
@@ -2434,19 +2467,39 @@ class ExcursionListCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (location.isNotEmpty) ...[
-                              Text(
-                                location.toUpperCase(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle(
-                                  color: _excursionsPrimaryTextColor(context),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.4,
-                                  height: 1,
+                            if (location.isNotEmpty || hasCityReference) ...[
+                              if (locationLabelResolver != null &&
+                                  hasCityReference)
+                                AppLocalizedLocationText(
+                                  countryCode: excursion.countryCode,
+                                  cityId: excursion.departureCityId,
+                                  cityName: excursion.cityName,
+                                  fallbackText: location,
+                                  includeCountry: false,
+                                  resolver: locationLabelResolver,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle(
+                                    color: _excursionsPrimaryTextColor(context),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0,
+                                    height: 1,
+                                  ),
+                                )
+                              else
+                                Text(
+                                  location,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle(
+                                    color: _excursionsPrimaryTextColor(context),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0,
+                                    height: 1,
+                                  ),
                                 ),
-                              ),
                               const SizedBox(height: 7),
                             ],
                             Flexible(
@@ -2627,11 +2680,13 @@ class _ExcursionCoverArt extends StatelessWidget {
     required this.seed,
     required this.categorySlug,
     this.imageUrl,
+    this.rating,
   });
 
   final int seed;
   final String? categorySlug;
   final String? imageUrl;
+  final double? rating;
 
   @override
   Widget build(BuildContext context) {
@@ -2654,40 +2709,41 @@ class _ExcursionCoverArt extends StatelessWidget {
           _GeneratedExcursionCover(palette: palette, seed: seed),
         if (scrimGradient != null)
           DecoratedBox(decoration: AppBoxDecoration(gradient: scrimGradient)),
-        Positioned(
-          left: 12,
-          bottom: 10,
-          child: DecoratedBox(
-            decoration: AppBoxDecoration(
-              color: _excursionRatingBadgeBackground(context),
-              borderRadius: AppBorderRadius.circular(999),
-              border: Border.all(color: context.excursionsColors.border),
-            ),
-            child: Padding(
-              padding: AppEdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.star_rounded,
-                    color: context.excursionsColors.primary,
-                    size: 15,
-                  ),
-                  SizedBox(width: 3),
-                  Text(
-                    '4.9',
-                    style: AppTextStyle(
-                      color: context.excursionsColors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
+        if (rating != null)
+          Positioned(
+            left: 12,
+            bottom: 10,
+            child: DecoratedBox(
+              decoration: AppBoxDecoration(
+                color: _excursionRatingBadgeBackground(context),
+                borderRadius: AppBorderRadius.circular(999),
+                border: Border.all(color: context.excursionsColors.border),
+              ),
+              child: Padding(
+                padding: AppEdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star_rounded,
+                      color: context.excursionsColors.primary,
+                      size: 15,
                     ),
-                  ),
-                ],
+                    SizedBox(width: 3),
+                    Text(
+                      rating!.toStringAsFixed(1),
+                      style: AppTextStyle(
+                        color: context.excursionsColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

@@ -114,9 +114,10 @@ type SecurityConfig struct {
 }
 
 type GuideServiceConfig struct {
-	Target      string        `env:"GUIDE_SERVICE_GRPC_TARGET, default=dns:///guide-service:9095"`
-	BaseURL     string        `env:"GUIDE_SERVICE_URL, default=http://guide-service:8085"`
-	HTTPTimeout time.Duration `env:"GUIDE_SERVICE_HTTP_TIMEOUT, default=10s"`
+	Target        string        `env:"GUIDE_SERVICE_GRPC_TARGET, default=dns:///guide-service:9095"`
+	BaseURL       string        `env:"GUIDE_SERVICE_URL, default=http://guide-service:8085"`
+	HTTPTimeout   time.Duration `env:"GUIDE_SERVICE_HTTP_TIMEOUT, default=10s"`
+	VerifyTimeout time.Duration `env:"GUIDE_SERVICE_VERIFY_TIMEOUT, default=8s"`
 }
 
 type UserServiceConfig struct {
@@ -148,8 +149,16 @@ type PaymentServiceConfig struct {
 }
 
 type TranslationServiceConfig struct {
-	BaseURL string        `env:"TRANSLATION_SERVICE_URL"`
-	Timeout time.Duration `env:"TRANSLATION_SERVICE_TIMEOUT, default=8s"`
+	BaseURL           string        `env:"TRANSLATION_SERVICE_URL"`
+	Timeout           time.Duration `env:"TRANSLATION_SERVICE_TIMEOUT, default=8s"`
+	AsyncEnabled      bool          `env:"EXCURSION_ASYNC_TRANSLATION_ENABLED, default=true"`
+	WorkerEnabled     bool          `env:"EXCURSION_TRANSLATION_WORKER_ENABLED, default=false"`
+	WorkerBatchSize   int           `env:"EXCURSION_TRANSLATION_WORKER_BATCH_SIZE, default=10"`
+	WorkerInterval    time.Duration `env:"EXCURSION_TRANSLATION_WORKER_INTERVAL, default=2s"`
+	MaxAttempts       int           `env:"EXCURSION_TRANSLATION_MAX_ATTEMPTS, default=5"`
+	RetryBaseDelay    time.Duration `env:"EXCURSION_TRANSLATION_RETRY_BASE_DELAY, default=30s"`
+	RequestTimeout    time.Duration `env:"EXCURSION_TRANSLATION_REQUEST_TIMEOUT, default=8s"`
+	WorkerLockTimeout time.Duration `env:"EXCURSION_TRANSLATION_LOCK_TIMEOUT, default=2m"`
 }
 
 type AttendanceConfig struct {

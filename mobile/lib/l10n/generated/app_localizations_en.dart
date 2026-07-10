@@ -5055,6 +5055,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionDetailsLanguage => 'Language';
 
   @override
+  String excursionDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Itinerary was automatically translated from $sourceLanguage';
+  }
+
+  @override
+  String get excursionDetailsShowOriginal => 'Show original';
+
+  @override
+  String get excursionDetailsShowTranslation => 'Show translation';
+
+  @override
+  String get excursionDetailsTranslationPendingNotice =>
+      'Showing original itinerary · Translation is being prepared';
+
+  @override
+  String get excursionDetailsTranslationUnavailableNotice =>
+      'Showing original itinerary · Auto-translation is temporarily unavailable';
+
+  @override
+  String get excursionTranslationSourceLanguageEnglish => 'English';
+
+  @override
+  String get excursionTranslationSourceLanguageRussian => 'Russian';
+
+  @override
+  String get excursionTranslationSourceLanguageKazakh => 'Kazakh';
+
+  @override
   String get excursionLanguageEnglish => 'English';
 
   @override
@@ -5357,6 +5385,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionUpdateFailed => 'Failed to update offer';
+
+  @override
+  String get createExcursionExistingDraftTitle => 'Excursion already exists';
+
+  @override
+  String get createExcursionExistingDraftDescription =>
+      'You already have an editable excursion for this place. Replace it with the data from this form and submit it for review?';
+
+  @override
+  String get createExcursionExistingDraftConfirm => 'Update and submit';
+
+  @override
+  String get createExcursionExistingDraftSaveDescription =>
+      'You already have an editable excursion for this place. Replace it with the data from this form?';
+
+  @override
+  String get createExcursionExistingDraftSaveConfirm => 'Update draft';
+
+  @override
+  String get createExcursionExistingActiveDescription =>
+      'You already have an active excursion for this place. Open it from the guide dashboard.';
+
+  @override
+  String createExcursionDraftSubmitFailed(Object error) {
+    return 'The draft was saved, but it could not be submitted for review. $error You can retry without creating a duplicate.';
+  }
 
   @override
   String get createExcursionCoverSection => 'Excursion Cover';

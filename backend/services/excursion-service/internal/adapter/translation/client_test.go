@@ -17,8 +17,8 @@ func TestTranslateTextsPostsBatchWithInternalToken(t *testing.T) {
 	var gotPayload translateRequest
 	client := NewClient("http://translation-service", time.Second, "internal-token")
 	client.httpClient = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.URL.Path != "/v1/translate" {
-			t.Fatalf("path = %s, want /v1/translate", r.URL.Path)
+		if r.URL.Path != "/internal/v1/translations/translate" {
+			t.Fatalf("path = %s, want internal translate endpoint", r.URL.Path)
 		}
 		gotToken = r.Header.Get(headerInternalServiceToken)
 		if err := json.NewDecoder(r.Body).Decode(&gotPayload); err != nil {
@@ -26,10 +26,16 @@ func TestTranslateTextsPostsBatchWithInternalToken(t *testing.T) {
 		}
 
 		return jsonResponse(http.StatusOK, translateResponse{
-			Model: "facebook/m2m100_418M",
-			Translations: map[string][]string{
-				"en": {"Start", "Meet the guide."},
-				"kk": {"Бастау", "Гидпен кездесу."},
+			Provider: "azure_translator",
+			Translations: map[string][]translatedText{
+				"en": {
+					{Text: "Start", Status: "translated", Provider: "azure_translator"},
+					{Text: "Meet the guide.", Status: "cached", Provider: "azure_translator", CacheHit: true},
+				},
+				"kk": {
+					{Text: "Бастау", Status: "translated", Provider: "azure_translator"},
+					{Text: "Гидпен кездесу.", Status: "translated", Provider: "azure_translator"},
+				},
 			},
 		}), nil
 	})}
@@ -55,8 +61,14 @@ func TestTranslateTextsPostsBatchWithInternalToken(t *testing.T) {
 	if gotPayload.Texts[0] != "Старт" || gotPayload.Texts[1] != "Встреча с гидом." {
 		t.Fatalf("texts = %#v, want trimmed texts", gotPayload.Texts)
 	}
+	if gotPayload.ContentType != "excursion" {
+		t.Fatalf("content type = %q, want excursion", gotPayload.ContentType)
+	}
 	if result.Translations["en"][0] != "Start" || result.Translations["kk"][1] != "Гидпен кездесу." {
 		t.Fatalf("translations = %#v, want decoded response", result.Translations)
+	}
+	if !result.Items["en"][1].CacheHit || result.Provider != "azure_translator" {
+		t.Fatalf("structured result = %#v, want cache/provider metadata", result)
 	}
 }
 
@@ -64,8 +76,8 @@ func TestTranslateTextsRejectsMismatchedResponseLength(t *testing.T) {
 	client := NewClient("http://translation-service", time.Second, "")
 	client.httpClient = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		return jsonResponse(http.StatusOK, translateResponse{
-			Translations: map[string][]string{
-				"en": {"Start"},
+			Translations: map[string][]translatedText{
+				"en": {{Text: "Start", Status: "translated"}},
 			},
 		}), nil
 	})}

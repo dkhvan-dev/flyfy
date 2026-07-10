@@ -142,7 +142,9 @@ class ApiClient {
 
           final shouldTryRefresh =
               statusCode == 401 &&
-              _requiresAuth(request) &&
+              (_requiresAuth(request) ||
+                  (_usesOptionalAuth(request) &&
+                      _hasBearerAuthorization(request))) &&
               request.extra['retried'] != true;
 
           if (!shouldTryRefresh) {
@@ -190,6 +192,11 @@ class ApiClient {
 
   bool _usesOptionalAuth(RequestOptions options) {
     return options.extra['optionalAuth'] == true;
+  }
+
+  bool _hasBearerAuthorization(RequestOptions options) {
+    final authorization = options.headers['Authorization'];
+    return authorization is String && authorization.startsWith('Bearer ');
   }
 
   void _attachLocaleHeaders(RequestOptions options) {
@@ -286,8 +293,12 @@ class ApiClient {
   }
 
   Future<void> _expireLocalSession() async {
-    await _secureStorage.deleteTokens();
     _authSessionEvents.notifySessionExpired();
+    try {
+      await _secureStorage.deleteTokens();
+    } catch (_) {
+      // Session state and navigation must still expire if storage is unavailable.
+    }
   }
 
   Future<Map<String, dynamic>> initMe({

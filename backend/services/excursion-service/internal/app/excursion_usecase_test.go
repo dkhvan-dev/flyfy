@@ -1533,6 +1533,169 @@ func TestCreateExcursionRejectsIncompleteItineraryTranslation(t *testing.T) {
 	}
 }
 
+func TestCreateExcursionAsyncTranslationSavesWhenTranslatorUnavailable(t *testing.T) {
+	repo := &excursionRepoStub{}
+	translator := &translatorStub{err: context.DeadlineExceeded}
+	actorUserID := uuid.New()
+	uc := newAsyncTranslationTestUseCase(repo, translator, actorUserID)
+
+	aggregate, err := uc.CreateExcursion(context.Background(), validAsyncTranslationCreateInput(actorUserID))
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	if aggregate == nil || repo.createdExcursion == nil {
+		t.Fatal("excursion was not persisted")
+	}
+	if len(translator.calls) != 0 {
+		t.Fatalf("translator calls = %d, want 0 in async write path", len(translator.calls))
+	}
+}
+
+func TestCreateExcursionAsyncTranslationQueuesMissingLanguages(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	uc := newAsyncTranslationTestUseCase(repo, &translatorStub{}, actorUserID)
+	input := validAsyncTranslationCreateInput(actorUserID)
+
+	_, err := uc.CreateExcursion(context.Background(), input)
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	jobs := repo.createdRelations.TranslationJobs
+	if len(jobs) != 2 {
+		t.Fatalf("translation jobs = %d, want en and kk", len(jobs))
+	}
+	if jobs[0].SourceLanguage != "ru" || jobs[0].SourceHash == "" {
+		t.Fatalf("translation job = %+v, want ru source and hash", jobs[0])
+	}
+	if repo.createdExcursion.TranslationStatus != model.ExcursionTranslationPending {
+		t.Fatalf("translation status = %s, want PENDING", repo.createdExcursion.TranslationStatus)
+	}
+}
+
+func TestCreateExcursionAsyncTranslationDoesNotQueueWhenAllTranslationsProvided(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	uc := newAsyncTranslationTestUseCase(repo, &translatorStub{}, actorUserID)
+	input := validAsyncTranslationCreateInput(actorUserID)
+	input.Itinerary[0].Translations["en"] = model.ExcursionItineraryLocalizedCopy{
+		Title: "Hotel departure", Description: "Meet your guide and start the route.",
+	}
+	input.Itinerary[0].Translations["kk"] = model.ExcursionItineraryLocalizedCopy{
+		Title: "Қонақүйден шығу", Description: "Гидпен кездесіп, маршрутты бастаңыз.",
+	}
+
+	_, err := uc.CreateExcursion(context.Background(), input)
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	if len(repo.createdRelations.TranslationJobs) != 0 {
+		t.Fatalf("translation jobs = %d, want none", len(repo.createdRelations.TranslationJobs))
+	}
+	if repo.createdExcursion.TranslationStatus != model.ExcursionTranslationCompleted {
+		t.Fatalf("translation status = %s, want COMPLETED", repo.createdExcursion.TranslationStatus)
+	}
+}
+
+func TestUpdateExcursionAsyncTranslationMarksOldJobsStale(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	repo.gotExcursion = mustNewAppTestExcursion(t, uuid.New(), actorUserID)
+	uc := newAsyncTranslationTestUseCase(repo, &translatorStub{}, actorUserID)
+
+	_, err := uc.UpdateExcursion(
+		context.Background(),
+		validAsyncTranslationUpdateInput(actorUserID, repo.gotExcursion.ID),
+	)
+
+	if err != nil {
+		t.Fatalf("UpdateExcursion() error = %v", err)
+	}
+	if !repo.savedRelations.StaleTranslationJobs {
+		t.Fatal("old translation jobs were not scheduled to become stale")
+	}
+}
+
+func TestUpdateExcursionAsyncTranslationQueuesNewSourceHash(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	repo.gotExcursion = mustNewAppTestExcursion(t, uuid.New(), actorUserID)
+	uc := newAsyncTranslationTestUseCase(repo, &translatorStub{}, actorUserID)
+	input := validAsyncTranslationUpdateInput(actorUserID, repo.gotExcursion.ID)
+	input.Itinerary[0].Description = "Обновлённое подробное описание начала маршрута."
+	input.Itinerary[0].Translations["ru"] = model.ExcursionItineraryLocalizedCopy{
+		Title: input.Itinerary[0].Title, Description: input.Itinerary[0].Description,
+	}
+
+	_, err := uc.UpdateExcursion(context.Background(), input)
+
+	if err != nil {
+		t.Fatalf("UpdateExcursion() error = %v", err)
+	}
+	if len(repo.savedRelations.TranslationJobs) != 2 {
+		t.Fatalf("translation jobs = %d, want 2", len(repo.savedRelations.TranslationJobs))
+	}
+	wantHash := model.HashExcursionTranslationSource("ru", map[string]string{
+		"title": input.Itinerary[0].Title, "description": input.Itinerary[0].Description,
+	})
+	if repo.savedRelations.TranslationJobs[0].SourceHash != wantHash {
+		t.Fatalf("source hash = %q, want %q", repo.savedRelations.TranslationJobs[0].SourceHash, wantHash)
+	}
+}
+
+func TestUpdateExcursionAsyncTranslationOverwritesStaleSourceCopy(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	repo.gotExcursion = mustNewAppTestExcursion(t, uuid.New(), actorUserID)
+	uc := newAsyncTranslationTestUseCase(repo, &translatorStub{}, actorUserID)
+	input := validAsyncTranslationUpdateInput(actorUserID, repo.gotExcursion.ID)
+	input.Itinerary[0].Title = "Новый выезд из отеля"
+	input.Itinerary[0].Description = "Новое подробное описание начала маршрута."
+	input.Itinerary[0].Translations["ru"] = model.ExcursionItineraryLocalizedCopy{
+		Title:       "Старый заголовок",
+		Description: "Старое описание маршрута.",
+	}
+
+	_, err := uc.UpdateExcursion(context.Background(), input)
+
+	if err != nil {
+		t.Fatalf("UpdateExcursion() error = %v", err)
+	}
+	sourceCopy := repo.savedRelations.Itinerary[0].Translations["ru"]
+	if sourceCopy.Title != input.Itinerary[0].Title || sourceCopy.Description != input.Itinerary[0].Description {
+		t.Fatalf("source copy = %#v, want current base title and description", sourceCopy)
+	}
+	if got := repo.savedRelations.TranslationJobs[0].SourceFields; got["title"] != input.Itinerary[0].Title || got["description"] != input.Itinerary[0].Description {
+		t.Fatalf("job source fields = %#v, want current base title and description", got)
+	}
+}
+
+func TestUpdateExcursionAsyncTranslationSavesWhenTranslatorUnavailable(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	repo.gotExcursion = mustNewAppTestExcursion(t, uuid.New(), actorUserID)
+	translator := &translatorStub{err: context.DeadlineExceeded}
+	uc := newAsyncTranslationTestUseCase(repo, translator, actorUserID)
+
+	_, err := uc.UpdateExcursion(
+		context.Background(),
+		validAsyncTranslationUpdateInput(actorUserID, repo.gotExcursion.ID),
+	)
+
+	if err != nil {
+		t.Fatalf("UpdateExcursion() error = %v", err)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("updated excursion was not persisted")
+	}
+	if len(translator.calls) != 0 {
+		t.Fatalf("translator calls = %d, want 0 in async write path", len(translator.calls))
+	}
+}
+
 func TestCreateExcursionRejectsFreeTextIncludedItem(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
@@ -4393,6 +4556,87 @@ func validAppTestExcursionRelations(excursionID uuid.UUID) port.ExcursionRelatio
 				Description:        "Meet your guide and start the route.",
 			},
 		},
+	}
+}
+
+func newAsyncTranslationTestUseCase(
+	repo *excursionRepoStub,
+	translator port.ExcursionTranslator,
+	actorUserID uuid.UUID,
+) *ExcursionUseCase {
+	return NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil, translator).WithAsyncTranslationConfig(true, 5)
+}
+
+func validAsyncTranslationCreateInput(actorUserID uuid.UUID) CreateExcursionInput {
+	return CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		SourceLanguage:  "ru",
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []ExcursionItineraryItemInput{
+			{
+				StartOffsetMinutes: 0,
+				Title:              "Выезд из отеля",
+				Description:        "Встречаемся с гидом и начинаем маршрут.",
+				Translations: model.ExcursionItineraryTranslations{
+					"ru": {
+						Title: "Выезд из отеля", Description: "Встречаемся с гидом и начинаем маршрут.",
+					},
+				},
+			},
+		},
+	}
+}
+
+func validAsyncTranslationUpdateInput(actorUserID uuid.UUID, excursionID uuid.UUID) UpdateExcursionInput {
+	createInput := validAsyncTranslationCreateInput(actorUserID)
+	return UpdateExcursionInput{
+		ActorUserID:           actorUserID,
+		ExcursionID:           excursionID,
+		SourceLanguage:        createInput.SourceLanguage,
+		LandmarkID:            createInput.LandmarkID,
+		LandmarkName:          createInput.LandmarkName,
+		CategorySlug:          createInput.CategorySlug,
+		ProductTranslations:   createInput.ProductTranslations,
+		Visibility:            createInput.Visibility,
+		DurationMinutes:       createInput.DurationMinutes,
+		MaxGroupSize:          createInput.MaxGroupSize,
+		LanguageCodes:         createInput.LanguageCodes,
+		CountryCode:           createInput.CountryCode,
+		CityName:              createInput.CityName,
+		DepartureCityID:       createInput.DepartureCityID,
+		MeetingPoint:          createInput.MeetingPoint,
+		Latitude:              createInput.Latitude,
+		Longitude:             createInput.Longitude,
+		MapURL:                createInput.MapURL,
+		PriceAmount:           createInput.PriceAmount,
+		Currency:              createInput.Currency,
+		CoverFileID:           createInput.CoverFileID,
+		PhotoFileIDs:          createInput.PhotoFileIDs,
+		ProductCoverFileID:    createInput.ProductCoverFileID,
+		ProductCoverImageURL:  createInput.ProductCoverImageURL,
+		ProductPhotoFileIDs:   createInput.ProductPhotoFileIDs,
+		ProductPhotoImageURLs: createInput.ProductPhotoImageURLs,
+		IncludedItems:         createInput.IncludedItems,
+		Itinerary:             createInput.Itinerary,
 	}
 }
 

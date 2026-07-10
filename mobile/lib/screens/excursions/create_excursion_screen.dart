@@ -18,6 +18,7 @@ import '../../core/network/file_api.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/excursions/excursion_cover_url.dart';
+import '../../features/excursions/guide_offer_status.dart';
 import '../../features/excursions/models/create_excursion_request.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_localization.dart';
@@ -153,6 +154,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   var _didApplyInitialExcursion = false;
   var _didApplyHomeLocation = false;
   String? _editingExcursionStatus;
+  String? _serverDraftId;
 
   final _landmarkNameCtrl = TextEditingController();
   final _cityNameCtrl = TextEditingController();
@@ -411,6 +413,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     return {
       'version': _autosaveVersion,
       'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'serverDraftId': _serverDraftId,
       'currentStep': _currentStep,
       'creationMode': _creationMode.name,
       'selectedCategorySlug': _selectedCategorySlug,
@@ -463,6 +466,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _isApplyingAutosaveDraft = true;
     setState(() {
       _currentStep = restoredStep;
+      _serverDraftId = _stringFromDraft(draft['serverDraftId']);
       _creationMode = _enumFromDraft(
         _ExcursionCreationMode.values,
         _stringFromDraft(draft['creationMode']),
@@ -1070,6 +1074,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final provider = context.read<ExcursionProvider>();
     final request = _buildRequest();
     ExcursionVm? saved;
+    String? submissionErrorMessage;
+    var submissionHandled = false;
     if (_isEditMode) {
       final excursionId = widget.excursionId!.trim();
       saved = await provider.updateExcursionOffer(excursionId, request);
@@ -1077,13 +1083,21 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         saved = await provider.submitExcursionForPublishing(excursionId);
       }
     } else {
-      saved = submitForReview
-          ? await provider.createAndSubmitExcursion(request)
-          : await provider.createDraftExcursion(request);
+      final result = await _saveNewExcursion(
+        provider: provider,
+        request: request,
+        submitForReview: submitForReview,
+        l10n: l10n,
+      );
+      saved = result.excursion;
+      submissionErrorMessage = result.errorMessage;
+      submissionHandled = result.handled;
     }
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
+
+    if (submissionHandled) return;
 
     if (saved != null) {
       _editingExcursionStatus = saved.status.trim().toUpperCase();
@@ -1112,6 +1126,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       context,
       title: l10n.error,
       message:
+          submissionErrorMessage ??
           provider.actionErrorMessage ??
           (_isEditMode
               ? l10n.createExcursionUpdateFailed
@@ -1119,11 +1134,131 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     );
   }
 
+  Future<({ExcursionVm? excursion, String? errorMessage, bool handled})>
+  _saveNewExcursion({
+    required ExcursionProvider provider,
+    required CreateExcursionRequest request,
+    required bool submitForReview,
+    required AppLocalizations l10n,
+  }) async {
+    var draftId = (_serverDraftId ?? '').trim();
+    ExcursionVm? draft;
+
+    if (draftId.isNotEmpty) {
+      final current = await provider.loadMyExcursionForEdit(draftId);
+      if (!mounted) {
+        return (excursion: null, errorMessage: null, handled: true);
+      }
+      if (current == null) {
+        return (excursion: null, errorMessage: null, handled: false);
+      }
+      if (_isExcursionSubmissionComplete(current)) {
+        return (excursion: current, errorMessage: null, handled: false);
+      }
+      if (!_isEditableServerDraft(current)) {
+        await showErrorDialog(
+          context,
+          title: l10n.createExcursionExistingDraftTitle,
+          message: l10n.createExcursionExistingActiveDescription,
+        );
+        return (excursion: null, errorMessage: null, handled: true);
+      }
+      draft = await provider.updateExcursionOffer(draftId, request);
+    } else {
+      draft = await provider.createDraftExcursion(request);
+      if (draft == null && provider.hasActiveExcursionForPlaceConflict) {
+        final existing = await provider.findActiveExcursionForCreateRequest(
+          request,
+        );
+        if (!mounted) {
+          return (excursion: null, errorMessage: null, handled: true);
+        }
+        if (existing != null) {
+          if (!_isEditableServerDraft(existing)) {
+            await showErrorDialog(
+              context,
+              title: l10n.createExcursionExistingDraftTitle,
+              message: l10n.createExcursionExistingActiveDescription,
+            );
+            return (excursion: null, errorMessage: null, handled: true);
+          }
+
+          final shouldRecover = await _showExcursionAmberConfirmDialog(
+            title: l10n.createExcursionExistingDraftTitle,
+            description: submitForReview
+                ? l10n.createExcursionExistingDraftDescription
+                : l10n.createExcursionExistingDraftSaveDescription,
+            cancelLabel: l10n.cancelButton,
+            confirmLabel: submitForReview
+                ? l10n.createExcursionExistingDraftConfirm
+                : l10n.createExcursionExistingDraftSaveConfirm,
+          );
+          if (!mounted || !shouldRecover) {
+            return (excursion: null, errorMessage: null, handled: true);
+          }
+
+          draftId = editableGuideExcursionId(existing);
+          await _rememberServerDraft(draftId);
+          draft = await provider.updateExcursionOffer(draftId, request);
+        }
+      } else if (draft != null) {
+        draftId = editableGuideExcursionId(draft);
+        await _rememberServerDraft(draftId);
+      }
+    }
+
+    if (draft == null) {
+      return (excursion: null, errorMessage: null, handled: false);
+    }
+    if (!submitForReview) {
+      return (excursion: draft, errorMessage: null, handled: false);
+    }
+    if (draftId.isEmpty) {
+      return (
+        excursion: null,
+        errorMessage: l10n.createExcursionFailed,
+        handled: false,
+      );
+    }
+
+    final submitted = await provider.submitExcursionForPublishing(draftId);
+    if (submitted != null) {
+      return (excursion: submitted, errorMessage: null, handled: false);
+    }
+    final cause = provider.actionErrorMessage ?? l10n.createExcursionFailed;
+    return (
+      excursion: null,
+      errorMessage: l10n.createExcursionDraftSubmitFailed(cause),
+      handled: false,
+    );
+  }
+
+  Future<void> _rememberServerDraft(String excursionId) async {
+    final normalized = excursionId.trim();
+    if (normalized.isEmpty) return;
+    _serverDraftId = normalized;
+    try {
+      await _persistAutosaveDraft();
+    } catch (_) {
+      // The in-memory id still makes retries safe for the current form session.
+    }
+  }
+
+  bool _isEditableServerDraft(ExcursionVm excursion) {
+    return isDraftGuideOffer(excursion) || isRejectedGuideOffer(excursion);
+  }
+
+  bool _isExcursionSubmissionComplete(ExcursionVm excursion) {
+    final status = excursion.status.trim().toUpperCase();
+    return status == 'PUBLISHED' || isReviewGuideOffer(excursion);
+  }
+
   CreateExcursionRequest _buildRequest() {
     final price = double.tryParse(_priceAmountCtrl.text.trim()) ?? 0;
     final isCombinedRoute =
         _creationMode == _ExcursionCreationMode.combinedRoute;
     return CreateExcursionRequest(
+      sourceLanguage: Localizations.localeOf(context).languageCode,
       landmarkName: isCombinedRoute ? null : _landmarkNameCtrl.text.trim(),
       landmarkId: isCombinedRoute ? null : _selectedLandmarkId,
       categorySlug: _selectedCategorySlug,
@@ -2097,6 +2232,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: context.createExcursionColors.transparent,
+      extendToBottom: true,
       builder: (context) => _AddItinerarySlotSheet(
         l10n: l10n,
         initialItem: item,
@@ -4388,6 +4524,7 @@ class _LandmarkSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isLightTheme = Theme.of(context).brightness == Brightness.light;
     final displayName = landmarkName.trim();
     final displayCity = cityName.trim();
     final title = hasSelection && displayName.isNotEmpty
@@ -4407,14 +4544,19 @@ class _LandmarkSelectionCard extends StatelessWidget {
         DecoratedBox(
           decoration: AppBoxDecoration(
             borderRadius: AppBorderRadius.circular(24),
-            gradient: LinearGradient(
-              colors: [
-                context.createExcursionColors.textMuted,
-                context.createExcursionColors.surfaceWarm,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: isLightTheme
+                ? context.createExcursionColors.surfaceRaised
+                : null,
+            gradient: isLightTheme
+                ? null
+                : LinearGradient(
+                    colors: [
+                      context.createExcursionColors.textMuted,
+                      context.createExcursionColors.surfaceWarm,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
             border: errorText == null
                 ? null
                 : Border.all(
@@ -4424,7 +4566,7 @@ class _LandmarkSelectionCard extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: context.createExcursionColors.black.withValues(
-                  alpha: 0.24,
+                  alpha: isLightTheme ? 0.08 : 0.24,
                 ),
                 blurRadius: 28,
                 offset: const Offset(0, 14),
@@ -4444,9 +4586,11 @@ class _LandmarkSelectionCard extends StatelessWidget {
                       height: 76,
                       decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.createExcursionColors.white.withValues(
-                          alpha: 0.12,
-                        ),
+                        color: isLightTheme
+                            ? context.createExcursionColors.secondaryContainer
+                            : context.createExcursionColors.white.withValues(
+                                alpha: 0.12,
+                              ),
                       ),
                       child: Icon(
                         Icons.place_rounded,
@@ -4786,6 +4930,7 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final isLightTheme = Theme.of(context).brightness == Brightness.light;
     final isCompact = width <= 360;
     final radius = isCompact ? 26.0 : 30.0;
     final height = isCompact ? 184.0 : 206.0;
@@ -4805,28 +4950,29 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 _buildBackground(context, hasPreview: hasPreview),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          context.createExcursionColors.black.withValues(
-                            alpha: hasPreview ? 0.08 : 0.12,
-                          ),
-                          context.createExcursionColors.black.withValues(
-                            alpha: hasPreview ? 0.42 : 0.18,
-                          ),
-                          context.createExcursionColors.black.withValues(
-                            alpha: 0.68,
-                          ),
-                        ],
-                        stops: const [0, 0.52, 1],
+                if (hasPreview || !isLightTheme)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            context.createExcursionColors.black.withValues(
+                              alpha: hasPreview ? 0.08 : 0.12,
+                            ),
+                            context.createExcursionColors.black.withValues(
+                              alpha: hasPreview ? 0.42 : 0.18,
+                            ),
+                            context.createExcursionColors.black.withValues(
+                              alpha: 0.68,
+                            ),
+                          ],
+                          stops: const [0, 0.52, 1],
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Positioned(
                   left: isCompact ? 18 : 22,
                   right: isCompact ? 18 : 22,
@@ -4983,6 +5129,8 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxBadgeWidth =
         MediaQuery.sizeOf(context).width - (compact ? 72 : 88);
+    final isLightPlaceholder =
+        Theme.of(context).brightness == Brightness.light && !hasPreview;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5034,6 +5182,8 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
           style: AppTextStyle(
             color: hasError
                 ? context.createExcursionColors.danger
+                : isLightPlaceholder
+                ? context.createExcursionColors.textSecondary
                 : context.createExcursionColors.white.withValues(alpha: 0.88),
             fontSize: compact ? 13 : 14,
             height: 1.35,
@@ -5790,165 +5940,164 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: Padding(
-        padding: const AppEdgeInsets.only(bottom: 16),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            var maxHeight = _modalMaxHeightAboveKeyboard(context);
-            if (constraints.maxHeight.isFinite) {
-              maxHeight = maxHeight
-                  .clamp(0.0, constraints.maxHeight)
-                  .toDouble();
-            }
+    final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 
-            return SizedBox(
-              width: double.infinity,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                child: DecoratedBox(
-                  decoration: AppBoxDecoration(
-                    color: context.createExcursionColors.surfaceWarm,
-                    borderRadius: AppBorderRadius.circular(28),
-                  ),
-                  child: Padding(
-                    padding: const AppEdgeInsets.all(18),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var maxHeight = _modalMaxHeightAboveKeyboard(context);
+        if (constraints.maxHeight.isFinite) {
+          maxHeight = maxHeight.clamp(0.0, constraints.maxHeight).toDouble();
+        }
+
+        return SizedBox(
+          width: double.infinity,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: DecoratedBox(
+              key: const ValueKey('excursion-itinerary-slot-sheet-surface'),
+              decoration: AppBoxDecoration(
+                color: context.createExcursionColors.surfaceWarm,
+                borderRadius: const AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(28),
+                ),
+              ),
+              child: Padding(
+                padding: AppEdgeInsets.fromLTRB(
+                  18,
+                  18,
+                  18,
+                  34 + systemBottomPadding,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: widget.initialItem == null
+                            ? widget.l10n.createExcursionAddTimeSlot
+                            : widget.l10n.createExcursionEditTimeSlot,
+                      ),
+                      const SizedBox(height: 14),
+                      if (widget.enablePlaceSelection) ...[
+                        _LandmarkSelectionCard(
+                          landmarkName: _selectedPlaceName ?? '',
+                          cityName: '',
+                          hasSelection: (_selectedPlaceId ?? '')
+                              .trim()
+                              .isNotEmpty,
+                          errorText: _placeErrorText,
+                          onSelectLocation: _openStopPlaceSelector,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
                         children: [
-                          _SectionHeader(
-                            title: widget.initialItem == null
-                                ? widget.l10n.createExcursionAddTimeSlot
-                                : widget.l10n.createExcursionEditTimeSlot,
-                          ),
-                          const SizedBox(height: 14),
-                          if (widget.enablePlaceSelection) ...[
-                            _LandmarkSelectionCard(
-                              landmarkName: _selectedPlaceName ?? '',
-                              cityName: '',
-                              hasSelection: (_selectedPlaceId ?? '')
-                                  .trim()
-                                  .isNotEmpty,
-                              errorText: _placeErrorText,
-                              onSelectLocation: _openStopPlaceSelector,
+                          Expanded(
+                            child: _ExcursionTextField(
+                              controller: _offsetCtrl,
+                              label:
+                                  widget.l10n.createExcursionStartOffsetLabel,
+                              hint: '120',
+                              icon: Icons.schedule_rounded,
+                              keyboardType: TextInputType.number,
+                              errorText: _offsetErrorText,
+                              onChanged: (_) {
+                                if (_offsetErrorText != null) {
+                                  setState(() => _offsetErrorText = null);
+                                }
+                              },
                             ),
-                            const SizedBox(height: 12),
-                          ],
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _ExcursionTextField(
-                                  controller: _offsetCtrl,
-                                  label: widget
-                                      .l10n
-                                      .createExcursionStartOffsetLabel,
-                                  hint: '120',
-                                  icon: Icons.schedule_rounded,
-                                  keyboardType: TextInputType.number,
-                                  errorText: _offsetErrorText,
-                                  onChanged: (_) {
-                                    if (_offsetErrorText != null) {
-                                      setState(() => _offsetErrorText = null);
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _ExcursionTextField(
-                                  controller: _durationCtrl,
-                                  label: widget
-                                      .l10n
-                                      .createExcursionSlotDurationLabel,
-                                  hint: '60',
-                                  icon: Icons.timelapse_rounded,
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                            ],
                           ),
-                          const SizedBox(height: 12),
-                          _ExcursionTextField(
-                            controller: _titleCtrl,
-                            label:
-                                widget.l10n.createExcursionItineraryTitleLabel,
-                            hint: widget.l10n.createExcursionItineraryTitleHint,
-                            icon: Icons.route_outlined,
-                            readOnly:
-                                widget.enablePlaceSelection &&
-                                (_selectedPlaceId ?? '').trim().isNotEmpty,
-                            errorText: _titleErrorText,
-                            onChanged: (_) {
-                              if (_titleErrorText != null) {
-                                setState(() => _titleErrorText = null);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          _ExcursionTextField(
-                            controller: _descriptionCtrl,
-                            label: widget
-                                .l10n
-                                .createExcursionItineraryDescriptionLabel,
-                            hint: widget
-                                .l10n
-                                .createExcursionItineraryDescriptionHint,
-                            icon: Icons.notes_rounded,
-                            errorText: _descriptionErrorText,
-                            onChanged: (_) {
-                              if (_descriptionErrorText != null) {
-                                setState(() => _descriptionErrorText = null);
-                              }
-                            },
-                            minLines: 3,
-                            maxLines: 5,
-                          ),
-                          if (_errorText != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              _errorText!,
-                              style: AppTextStyle(
-                                color: context.createExcursionColors.danger,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: _submit,
-                              style: FilledButton.styleFrom(
-                                backgroundColor:
-                                    context.createExcursionColors.primary,
-                                foregroundColor:
-                                    context.createExcursionColors.textPrimary,
-                                padding: const AppEdgeInsets.symmetric(
-                                  vertical: 15,
-                                ),
-                              ),
-                              child: Text(
-                                widget.l10n.confirm,
-                                style: AppTextStyle(
-                                  color:
-                                      context.createExcursionColors.textPrimary,
-                                ),
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ExcursionTextField(
+                              controller: _durationCtrl,
+                              label:
+                                  widget.l10n.createExcursionSlotDurationLabel,
+                              hint: '60',
+                              icon: Icons.timelapse_rounded,
+                              keyboardType: TextInputType.number,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      _ExcursionTextField(
+                        controller: _titleCtrl,
+                        label: widget.l10n.createExcursionItineraryTitleLabel,
+                        hint: widget.l10n.createExcursionItineraryTitleHint,
+                        icon: Icons.route_outlined,
+                        readOnly:
+                            widget.enablePlaceSelection &&
+                            (_selectedPlaceId ?? '').trim().isNotEmpty,
+                        errorText: _titleErrorText,
+                        onChanged: (_) {
+                          if (_titleErrorText != null) {
+                            setState(() => _titleErrorText = null);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _ExcursionTextField(
+                        controller: _descriptionCtrl,
+                        label: widget
+                            .l10n
+                            .createExcursionItineraryDescriptionLabel,
+                        hint:
+                            widget.l10n.createExcursionItineraryDescriptionHint,
+                        icon: Icons.notes_rounded,
+                        errorText: _descriptionErrorText,
+                        onChanged: (_) {
+                          if (_descriptionErrorText != null) {
+                            setState(() => _descriptionErrorText = null);
+                          }
+                        },
+                        minLines: 3,
+                        maxLines: 5,
+                      ),
+                      if (_errorText != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorText!,
+                          style: AppTextStyle(
+                            color: context.createExcursionColors.danger,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          key: const ValueKey(
+                            'excursion-itinerary-slot-confirm',
+                          ),
+                          onPressed: _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                context.createExcursionColors.primary,
+                            foregroundColor:
+                                context.createExcursionColors.textPrimary,
+                            padding: const AppEdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
+                          ),
+                          child: Text(
+                            widget.l10n.confirm,
+                            style: AppTextStyle(
+                              color: context.createExcursionColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

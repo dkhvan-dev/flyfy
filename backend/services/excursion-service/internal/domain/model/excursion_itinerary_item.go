@@ -149,3 +149,33 @@ func NormalizeExcursionItineraryTranslations(input ExcursionItineraryTranslation
 	}
 	return result
 }
+
+func (i *ExcursionItineraryItem) SourceCopyForLanguage(language string) ExcursionItineraryLocalizedCopy {
+	if i == nil {
+		return ExcursionItineraryLocalizedCopy{}
+	}
+	normalizedLanguage, ok := NormalizeExcursionTranslationLanguage(language)
+	if !ok {
+		return ExcursionItineraryLocalizedCopy{}
+	}
+	copy := NormalizeExcursionItineraryTranslations(i.Translations)[normalizedLanguage]
+	if strings.TrimSpace(copy.Title) == "" {
+		copy.Title = strings.TrimSpace(i.Title)
+	}
+	if strings.TrimSpace(copy.Description) == "" {
+		copy.Description = strings.TrimSpace(i.Description)
+	}
+	return copy
+}
+
+func (i *ExcursionItineraryItem) HasCompleteTranslationForLanguage(language string) bool {
+	if i == nil {
+		return false
+	}
+	normalizedLanguage, ok := NormalizeExcursionTranslationLanguage(language)
+	if !ok {
+		return false
+	}
+	copy, exists := NormalizeExcursionItineraryTranslations(i.Translations)[normalizedLanguage]
+	return exists && strings.TrimSpace(copy.Title) != "" && strings.TrimSpace(copy.Description) != ""
+}

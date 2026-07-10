@@ -65,10 +65,66 @@ func TestLoadPlaceServiceConfigFromEnvironment(t *testing.T) {
 	}
 }
 
+func TestLoadExcursionTranslationDefaultsKeepWritesIndependentFromProvider(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.Translation.AsyncEnabled {
+		t.Fatal("async translation must be enabled by default")
+	}
+	if cfg.Translation.WorkerEnabled {
+		t.Fatal("translation worker must be disabled by default")
+	}
+	if cfg.Translation.WorkerBatchSize != 10 || cfg.Translation.WorkerInterval != 2*time.Second {
+		t.Fatalf("worker defaults = batch %d interval %s", cfg.Translation.WorkerBatchSize, cfg.Translation.WorkerInterval)
+	}
+	if cfg.Translation.MaxAttempts != 5 || cfg.Translation.RetryBaseDelay != 30*time.Second {
+		t.Fatalf("retry defaults = attempts %d delay %s", cfg.Translation.MaxAttempts, cfg.Translation.RetryBaseDelay)
+	}
+	if cfg.Translation.RequestTimeout != 8*time.Second || cfg.Translation.WorkerLockTimeout != 2*time.Minute {
+		t.Fatalf("timeout defaults = request %s lock %s", cfg.Translation.RequestTimeout, cfg.Translation.WorkerLockTimeout)
+	}
+}
+
+func TestLoadExcursionTranslationConfigFromEnvironment(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("EXCURSION_ASYNC_TRANSLATION_ENABLED", "true")
+	t.Setenv("EXCURSION_TRANSLATION_WORKER_ENABLED", "true")
+	t.Setenv("EXCURSION_TRANSLATION_WORKER_BATCH_SIZE", "25")
+	t.Setenv("EXCURSION_TRANSLATION_WORKER_INTERVAL", "3s")
+	t.Setenv("EXCURSION_TRANSLATION_MAX_ATTEMPTS", "7")
+	t.Setenv("EXCURSION_TRANSLATION_RETRY_BASE_DELAY", "45s")
+	t.Setenv("EXCURSION_TRANSLATION_REQUEST_TIMEOUT", "6s")
+	t.Setenv("EXCURSION_TRANSLATION_LOCK_TIMEOUT", "90s")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.Translation.AsyncEnabled || !cfg.Translation.WorkerEnabled {
+		t.Fatal("async translation config was not enabled")
+	}
+	if cfg.Translation.WorkerBatchSize != 25 || cfg.Translation.WorkerInterval != 3*time.Second {
+		t.Fatalf("worker config = batch %d interval %s", cfg.Translation.WorkerBatchSize, cfg.Translation.WorkerInterval)
+	}
+	if cfg.Translation.MaxAttempts != 7 || cfg.Translation.RetryBaseDelay != 45*time.Second {
+		t.Fatalf("retry config = attempts %d delay %s", cfg.Translation.MaxAttempts, cfg.Translation.RetryBaseDelay)
+	}
+	if cfg.Translation.RequestTimeout != 6*time.Second || cfg.Translation.WorkerLockTimeout != 90*time.Second {
+		t.Fatalf("timeout config = request %s lock %s", cfg.Translation.RequestTimeout, cfg.Translation.WorkerLockTimeout)
+	}
+}
+
 func TestLoadGuideServiceHTTPConfigFromEnvironment(t *testing.T) {
 	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
 	t.Setenv("GUIDE_SERVICE_URL", "http://guide.test")
 	t.Setenv("GUIDE_SERVICE_HTTP_TIMEOUT", "7s")
+	t.Setenv("GUIDE_SERVICE_VERIFY_TIMEOUT", "9s")
 
 	cfg, err := Load(context.Background())
 	if err != nil {
@@ -80,6 +136,9 @@ func TestLoadGuideServiceHTTPConfigFromEnvironment(t *testing.T) {
 	}
 	if cfg.GuideService.HTTPTimeout != 7*time.Second {
 		t.Fatalf("guide service http timeout = %s, want 7s", cfg.GuideService.HTTPTimeout)
+	}
+	if cfg.GuideService.VerifyTimeout != 9*time.Second {
+		t.Fatalf("guide service verify timeout = %s, want 9s", cfg.GuideService.VerifyTimeout)
 	}
 }
 

@@ -6,16 +6,53 @@ String localizedExcursionTitle({
   required String languageCode,
   required ExcursionVm excursion,
   PlaceVm? place,
+  Map<String, PlaceVm> placesById = const {},
   String fallback = '',
 }) {
   return _firstNonBlank([
-    _excursionCopyFor(excursion, languageCode)?.title,
+    _localizedCombinedRouteTitle(
+      languageCode: languageCode,
+      excursion: excursion,
+      placesById: placesById,
+    ),
     if (_isSamePlace(excursion, place))
       localizedPlaceTitle(languageCode: languageCode, place: place),
+    _excursionCopyFor(excursion, languageCode)?.title,
     excursion.title,
     excursion.landmarkName,
     fallback,
   ]);
+}
+
+String _localizedCombinedRouteTitle({
+  required String languageCode,
+  required ExcursionVm excursion,
+  required Map<String, PlaceVm> placesById,
+}) {
+  if (excursion.routeKind.trim().toUpperCase() != 'COMBINED_ROUTE') {
+    return '';
+  }
+
+  final placeIds = <String>[];
+  final seen = <String>{};
+  for (final value in excursion.placeIds) {
+    final placeId = value.trim();
+    if (placeId.isNotEmpty && seen.add(placeId)) {
+      placeIds.add(placeId);
+    }
+  }
+  if (placeIds.length < 2) return '';
+
+  final titles = <String>[];
+  for (final placeId in placeIds) {
+    final place = placesById[placeId];
+    if (place == null) return '';
+
+    final title = localizedPlaceTitle(languageCode: languageCode, place: place);
+    if (title.isEmpty) return '';
+    titles.add(title);
+  }
+  return titles.join(' + ');
 }
 
 String localizedExcursionSummary({
@@ -25,9 +62,9 @@ String localizedExcursionSummary({
   String fallback = '',
 }) {
   return _firstNonBlank([
-    _excursionCopyFor(excursion, languageCode)?.summary,
     if (_isSamePlace(excursion, place))
       _localizedPlaceDescription(place, languageCode),
+    _excursionCopyFor(excursion, languageCode)?.summary,
     excursion.summary,
     fallback,
   ]);
@@ -40,9 +77,9 @@ String localizedExcursionDescription({
   String fallback = '',
 }) {
   return _firstNonBlank([
-    _excursionCopyFor(excursion, languageCode)?.description,
     if (_isSamePlace(excursion, place))
       _localizedPlaceDescription(place, languageCode),
+    _excursionCopyFor(excursion, languageCode)?.description,
     excursion.description,
     excursion.summary,
     fallback,
@@ -154,6 +191,23 @@ String localizedExcursionLanguageLabel(AppLocalizations l10n, String code) {
       return l10n.excursionLanguageSpanish;
     case 'tr':
       return l10n.excursionLanguageTurkish;
+    default:
+      return code.trim().toUpperCase();
+  }
+}
+
+String localizedExcursionTranslationSourceLanguageLabel(
+  AppLocalizations l10n,
+  String code,
+) {
+  switch (code.trim().toLowerCase()) {
+    case 'en':
+      return l10n.excursionTranslationSourceLanguageEnglish;
+    case 'ru':
+      return l10n.excursionTranslationSourceLanguageRussian;
+    case 'kk':
+    case 'kz':
+      return l10n.excursionTranslationSourceLanguageKazakh;
     default:
       return code.trim().toUpperCase();
   }

@@ -1,6 +1,15 @@
 import 'package:dio/dio.dart';
 
 class DioErrorMapper {
+  static String? backendCode(DioException e) {
+    final data = e.response?.data;
+    if (data is! Map) return null;
+    final code = data['code'];
+    if (code is! String) return null;
+    final normalized = code.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
   static String toMessage(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:

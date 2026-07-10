@@ -5087,6 +5087,34 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionDetailsLanguage => 'Тіл';
 
   @override
+  String excursionDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Маршрут $sourceLanguage тілінен автоматты түрде аударылды';
+  }
+
+  @override
+  String get excursionDetailsShowOriginal => 'Түпнұсқаны көрсету';
+
+  @override
+  String get excursionDetailsShowTranslation => 'Аударманы көрсету';
+
+  @override
+  String get excursionDetailsTranslationPendingNotice =>
+      'Маршруттың түпнұсқасы көрсетіліп тұр · Аударма дайындалып жатыр';
+
+  @override
+  String get excursionDetailsTranslationUnavailableNotice =>
+      'Маршруттың түпнұсқасы көрсетіліп тұр · Автоматты аударма уақытша қолжетімсіз';
+
+  @override
+  String get excursionTranslationSourceLanguageEnglish => 'ағылшын';
+
+  @override
+  String get excursionTranslationSourceLanguageRussian => 'орыс';
+
+  @override
+  String get excursionTranslationSourceLanguageKazakh => 'қазақ';
+
+  @override
   String get excursionLanguageEnglish => 'Ағылшын';
 
   @override
@@ -5391,6 +5419,32 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionUpdateFailed => 'Ұсынысты жаңарту мүмкін болмады';
+
+  @override
+  String get createExcursionExistingDraftTitle => 'Экскурсия бұрыннан бар';
+
+  @override
+  String get createExcursionExistingDraftDescription =>
+      'Бұл орын үшін өңдеуге болатын экскурсияңыз бар. Оны осы формадағы деректермен ауыстырып, тексеруге жіберу керек пе?';
+
+  @override
+  String get createExcursionExistingDraftConfirm => 'Жаңарту және жіберу';
+
+  @override
+  String get createExcursionExistingDraftSaveDescription =>
+      'Бұл орын үшін өңдеуге болатын экскурсияңыз бар. Оны осы формадағы деректермен ауыстыру керек пе?';
+
+  @override
+  String get createExcursionExistingDraftSaveConfirm => 'Черновикті жаңарту';
+
+  @override
+  String get createExcursionExistingActiveDescription =>
+      'Бұл орын үшін белсенді экскурсияңыз бар. Оны гид кабинетінен ашыңыз.';
+
+  @override
+  String createExcursionDraftSubmitFailed(Object error) {
+    return 'Черновик сақталды, бірақ оны тексеруге жіберу мүмкін болмады. $error Қайталап көру дубликат жасамайды.';
+  }
 
   @override
   String get createExcursionCoverSection => 'Экскурсия қаптамасы';

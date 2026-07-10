@@ -31,6 +31,7 @@ type ExcursionAggregate struct {
 	ProductCoverImageURL  *string
 	ProductPhotoFileIDs   []uuid.UUID
 	ProductPhotoImageURLs []string
+	TranslationJobs       []model.ExcursionTranslationJob
 }
 
 func newExcursionAggregate(item *model.Excursion, relations port.ExcursionRelations) *ExcursionAggregate {
@@ -47,6 +48,7 @@ func newExcursionAggregate(item *model.Excursion, relations port.ExcursionRelati
 		ProductCoverImageURL:  relations.ProductCoverImageURL,
 		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
 		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
+		TranslationJobs:       relations.TranslationJobs,
 	}
 }
 
@@ -77,6 +79,8 @@ type ExcursionUseCase struct {
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
 	searchIndexer           ExcursionSearchIndexer
+	asyncTranslationEnabled bool
+	translationScheduler    *ExcursionTranslationScheduler
 }
 
 const (
@@ -136,7 +140,14 @@ func NewExcursionUseCase(
 		attendanceQRSigningKey:  []byte(defaultExcursionAttendanceQRSigningSecret),
 		attendanceQRTTL:         45 * time.Second,
 		attendanceOfflineWindow: 6 * time.Hour,
+		translationScheduler:    NewExcursionTranslationScheduler(5),
 	}
+}
+
+func (u *ExcursionUseCase) WithAsyncTranslationConfig(enabled bool, maxAttempts int) *ExcursionUseCase {
+	u.asyncTranslationEnabled = enabled
+	u.translationScheduler = NewExcursionTranslationScheduler(maxAttempts)
+	return u
 }
 
 func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileResolver) *ExcursionUseCase {
@@ -202,6 +213,7 @@ type itineraryTranslationJob struct {
 
 type CreateExcursionInput struct {
 	ActorUserID           uuid.UUID
+	SourceLanguage        string
 	LandmarkID            *uuid.UUID
 	LandmarkName          *string
 	CategorySlug          string
@@ -232,6 +244,7 @@ type CreateExcursionInput struct {
 type UpdateExcursionInput struct {
 	ActorUserID           uuid.UUID
 	ExcursionID           uuid.UUID
+	SourceLanguage        string
 	LandmarkID            *uuid.UUID
 	LandmarkName          *string
 	CategorySlug          string
@@ -415,6 +428,10 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
+	sourceLanguage, err := normalizeExcursionSourceLanguage(input.SourceLanguage)
+	if err != nil {
+		return nil, err
+	}
 
 	permission, err := u.verifyGuide(ctx, input.ActorUserID)
 	if err != nil {
@@ -489,6 +506,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		Translations:         nil,
 		CategorySlug:         categorySlug,
 		ProductTranslations:  input.ProductTranslations,
+		SourceLanguage:       sourceLanguage,
 		Visibility:           enum.ExcursionVisibility(strings.TrimSpace(input.Visibility)),
 		DurationMinutes:      input.DurationMinutes,
 		MaxGroupSize:         input.MaxGroupSize,
@@ -518,9 +536,12 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		return nil, err
 	}
 
-	itinerary, err := u.translateItinerary(ctx, input.Itinerary)
-	if err != nil {
-		return nil, err
+	itinerary := ensureSourceLanguageOnItinerary(input.Itinerary, sourceLanguage)
+	if !u.asyncTranslationEnabled {
+		itinerary, err = u.translateItinerary(ctx, itinerary)
+		if err != nil {
+			return nil, err
+		}
 	}
 	relations, err := buildRelations(
 		item.ID,
@@ -536,6 +557,19 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		itinerary,
 	)
 	if err != nil {
+		return nil, err
+	}
+	if u.asyncTranslationEnabled {
+		jobs, scheduleErr := u.translationScheduler.BuildItineraryJobs(item.ID, sourceLanguage, relations.Itinerary, time.Now().UTC())
+		if scheduleErr != nil {
+			return nil, scheduleErr
+		}
+		relations.TranslationJobs = jobs
+	}
+	if err = item.SetTranslationState(
+		sourceLanguage,
+		initialExcursionTranslationStatus(sourceLanguage, relations.Itinerary, relations.TranslationJobs),
+	); err != nil {
 		return nil, err
 	}
 
@@ -558,6 +592,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		ProductCoverImageURL:  relations.ProductCoverImageURL,
 		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
 		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
+		TranslationJobs:       relations.TranslationJobs,
 	}
 	u.syncExcursionSearchDocument(ctx, aggregate)
 	return aggregate, nil
@@ -569,6 +604,10 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	}
 	if input.ExcursionID == uuid.Nil {
 		return nil, ErrInvalidExcursionID
+	}
+	sourceLanguage, err := normalizeExcursionSourceLanguage(input.SourceLanguage)
+	if err != nil {
+		return nil, err
 	}
 
 	item, err := u.repo.GetExcursionByID(ctx, input.ExcursionID)
@@ -662,9 +701,12 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		return nil, err
 	}
 
-	itinerary, err := u.translateItinerary(ctx, input.Itinerary)
-	if err != nil {
-		return nil, err
+	itinerary := ensureSourceLanguageOnItinerary(input.Itinerary, sourceLanguage)
+	if !u.asyncTranslationEnabled {
+		itinerary, err = u.translateItinerary(ctx, itinerary)
+		if err != nil {
+			return nil, err
+		}
 	}
 	relations, err := buildRelations(
 		item.ID,
@@ -680,6 +722,20 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		itinerary,
 	)
 	if err != nil {
+		return nil, err
+	}
+	relations.StaleTranslationJobs = true
+	if u.asyncTranslationEnabled {
+		jobs, scheduleErr := u.translationScheduler.BuildItineraryJobs(item.ID, sourceLanguage, relations.Itinerary, time.Now().UTC())
+		if scheduleErr != nil {
+			return nil, scheduleErr
+		}
+		relations.TranslationJobs = jobs
+	}
+	if err = item.SetTranslationState(
+		sourceLanguage,
+		initialExcursionTranslationStatus(sourceLanguage, relations.Itinerary, relations.TranslationJobs),
+	); err != nil {
 		return nil, err
 	}
 	if item.Status == enum.ExcursionStatusPublished {
@@ -737,6 +793,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		ProductCoverImageURL:  relations.ProductCoverImageURL,
 		ProductPhotoFileIDs:   relations.ProductPhotoFileIDs,
 		ProductPhotoImageURLs: relations.ProductPhotoImageURLs,
+		TranslationJobs:       relations.TranslationJobs,
 	}
 	u.syncExcursionSearchDocument(ctx, aggregate)
 	return aggregate, nil
@@ -3292,6 +3349,84 @@ func (u *ExcursionUseCase) recordEvent(ctx context.Context, excursionID uuid.UUI
 }
 
 var excursionTranslationLocales = []string{"en", "ru", "kk"}
+
+func normalizeExcursionSourceLanguage(value string) (string, error) {
+	if strings.TrimSpace(value) == "" {
+		return "ru", nil
+	}
+	normalized, ok := model.NormalizeExcursionTranslationLanguage(value)
+	if !ok {
+		return "", model.ErrInvalidExcursionTranslationLanguage
+	}
+	return normalized, nil
+}
+
+func ensureSourceLanguageOnItinerary(
+	itinerary []ExcursionItineraryItemInput,
+	sourceLanguage string,
+) []ExcursionItineraryItemInput {
+	result := make([]ExcursionItineraryItemInput, len(itinerary))
+	for index, input := range itinerary {
+		result[index] = input
+		translations := model.NormalizeExcursionItineraryTranslations(input.Translations)
+		if translations == nil {
+			translations = make(model.ExcursionItineraryTranslations, 1)
+		} else {
+			cloned := make(model.ExcursionItineraryTranslations, len(translations)+1)
+			for locale, copy := range translations {
+				cloned[locale] = copy
+			}
+			translations = cloned
+		}
+		copy := translations[sourceLanguage]
+		copy.Title = strings.TrimSpace(input.Title)
+		copy.Description = strings.TrimSpace(input.Description)
+		translations[sourceLanguage] = copy
+		result[index].Translations = model.NormalizeExcursionItineraryTranslations(translations)
+	}
+	return result
+}
+
+func initialExcursionTranslationStatus(
+	sourceLanguage string,
+	itinerary []*model.ExcursionItineraryItem,
+	jobs []model.ExcursionTranslationJob,
+) model.ExcursionTranslationStatus {
+	if len(itinerary) == 0 {
+		return model.ExcursionTranslationNone
+	}
+
+	availableTargets := 0
+	missingTargets := 0
+	for _, target := range excursionTranslationTargets(sourceLanguage) {
+		complete := true
+		for _, item := range itinerary {
+			if item == nil || !item.HasCompleteTranslationForLanguage(target) {
+				complete = false
+				break
+			}
+		}
+		if complete {
+			availableTargets++
+		} else {
+			missingTargets++
+		}
+	}
+
+	if len(jobs) > 0 {
+		if availableTargets > 0 {
+			return model.ExcursionTranslationPartial
+		}
+		return model.ExcursionTranslationPending
+	}
+	if missingTargets > 0 {
+		if availableTargets > 0 {
+			return model.ExcursionTranslationPartial
+		}
+		return model.ExcursionTranslationNone
+	}
+	return model.ExcursionTranslationCompleted
+}
 
 func (u *ExcursionUseCase) translateItinerary(ctx context.Context, itinerary []ExcursionItineraryItemInput) ([]ExcursionItineraryItemInput, error) {
 	if len(itinerary) == 0 {

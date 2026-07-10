@@ -104,6 +104,206 @@ func TestExcursionResponseUsesProductCoverImageURLWhenFileCoverIsMissing(t *test
 	}
 }
 
+func TestExcursionResponseIncludesTranslationInfoForMachineTranslatedDetails(t *testing.T) {
+	excursion := &model.Excursion{
+		ID:               uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      uuid.New(),
+		GuideDisplayName: "Aruzhan T.",
+		Title:            "Charyn Canyon",
+		Summary:          "Private canyon route",
+		Description:      "A detailed canyon excursion.",
+		CategorySlug:     "nature",
+		Status:           enum.ExcursionStatusDraft,
+		Visibility:       enum.ExcursionVisibilityPublic,
+		DurationMinutes:  120,
+		MaxGroupSize:     6,
+		MeetingPoint:     "Charyn entrance",
+		PriceAmount:      120,
+		Currency:         "KZT",
+		Revision:         1,
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
+	}
+
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion: excursion,
+		Itinerary: []*model.ExcursionItineraryItem{
+			{
+				ID:                 uuid.New(),
+				ExcursionID:        excursion.ID,
+				SortOrder:          0,
+				StartOffsetMinutes: 0,
+				Title:              "Чарынский каньон",
+				Description:        "Русское описание маршрута.",
+				Translations: model.ExcursionItineraryTranslations{
+					"ru": {Title: "Чарынский каньон", Description: "Русское описание маршрута."},
+					"en": {Title: "Charyn Canyon", Description: "English route description."},
+				},
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			},
+		},
+	})
+
+	if response.TranslationInfo == nil {
+		t.Fatal("translation info is nil, want machine translation metadata")
+	}
+	if !response.TranslationInfo.Translated {
+		t.Fatal("translation info translated = false, want true")
+	}
+	if response.TranslationInfo.SourceLanguage != "ru" {
+		t.Fatalf("source language = %q, want ru", response.TranslationInfo.SourceLanguage)
+	}
+	if got := response.TranslationInfo.TargetLanguages; len(got) != 1 || got[0] != "en" {
+		t.Fatalf("target languages = %#v, want [en]", got)
+	}
+}
+
+func TestInferItinerarySourceLanguageHandlesNil(t *testing.T) {
+	if got := inferItinerarySourceLanguage(nil); got != "" {
+		t.Fatalf("source language = %q, want empty for nil itinerary item", got)
+	}
+}
+
+func TestExcursionResponseTranslationInfoUsesSelectedAppLanguage(t *testing.T) {
+	excursionID := uuid.New()
+	excursion := &model.Excursion{
+		ID:                excursionID,
+		SourceLanguage:    "ru",
+		TranslationStatus: model.ExcursionTranslationCompleted,
+	}
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion: excursion,
+		Itinerary: []*model.ExcursionItineraryItem{
+			{
+				ID:          uuid.New(),
+				ExcursionID: excursionID,
+				Title:       "Старт",
+				Description: "Описание маршрута",
+				Translations: model.ExcursionItineraryTranslations{
+					"ru": {Title: "Старт", Description: "Описание маршрута"},
+					"en": {Title: "Start", Description: "Route description"},
+				},
+			},
+		},
+	}, "en")
+
+	if response.TranslationInfo == nil {
+		t.Fatal("translation info is nil")
+	}
+	if response.TranslationInfo.CurrentLanguage != "en" || !response.TranslationInfo.IsTranslated {
+		t.Fatalf("translation info = %+v, want translated en state", response.TranslationInfo)
+	}
+	if response.TranslationInfo.Status != "COMPLETED" {
+		t.Fatalf("status = %q, want COMPLETED", response.TranslationInfo.Status)
+	}
+}
+
+func TestExcursionResponseTranslationInfoIncludesPendingAndFailedLanguages(t *testing.T) {
+	excursionID := uuid.New()
+	itemID := uuid.New()
+	failedMessage := "quota_exhausted"
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion: &model.Excursion{
+			ID:                excursionID,
+			SourceLanguage:    "ru",
+			TranslationStatus: model.ExcursionTranslationPartial,
+		},
+		Itinerary: []*model.ExcursionItineraryItem{
+			{
+				ID:           itemID,
+				ExcursionID:  excursionID,
+				Title:        "Старт",
+				Description:  "Описание маршрута",
+				Translations: model.ExcursionItineraryTranslations{"ru": {Title: "Старт", Description: "Описание маршрута"}},
+			},
+		},
+		TranslationJobs: []model.ExcursionTranslationJob{
+			{TargetLanguage: "en", Status: model.ExcursionTranslationJobPending},
+			{TargetLanguage: "kk", Status: model.ExcursionTranslationJobFailed, LastError: &failedMessage},
+		},
+	}, "en")
+
+	if response.TranslationInfo == nil {
+		t.Fatal("translation info is nil")
+	}
+	if got := response.TranslationInfo.PendingLanguages; len(got) != 1 || got[0] != "en" {
+		t.Fatalf("pending languages = %#v, want [en]", got)
+	}
+	if got := response.TranslationInfo.FailedLanguages; len(got) != 1 || got[0] != "kk" {
+		t.Fatalf("failed languages = %#v, want [kk]", got)
+	}
+	if response.TranslationInfo.IsTranslated {
+		t.Fatal("pending current language must not be marked translated")
+	}
+}
+
+func TestRequestedExcursionLanguagePrefersAppLanguageHeader(t *testing.T) {
+	request := httptest.NewRequest("GET", "/v1/excursions/example", nil)
+	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	request.Header.Set("X-Language", "kk")
+
+	if got := requestedExcursionLanguage(request); got != "kk" {
+		t.Fatalf("requested language = %q, want kk", got)
+	}
+}
+
+func TestExcursionResponseIncludesTranslationInfoFromProductTranslations(t *testing.T) {
+	excursion := &model.Excursion{
+		ID:               uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      uuid.New(),
+		GuideDisplayName: "Aruzhan T.",
+		Title:            "Чарынский каньон на рассвете",
+		Summary:          "Русский краткий текст.",
+		Description:      "Русское исходное описание.",
+		ProductTranslations: model.ExcursionTranslations{
+			"ru": {
+				Title:       "Чарынский каньон на рассвете",
+				Summary:     "Русский краткий текст.",
+				Description: "Русское исходное описание.",
+			},
+			"en": {
+				Title:       "Charyn Canyon sunrise",
+				Summary:     "English summary.",
+				Description: "English translated detail text.",
+			},
+			"kk": {
+				Title:       "Шарын шатқалы таң ата",
+				Summary:     "Қазақша қысқа мәтін.",
+				Description: "Қазақша аударылған сипаттама.",
+			},
+		},
+		CategorySlug:    "nature",
+		Status:          enum.ExcursionStatusDraft,
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 120,
+		MaxGroupSize:    6,
+		MeetingPoint:    "Charyn entrance",
+		PriceAmount:     120,
+		Currency:        "KZT",
+		Revision:        1,
+		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
+	}
+
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion: excursion,
+	})
+
+	if response.TranslationInfo == nil {
+		t.Fatal("translation info is nil, want product translation metadata")
+	}
+	if response.TranslationInfo.SourceLanguage != "ru" {
+		t.Fatalf("source language = %q, want ru", response.TranslationInfo.SourceLanguage)
+	}
+	got := response.TranslationInfo.TargetLanguages
+	if len(got) != 2 || got[0] != "en" || got[1] != "kk" {
+		t.Fatalf("target languages = %#v, want [en kk]", got)
+	}
+}
+
 func TestExcursionResponseIncludesOrderedGalleryPhotos(t *testing.T) {
 	coverFileID := uuid.New()
 	secondFileID := uuid.New()
@@ -299,6 +499,8 @@ func TestExcursionProductCardResponseMapsRouteMetadata(t *testing.T) {
 	fingerprint := "route:kz:almaty:culture:2-4h:walking:" + a.String() + "," + b.String()
 	theme := "culture"
 	bucket := "2-4h"
+	ratingAvg := 4.75
+	reviewsCount := 12
 
 	response := toExcursionProductCardResponse(&app.ExcursionProductCardAggregate{
 		Product: &model.ExcursionProductCard{
@@ -311,6 +513,8 @@ func TestExcursionProductCardResponseMapsRouteMetadata(t *testing.T) {
 			TransportMode:    "WALKING",
 			RouteTheme:       &theme,
 			DurationBucket:   &bucket,
+			RatingAvg:        ratingAvg,
+			ReviewsCount:     reviewsCount,
 			Title:            "Kok-Tobe + Cathedral",
 			Status:           enum.ExcursionStatusPublished,
 			Visibility:       enum.ExcursionVisibilityPublic,
@@ -342,6 +546,50 @@ func TestExcursionProductCardResponseMapsRouteMetadata(t *testing.T) {
 	}
 	if response.DurationBucket == nil || *response.DurationBucket != bucket {
 		t.Fatalf("DurationBucket = %v, want %s", response.DurationBucket, bucket)
+	}
+	if response.RatingAvg != ratingAvg {
+		t.Fatalf("RatingAvg = %v, want %v", response.RatingAvg, ratingAvg)
+	}
+	if response.ReviewsCount != reviewsCount {
+		t.Fatalf("ReviewsCount = %d, want %d", response.ReviewsCount, reviewsCount)
+	}
+}
+
+func TestExcursionProductCardResponseIncludesTranslationInfo(t *testing.T) {
+	response := toExcursionProductCardResponse(&app.ExcursionProductCardAggregate{
+		Product: &model.ExcursionProductCard{
+			ID:          uuid.New(),
+			RouteKind:   model.ExcursionRouteKindSinglePlace,
+			Title:       "Чарынский каньон",
+			Summary:     "Русский краткий текст.",
+			Description: "Русское исходное описание.",
+			Translations: model.ExcursionTranslations{
+				"ru": {
+					Title:       "Чарынский каньон",
+					Summary:     "Русский краткий текст.",
+					Description: "Русское исходное описание.",
+				},
+				"en": {
+					Title:       "Charyn Canyon",
+					Summary:     "English summary.",
+					Description: "English translated detail text.",
+				},
+			},
+			Status:     enum.ExcursionStatusPublished,
+			Visibility: enum.ExcursionVisibilityPublic,
+			CreatedAt:  time.Now().UTC(),
+			UpdatedAt:  time.Now().UTC(),
+		},
+	})
+
+	if response.TranslationInfo == nil {
+		t.Fatal("translation info is nil, want product card translation metadata")
+	}
+	if response.TranslationInfo.SourceLanguage != "ru" {
+		t.Fatalf("source language = %q, want ru", response.TranslationInfo.SourceLanguage)
+	}
+	if got := response.TranslationInfo.TargetLanguages; len(got) != 1 || got[0] != "en" {
+		t.Fatalf("target languages = %#v, want [en]", got)
 	}
 }
 

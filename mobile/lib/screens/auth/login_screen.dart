@@ -79,6 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {});
   }
 
+  void _continueAsGuest() {
+    context.read<AuthProvider>().continueAsGuest();
+    context.go('/');
+  }
+
   Future<void> _submitLogin() async {
     final ctx = context;
     final l10n = AppLocalizations.of(ctx)!;
@@ -255,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     InkWell(
-                                      onTap: () => context.go('/'),
+                                      onTap: _continueAsGuest,
                                       borderRadius: AppBorderRadius.circular(
                                         999,
                                       ),
@@ -295,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     TextButton(
-                                      onPressed: () => context.go('/'),
+                                      onPressed: _continueAsGuest,
                                       child: Text(
                                         l10n.skip,
                                         style: AppTextStyle(

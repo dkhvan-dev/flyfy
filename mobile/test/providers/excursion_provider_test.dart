@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/excursion_api.dart';
 import 'package:inflap/core/network/excursion_schedule_api.dart';
@@ -37,6 +38,8 @@ void main() {
         'excursion-old',
       ]);
       expect(provider.lastCreatedExcursion?.id, 'product-new');
+      expect(provider.myGuideExcursions.single.id, 'excursion-new');
+      expect(provider.myGuideExcursions.single.status, 'PUBLISHED');
     },
   );
 
@@ -100,8 +103,24 @@ void main() {
         'product-new-updated',
         'product-new-updated',
       ]);
+      expect(provider.myGuideExcursions.single.id, 'excursion-new');
+      expect(provider.myGuideExcursions.single.priceAmount, 150);
     },
   );
+
+  test('createDraftExcursion updates guide dashboard cache', () async {
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+    );
+    final provider = ExcursionProvider(excursionApi: api);
+
+    final created = await provider.createDraftExcursion(_request);
+
+    expect(created?.id, 'excursion-new');
+    expect(provider.myGuideExcursions, const [_createdDraft]);
+  });
 
   test(
     'loadGuideDashboardData loads guide offers and guide-side bookings',
@@ -330,6 +349,55 @@ void main() {
       expect(provider.myExcursionBookings.single.id, 'booking-created');
     },
   );
+
+  test('createDraftExcursion exposes duplicate place conflict code', () async {
+    final requestOptions = RequestOptions(path: '/me/excursions');
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+      createError: DioException(
+        requestOptions: requestOptions,
+        response: Response<Map<String, dynamic>>(
+          requestOptions: requestOptions,
+          statusCode: 409,
+          data: const {
+            'code':
+                'excursion.excursion_already_exists_for_this_guide_and_place',
+            'message': 'Excursion already exists.',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      ),
+    );
+    final provider = ExcursionProvider(excursionApi: api);
+
+    final created = await provider.createDraftExcursion(_request);
+
+    expect(created, isNull);
+    expect(provider.hasActiveExcursionForPlaceConflict, isTrue);
+    expect(
+      provider.actionErrorCode,
+      'excursion.excursion_already_exists_for_this_guide_and_place',
+    );
+  });
+
+  test('findActiveExcursionForCreateRequest recovers matching draft', () async {
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+      myExcursions: const [_createdDraft],
+    );
+    final provider = ExcursionProvider(excursionApi: api);
+
+    final existing = await provider.findActiveExcursionForCreateRequest(
+      _request,
+    );
+
+    expect(existing?.id, 'excursion-new');
+    expect(existing?.status, 'DRAFT');
+  });
 }
 
 const _existingExcursion = ExcursionVm(
@@ -348,6 +416,7 @@ const _createdDraft = ExcursionVm(
   summary: 'Draft route',
   status: 'DRAFT',
   visibility: 'PUBLIC',
+  landmarkId: 'place-1',
   priceAmount: 120,
   currency: 'KZT',
 );
@@ -598,6 +667,7 @@ class _FakeExcursionApi extends ExcursionApi {
     this.guideBookings = const [],
     this.guideBookingPages = const [],
     this.createdBooking,
+    this.createError,
   });
 
   final List<List<ExcursionVm>> excursionBatches;
@@ -611,6 +681,7 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<ExcursionBookingVm> guideBookings;
   final List<ExcursionBookingsPage> guideBookingPages;
   final ExcursionBookingVm? createdBooking;
+  final DioException? createError;
   int getExcursionsCallCount = 0;
   int getExcursionsPageCallCount = 0;
   final List<int> getExcursionsPageOffsets = [];
@@ -667,6 +738,8 @@ class _FakeExcursionApi extends ExcursionApi {
 
   @override
   Future<ExcursionVm> createExcursion(CreateExcursionRequest request) async {
+    final error = createError;
+    if (error != null) throw error;
     return createdExcursion;
   }
 

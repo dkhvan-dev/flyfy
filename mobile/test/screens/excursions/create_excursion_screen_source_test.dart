@@ -796,14 +796,19 @@ void main() {
       expect(sheetEnd, greaterThan(sheetStart));
 
       final sheetSource = source.substring(sheetStart, sheetEnd);
-      expect(
-        sheetSource,
-        contains('padding: const AppEdgeInsets.only(bottom: 16)'),
-      );
+      expect(source, contains('extendToBottom: true'));
       expect(sheetSource, contains('width: double.infinity'));
+      expect(sheetSource, contains('MediaQuery.viewPaddingOf(context).bottom'));
+      expect(sheetSource, contains('34 + systemBottomPadding'));
+      expect(sheetSource, contains('AppBorderRadius.vertical('));
+      expect(sheetSource, contains("'excursion-itinerary-slot-confirm'"));
       expect(
         sheetSource,
         isNot(contains('padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16)')),
+      );
+      expect(
+        sheetSource,
+        isNot(contains('padding: const AppEdgeInsets.only(bottom: 16)')),
       );
     },
   );
@@ -885,6 +890,47 @@ void main() {
       expect(
         actionBarSource,
         contains('backgroundColor: context.createExcursionColors.primary'),
+      );
+    },
+  );
+
+  test(
+    'location and empty cover cards stay light without inner dimming',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final landmarkStart = source.indexOf('class _LandmarkSelectionCard');
+      final landmarkEnd = source.indexOf(
+        'class _ExcursionPhotoDraft',
+        landmarkStart,
+      );
+      final coverStart = source.indexOf('class _ExcursionCoverUploadCard');
+      final coverEnd = source.indexOf(
+        'class _DashedExcursionCoverBorderPainter',
+        coverStart,
+      );
+      expect(landmarkStart, isNonNegative);
+      expect(landmarkEnd, greaterThan(landmarkStart));
+      expect(coverStart, isNonNegative);
+      expect(coverEnd, greaterThan(coverStart));
+
+      final landmarkSource = source.substring(landmarkStart, landmarkEnd);
+      final coverSource = source.substring(coverStart, coverEnd);
+
+      expect(
+        landmarkSource,
+        contains('Theme.of(context).brightness == Brightness.light'),
+      );
+      expect(landmarkSource, contains('color: isLightTheme'));
+      expect(landmarkSource, contains('gradient: isLightTheme'));
+      expect(landmarkSource, contains('alpha: isLightTheme ? 0.08 : 0.24'));
+      expect(coverSource, contains('if (hasPreview || !isLightTheme)'));
+      expect(coverSource, contains('final isLightPlaceholder ='));
+      expect(
+        coverSource,
+        contains('context.createExcursionColors.textSecondary'),
       );
     },
   );
@@ -1294,6 +1340,11 @@ void main() {
     expect(source, contains('_scheduleAutosave()'));
     expect(source, contains('_autosaveDraftPayload()'));
     expect(source, contains('_applyAutosaveDraftPayload'));
+    expect(source, contains("'serverDraftId': _serverDraftId"));
+    expect(source, contains("draft['serverDraftId']"));
+    expect(source, contains('_rememberServerDraft(draftId)'));
+    expect(source, contains('hasActiveExcursionForPlaceConflict'));
+    expect(source, contains('findActiveExcursionForCreateRequest'));
     expect(source, contains('createExcursionAutosaveRestored'));
     expect(enSource, contains('"createExcursionAutosaveRestored"'));
     expect(ruSource, contains('"createExcursionAutosaveRestored"'));

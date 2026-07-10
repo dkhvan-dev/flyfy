@@ -1930,6 +1930,19 @@
     }
   },
   "excursionDetailsLanguage": "Language",
+  "excursionDetailsTranslatedNotice": "Itinerary was automatically translated from {sourceLanguage}",
+  "@excursionDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "excursionDetailsShowOriginal": "Show original",
+  "excursionDetailsShowTranslation": "Show translation",
+  "excursionDetailsTranslationPendingNotice": "Showing original itinerary · Translation is being prepared",
+  "excursionDetailsTranslationUnavailableNotice": "Showing original itinerary · Auto-translation is temporarily unavailable",
+  "excursionTranslationSourceLanguageEnglish": "English",
+  "excursionTranslationSourceLanguageRussian": "Russian",
+  "excursionTranslationSourceLanguageKazakh": "Kazakh",
   "excursionLanguageEnglish": "English",
   "excursionLanguageRussian": "Russian",
   "excursionLanguageKazakh": "Kazakh",
@@ -2059,6 +2072,18 @@
   "createExcursionUpdateSuccess": "Offer updated successfully",
   "createExcursionFailed": "Failed to create excursion",
   "createExcursionUpdateFailed": "Failed to update offer",
+  "createExcursionExistingDraftTitle": "Excursion already exists",
+  "createExcursionExistingDraftDescription": "You already have an editable excursion for this place. Replace it with the data from this form and submit it for review?",
+  "createExcursionExistingDraftConfirm": "Update and submit",
+  "createExcursionExistingDraftSaveDescription": "You already have an editable excursion for this place. Replace it with the data from this form?",
+  "createExcursionExistingDraftSaveConfirm": "Update draft",
+  "createExcursionExistingActiveDescription": "You already have an active excursion for this place. Open it from the guide dashboard.",
+  "createExcursionDraftSubmitFailed": "The draft was saved, but it could not be submitted for review. {error} You can retry without creating a duplicate.",
+  "@createExcursionDraftSubmitFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "createExcursionCoverSection": "Excursion Cover",
   "createExcursionCoverUploadTitle": "Upload Excursion Image",
   "createExcursionCoverChangeAction": "Change Excursion Image",

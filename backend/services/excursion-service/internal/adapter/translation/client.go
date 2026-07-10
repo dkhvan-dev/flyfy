@@ -9,11 +9,18 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
-const headerInternalServiceToken = "X-Internal-Service-Token"
+const (
+	headerInternalServiceToken      = "X-Internal-Service-Token"
+	maxTranslationRequestTexts      = 200
+	maxTranslationRequestCharacters = 100000
+	translationContentTypeExcursion = "excursion"
+)
 
 type Client struct {
 	baseURL       string
@@ -27,6 +34,14 @@ func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *Client) {
 		if httpClient != nil {
 			c.httpClient = httpClient
+		}
+	}
+}
+
+func WithServiceTokenSource(source serviceauth.TokenSource) Option {
+	return func(c *Client) {
+		if source != nil {
+			c.httpClient.Transport = serviceauth.NewBearerTransport(source, c.httpClient.Transport)
 		}
 	}
 }
@@ -59,20 +74,27 @@ func (c *Client) TranslateTexts(ctx context.Context, input port.TranslationReque
 	targetLocales := normalizeLocales(input.TargetLocales)
 	texts := trimTexts(input.Texts)
 	if sourceLocale == "" || len(targetLocales) == 0 || len(texts) == 0 {
-		return port.TranslationResult{Translations: map[string][]string{}}, nil
+		return port.TranslationResult{
+			Translations: map[string][]string{},
+			Items:        map[string][]port.TranslationTextResult{},
+		}, nil
+	}
+	if err := validateTranslationRequestSize(texts); err != nil {
+		return port.TranslationResult{}, err
 	}
 
 	payload := translateRequest{
 		SourceLanguage:  sourceLocale,
 		TargetLanguages: targetLocales,
 		Texts:           texts,
+		ContentType:     translationContentTypeExcursion,
 	}
 	body := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(body).Encode(payload); err != nil {
 		return port.TranslationResult{}, fmt.Errorf("encode translation request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/v1/translate", body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/internal/v1/translations/translate", body)
 	if err != nil {
 		return port.TranslationResult{}, fmt.Errorf("create translation request: %w", err)
 	}
@@ -89,28 +111,116 @@ func (c *Client) TranslateTexts(ctx context.Context, input port.TranslationReque
 	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return port.TranslationResult{}, fmt.Errorf(
-			"translation-service request failed: status=%d message=%s",
-			resp.StatusCode,
-			readErrorMessage(resp.Body),
-		)
+		return port.TranslationResult{}, newServiceError(resp.StatusCode, readErrorMessage(resp.Body))
 	}
 
 	var decoded translateResponse
 	if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
 		return port.TranslationResult{}, fmt.Errorf("decode translation response: %w", err)
 	}
-	for locale, translatedTexts := range decoded.Translations {
-		if len(translatedTexts) != len(texts) {
+	result := port.TranslationResult{
+		Translations: make(map[string][]string, len(decoded.Translations)),
+		Items:        make(map[string][]port.TranslationTextResult, len(decoded.Translations)),
+		Provider:     strings.TrimSpace(decoded.Provider),
+	}
+	for _, locale := range targetLocales {
+		translatedItems, exists := decoded.Translations[locale]
+		if !exists || len(translatedItems) != len(texts) {
 			return port.TranslationResult{}, fmt.Errorf(
-				"translation-service returned %d texts for %s, want %d",
-				len(translatedTexts),
+				"translation-service returned %d items for %s, want %d",
+				len(translatedItems),
 				locale,
 				len(texts),
 			)
 		}
+		result.Translations[locale] = make([]string, 0, len(translatedItems))
+		result.Items[locale] = make([]port.TranslationTextResult, 0, len(translatedItems))
+		for _, translatedItem := range translatedItems {
+			item := port.TranslationTextResult{
+				Text:     strings.TrimSpace(translatedItem.Text),
+				Status:   port.TranslationTextStatus(strings.ToLower(strings.TrimSpace(translatedItem.Status))),
+				Provider: strings.TrimSpace(translatedItem.Provider),
+				CacheHit: translatedItem.CacheHit,
+			}
+			result.Translations[locale] = append(result.Translations[locale], item.Text)
+			result.Items[locale] = append(result.Items[locale], item)
+			if !input.AllowIncomplete && !translationStatusSucceeded(item.Status) {
+				return result, &ServiceError{
+					statusCode: http.StatusServiceUnavailable,
+					code:       string(item.Status),
+					retryable:  translationStatusRetryable(item.Status),
+				}
+			}
+		}
 	}
-	return port.TranslationResult{Translations: decoded.Translations}, nil
+	return result, nil
+}
+
+type ServiceError struct {
+	statusCode int
+	code       string
+	retryable  bool
+}
+
+func (e *ServiceError) Error() string {
+	return fmt.Sprintf("translation-service request failed: status=%d code=%s", e.statusCode, e.code)
+}
+
+func (e *ServiceError) Retryable() bool {
+	return e != nil && e.retryable
+}
+
+func (e *ServiceError) Code() string {
+	if e == nil {
+		return "translation_service_error"
+	}
+	return e.code
+}
+
+func newServiceError(statusCode int, code string) *ServiceError {
+	normalizedCode := strings.ToLower(strings.TrimSpace(code))
+	if normalizedCode == "" {
+		normalizedCode = "translation_service_error"
+	}
+	return &ServiceError{
+		statusCode: statusCode,
+		code:       normalizedCode,
+		retryable:  statusCode == http.StatusRequestTimeout || statusCode == http.StatusTooManyRequests || statusCode >= 500,
+	}
+}
+
+func translationStatusSucceeded(status port.TranslationTextStatus) bool {
+	switch status {
+	case port.TranslationTextTranslated, port.TranslationTextCached, port.TranslationTextSameLanguage:
+		return true
+	default:
+		return false
+	}
+}
+
+func translationStatusRetryable(status port.TranslationTextStatus) bool {
+	switch status {
+	case port.TranslationTextQuotaExhausted,
+		port.TranslationTextDisabled,
+		port.TranslationTextProviderUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateTranslationRequestSize(texts []string) error {
+	if len(texts) > maxTranslationRequestTexts {
+		return &ServiceError{statusCode: http.StatusBadRequest, code: "request_too_large"}
+	}
+	characters := 0
+	for _, text := range texts {
+		characters += utf8.RuneCountInString(text)
+		if characters > maxTranslationRequestCharacters {
+			return &ServiceError{statusCode: http.StatusBadRequest, code: "request_too_large"}
+		}
+	}
+	return nil
 }
 
 func normalizeLocales(values []string) []string {
@@ -163,9 +273,17 @@ type translateRequest struct {
 	SourceLanguage  string   `json:"sourceLanguage"`
 	TargetLanguages []string `json:"targetLanguages"`
 	Texts           []string `json:"texts"`
+	ContentType     string   `json:"contentType"`
 }
 
 type translateResponse struct {
-	Translations map[string][]string `json:"translations"`
-	Model        string              `json:"model,omitempty"`
+	Translations map[string][]translatedText `json:"translations"`
+	Provider     string                      `json:"provider,omitempty"`
+}
+
+type translatedText struct {
+	Text     string `json:"text"`
+	Status   string `json:"status"`
+	Provider string `json:"provider,omitempty"`
+	CacheHit bool   `json:"cacheHit,omitempty"`
 }

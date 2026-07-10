@@ -58,4 +58,24 @@ void main() {
 
     expect(message, 'Сейчас проводятся технические работы. Попробуйте позже.');
   });
+
+  test('extracts a stable backend error code', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/me/excursions'),
+      response: Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/me/excursions'),
+        statusCode: 409,
+        data: const {
+          'code': 'excursion.excursion_already_exists_for_this_guide_and_place',
+          'message': 'Excursion already exists.',
+        },
+      ),
+      type: DioExceptionType.badResponse,
+    );
+
+    expect(
+      DioErrorMapper.backendCode(error),
+      'excursion.excursion_already_exists_for_this_guide_and_place',
+    );
+  });
 }

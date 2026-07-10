@@ -33,6 +33,7 @@ DEFAULT_MIGRATION_SERVICE_MAP=(
   "admin-panel:admin_panel_db:013_admin_panel_migrate.sh"
   "user-route-service:user_route_service_db:021_user_route_service_migrate.sh"
   "search-service:search_service_db:-"
+  "translation-service:translation_service_db:-"
 )
 
 cd "${APP_DIR}"

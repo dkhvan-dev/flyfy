@@ -16,22 +16,34 @@ import (
 	guidev1 "kz/inflap/proto/gen/go/guide/v1"
 )
 
-const verifyTimeout = 3 * time.Second
+const defaultVerifyTimeout = 8 * time.Second
 
 type Client struct {
-	conn    *grpc.ClientConn
-	service guidev1.GuideServiceClient
+	conn          *grpc.ClientConn
+	service       guidev1.GuideServiceClient
+	verifyTimeout time.Duration
 }
 
 func New(target string, opts ...grpc.DialOption) (*Client, error) {
+	return NewWithTimeout(target, defaultVerifyTimeout, opts...)
+}
+
+func NewWithTimeout(target string, verifyTimeout time.Duration, opts ...grpc.DialOption) (*Client, error) {
 	if len(opts) == 0 {
 		opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	}
+	if verifyTimeout <= 0 {
+		verifyTimeout = defaultVerifyTimeout
 	}
 	conn, err := grpc.NewClient(strings.TrimSpace(target), opts...)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn: conn, service: guidev1.NewGuideServiceClient(conn)}, nil
+	return &Client{
+		conn:          conn,
+		service:       guidev1.NewGuideServiceClient(conn),
+		verifyTimeout: verifyTimeout,
+	}, nil
 }
 
 func (c *Client) Close() error {
@@ -39,7 +51,7 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) VerifyExcursionGuide(ctx context.Context, userID uuid.UUID) (port.GuideExcursionPermission, error) {
-	callCtx, cancel := context.WithTimeout(ctx, verifyTimeout)
+	callCtx, cancel := context.WithTimeout(ctx, c.verifyTimeout)
 	defer cancel()
 
 	resp, err := c.service.GetGuideProfileByUserId(callCtx, &guidev1.GetGuideProfileByUserIdRequest{

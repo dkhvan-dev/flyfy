@@ -32,6 +32,33 @@ void main() {
     },
   );
 
+  test(
+    'session expiration is emitted before token cleanup completes',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final storage = _BlockingDeleteSecureStorage();
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1')),
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+
+      final requestExpectation = expectLater(
+        client.getMe(),
+        throwsA(isA<DioException>()),
+      );
+      await storage.deleteStarted;
+
+      expect(expiredCount, 1);
+
+      storage.completeDelete();
+      await requestExpectation;
+      await sub.cancel();
+    },
+  );
+
   test('refresh failure deletes tokens and expires session', () async {
     final events = AuthSessionEvents();
     var expiredCount = 0;
@@ -170,6 +197,51 @@ void main() {
         'Bearer access-token',
       );
       expect(expiredCount, 0);
+      await sub.cancel();
+    },
+  );
+
+  test(
+    'optional auth 401 refresh failure expires the authenticated session',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final storage = _MemorySecureStorage(
+        accessToken: 'expired-access',
+        refreshToken: 'expired-refresh',
+      );
+      final adapter = _AuthAdapter(
+        responses: {
+          '/api/v1/feed': _JsonResponse(401, {'error': 'token expired'}),
+          '/api/v1/auth/refresh': _JsonResponse(401, {
+            'error': 'refresh token expired',
+          }),
+        },
+      );
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+
+      await expectLater(
+        client.dio.get(
+          '/feed',
+          options: Options(extra: const {'optionalAuth': true}),
+        ),
+        throwsA(isA<DioException>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(storage.accessToken, isNull);
+      expect(storage.refreshToken, isNull);
+      expect(expiredCount, 1);
+      expect(adapter.requests.map((item) => item.uri.path), [
+        '/api/v1/feed',
+        '/api/v1/auth/refresh',
+      ]);
       await sub.cancel();
     },
   );
@@ -327,6 +399,28 @@ class _MemorySecureStorage extends SecureStorage {
   Future<void> deleteTokens() async {
     accessToken = null;
     refreshToken = null;
+  }
+}
+
+class _BlockingDeleteSecureStorage extends _MemorySecureStorage {
+  final Completer<void> _deleteStartedCompleter = Completer<void>();
+  final Completer<void> _deleteCompleter = Completer<void>();
+
+  Future<void> get deleteStarted => _deleteStartedCompleter.future;
+
+  void completeDelete() {
+    if (!_deleteCompleter.isCompleted) {
+      _deleteCompleter.complete();
+    }
+  }
+
+  @override
+  Future<void> deleteTokens() async {
+    if (!_deleteStartedCompleter.isCompleted) {
+      _deleteStartedCompleter.complete();
+    }
+    await _deleteCompleter.future;
+    await super.deleteTokens();
   }
 }
 

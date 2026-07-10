@@ -24,7 +24,23 @@ type ExcursionItineraryLocalizedCopy struct {
 	Description string `json:"description,omitempty"`
 }
 
+type ExcursionTranslationInfo struct {
+	Status             string   `json:"status"`
+	SourceLanguage     string   `json:"sourceLanguage"`
+	CurrentLanguage    string   `json:"currentLanguage"`
+	IsTranslated       bool     `json:"isTranslated"`
+	AvailableLanguages []string `json:"availableLanguages"`
+	PendingLanguages   []string `json:"pendingLanguages"`
+	FailedLanguages    []string `json:"failedLanguages"`
+	Provider           string   `json:"provider,omitempty"`
+
+	// Deprecated compatibility fields for clients released before async translation.
+	Translated      bool     `json:"translated"`
+	TargetLanguages []string `json:"targetLanguages,omitempty"`
+}
+
 type CreateExcursionRequest struct {
+	SourceLanguage           string                            `json:"sourceLanguage,omitempty"`
 	LandmarkID               *string                           `json:"landmarkId,omitempty"`
 	LandmarkName             *string                           `json:"landmarkName,omitempty"`
 	CategorySlug             string                            `json:"categorySlug,omitempty"`
@@ -110,6 +126,7 @@ type ExcursionResponse struct {
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`
 	Itinerary                []ExcursionItineraryItemResponse  `json:"itinerary,omitempty"`
+	TranslationInfo          *ExcursionTranslationInfo         `json:"translationInfo,omitempty"`
 	PublishingDecision       string                            `json:"publishingDecision,omitempty"`
 	GuideTrustScore          int                               `json:"guideTrustScore"`
 	PublishRiskScore         int                               `json:"publishRiskScore"`
@@ -143,6 +160,7 @@ type ExcursionProductCardResponse struct {
 	Summary              string                            `json:"summary"`
 	Description          string                            `json:"description"`
 	Translations         map[string]ExcursionLocalizedCopy `json:"translations,omitempty"`
+	TranslationInfo      *ExcursionTranslationInfo         `json:"translationInfo,omitempty"`
 	CategorySlug         string                            `json:"categorySlug"`
 	Status               string                            `json:"status"`
 	Visibility           string                            `json:"visibility"`
@@ -162,6 +180,8 @@ type ExcursionProductCardResponse struct {
 	OffersCount          int                               `json:"offersCount"`
 	PublishedOffersCount int                               `json:"publishedOffersCount"`
 	NextAvailableAt      *string                           `json:"nextAvailableAt,omitempty"`
+	RatingAvg            float64                           `json:"ratingAvg"`
+	ReviewsCount         int                               `json:"reviewsCount"`
 	CreatedAt            string                            `json:"createdAt"`
 	UpdatedAt            string                            `json:"updatedAt"`
 }
@@ -185,6 +205,7 @@ type ExcursionOfferResponse struct {
 	Summary                  string                            `json:"summary"`
 	Description              string                            `json:"description"`
 	Translations             map[string]ExcursionLocalizedCopy `json:"translations,omitempty"`
+	TranslationInfo          *ExcursionTranslationInfo         `json:"translationInfo,omitempty"`
 	Status                   string                            `json:"status"`
 	Visibility               string                            `json:"visibility"`
 	DurationMinutes          int                               `json:"durationMinutes"`

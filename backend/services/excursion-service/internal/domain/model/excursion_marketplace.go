@@ -31,11 +31,15 @@ type ExcursionProductCard struct {
 	LandmarkID   *uuid.UUID
 	LandmarkName *string
 
-	Title        string
-	Summary      string
-	Description  string
-	Translations ExcursionTranslations
-	CategorySlug string
+	Title                       string
+	Summary                     string
+	Description                 string
+	Translations                ExcursionTranslations
+	TranslationSourceLanguage   string
+	TranslationStatus           ExcursionTranslationStatus
+	TranslationPendingLanguages []string
+	TranslationFailedLanguages  []string
+	CategorySlug                string
 
 	Status     enum.ExcursionStatus
 	Visibility enum.ExcursionVisibility
@@ -57,6 +61,8 @@ type ExcursionProductCard struct {
 	OffersCount          int
 	PublishedOffersCount int
 	NextAvailableAt      *time.Time
+	RatingAvg            float64
+	ReviewsCount         int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -75,10 +81,14 @@ type ExcursionOffer struct {
 	GuideDisplayName     string
 	GuideSearchText      string
 
-	Title        string
-	Summary      string
-	Description  string
-	Translations ExcursionTranslations
+	Title                       string
+	Summary                     string
+	Description                 string
+	Translations                ExcursionTranslations
+	TranslationSourceLanguage   string
+	TranslationStatus           ExcursionTranslationStatus
+	TranslationPendingLanguages []string
+	TranslationFailedLanguages  []string
 
 	Status     enum.ExcursionStatus
 	Visibility enum.ExcursionVisibility

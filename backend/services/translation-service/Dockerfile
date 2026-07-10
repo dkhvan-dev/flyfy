@@ -1,28 +1,43 @@
-FROM python:3.12-slim
+FROM golang:1.26-alpine AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    HF_HOME=/models/huggingface
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 1001 --create-home appuser \
-    && mkdir -p /models/huggingface \
-    && chown -R appuser:appuser /models
+RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
 
-COPY backend/services/translation-service/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/services/translation-service/go.mod backend/services/translation-service/go.sum* ./backend/services/translation-service/
+COPY proto/go.mod proto/go.sum* ./proto/
+COPY backend/pkg/serviceauth/go.mod backend/pkg/serviceauth/go.sum* ./backend/pkg/serviceauth/
+COPY backend/pkg/transportauth/go.mod backend/pkg/transportauth/go.sum* ./backend/pkg/transportauth/
 
-COPY backend/services/translation-service/app ./app
+WORKDIR /app/backend/services/translation-service
+RUN go mod download
+
+COPY proto /app/proto
+COPY backend/pkg/serviceauth /app/backend/pkg/serviceauth
+COPY backend/pkg/transportauth /app/backend/pkg/transportauth
+COPY backend/services/translation-service ./
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags="-s -w" -o /bin/translation-service ./cmd
+
+FROM alpine:3.21
+
+RUN apk add --no-cache ca-certificates tzdata wget \
+    && addgroup -g 1001 appgroup \
+    && adduser -u 1001 -G appgroup -D appuser
+
+WORKDIR /app
+
+COPY --from=builder /bin/translation-service /app/translation-service
 
 USER appuser
 
 EXPOSE 8094
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8094/health/ready', timeout=3).read()" || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s \
+  CMD wget -qO- http://localhost:8094/health/ready || exit 1
 
-CMD ["python", "-m", "app.main"]
+ENTRYPOINT ["/app/translation-service"]

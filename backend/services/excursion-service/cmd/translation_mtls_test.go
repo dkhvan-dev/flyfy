@@ -11,7 +11,7 @@ import (
 func TestNewTranslationClientKeepsPlainClientWhenMTLSDisabled(t *testing.T) {
 	t.Parallel()
 
-	client, err := newTranslationClient(&config.Config{
+	client, closeClient, err := newTranslationClient(&config.Config{
 		Translation: config.TranslationServiceConfig{
 			BaseURL: "http://translation-service:8094",
 		},
@@ -19,6 +19,7 @@ func TestNewTranslationClientKeepsPlainClientWhenMTLSDisabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newTranslationClient() error = %v", err)
 	}
+	defer closeClient()
 	if client == nil {
 		t.Fatal("newTranslationClient() = nil, want client")
 	}
@@ -27,7 +28,7 @@ func TestNewTranslationClientKeepsPlainClientWhenMTLSDisabled(t *testing.T) {
 func TestNewTranslationClientFailsFastWhenMTLSEnabledWithoutCA(t *testing.T) {
 	t.Parallel()
 
-	_, err := newTranslationClient(&config.Config{
+	_, _, err := newTranslationClient(&config.Config{
 		Translation: config.TranslationServiceConfig{
 			BaseURL: "https://translation-service:9497",
 		},
