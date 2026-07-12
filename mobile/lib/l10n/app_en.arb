@@ -297,11 +297,6 @@
     }
   },
   "profileTitle": "Profile",
-  "drawerStatusVerifiedGuide": "Verified guide",
-  "drawerStatusGuide": "Guide",
-  "drawerStatusGuideRevoked": "Guide status revoked",
-  "drawerStatusTraveler": "Traveler",
-  "drawerStatusCompleteProfile": "Complete profile",
   "profileNotAvailable": "Profile is not available",
   "profilePhone": "Phone",
   "profilePhoneVerificationSection": "Phone verification",
@@ -920,7 +915,6 @@
   "homeTitle": "Inflap",
   "homeSubtitle": "Travel, discover activities, and explore new experiences",
   "servicesSectionTitle": "Services",
-  "servicesAllButton": "See all",
   "homeExcursionsTitle": "Excursions",
   "homeExcursionsSubtitle": "Choose interesting routes and trips",
   "homeGuidesTitle": "Guides",
@@ -974,7 +968,8 @@
   "searchDomainHelpArticle": "Help article",
   "homeSearchHint": "Activities, places, excursions...",
   "homeTopDestinations": "Top Destinations",
-  "homeSeeAll": "See All",
+  "homeSeeAll": "All",
+  "homeShowAllCard": "Show all",
   "homeTopStories": "Trending now",
   "homeSmartPostsTitle": "For you",
   "homeSmartPostsEmpty": "Posts picked for you will appear here.",
@@ -987,6 +982,7 @@
   "homeServiceStories": "Stories",
   "homeServicePlaces": "Places",
   "homeServiceCurrencyConverter": "Exchange Rates",
+  "homeServiceAllServices": "All services",
   "homeServiceStays": "Stays",
   "homeServiceDelivery": "Delivery",
   "homeServiceTaxi": "Taxi",
@@ -1260,6 +1256,8 @@
   "communityTrustActionFailed": "Could not complete the trust action. Try again.",
   "feedEmptyTitle": "No feed items yet",
   "feedEmptyMessage": "Follow travelers and communities to shape your feed.",
+  "feedFollowingEmptyTitle": "No subscriptions yet",
+  "feedFollowingEmptyMessage": "Follow travelers or communities to see their posts here.",
   "feedLoadFailedTitle": "Could not load feed",
   "feedLoadFailedMessage": "Check your connection and try again.",
   "feedRetryAction": "Retry",
@@ -1943,6 +1941,19 @@
   "excursionTranslationSourceLanguageEnglish": "English",
   "excursionTranslationSourceLanguageRussian": "Russian",
   "excursionTranslationSourceLanguageKazakh": "Kazakh",
+  "activityDetailsTranslatedNotice": "Activity details were automatically translated from {sourceLanguage}",
+  "@activityDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "activityDetailsShowOriginal": "Show original",
+  "activityDetailsShowTranslation": "Show translation",
+  "activityDetailsTranslationPendingNotice": "Showing the original activity details · Translation is being prepared",
+  "activityDetailsTranslationUnavailableNotice": "Showing the original activity details · Auto-translation is temporarily unavailable",
+  "activityTranslationSourceLanguageEnglish": "English",
+  "activityTranslationSourceLanguageRussian": "Russian",
+  "activityTranslationSourceLanguageKazakh": "Kazakh",
   "excursionLanguageEnglish": "English",
   "excursionLanguageRussian": "Russian",
   "excursionLanguageKazakh": "Kazakh",
@@ -2242,8 +2253,8 @@
   "createExcursionIncludedTypeFood": "Meals",
   "createExcursionIncludedTypeTickets": "Tickets",
   "createExcursionIncludedTypeEquipment": "Equipment",
-  "createExcursionIncludedTypeGuide": "Guide",
-  "createExcursionIncludedTypePhoto": "Photo",
+  "createExcursionIncludedTypeAccommodation": "Accommodation",
+  "createExcursionIncludedTypePermitsFees": "Permits & fees",
   "createExcursionIncludedTypeOther": "Other",
   "createExcursionStartOffsetLabel": "Start after, min",
   "createExcursionSlotDurationLabel": "Duration, min",
@@ -3191,11 +3202,11 @@
   "storyEditorValidationContentRequired": "Write at least one story block before publishing.",
   "storyEditorValidationMediaPending": "Wait until media uploads finish.",
   "postCreateRateLimitTitle": "Post limit",
-  "postCreateRateLimitMessage": "You have created the maximum number of posts in the last hour. You can create another post in about {minutes} min.",
+  "postCreateRateLimitMessage": "You can publish another post in {time}.",
   "@postCreateRateLimitMessage": {
     "placeholders": {
-      "minutes": {
-        "type": "int"
+      "time": {
+        "type": "String"
       }
     }
   },
@@ -3749,5 +3760,9 @@
   "contextualHelpTitle": "Questions and help",
   "contextualHelpOpenAll": "All help",
   "contextualHelpLoadFailed": "Help is temporarily unavailable",
-  "contextualHelpTryAgain": "Retry"
+  "contextualHelpTryAgain": "Retry",
+  "trustRestrictionTitle": "Access restricted",
+  "trustCreationRestrictionMessage": "Creation is restricted by an administrator. Contact support if you believe this is a mistake.",
+  "trustFeatureRestrictionMessage": "This feature is restricted by an administrator. Contact support if you believe this is a mistake.",
+  "trustRestrictionSupportAction": "Contact support"
 }

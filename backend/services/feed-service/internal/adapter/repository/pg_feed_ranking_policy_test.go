@@ -28,6 +28,14 @@ func TestDefaultFeedRankingPolicyDocumentsProductionSafeWeights(t *testing.T) {
 	if policy.InterestFreshnessDelay != 5*time.Minute {
 		t.Fatalf("InterestFreshnessDelay = %s, want 5m", policy.InterestFreshnessDelay)
 	}
+	if policy.CommunityInterestMinScore != 2 ||
+		policy.FrequentCommunityMinVisits != 3 ||
+		policy.FrequentCommunityMinVisitDays != 2 ||
+		policy.FrequentCommunityFreshnessWindow != 60*24*time.Hour ||
+		policy.FrequentCommunityHalfLife != 21*24*time.Hour ||
+		policy.FrequentCommunityBoostHours != 6 {
+		t.Fatalf("unexpected frequent community policy: %+v", policy)
+	}
 	if policy.NotInterestedPenalty != 14*24*time.Hour {
 		t.Fatalf("NotInterestedPenalty = %s, want 336h", policy.NotInterestedPenalty)
 	}
@@ -57,7 +65,7 @@ func TestDefaultFeedRankingPolicyDocumentsProductionSafeWeights(t *testing.T) {
 		policy.QualityMaxPenaltyHours != 168 {
 		t.Fatalf("unexpected quality policy: %+v", policy)
 	}
-	if policy.MaxPostsPerCommunityPerPage != 3 ||
+	if policy.MaxPostsPerCommunityPerPage != 2 ||
 		policy.MaxPostsPerCategoryPerPage != 8 ||
 		policy.MaxPostsPerAuthorPerPage != 4 ||
 		policy.MaxPostsPerProfilePerPage != 10 {
@@ -91,6 +99,9 @@ func TestFeedRankingPolicyAppliesRequestOverrideOverBaseline(t *testing.T) {
 	base.DirectNegativeFeedbackDecayWindow = 48 * time.Hour
 
 	postInterestWeight := 1.6
+	communityInterestMinScore := 2.5
+	frequentCommunityMinVisits := 4
+	frequentCommunityFreshnessWindow := 45 * 24 * time.Hour
 	socialFriendBoostHours := 34
 	socialFollowingBoostHours := 21
 	maxPostsPerAuthorPerPage := 2
@@ -98,6 +109,9 @@ func TestFeedRankingPolicyAppliesRequestOverrideOverBaseline(t *testing.T) {
 	policy := feedRankingPolicyWithOverride(base, &model.FeedRankingPolicyOverride{
 		ExperimentKey:                     "rank-social-v2",
 		PostInterestWeight:                &postInterestWeight,
+		CommunityInterestMinScore:         &communityInterestMinScore,
+		FrequentCommunityMinVisits:        &frequentCommunityMinVisits,
+		FrequentCommunityFreshnessWindow:  &frequentCommunityFreshnessWindow,
 		SocialFriendBoostHours:            &socialFriendBoostHours,
 		SocialFollowingBoostHours:         &socialFollowingBoostHours,
 		MaxPostsPerAuthorPerPage:          &maxPostsPerAuthorPerPage,
@@ -108,6 +122,9 @@ func TestFeedRankingPolicyAppliesRequestOverrideOverBaseline(t *testing.T) {
 		t.Fatalf("ExperimentKey = %q, want rank-social-v2", policy.ExperimentKey)
 	}
 	if policy.PostInterestWeight != 1.6 ||
+		policy.CommunityInterestMinScore != 2.5 ||
+		policy.FrequentCommunityMinVisits != 4 ||
+		policy.FrequentCommunityFreshnessWindow != 45*24*time.Hour ||
 		policy.SocialFriendBoostHours != 34 ||
 		policy.SocialFollowingBoostHours != 21 ||
 		policy.MaxPostsPerAuthorPerPage != 2 ||
@@ -124,6 +141,12 @@ func TestFeedRankingPolicyNormalizesUnsafeExperimentInputs(t *testing.T) {
 		ExperimentKey:                     strings.Repeat("x", 80),
 		PostInterestWeight:                -1,
 		CommunityInterestWeight:           -2,
+		CommunityInterestMinScore:         -1,
+		FrequentCommunityMinVisits:        -1,
+		FrequentCommunityMinVisitDays:     -1,
+		FrequentCommunityFreshnessWindow:  -1,
+		FrequentCommunityHalfLife:         -1,
+		FrequentCommunityBoostHours:       -1,
 		PostProfileAffinityWeight:         -3,
 		CityAffinityWeight:                -4,
 		CountryAffinityWeight:             -5,
@@ -177,6 +200,14 @@ func TestFeedRankingPolicyNormalizesUnsafeExperimentInputs(t *testing.T) {
 		normalized.TagAffinityWeight != defaults.TagAffinityWeight ||
 		normalized.AuthorAffinityWeight != defaults.AuthorAffinityWeight {
 		t.Fatalf("unsafe weights were not reset to defaults: %+v", normalized)
+	}
+	if normalized.CommunityInterestMinScore != defaults.CommunityInterestMinScore ||
+		normalized.FrequentCommunityMinVisits != defaults.FrequentCommunityMinVisits ||
+		normalized.FrequentCommunityMinVisitDays != defaults.FrequentCommunityMinVisitDays ||
+		normalized.FrequentCommunityFreshnessWindow != defaults.FrequentCommunityFreshnessWindow ||
+		normalized.FrequentCommunityHalfLife != defaults.FrequentCommunityHalfLife ||
+		normalized.FrequentCommunityBoostHours != defaults.FrequentCommunityBoostHours {
+		t.Fatalf("unsafe frequent-community values were not reset to defaults: %+v", normalized)
 	}
 	if normalized.MaxBoostHours != defaults.MaxBoostHours ||
 		normalized.MaxPenaltyHours != defaults.MaxPenaltyHours ||
@@ -235,6 +266,44 @@ func TestFeedRankingPolicyDecaysNegativeInterestScoresByAge(t *testing.T) {
 	} {
 		if !strings.Contains(expr, needle) {
 			t.Fatalf("personalized score expression must contain negative interest decay %q\n%s", needle, expr)
+		}
+	}
+}
+
+func TestFeedRankingPolicyBoostsOnlyQualifiedRecentCommunityVisits(t *testing.T) {
+	policy := DefaultFeedRankingPolicy()
+	policy.CommunityInterestMinScore = 2.5
+	policy.FrequentCommunityMinVisits = 4
+	policy.FrequentCommunityMinVisitDays = 3
+	policy.FrequentCommunityFreshnessWindow = 30 * 24 * time.Hour
+	policy.FrequentCommunityHalfLife = 10 * 24 * time.Hour
+	policy.FrequentCommunityBoostHours = 9
+
+	joins := policy.normalized().feedRankJoinsExpression(3)
+	for _, needle := range []string{
+		"community_interest.score >= 2.5",
+		"community_interest.last_event_at >= NOW() - make_interval(secs => 2592000)",
+		"LEFT JOIN post_feed_user_community_affinities frequent_community_affinity",
+		"frequent_community_affinity.viewer_user_id = $3",
+		"frequent_community_affinity.meaningful_visit_count >= 4",
+		"frequent_community_affinity.distinct_visit_day_count >= 3",
+		"frequent_community_affinity.last_visit_at >= NOW() - make_interval(secs => 2592000)",
+	} {
+		if !strings.Contains(joins, needle) {
+			t.Fatalf("feed rank joins must contain frequent-community guard %q\n%s", needle, joins)
+		}
+	}
+
+	expr := policy.normalized().personalizedScoreExpression(3, 0, 0)
+	for _, needle := range []string{
+		"POWER(0.5",
+		"frequent_community_affinity.viewer_user_id IS NOT NULL",
+		"FLOOR(9 * POWER(",
+		"frequent_community_affinity.last_visit_at",
+		"/ 864000",
+	} {
+		if !strings.Contains(expr, needle) {
+			t.Fatalf("personalized score must contain decaying frequent-community boost %q\n%s", needle, expr)
 		}
 	}
 }

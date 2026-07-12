@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -8,6 +10,26 @@ import (
 	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/guide-service/internal/config"
 )
+
+func TestDevelopmentComposeAllowsGuideServiceToQueryExcursionService(t *testing.T) {
+	t.Parallel()
+
+	composePath := filepath.Join("..", "..", "..", "..", "deploy", "docker-compose.yml")
+	source, err := os.ReadFile(composePath)
+	if err != nil {
+		t.Fatalf("read development compose: %v", err)
+	}
+	compose := string(source)
+
+	for _, requiredAllowlist := range []string{
+		"EXCURSION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/guide-service",
+		"EXCURSION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,guide-service",
+	} {
+		if !strings.Contains(compose, requiredAllowlist) {
+			t.Fatalf("excursion-service mTLS allowlist is missing %q", requiredAllowlist)
+		}
+	}
+}
 
 func TestNewExcursionServiceHTTPClientKeepsPlainClientWhenMTLSDisabled(t *testing.T) {
 	t.Parallel()

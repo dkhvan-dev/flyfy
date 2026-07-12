@@ -124,8 +124,8 @@ class AppFilterApplyButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: colors.primary,
           disabledBackgroundColor: colors.primary.withValues(alpha: 0.72),
-          foregroundColor: colors.textPrimary,
-          disabledForegroundColor: colors.textPrimary.withValues(alpha: 0.82),
+          foregroundColor: colors.onPrimary,
+          disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.82),
           minimumSize: Size(0, minHeight),
           padding: const AppEdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(
@@ -142,7 +142,7 @@ class AppFilterApplyButton extends StatelessWidget {
                 height: effectiveIconSize,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: colors.textPrimary,
+                  color: colors.onPrimary,
                 ),
               )
             : Row(

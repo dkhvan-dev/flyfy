@@ -24,6 +24,8 @@ import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/models/post_vm.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
@@ -44,6 +46,7 @@ final class _ProfileScreenColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
@@ -1002,6 +1005,15 @@ class _ProfileBody extends StatelessWidget {
     final isGuideProfile = guide?.isVerified == true;
     final l10n = AppLocalizations.of(context)!;
     final padding = profileScaled(context, 20, min: 14, max: 20);
+    final guideApplicationRestricted =
+        isOwnProfile &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.submitGuideApplication,
+        );
+    final showRestrictedGuideApplication =
+        guideApplicationRestricted &&
+        guide?.isPendingReview != true &&
+        guide?.isRevoked != true;
 
     return ListView(
       physics: const BouncingScrollPhysics(
@@ -1052,7 +1064,9 @@ class _ProfileBody extends StatelessWidget {
               : null,
         ),
         SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
-        if (!isGuideProfile && isOwnProfile)
+        if (!isGuideProfile && isOwnProfile && showRestrictedGuideApplication)
+          const TrustRestrictionNotice(),
+        if (!isGuideProfile && isOwnProfile && !showRestrictedGuideApplication)
           _BecomeGuideCard(
             guide: guide,
             onTap: () => context.push('/profile/guide-verification'),
@@ -1827,7 +1841,7 @@ class _BecomeGuideCard extends StatelessWidget {
               onPressed: isRevoked ? null : onTap,
               style: FilledButton.styleFrom(
                 backgroundColor: context.profileColors.primary,
-                foregroundColor: context.profileColors.textPrimary,
+                foregroundColor: context.profileColors.onPrimary,
               ),
               child: Text(buttonLabel),
             ),

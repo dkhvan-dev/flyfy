@@ -1324,6 +1324,81 @@ func TestCreatePostRateLimitedByRecentPosts(t *testing.T) {
 	}
 }
 
+func TestCreatePostDraftDoesNotConsumeOrCheckPublishLimit(t *testing.T) {
+	authorID := uuid.New()
+	nextAvailableAt := time.Now().UTC().Add(5 * time.Minute)
+	repo := &postUseCaseRepositoryStub{
+		postCreateCountSince:     postCreateRateLimitMax,
+		postPublishCooldownUntil: &nextAvailableAt,
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+
+	view, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Format:         enum.PostFormatPost,
+		Status:         enum.PostStatusDraft,
+		PostProfileKey: enum.PostProfileQuickPostV1,
+		StructuredData: json.RawMessage(`{"body":"Сохраню это на потом"}`),
+	})
+	if err != nil {
+		t.Fatalf("CreatePost draft error = %v", err)
+	}
+	if view == nil || view.Post == nil || view.Post.Status != enum.PostStatusDraft {
+		t.Fatalf("created draft = %#v", view)
+	}
+	if !repo.postCreateCountWindowStart.IsZero() {
+		t.Fatal("draft creation must not query publish limits")
+	}
+}
+
+func TestCreatePostReturnsCooldownTiming(t *testing.T) {
+	authorID := uuid.New()
+	nextAvailableAt := time.Now().UTC().Add(4 * time.Minute).Truncate(time.Second)
+	repo := &postUseCaseRepositoryStub{postPublishCooldownUntil: &nextAvailableAt}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Format:         enum.PostFormatPost,
+		Status:         enum.PostStatusPublished,
+		PublishIntent:  true,
+		PostProfileKey: enum.PostProfileQuickPostV1,
+		StructuredData: json.RawMessage(`{"body":"Слишком рано"}`),
+	})
+	var rateLimitErr *PostRateLimitError
+	if !errors.As(err, &rateLimitErr) {
+		t.Fatalf("CreatePost error = %v, want PostRateLimitError", err)
+	}
+	if !rateLimitErr.NextAvailableAt.Equal(nextAvailableAt) || rateLimitErr.RetryAfter <= 0 {
+		t.Fatalf("rate limit timing = %#v", rateLimitErr)
+	}
+	if repo.created != nil {
+		t.Fatal("rate-limited post must not be persisted")
+	}
+}
+
+func TestCreatePostMapsTransactionalCooldownConflict(t *testing.T) {
+	authorID := uuid.New()
+	nextAvailableAt := time.Now().UTC().Add(5 * time.Minute).Truncate(time.Second)
+	repo := &postUseCaseRepositoryStub{
+		createErr: &port.PostPublishCooldownError{NextAvailableAt: nextAvailableAt},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Format:         enum.PostFormatPost,
+		Status:         enum.PostStatusPublished,
+		PublishIntent:  true,
+		PostProfileKey: enum.PostProfileQuickPostV1,
+		StructuredData: json.RawMessage(`{"body":"Параллельная публикация"}`),
+	})
+	var rateLimitErr *PostRateLimitError
+	if !errors.As(err, &rateLimitErr) {
+		t.Fatalf("CreatePost error = %v, want mapped PostRateLimitError", err)
+	}
+	if !rateLimitErr.NextAvailableAt.Equal(nextAvailableAt) {
+		t.Fatalf("NextAvailableAt = %s, want %s", rateLimitErr.NextAvailableAt, nextAvailableAt)
+	}
+}
+
 func TestCheckPostCreateEligibilityReturnsRetryAfterWhenLimited(t *testing.T) {
 	authorID := uuid.New()
 	now := time.Date(2026, 6, 14, 12, 0, 0, 0, time.UTC)
@@ -1347,6 +1422,12 @@ func TestCheckPostCreateEligibilityReturnsRetryAfterWhenLimited(t *testing.T) {
 	}
 	if eligibility.Remaining != 0 {
 		t.Fatalf("Remaining = %d, want 0", eligibility.Remaining)
+	}
+	if eligibility.Cooldown != defaultPostCreateCooldown {
+		t.Fatalf("Cooldown = %s, want %s", eligibility.Cooldown, defaultPostCreateCooldown)
+	}
+	if eligibility.BlockReason != PostCreateBlockReasonHourlyRate {
+		t.Fatalf("BlockReason = %q, want %q", eligibility.BlockReason, PostCreateBlockReasonHourlyRate)
 	}
 	if eligibility.RetryAfter != 18*time.Minute {
 		t.Fatalf("RetryAfter = %s, want 18m", eligibility.RetryAfter)
@@ -3054,6 +3135,7 @@ type postUseCaseRepositoryStub struct {
 	createdComment                *model.PostComment
 	createCommentErr              error
 	updateErr                     error
+	createErr                     error
 	latestCommentLookupCalled     bool
 	followCommunityCalled         bool
 	likePostCalled                bool
@@ -3069,6 +3151,7 @@ type postUseCaseRepositoryStub struct {
 	postCreateCountAuthorID       uuid.UUID
 	postCreateCountWindowStart    time.Time
 	oldestPostCreatedAtAfterSince *time.Time
+	postPublishCooldownUntil      *time.Time
 	softDeletedPostID             uuid.UUID
 	softDeletedAuthorID           uuid.UUID
 	trackedFeedEvents             []model.FeedEvent
@@ -3098,7 +3181,7 @@ func (r *postUseCaseRepositoryStub) CreatePost(_ context.Context, post *model.Po
 	copy := *post
 	copy.Media = append([]model.PostMedia(nil), post.Media...)
 	r.created = &copy
-	return nil
+	return r.createErr
 }
 
 func (r *postUseCaseRepositoryStub) CreateStory(_ context.Context, story *model.Story) error {
@@ -3585,18 +3668,26 @@ func (r *postUseCaseRepositoryStub) ListPostSeenByUser(_ context.Context, postID
 	return seen, nil
 }
 
-func (r *postUseCaseRepositoryStub) CountPostsCreatedByAuthorSince(_ context.Context, authorID uuid.UUID, since time.Time) (int, error) {
+func (r *postUseCaseRepositoryStub) CountPostsPublishedByAuthorSince(_ context.Context, authorID uuid.UUID, since time.Time) (int, error) {
 	r.postCreateCountAuthorID = authorID
 	r.postCreateCountWindowStart = since
 	return r.postCreateCountSince, nil
 }
 
-func (r *postUseCaseRepositoryStub) OldestPostCreatedAtByAuthorSince(_ context.Context, _ uuid.UUID, _ time.Time) (*time.Time, error) {
+func (r *postUseCaseRepositoryStub) OldestPostPublishedAtByAuthorSince(_ context.Context, _ uuid.UUID, _ time.Time) (*time.Time, error) {
 	if r.oldestPostCreatedAtAfterSince == nil {
 		return nil, nil
 	}
 	oldest := *r.oldestPostCreatedAtAfterSince
 	return &oldest, nil
+}
+
+func (r *postUseCaseRepositoryStub) PostPublishCooldownUntil(_ context.Context, _ uuid.UUID) (*time.Time, error) {
+	if r.postPublishCooldownUntil == nil {
+		return nil, nil
+	}
+	next := r.postPublishCooldownUntil.UTC()
+	return &next, nil
 }
 
 func (r *postUseCaseRepositoryStub) ListStorySeenByUser(_ context.Context, storyIDs []uuid.UUID, _ uuid.UUID) (map[uuid.UUID]time.Time, error) {

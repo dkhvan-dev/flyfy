@@ -104,7 +104,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
           expand: false,
           initialChildSize: 0.78,
           minChildSize: 0.45,
-          maxChildSize: 0.95,
+          maxChildSize: 0.92,
           builder: (context, controller) {
             return DecoratedBox(
               decoration: AppBoxDecoration(
@@ -302,7 +302,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.primary,
-                            foregroundColor: colors.textPrimary,
+                            foregroundColor: colors.onPrimary,
                           ),
                           onPressed:
                               provider.actionState ==
@@ -347,7 +347,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.primary,
-                            foregroundColor: colors.textPrimary,
+                            foregroundColor: colors.onPrimary,
                           ),
                           onPressed:
                               provider.actionState ==
@@ -426,13 +426,13 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
       backgroundColor: colors.surfaceRaised,
       selectedColor: colors.primary,
       disabledColor: colors.surfaceHigh.withValues(alpha: 0.52),
-      checkmarkColor: colors.textPrimary,
+      checkmarkColor: colors.onPrimary,
       labelStyle: AppTextStyle(
         color: colors.textSecondary,
         fontWeight: FontWeight.w800,
       ),
       secondaryLabelStyle: AppTextStyle(
-        color: colors.textPrimary,
+        color: colors.onPrimary,
         fontWeight: FontWeight.w900,
       ),
       side: BorderSide(color: colors.borderPrimary),
@@ -1504,7 +1504,7 @@ class _GuideCancelSlotReasonSheetState
                             label: Text(l10n.guideDashboardCancelConfirm),
                             style: FilledButton.styleFrom(
                               backgroundColor: colors.primary,
-                              foregroundColor: colors.textPrimary,
+                              foregroundColor: colors.onPrimary,
                               minimumSize: const Size(0, 50),
                             ),
                           );

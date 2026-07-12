@@ -1936,7 +1936,7 @@ class _GuideFilterChip extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: selected ? colors.textPrimary : colors.textSecondary,
+              color: selected ? colors.onPrimary : colors.textSecondary,
               fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
@@ -2098,7 +2098,7 @@ class _GuideSegmentButton extends StatelessWidget {
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyle(
-              color: selected ? colors.textPrimary : colors.textSecondary,
+              color: selected ? colors.onPrimary : colors.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w800,
               height: 1.15,

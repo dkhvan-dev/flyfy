@@ -6,8 +6,11 @@ type ActivityResponse struct {
 	SourceActivityID   *string  `json:"sourceActivityId,omitempty"`
 	HostActivityRating *float64 `json:"hostActivityRating,omitempty"`
 
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title             string                           `json:"title"`
+	Description       string                           `json:"description"`
+	Translations      map[string]ActivityLocalizedCopy `json:"translations,omitempty"`
+	SourceLanguage    string                           `json:"sourceLanguage"`
+	TranslationStatus string                           `json:"translationStatus"`
 
 	Format           string `json:"format"`
 	Status           string `json:"status"`
@@ -62,6 +65,11 @@ type ActivityResponse struct {
 	Revision  int    `json:"revision"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
+}
+
+type ActivityLocalizedCopy struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type AdminActivityModerationResponse struct {

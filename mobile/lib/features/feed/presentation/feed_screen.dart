@@ -21,6 +21,8 @@ import '../../stories/editor/presentation/post_create_preflight.dart';
 import '../../profile/models/user_profile_vm.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/models/story_vm.dart';
+import '../../trust/providers/trust_access_provider.dart';
+import '../../trust/widgets/trust_restriction_notice.dart';
 import '../../../screens/stories/story_tray_viewer_screen.dart';
 import '../../../shared/location/home_location_filter_defaults.dart';
 import '../data/feed_api.dart';
@@ -680,6 +682,19 @@ class _FeedScreenState extends State<FeedScreen>
     return FeedPostLikeResult(likes: likes, likedByViewer: !likedByViewer);
   }
 
+  void _trackQuickPostEngagement(PostVm post, String eventType) {
+    final normalizedEventType = eventType.trim();
+    if (normalizedEventType != FeedEventTypes.like &&
+        normalizedEventType != FeedEventTypes.comment) {
+      return;
+    }
+    _trackPostAction(
+      post,
+      normalizedEventType,
+      metadata: {'engagementType': normalizedEventType},
+    );
+  }
+
   Future<void> _shareFeedPost(PostVm post) async {
     final postId = post.id.trim();
     if (postId.isEmpty) {
@@ -1274,6 +1289,7 @@ class _FeedScreenState extends State<FeedScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topInset = MediaQuery.paddingOf(context).top;
     final feedHeaderTopNudge = topInset > 0 ? _feedHeaderTopInsetNudge : 0.0;
+    final postCreationRestricted = _isPostCreationRestricted(context);
 
     return Theme(
       data: AppDesignSystem.themeFor(context),
@@ -1374,7 +1390,22 @@ class _FeedScreenState extends State<FeedScreen>
               color: colors.primary,
               backgroundColor: colors.surface,
               onRefresh: () => _loadFeed(showLoading: false),
-              child: _buildBody(context),
+              child: postCreationRestricted
+                  ? Column(
+                      children: [
+                        const Padding(
+                          padding: AppEdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: TrustRestrictionNotice(creation: true),
+                        ),
+                        Expanded(
+                          child: _buildBody(
+                            context,
+                            postCreationRestricted: true,
+                          ),
+                        ),
+                      ],
+                    )
+                  : _buildBody(context, postCreationRestricted: false),
             ),
           ),
         ),
@@ -1384,7 +1415,9 @@ class _FeedScreenState extends State<FeedScreen>
           onHomeTap: () => context.go('/'),
           onQrTap: () => context.push('/qr'),
           onFeedTap: () => unawaited(_handleFeedNavTap()),
-          onCenterCreateTap: () => unawaited(_openCreatePost()),
+          onCenterCreateTap: postCreationRestricted
+              ? null
+              : () => unawaited(_openCreatePost()),
           centerCreateSemanticsLabel: l10n.communityProfileCreatePostAction,
           onMapTap: () => context.push('/map'),
           onServicesTap: () => context.push('/services'),
@@ -1394,7 +1427,10 @@ class _FeedScreenState extends State<FeedScreen>
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(
+    BuildContext context, {
+    required bool postCreationRestricted,
+  }) {
     final profile = _maybeSessionProfile(context);
     final canUsePostActions = _canUsePostActions(context);
     final tab = _tabs[_selectedTabIndex];
@@ -1410,14 +1446,30 @@ class _FeedScreenState extends State<FeedScreen>
       return _FeedStateList(child: _FeedErrorState(onRetry: () => _loadFeed()));
     }
 
-    if (visibleItems.isEmpty) {
+    final hasFollowingContent =
+        tab != 'following' ||
+        visibleItems.any(
+          (block) =>
+              block.type != FeedBlockType.storiesTray ||
+              block.stories.isNotEmpty,
+        );
+    if (!hasFollowingContent || visibleItems.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return _FeedStateList(
-        child: _FeedEmptyState(l10n: AppLocalizations.of(context)!),
+        child: tab == 'following'
+            ? _FeedMessageState(
+                key: const ValueKey('feed-following-empty-state'),
+                icon: Icons.people_outline_rounded,
+                title: l10n.feedFollowingEmptyTitle,
+                message: l10n.feedFollowingEmptyMessage,
+              )
+            : _FeedEmptyState(l10n: l10n),
       );
     }
 
     return FeedBlockList(
       blocks: sortedItems,
+      postApi: _postApi,
       controller: _scrollController,
       postSortMode: _postSortMode,
       onPostSortModeChanged: (mode) {
@@ -1441,8 +1493,13 @@ class _FeedScreenState extends State<FeedScreen>
       onPostNotInterested: canUsePostActions
           ? _markFeedPostNotInterested
           : null,
+      onQuickPostEngagement: canUsePostActions
+          ? _trackQuickPostEngagement
+          : null,
       onStoryTrayOpen: _openStoryTray,
-      onCreateStory: canUsePostActions ? _openCreateStory : null,
+      onCreateStory: canUsePostActions && !postCreationRestricted
+          ? _openCreateStory
+          : null,
       viewerAvatarUrl: canUsePostActions ? _profileAvatarUrl(profile) : null,
       viewerInitials: canUsePostActions ? profile?.initials ?? 'F' : 'F',
       viewerUserId: canUsePostActions ? profile?.userId : null,
@@ -1463,6 +1520,16 @@ class _FeedScreenState extends State<FeedScreen>
       1 => l10n.feedTabFollowing,
       _ => '',
     };
+  }
+}
+
+bool _isPostCreationRestricted(BuildContext context) {
+  try {
+    return context.watch<TrustAccessProvider>().isRestricted(
+      TrustCapability.createPost,
+    );
+  } on ProviderNotFoundException {
+    return false;
   }
 }
 
@@ -2225,6 +2292,7 @@ class _FeedErrorState extends StatelessWidget {
 
 class _FeedMessageState extends StatelessWidget {
   const _FeedMessageState({
+    super.key,
     required this.icon,
     required this.title,
     required this.message,

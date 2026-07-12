@@ -142,6 +142,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       const DeviceContextService();
   final ProfileApi _profileApi = ProfileApi();
   final ScrollController _detailsScrollController = ScrollController();
+  Timer? _translationRefreshTimer;
 
   bool _participantsLoading = true;
   String? _participantsError;
@@ -157,9 +158,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   bool _isBuildingMeetingRoute = false;
   bool _isTrackingBackSwipe = false;
   bool _isInitialLoadPending = true;
+  bool _showOriginalActivityCopy = false;
   double _backSwipeDistance = 0;
   String? _deviceTimezone;
   ActivityProvider? _activityProvider;
+  int _translationRefreshAttempts = 0;
 
   @override
   void initState() {
@@ -178,6 +181,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   @override
   void dispose() {
+    _translationRefreshTimer?.cancel();
     _scheduleActivityProviderCleanup();
     _detailsScrollController.dispose();
     super.dispose();
@@ -225,7 +229,32 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ]);
     if (!mounted) return;
     setState(() => _isInitialLoadPending = false);
+    _translationRefreshAttempts = 0;
+    _scheduleTranslationRefresh(_visibleActivity(provider));
     await _loadVisibleProfiles(_visibleActivity(provider));
+  }
+
+  void _scheduleTranslationRefresh(ActivityListItemVm? activity) {
+    _translationRefreshTimer?.cancel();
+    if (!mounted || activity == null || _translationRefreshAttempts >= 10) {
+      return;
+    }
+    final status = activity.translationStatus.toUpperCase();
+    if (status != 'PENDING' && status != 'PARTIAL') return;
+    final languageCode = Localizations.localeOf(context).languageCode;
+    if (activity.translationNoticeState(languageCode) !=
+        ActivityTranslationNoticeState.pending) {
+      return;
+    }
+
+    _translationRefreshTimer = Timer(const Duration(seconds: 3), () async {
+      if (!mounted) return;
+      _translationRefreshAttempts++;
+      final provider = context.read<ActivityProvider>();
+      await provider.loadActivityDetails(widget.activityId);
+      if (!mounted) return;
+      _scheduleTranslationRefresh(_visibleActivity(provider));
+    });
   }
 
   ActivityListItemVm? _visibleActivity(ActivityProvider provider) {
@@ -1684,6 +1713,19 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
+    final appLanguageCode = Localizations.localeOf(context).languageCode;
+    final translationNoticeState = activity.translationNoticeState(
+      appLanguageCode,
+    );
+    final visibleCopy =
+        translationNoticeState == ActivityTranslationNoticeState.translated &&
+            !_showOriginalActivityCopy
+        ? activity.localizedCopy(appLanguageCode)
+        : ActivityLocalizedCopyVm(
+            title: activity.title,
+            description: activity.description,
+          );
+
     final activeParticipants =
         _participants.where((participant) => participant.isActive).toList()
           ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
@@ -1886,9 +1928,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 imageUrl: resolveActivityCoverUrl(activity),
                               ),
                               SizedBox(height: compact ? 14 : 16),
+                              if (translationNoticeState !=
+                                  ActivityTranslationNoticeState.none) ...[
+                                _ActivityTranslationNotice(
+                                  sourceLanguage: activity.sourceLanguage,
+                                  state: translationNoticeState,
+                                  showingOriginal: _showOriginalActivityCopy,
+                                  onToggle: () {
+                                    setState(() {
+                                      _showOriginalActivityCopy =
+                                          !_showOriginalActivityCopy;
+                                    });
+                                  },
+                                ),
+                                SizedBox(height: compact ? 12 : 14),
+                              ],
                               _HeadingSection(
-                                title: activity.title,
-                                description: activity.description,
+                                title: visibleCopy.title,
+                                description: visibleCopy.description,
                                 compact: compact,
                               ),
                               if (lifecycleReason.isNotEmpty) ...[
@@ -3579,6 +3636,100 @@ class _DetailsHeroArtwork extends StatelessWidget {
   }
 }
 
+class _ActivityTranslationNotice extends StatelessWidget {
+  const _ActivityTranslationNotice({
+    required this.sourceLanguage,
+    required this.state,
+    required this.showingOriginal,
+    required this.onToggle,
+  });
+
+  final String sourceLanguage;
+  final ActivityTranslationNoticeState state;
+  final bool showingOriginal;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sourceLabel = switch (sourceLanguage.trim().toLowerCase()) {
+      'en' => l10n.activityTranslationSourceLanguageEnglish,
+      'kk' => l10n.activityTranslationSourceLanguageKazakh,
+      _ => l10n.activityTranslationSourceLanguageRussian,
+    };
+    final noticeText = switch (state) {
+      ActivityTranslationNoticeState.translated =>
+        l10n.activityDetailsTranslatedNotice(sourceLabel),
+      ActivityTranslationNoticeState.pending =>
+        l10n.activityDetailsTranslationPendingNotice,
+      ActivityTranslationNoticeState.unavailable =>
+        l10n.activityDetailsTranslationUnavailableNotice,
+      ActivityTranslationNoticeState.none => '',
+    };
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: AppBoxDecoration(
+        color: context.activityDetailsColors.primary.withValues(alpha: 0.10),
+        borderRadius: AppBorderRadius.circular(16),
+        border: Border.all(
+          color: context.activityDetailsColors.primary.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(
+            Icons.translate_rounded,
+            size: 18,
+            color: context.activityDetailsColors.primary,
+          ),
+          Text(
+            noticeText,
+            style: AppTextStyle(
+              color: context.activityDetailsColors.textPrimary,
+              fontSize: 13,
+              height: 1.24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (state == ActivityTranslationNoticeState.translated) ...[
+            Text(
+              '·',
+              style: AppTextStyle(
+                color: context.activityDetailsColors.textPrimary,
+                fontSize: 13,
+                height: 1.24,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            TextButton(
+              onPressed: onToggle,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                padding: const AppEdgeInsets.symmetric(horizontal: 4),
+                foregroundColor: context.activityDetailsColors.primary,
+              ),
+              child: Text(
+                showingOriginal
+                    ? l10n.activityDetailsShowTranslation
+                    : l10n.activityDetailsShowOriginal,
+                style: const AppTextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _HeadingSection extends StatelessWidget {
   const _HeadingSection({
     required this.title,
@@ -4599,6 +4750,7 @@ class _MeetingSection extends StatelessWidget {
                       fallbackText: locationLine.isNotEmpty
                           ? locationLine
                           : l10n.notSpecified,
+                      includeCountry: false,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
@@ -4813,6 +4965,7 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
                 cityName: activity.cityName,
                 addressText: activity.addressText,
                 fallbackText: label,
+                includeCountry: false,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

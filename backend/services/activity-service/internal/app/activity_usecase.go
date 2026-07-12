@@ -17,16 +17,18 @@ import (
 )
 
 type ActivityUseCase struct {
-	repo                port.ActivityRepository
-	policy              *PolicyService
-	fileManager         port.ActivityMediaFileManager
-	chatGateway         port.ActivityChatGateway
-	notificationGateway port.ActivityNotificationGateway
-	payment             port.ActivityPaymentGateway
-	fraud               port.FraudEvaluator
-	trustPolicy         port.TrustPolicyClient
-	userProfiles        port.UserProfileResolver
-	searchIndexer       ActivitySearchIndexer
+	repo                    port.ActivityRepository
+	policy                  *PolicyService
+	fileManager             port.ActivityMediaFileManager
+	chatGateway             port.ActivityChatGateway
+	notificationGateway     port.ActivityNotificationGateway
+	payment                 port.ActivityPaymentGateway
+	fraud                   port.FraudEvaluator
+	trustPolicy             port.TrustPolicyClient
+	userProfiles            port.UserProfileResolver
+	searchIndexer           ActivitySearchIndexer
+	asyncTranslationEnabled bool
+	translationScheduler    *ActivityTranslationScheduler
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -52,6 +54,12 @@ func (u *ActivityUseCase) SetPaymentGateway(paymentGateway port.ActivityPaymentG
 
 func (u *ActivityUseCase) SetUserProfileResolver(resolver port.UserProfileResolver) {
 	u.userProfiles = resolver
+}
+
+func (u *ActivityUseCase) WithAsyncTranslationConfig(enabled bool, maxAttempts int) *ActivityUseCase {
+	u.asyncTranslationEnabled = enabled
+	u.translationScheduler = NewActivityTranslationScheduler(maxAttempts)
+	return u
 }
 
 func (u *ActivityUseCase) syncActivityChat(ctx context.Context, item *model.Activity) {
@@ -133,6 +141,7 @@ type CreateActivityInput struct {
 	HostUserID      uuid.UUID
 	Title           string
 	Description     string
+	SourceLanguage  string
 	Format          enum.ActivityFormat
 	Visibility      enum.ActivityVisibility
 	CategorySlug    string
@@ -180,6 +189,7 @@ type UpdateActivityInput struct {
 
 	Title              *string
 	Description        *string
+	SourceLanguage     *string
 	Visibility         *enum.ActivityVisibility
 	CategorySlug       *string
 	SubcategorySlug    *string
@@ -266,6 +276,16 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	if input.HostUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
+	requestedSourceLanguage := input.SourceLanguage
+	if strings.TrimSpace(requestedSourceLanguage) == "" {
+		if inferredSource, ok := model.NormalizeActivityTranslationLanguage(input.LanguageCode); ok {
+			requestedSourceLanguage = inferredSource
+		}
+	}
+	sourceLanguage, err := normalizeActivitySourceLanguage(requestedSourceLanguage)
+	if err != nil {
+		return nil, err
+	}
 
 	categorySlug, err := model.NormalizeAndValidateActivityCategorySlug(input.CategorySlug)
 	if err != nil {
@@ -331,6 +351,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		HostUserID:                     input.HostUserID,
 		Title:                          input.Title,
 		Description:                    input.Description,
+		SourceLanguage:                 sourceLanguage,
 		Format:                         input.Format,
 		Visibility:                     input.Visibility,
 		CategorySlug:                   input.CategorySlug,
@@ -410,7 +431,11 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		return nil, err
 	}
 
-	if err = u.repo.CreateActivity(ctx, item); err != nil {
+	translationJobs, err := u.prepareActivityTranslation(item)
+	if err != nil {
+		return nil, err
+	}
+	if err = u.createActivityWithTranslations(ctx, item, translationJobs); err != nil {
 		return nil, fmt.Errorf("create activity: %w", err)
 	}
 
@@ -470,6 +495,70 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	}
 
 	return item, nil
+}
+
+func normalizeActivitySourceLanguage(value string) (string, error) {
+	if strings.TrimSpace(value) == "" {
+		return "ru", nil
+	}
+	normalized, ok := model.NormalizeActivityTranslationLanguage(value)
+	if !ok {
+		return "", model.ErrInvalidActivityTranslationLanguage
+	}
+	return normalized, nil
+}
+
+func (u *ActivityUseCase) prepareActivityTranslation(
+	item *model.Activity,
+) ([]model.ActivityTranslationJob, error) {
+	status := model.ActivityTranslationDisabled
+	if u.asyncTranslationEnabled {
+		status = model.ActivityTranslationPending
+	}
+	if err := item.ResetTranslations(item.SourceLanguage, status); err != nil {
+		return nil, err
+	}
+	if !u.asyncTranslationEnabled {
+		return nil, nil
+	}
+	if u.translationScheduler == nil {
+		u.translationScheduler = NewActivityTranslationScheduler(5)
+	}
+	jobs, err := u.translationScheduler.BuildJobs(
+		item.ID,
+		item.SourceLanguage,
+		item.Title,
+		item.Description,
+		item.Translations,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(jobs) == 0 {
+		item.TranslationStatus = model.ActivityTranslationCompleted
+	}
+	return jobs, nil
+}
+
+func (u *ActivityUseCase) createActivityWithTranslations(
+	ctx context.Context,
+	item *model.Activity,
+	jobs []model.ActivityTranslationJob,
+) error {
+	if repo, ok := u.repo.(port.ActivityTranslationMutationRepository); ok {
+		return repo.CreateActivityWithTranslationJobs(ctx, item, jobs)
+	}
+	if err := u.repo.CreateActivity(ctx, item); err != nil {
+		return err
+	}
+	if len(jobs) == 0 {
+		return nil
+	}
+	if repo, ok := u.repo.(port.ActivityTranslationJobRepository); ok {
+		return repo.EnqueueActivityTranslationJobs(ctx, jobs)
+	}
+	return nil
 }
 
 func (u *ActivityUseCase) GetActivityByID(ctx context.Context, activityID uuid.UUID) (*model.Activity, error) {
@@ -1209,6 +1298,9 @@ func (u *ActivityUseCase) DuplicateActivity(
 		SourceActivityID:               &source.ID,
 		Title:                          source.Title,
 		Description:                    source.Description,
+		Translations:                   source.Translations,
+		SourceLanguage:                 source.SourceLanguage,
+		TranslationStatus:              source.TranslationStatus,
 		Format:                         source.Format,
 		Visibility:                     source.Visibility,
 		CategorySlug:                   categorySlug,
@@ -1226,6 +1318,7 @@ func (u *ActivityUseCase) DuplicateActivity(
 		Currency:                       source.Currency,
 		RequiresProfileCompletion:      source.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: source.RequiresAttendanceConfirmation,
+		AllowsParticipantInvites:       source.AllowsParticipantInvites,
 		ConfirmationDeadline:           source.ConfirmationDeadline,
 		CountryCode:                    source.CountryCode,
 		CityID:                         source.CityID,
@@ -1583,6 +1676,9 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	beforePriceType := item.PriceType
 	beforePriceAmount := item.PriceAmount
 	beforeCurrency := item.Currency
+	beforeTitle := item.Title
+	beforeDescription := item.Description
+	beforeSourceLanguage := item.SourceLanguage
 	beforeStartAt := item.StartAt
 	beforeLocationSnapshot := locationSnapshot(item)
 	beforeMeetingAddressSnapshot := meetingAddressSnapshot(item)
@@ -1592,6 +1688,13 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	}
 	if input.Description != nil {
 		item.Description = strings.TrimSpace(*input.Description)
+	}
+	if input.SourceLanguage != nil {
+		sourceLanguage, sourceErr := normalizeActivitySourceLanguage(*input.SourceLanguage)
+		if sourceErr != nil {
+			return nil, sourceErr
+		}
+		item.SourceLanguage = sourceLanguage
 	}
 	if input.Visibility != nil {
 		item.Visibility = *input.Visibility
@@ -1777,7 +1880,31 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		return nil, err
 	}
 
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
+	translationChanged := beforeTitle != item.Title ||
+		beforeDescription != item.Description ||
+		beforeSourceLanguage != item.SourceLanguage
+	var translationJobs []model.ActivityTranslationJob
+	if translationChanged {
+		translationJobs, err = u.prepareActivityTranslation(item)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if translationChanged {
+		if translationRepo, ok := u.repo.(port.ActivityTranslationMutationRepository); ok {
+			err = translationRepo.UpdateActivityWithTranslationJobs(ctx, item, translationJobs)
+		} else {
+			err = u.repo.UpdateActivity(ctx, item)
+			if err == nil && len(translationJobs) > 0 {
+				if jobRepo, ok := u.repo.(port.ActivityTranslationJobRepository); ok {
+					err = jobRepo.EnqueueActivityTranslationJobs(ctx, translationJobs)
+				}
+			}
+		}
+	} else {
+		err = u.repo.UpdateActivity(ctx, item)
+	}
+	if err != nil {
 		return nil, fmt.Errorf("update activity: %w", err)
 	}
 

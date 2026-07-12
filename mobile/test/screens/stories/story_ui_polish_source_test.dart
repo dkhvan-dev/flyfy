@@ -674,7 +674,7 @@ void main() {
     expect(tabsSource, contains('scrollDirection: Axis.horizontal'));
     expect(tabsSource, contains('Row('));
     expect(tabsSource, isNot(contains('Wrap(')));
-    expect(tabsSource, contains('colors.textPrimary'));
+    expect(tabsSource, contains('colors.onPrimary'));
     expect(tabsSource, contains('colors.textSecondary'));
     expect(tabsSource, isNot(contains('AppPalette.')));
     expect(tabsSource, isNot(contains('StoryPalette.textSoft')));

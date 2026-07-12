@@ -22,8 +22,10 @@ import 'package:inflap/features/stories/editor/presentation/widgets/story_media_
 import 'package:inflap/features/stories/editor/presentation/widgets/story_publish_panel.dart';
 import 'package:inflap/features/stories/models/post_profile_contract.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
+import 'package:inflap/features/trust/providers/trust_access_provider.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/stories/create_story_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -1053,6 +1055,50 @@ void main() {
       },
     );
 
+    testWidgets('publish cooldown error opens the countdown sheet', (
+      tester,
+    ) async {
+      final api = _FakeStoryEditorApi(
+        publishError: StoryEditorApiException(
+          message: 'Post publishing rate limit exceeded.',
+          statusCode: 429,
+          code: 'post_rate_limited',
+          retryAfter: const Duration(minutes: 5),
+          nextAvailableAt: DateTime.now().toUtc().add(
+            const Duration(minutes: 5),
+          ),
+        ),
+      );
+      final controller = _controller(api: api);
+      controller
+        ..initializeEdit(userId: 'user-1', story: _storyVm())
+        ..addBlock(
+          StoryBlock.paragraph(id: 'paragraph-1', text: 'Published body'),
+        );
+
+      await tester.pumpWidget(_app(_screen(controller: controller)));
+      await tester.ensureVisible(find.byType(StoryPublishPanel));
+      await tester.pumpAndSettle();
+
+      final publishButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Publish'),
+      );
+      expect(publishButton.onPressed, isNotNull);
+      publishButton.onPressed?.call();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(controller.state.saveStatus.error, same(api.publishError));
+      expect(find.text('Post limit'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('post-rate-limit-countdown')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Got it'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('save draft errors are visible in the publish panel', (
       tester,
     ) async {
@@ -1310,7 +1356,7 @@ void main() {
       final quoteDecoration = quoteOption.decoration as BoxDecoration;
       expect(quoteDecoration.color, colors.surfaceRaised);
       final quoteBorder = quoteDecoration.border! as Border;
-      expect(quoteBorder.top.color, colors.borderPrimary);
+      expect(quoteBorder.top.color, colors.borderSecondary);
 
       await tester.tap(find.text('Quote'));
       await tester.pumpAndSettle();
@@ -2245,12 +2291,15 @@ void main() {
 }
 
 Widget _app(Widget child, {MediaQueryData? mediaQuery, Locale? locale}) {
-  final wrapped = MaterialApp(
-    theme: ThemeData.dark(useMaterial3: true),
-    locale: locale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: child,
+  final wrapped = ChangeNotifierProvider(
+    create: (_) => TrustAccessProvider(),
+    child: MaterialApp(
+      theme: ThemeData.dark(useMaterial3: true),
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    ),
   );
   if (mediaQuery == null) {
     return wrapped;
@@ -2259,11 +2308,14 @@ Widget _app(Widget child, {MediaQueryData? mediaQuery, Locale? locale}) {
 }
 
 Widget _routerApp(GoRouter router) {
-  return MaterialApp.router(
-    theme: ThemeData.dark(useMaterial3: true),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    routerConfig: router,
+  return ChangeNotifierProvider(
+    create: (_) => TrustAccessProvider(),
+    child: MaterialApp.router(
+      theme: ThemeData.dark(useMaterial3: true),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
   );
 }
 
@@ -2391,11 +2443,15 @@ PostVm _storyVm({
 }
 
 class _FakeStoryEditorApi implements StoryEditorApiGateway {
-  _FakeStoryEditorApi({PostVm? storyById, this.createDraftError})
-    : storyById = storyById ?? _storyVm();
+  _FakeStoryEditorApi({
+    PostVm? storyById,
+    this.createDraftError,
+    this.publishError,
+  }) : storyById = storyById ?? _storyVm();
 
   final PostVm storyById;
   final Object? createDraftError;
+  final Object? publishError;
   final createDraftRequests = <StoryEditorWriteRequest>[];
   final autosaveRequests = <StoryEditorWriteRequest>[];
   final updateRequests = <StoryEditorWriteRequest>[];
@@ -2435,6 +2491,10 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
     String storyId,
     StoryEditorWriteRequest request,
   ) async {
+    final error = publishError;
+    if (error != null) {
+      throw error;
+    }
     publishRequests.add(request);
     return _storyVm(id: storyId, title: request.title, status: 'PUBLISHED');
   }

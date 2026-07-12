@@ -39,6 +39,7 @@ final class _MyExcursionsColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
@@ -815,7 +816,7 @@ class _SegmentButton extends StatelessWidget {
       onPressed: onTap,
       style: FilledButton.styleFrom(
         backgroundColor: active ? colors.primary : colors.transparent,
-        foregroundColor: active ? colors.textPrimary : colors.orangeSoft29,
+        foregroundColor: active ? colors.onPrimary : colors.orangeSoft29,
         minimumSize: const Size(0, 48),
         padding: const AppEdgeInsets.symmetric(horizontal: 10),
         shape: RoundedRectangleBorder(
@@ -1051,7 +1052,7 @@ class _MyExcursionBookingCard extends StatelessWidget {
                           style: FilledButton.styleFrom(
                             backgroundColor: context.myExcursionsColors.primary,
                             foregroundColor:
-                                context.myExcursionsColors.textPrimary,
+                                context.myExcursionsColors.onPrimary,
                             minimumSize: const Size(0, 48),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(999),
@@ -1897,7 +1898,7 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
                     onPressed: canSubmit ? _submit : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: context.myExcursionsColors.primary,
-                      foregroundColor: context.myExcursionsColors.textPrimary,
+                      foregroundColor: context.myExcursionsColors.onPrimary,
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(16),
@@ -1909,7 +1910,7 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: context.myExcursionsColors.textPrimary,
+                              color: context.myExcursionsColors.onPrimary,
                             ),
                           )
                         : Text(_submitLabel()),
@@ -2647,9 +2648,9 @@ class _ChoicePill extends StatelessWidget {
       onSelected: (_) => onTap(),
       selectedColor: colors.primary,
       backgroundColor: colors.surfaceRaised,
-      checkmarkColor: colors.textPrimary,
+      checkmarkColor: colors.onPrimary,
       labelStyle: AppTextStyle(
-        color: selected ? colors.textPrimary : colors.primary,
+        color: selected ? colors.onPrimary : colors.primary,
         fontWeight: FontWeight.w800,
       ),
       side: BorderSide(

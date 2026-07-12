@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
+import '../../features/currency/data/currency_api.dart';
+import '../../features/currency/data/currency_catalog_repository.dart';
+import '../../features/currency/models/currency_conversion_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../formatters/app_money_formatter.dart';
 
@@ -14,6 +19,7 @@ class AppCurrencyPickerField extends StatelessWidget {
     this.errorText,
     this.enabled = true,
     this.surfaceColor,
+    this.currencyCatalogRepository,
   });
 
   final String label;
@@ -22,13 +28,24 @@ class AppCurrencyPickerField extends StatelessWidget {
   final String? errorText;
   final bool enabled;
   final Color? surfaceColor;
+  final CurrencyCatalogRepository? currencyCatalogRepository;
 
-  AppCurrencyOption get _selectedOption {
+  CurrencyCatalogRepository get _catalogRepository =>
+      currencyCatalogRepository ?? CurrencyCatalogRepository.shared;
+
+  CurrencyOption _selectedOption(BuildContext context) {
     final normalized = normalizeAppCurrencyCodeOrDefault(selectedCode);
-    return appCurrencyOptions.firstWhere(
-      (option) => option.code == normalized,
-      orElse: () => AppCurrencyOption(code: normalized),
-    );
+    final locale = Localizations.localeOf(context).languageCode;
+    return _catalogRepository
+        .cachedCurrencies(locale: locale)
+        .firstWhere(
+          (option) => option.code == normalized,
+          orElse: () => CurrencyOption(
+            code: normalized,
+            name: normalized,
+            symbol: appCurrencySymbol(normalized),
+          ),
+        );
   }
 
   Future<void> _openPicker(BuildContext context) async {
@@ -42,6 +59,7 @@ class AppCurrencyPickerField extends StatelessWidget {
       requestFocus: true,
       builder: (context) => _AppCurrencyPickerSheet(
         selectedCode: normalizeAppCurrencyCodeOrDefault(selectedCode),
+        currencyCatalogRepository: _catalogRepository,
       ),
     );
 
@@ -54,7 +72,7 @@ class AppCurrencyPickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = AppDesignSystem.colorsFor(context);
-    final selectedOption = _selectedOption;
+    final selectedOption = _selectedOption(context);
     final borderColor = errorText == null
         ? colors.borderPrimary
         : colors.danger;
@@ -91,7 +109,7 @@ class AppCurrencyPickerField extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    selectedOption.symbol,
+                    _currencyOptionSymbol(selectedOption),
                     style: AppTextStyle(
                       color: enabled
                           ? colors.primary
@@ -103,7 +121,7 @@ class AppCurrencyPickerField extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      selectedOption.label(l10n),
+                      _currencyOptionLabel(selectedOption, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
@@ -143,9 +161,13 @@ class AppCurrencyPickerField extends StatelessWidget {
 }
 
 class _AppCurrencyPickerSheet extends StatefulWidget {
-  const _AppCurrencyPickerSheet({required this.selectedCode});
+  const _AppCurrencyPickerSheet({
+    required this.selectedCode,
+    required this.currencyCatalogRepository,
+  });
 
   final String selectedCode;
+  final CurrencyCatalogRepository currencyCatalogRepository;
 
   @override
   State<_AppCurrencyPickerSheet> createState() =>
@@ -154,6 +176,33 @@ class _AppCurrencyPickerSheet extends StatefulWidget {
 
 class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
   final TextEditingController _searchController = TextEditingController();
+  List<CurrencyOption> _options = defaultCurrencyOptions;
+  String? _loadedLocale;
+  bool _isLoading = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).languageCode;
+    if (_loadedLocale == locale) return;
+    _loadedLocale = locale;
+    _options = widget.currencyCatalogRepository.cachedCurrencies(
+      locale: locale,
+    );
+    _isLoading = true;
+    unawaited(_loadCurrencies(locale));
+  }
+
+  Future<void> _loadCurrencies(String locale) async {
+    final options = await widget.currencyCatalogRepository.listCurrencies(
+      locale: locale,
+    );
+    if (!mounted || _loadedLocale != locale) return;
+    setState(() {
+      _options = options;
+      _isLoading = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -161,15 +210,15 @@ class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
     super.dispose();
   }
 
-  List<AppCurrencyOption> _visibleOptions(AppLocalizations l10n) {
+  List<CurrencyOption> _visibleOptions(AppLocalizations l10n) {
     final query = _normalizeCurrencyPickerQuery(_searchController.text);
-    if (query.isEmpty) return appCurrencyOptions;
+    if (query.isEmpty) return _options;
 
-    return appCurrencyOptions
+    return _options
         .where((option) {
-          final label = option.label(l10n);
+          final label = _currencyOptionLabel(option, l10n);
           final searchable = _normalizeCurrencyPickerQuery(
-            '${option.code} ${option.symbol} $label',
+            '${option.code} ${option.symbol} ${option.name} $label',
           );
           return searchable.contains(query);
         })
@@ -203,14 +252,17 @@ class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
 
                 return ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: maxHeight),
-                  child: DecoratedBox(
-                    decoration: AppBoxDecoration(
-                      color: colors.surface,
+                  child: Material(
+                    key: const ValueKey('app-currency-picker-sheet-surface'),
+                    color: colors.surface,
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
                       borderRadius: AppRadius.sheetTop,
-                      border: Border.all(color: colors.borderSoft),
+                      side: BorderSide(color: colors.borderSoft),
                     ),
                     child: Padding(
-                      padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 16),
+                      padding: AppEdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -264,6 +316,15 @@ class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
                               ),
                             ),
                           ),
+                          if (_isLoading)
+                            Padding(
+                              padding: const AppEdgeInsets.only(top: 10),
+                              child: LinearProgressIndicator(
+                                minHeight: 2,
+                                color: colors.primary,
+                                backgroundColor: colors.borderSoft,
+                              ),
+                            ),
                           const SizedBox(height: 12),
                           Flexible(
                             child: visibleOptions.isEmpty
@@ -307,10 +368,12 @@ class _AppCurrencyPickerSheetState extends State<_AppCurrencyPickerSheet> {
                                               ? colors.primary
                                               : colors.surfaceHigh,
                                           foregroundColor: colors.textPrimary,
-                                          child: Text(option.symbol),
+                                          child: Text(
+                                            _currencyOptionSymbol(option),
+                                          ),
                                         ),
                                         title: Text(
-                                          option.label(l10n),
+                                          _currencyOptionLabel(option, l10n),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: AppTextStyle(
@@ -366,29 +429,18 @@ String _normalizeCurrencyPickerQuery(String value) {
   return value.trim().toLowerCase();
 }
 
-class AppCurrencyOption {
-  const AppCurrencyOption({required this.code});
-
-  final String code;
-
-  String get symbol => appCurrencySymbol(code);
-
-  String label(AppLocalizations l10n) {
-    return switch (code) {
-      'KZT' => l10n.createCurrencyKzt,
-      'USD' => l10n.createCurrencyUsd,
-      'EUR' => l10n.createCurrencyEur,
-      'RUB' => l10n.createCurrencyRub,
-      'GBP' => l10n.createCurrencyGbp,
-      _ => code,
-    };
-  }
+String _currencyOptionSymbol(CurrencyOption option) {
+  final symbol = option.symbol.trim();
+  return symbol.isEmpty ? appCurrencySymbol(option.code) : symbol;
 }
 
-const appCurrencyOptions = [
-  AppCurrencyOption(code: 'KZT'),
-  AppCurrencyOption(code: 'USD'),
-  AppCurrencyOption(code: 'EUR'),
-  AppCurrencyOption(code: 'RUB'),
-  AppCurrencyOption(code: 'GBP'),
-];
+String _currencyOptionLabel(CurrencyOption option, AppLocalizations l10n) {
+  return switch (option.code.trim().toUpperCase()) {
+    'KZT' => l10n.createCurrencyKzt,
+    'USD' => l10n.createCurrencyUsd,
+    'EUR' => l10n.createCurrencyEur,
+    'RUB' => l10n.createCurrencyRub,
+    'GBP' => l10n.createCurrencyGbp,
+    _ => option.name.trim().isEmpty ? option.code : option.name.trim(),
+  };
+}

@@ -286,9 +286,12 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
                 onPressed: state.isLoadingMore ? null : _loadMoreCurrentTab,
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   disabledBackgroundColor: colors.primary.withValues(
                     alpha: 0.32,
+                  ),
+                  disabledForegroundColor: colors.onPrimary.withValues(
+                    alpha: 0.62,
                   ),
                   minimumSize: const Size.fromHeight(48),
                 ),
@@ -297,7 +300,7 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
                         dimension: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: colors.textPrimary,
+                          color: colors.onPrimary,
                         ),
                       )
                     : const Icon(Icons.expand_more_rounded),

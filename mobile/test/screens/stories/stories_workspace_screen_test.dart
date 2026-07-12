@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:inflap/core/network/post_api.dart';
 import 'package:inflap/core/storage/secure_storage.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
+import 'package:inflap/features/trust/providers/trust_access_provider.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/auth_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
@@ -428,6 +429,7 @@ Future<Widget> _app({
     providers: [
       ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
       ChangeNotifierProvider<SessionProvider>.value(value: sessionProvider),
+      ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
     ],
     child: MaterialApp.router(
       routerConfig: router,

@@ -57,6 +57,7 @@ class AppModalScaffold<T> extends StatelessWidget {
     this.maxWidth = 440,
     this.surfaceBorderRadius = AppRadius.panel,
     this.bottomSafeAreaPadding = 0,
+    this.surfaceKey,
   });
 
   final String title;
@@ -72,6 +73,7 @@ class AppModalScaffold<T> extends StatelessWidget {
   final double maxWidth;
   final BorderRadiusGeometry surfaceBorderRadius;
   final double bottomSafeAreaPadding;
+  final Key? surfaceKey;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +101,7 @@ class AppModalScaffold<T> extends StatelessWidget {
       child: Material(
         color: colors.transparent,
         child: ClipRRect(
+          key: surfaceKey,
           borderRadius: surfaceBorderRadius,
           child: DecoratedBox(
             decoration: _modalSurfaceDecoration(
@@ -323,9 +326,7 @@ class AppModalSheetFrame extends StatelessWidget {
     final alignedChild = Align(alignment: alignment, child: child);
     final content = onTapOutside == null
         ? SizedBox(width: double.infinity, child: alignedChild)
-        : SizedBox(
-            width: double.infinity,
-            height: MediaQuery.sizeOf(context).height,
+        : SizedBox.expand(
             child: Stack(
               children: [
                 Positioned.fill(
@@ -356,6 +357,8 @@ BoxConstraints _fullWidthBottomSheetConstraints(
     maxWidth: viewportWidth,
   );
 }
+
+const _maxModalHeightRatio = 0.92;
 
 class AppModalDraggableSheet extends StatelessWidget {
   const AppModalDraggableSheet({
@@ -512,6 +515,7 @@ Future<T?> showAppModalBottomSheet<T>({
   bool enableDrag = true,
   bool? showDragHandle,
   bool useSafeArea = false,
+  bool contentHandlesBottomSafeArea = false,
   bool useRootNavigator = false,
   bool isDismissible = true,
   RouteSettings? routeSettings,
@@ -520,34 +524,95 @@ Future<T?> showAppModalBottomSheet<T>({
   AnimationStyle? sheetAnimationStyle,
   bool? requestFocus,
   bool showCloseButton = true,
-  bool extendToBottom = false,
   double initialChildSize = 0.58,
   double minChildSize = 0.28,
   double maxChildSize = 0.92,
 }) {
   final colors = AppDesignSystem.colorsFor(context);
+  final effectiveMaxChildSize = maxChildSize
+      .clamp(0.1, _maxModalHeightRatio)
+      .toDouble();
+  final effectiveMinChildSize = minChildSize
+      .clamp(0.0, effectiveMaxChildSize)
+      .toDouble();
+  final effectiveInitialChildSize = initialChildSize
+      .clamp(effectiveMinChildSize, effectiveMaxChildSize)
+      .toDouble();
 
   return showModalBottomSheet<T>(
     context: context,
-    builder: (context) {
-      final content = builder?.call(context) ?? child;
-      final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-      final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom;
-      final effectiveBottomInset = keyboardInset > 0
-          ? keyboardInset
-          : systemBottomPadding;
+    builder: (routeContext) {
+      final mediaQuery = MediaQuery.of(routeContext);
+      final keyboardInset = mediaQuery.viewInsets.bottom;
+      final systemBottomPadding = mediaQuery.viewPadding.bottom;
+      final navigationSafeInset = keyboardInset > 0 ? 0.0 : systemBottomPadding;
+      final customContentBottomPadding =
+          !contentHandlesBottomSafeArea && navigationSafeInset > 0
+          ? navigationSafeInset + AppSpacing.xs
+          : 0.0;
+      final contentMediaQuery = mediaQuery.copyWith(
+        padding: contentHandlesBottomSafeArea
+            ? mediaQuery.padding
+            : mediaQuery.padding.copyWith(bottom: 0),
+        viewPadding: contentHandlesBottomSafeArea
+            ? mediaQuery.viewPadding
+            : mediaQuery.viewPadding.copyWith(bottom: 0),
+        viewInsets: mediaQuery.viewInsets.copyWith(bottom: 0),
+      );
+      final keyboardAwareDuration =
+          sheetAnimationStyle?.duration ?? const Duration(milliseconds: 180);
+      final availableCustomSheetHeight =
+          (mediaQuery.size.height - keyboardInset)
+              .clamp(0.0, double.infinity)
+              .toDouble();
+      final customSheetMaxHeight =
+          availableCustomSheetHeight * _maxModalHeightRatio;
+
+      Widget buildContent(BuildContext contentContext) {
+        return builder?.call(contentContext) ??
+            child ??
+            const SizedBox.shrink();
+      }
+
+      Widget withContentMediaQuery(WidgetBuilder contentBuilder) {
+        final scopedContent = MediaQuery(
+          data: contentMediaQuery,
+          child: Builder(builder: contentBuilder),
+        );
+        if (!useSafeArea) return scopedContent;
+        return SafeArea(top: false, bottom: false, child: scopedContent);
+      }
 
       if (title == null) {
-        final customContentBottomInset = keyboardInset > 0
-            ? keyboardInset
-            : extendToBottom
-            ? 0.0
-            : systemBottomPadding;
-        return Padding(
-          padding: AppEdgeInsets.only(bottom: customContentBottomInset),
-          child: SizedBox(
-            width: double.infinity,
-            child: content ?? const SizedBox.shrink(),
+        final customSurfaceColor = backgroundColor ?? colors.surface;
+        final customSurfaceShape =
+            shape ??
+            const RoundedRectangleBorder(borderRadius: AppRadius.sheetTop);
+
+        return AnimatedPadding(
+          key: const ValueKey('app-modal-keyboard-inset'),
+          duration: keyboardAwareDuration,
+          curve: Curves.easeOutCubic,
+          padding: AppEdgeInsets.only(bottom: keyboardInset),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: customSheetMaxHeight),
+            child: Material(
+              key: const ValueKey('app-modal-custom-sheet-surface'),
+              color: customSurfaceColor,
+              elevation: elevation ?? 0,
+              surfaceTintColor: colors.transparent,
+              shape: customSurfaceShape,
+              clipBehavior: clipBehavior ?? Clip.antiAlias,
+              child: Padding(
+                padding: AppEdgeInsets.only(bottom: customContentBottomPadding),
+                child: withContentMediaQuery(
+                  (contentContext) => SizedBox(
+                    width: double.infinity,
+                    child: buildContent(contentContext),
+                  ),
+                ),
+              ),
+            ),
           ),
         );
       }
@@ -555,24 +620,25 @@ Future<T?> showAppModalBottomSheet<T>({
       return AppModalSheetFrame(
         useSafeArea: false,
         onTapOutside: isDismissible
-            ? () => Navigator.of(context).maybePop()
+            ? () => Navigator.of(routeContext).maybePop()
             : null,
-        child: Padding(
-          padding: AppEdgeInsets.only(bottom: effectiveBottomInset),
-          child: SafeArea(
-            top: false,
-            bottom: false,
-            child: DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: initialChildSize,
-              minChildSize: minChildSize,
-              maxChildSize: maxChildSize,
-              builder: (context, scrollController) {
-                return Align(
-                  alignment: Alignment.bottomCenter,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: AppModalScaffold<T>(
+        child: AnimatedPadding(
+          key: const ValueKey('app-modal-keyboard-inset'),
+          duration: keyboardAwareDuration,
+          curve: Curves.easeOutCubic,
+          padding: AppEdgeInsets.only(bottom: keyboardInset),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: effectiveInitialChildSize,
+            minChildSize: effectiveMinChildSize,
+            maxChildSize: effectiveMaxChildSize,
+            builder: (sheetContext, scrollController) {
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: withContentMediaQuery(
+                    (contentContext) => AppModalScaffold<T>(
                       title: title,
                       subtitle: subtitle,
                       icon: icon,
@@ -582,22 +648,25 @@ Future<T?> showAppModalBottomSheet<T>({
                       showCloseButton: showCloseButton,
                       maxWidth: double.infinity,
                       surfaceBorderRadius: AppRadius.sheetTop,
-                      bottomSafeAreaPadding: systemBottomPadding,
-                      child: content ?? const SizedBox.shrink(),
+                      bottomSafeAreaPadding: navigationSafeInset,
+                      surfaceKey: const ValueKey(
+                        'app-modal-titled-sheet-surface',
+                      ),
+                      child: buildContent(contentContext),
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       );
     },
-    backgroundColor: backgroundColor ?? colors.transparent,
+    backgroundColor: colors.transparent,
     barrierLabel: barrierLabel,
-    elevation: elevation,
-    shape: shape,
-    clipBehavior: clipBehavior,
+    elevation: 0,
+    shape: null,
+    clipBehavior: Clip.none,
     constraints: _fullWidthBottomSheetConstraints(context, constraints),
     barrierColor: barrierColor ?? colors.scrim.withValues(alpha: 0.58),
     isScrollControlled: isScrollControlled,
@@ -606,7 +675,7 @@ Future<T?> showAppModalBottomSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     showDragHandle: title == null ? showDragHandle : false,
-    useSafeArea: useSafeArea,
+    useSafeArea: false,
     routeSettings: routeSettings,
     transitionAnimationController: transitionAnimationController,
     anchorPoint: anchorPoint,

@@ -396,14 +396,14 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: colors.textPrimary,
+                          color: colors.onPrimary,
                         ),
                       )
                     : const Icon(Icons.expand_more_rounded),
                 label: Text(l10n.helpCenterLoadMore),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                 ),
               ),
             ),
@@ -722,8 +722,9 @@ class _HelpCenterCategoryChip extends StatelessWidget {
       onSelected: (_) => onSelected(category.id),
       selectedColor: colors.primary,
       backgroundColor: colors.surfaceHigh,
+      showCheckmark: false,
       labelStyle: AppTextStyle(
-        color: colors.textPrimary,
+        color: selected ? colors.onPrimary : colors.textPrimary,
         fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
         letterSpacing: 0,
       ),
@@ -749,12 +750,12 @@ class _HelpCenterMoreCategoriesChip extends StatelessWidget {
 
     return ActionChip(
       key: const ValueKey('help-center-category-more'),
-      avatar: Icon(Icons.tune_rounded, size: 18, color: colors.textPrimary),
+      avatar: Icon(Icons.tune_rounded, size: 18, color: colors.onPrimary),
       label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       onPressed: onPressed,
       backgroundColor: colors.primary,
       labelStyle: AppTextStyle(
-        color: colors.textPrimary,
+        color: colors.onPrimary,
         fontWeight: FontWeight.w900,
         letterSpacing: 0,
       ),
@@ -1012,7 +1013,7 @@ class _HelpCenterHeader extends StatelessWidget {
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.primary,
-                        foregroundColor: colors.textPrimary,
+                        foregroundColor: colors.onPrimary,
                         minimumSize: const Size(44, 44),
                         padding: AppEdgeInsets.symmetric(
                           horizontal: isCompact ? 12 : 14,
@@ -1242,7 +1243,7 @@ class _HelpCenterStateMessage extends StatelessWidget {
                 label: Text(actionLabel!),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(14),
                   ),

@@ -653,4 +653,29 @@ void main() {
     final coverArtSource = source.substring(coverArtIndex, coverPainterIndex);
     expect(coverArtSource, isNot(contains('Icons.check_rounded')));
   });
+
+  test(
+    'excursion filters preserve the dimmed list outside the sheet',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+      final openStart = source.indexOf('Future<void> _showFilters()');
+      final buildStart = source.indexOf('class _ExcursionsFiltersSheetState');
+
+      expect(openStart, isNonNegative);
+      expect(buildStart, greaterThan(openStart));
+
+      final openSource = source.substring(openStart, buildStart);
+      expect(openSource, contains('contentHandlesBottomSafeArea: true'));
+      expect(
+        openSource,
+        contains('backgroundColor: context.excursionsColors.transparent'),
+      );
+      expect(
+        source,
+        contains('maxHeight: MediaQuery.sizeOf(context).height * 0.86'),
+      );
+    },
+  );
 }

@@ -30,6 +30,8 @@ final class _EditProfileColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
+  Color get background => colors.background;
   Color get primaryContainer => colors.primaryContainer;
   Color get surfaceWarm => colors.surfaceWarm;
   Color get secondary => colors.secondary;
@@ -1367,7 +1369,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: isSendDisabled ? null : _startPhoneVerification,
                   style: FilledButton.styleFrom(
                     backgroundColor: _EditProfileColors.of(context).primary,
-                    foregroundColor: _EditProfileColors.of(context).textPrimary,
+                    foregroundColor: _EditProfileColors.of(context).onPrimary,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
@@ -1384,7 +1386,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 18, min: 16, max: 18),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: _EditProfileColors.of(context).textPrimary,
+                            color: _EditProfileColors.of(context).onPrimary,
                           ),
                         )
                       : Text(
@@ -1431,7 +1433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: isVerifyDisabled ? null : _verifyPhoneVerification,
                   style: FilledButton.styleFrom(
                     backgroundColor: _EditProfileColors.of(context).primary,
-                    foregroundColor: _EditProfileColors.of(context).textPrimary,
+                    foregroundColor: _EditProfileColors.of(context).onPrimary,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
@@ -1448,7 +1450,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 18, min: 16, max: 18),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: _EditProfileColors.of(context).textPrimary,
+                            color: _EditProfileColors.of(context).onPrimary,
                           ),
                         )
                       : Text(
@@ -1537,7 +1539,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
       style: FilledButton.styleFrom(
         backgroundColor: _EditProfileColors.of(context).primary,
-        foregroundColor: _EditProfileColors.of(context).textPrimary,
+        foregroundColor: _EditProfileColors.of(context).onPrimary,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
@@ -1554,7 +1556,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               height: profileScaled(context, 18, min: 16, max: 18),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: _EditProfileColors.of(context).textPrimary,
+                color: _EditProfileColors.of(context).onPrimary,
               ),
             )
           : Text(
@@ -1573,256 +1575,249 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     final profile = context.watch<SessionProvider>().profile;
     final padding = profileScaled(context, 20, min: 14, max: 20);
-    final saveBarReservedHeight =
-        profileScaled(context, 96, min: 84, max: 106) +
-        MediaQuery.paddingOf(context).bottom;
     final previewName = _previewName(profile);
     final previewInitials = _previewInitials(profile);
 
     return Theme(
       data: AppDesignSystem.themeFor(context),
       child: Scaffold(
-        backgroundColor: _EditProfileColors.of(context).transparent,
-        extendBody: true,
+        backgroundColor: _EditProfileColors.of(context).background,
         body: ProfileResponsiveScope(
           child: ProfileGlassBackground(
-            child: Stack(
-              children: [
-                SafeArea(
-                  bottom: false,
-                  child: Form(
-                    key: _formKey,
-                    child: ListView(
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
+            child: SafeArea(
+              bottom: false,
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  padding: AppEdgeInsets.fromLTRB(
+                    padding,
+                    profileScaled(context, 14, min: 10, max: 18),
+                    padding,
+                    profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  children: [
+                    _EditProfileTopBar(title: l10n.editProfileButton),
+                    SizedBox(
+                      height: profileScaled(context, 26, min: 18, max: 30),
+                    ),
+                    FutureBuilder<String?>(
+                      future: _avatarFuture,
+                      builder: (context, snapshot) {
+                        return _EditProfileHero(
+                          avatarUrl: snapshot.data,
+                          avatarBytes: _avatarPreviewBytes,
+                          initials: previewInitials,
+                          name: previewName,
+                          phone: profile?.primaryPhoneDisplay,
+                          email: profile?.primaryEmail,
+                          avatarHint: _isUploadingAvatar
+                              ? l10n.profileSettingsAvatarUploading
+                              : l10n.profileSettingsAvatarUploadHint,
+                          onAvatarTap: _pickAvatar,
+                          isUploadingAvatar: _isUploadingAvatar,
+                        );
+                      },
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 32, min: 24, max: 34),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileSettingsDescriptionSection,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _ProfileSectionCard(
+                      child: _StyledTextField(
+                        controller: _bioController,
+                        hintText: l10n.bioLabel,
+                        minLines: 4,
+                        maxLines: 7,
                       ),
-                      padding: AppEdgeInsets.fromLTRB(
-                        padding,
-                        profileScaled(context, 14, min: 10, max: 18),
-                        padding,
-                        saveBarReservedHeight,
-                      ),
-                      children: [
-                        _EditProfileTopBar(title: l10n.editProfileButton),
-                        SizedBox(
-                          height: profileScaled(context, 26, min: 18, max: 30),
-                        ),
-                        FutureBuilder<String?>(
-                          future: _avatarFuture,
-                          builder: (context, snapshot) {
-                            return _EditProfileHero(
-                              avatarUrl: snapshot.data,
-                              avatarBytes: _avatarPreviewBytes,
-                              initials: previewInitials,
-                              name: previewName,
-                              phone: profile?.primaryPhoneDisplay,
-                              email: profile?.primaryEmail,
-                              avatarHint: _isUploadingAvatar
-                                  ? l10n.profileSettingsAvatarUploading
-                                  : l10n.profileSettingsAvatarUploadHint,
-                              onAvatarTap: _pickAvatar,
-                              isUploadingAvatar: _isUploadingAvatar,
-                            );
-                          },
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 32, min: 24, max: 34),
-                        ),
-                        ProfileSectionHeading(
-                          title: l10n.profileSettingsDescriptionSection,
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 14, min: 12, max: 16),
-                        ),
-                        _ProfileSectionCard(
-                          child: _StyledTextField(
-                            controller: _bioController,
-                            hintText: l10n.bioLabel,
-                            minLines: 4,
-                            maxLines: 7,
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 28, min: 24, max: 32),
-                        ),
-                        ProfileSectionHeading(
-                          title: l10n.profileSettingsDetailsSection,
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 14, min: 12, max: 16),
-                        ),
-                        _ProfileSectionCard(
-                          child: Column(
-                            children: [
-                              _LabeledInput(
-                                key: _firstNameFieldKey,
-                                label: l10n.firstNameLabel,
-                                child: _StyledTextField(
-                                  controller: _firstNameController,
-                                  hintText: l10n.firstNameLabel,
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return l10n.firstNameRequired;
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(
-                                height: profileScaled(
-                                  context,
-                                  16,
-                                  min: 14,
-                                  max: 18,
-                                ),
-                              ),
-                              _LabeledInput(
-                                key: _lastNameFieldKey,
-                                label: l10n.lastNameLabel,
-                                child: _StyledTextField(
-                                  controller: _lastNameController,
-                                  hintText: l10n.lastNameLabel,
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return l10n.lastNameRequired;
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(
-                                height: profileScaled(
-                                  context,
-                                  16,
-                                  min: 14,
-                                  max: 18,
-                                ),
-                              ),
-                              _LabeledInput(
-                                key: _nicknameFieldKey,
-                                label: l10n.nicknameLabel,
-                                child: _StyledTextField(
-                                  controller: _nicknameController,
-                                  hintText: l10n.nicknameLabel,
-                                  readOnly: _isNicknameLocked,
-                                  helperText: _nicknameSupportingText(l10n),
-                                  errorText: _nicknameErrorText(l10n),
-                                  textCapitalization: TextCapitalization.none,
-                                  validator: (value) {
-                                    if (!_isNicknameLocked &&
-                                        (value ?? '').trim().isEmpty) {
-                                      return l10n.nicknameRequired;
-                                    }
-                                    if (_nicknameErrorText(l10n) != null) {
-                                      return l10n.profileNicknameTaken;
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(
-                                height: profileScaled(
-                                  context,
-                                  16,
-                                  min: 14,
-                                  max: 18,
-                                ),
-                              ),
-                              _LabeledInput(
-                                key: _countryFieldKey,
-                                label: l10n.profileCountry,
-                                child: _ProfileCountrySearchField(
-                                  value: _countryCodeController.text,
-                                  selectedCountry: _selectedCountry(),
-                                  selectedCountryCode:
-                                      normalizeReferenceCountryCode(
-                                        _countryCodeController.text,
-                                      ),
-                                  validator: (value) {
-                                    if (normalizeReferenceCountryCode(value) ==
-                                        null) {
-                                      return l10n.profileCountryRequired;
-                                    }
-                                    return null;
-                                  },
-                                  searchController: _countrySearchController,
-                                  visibleCountries: _visibleCountries(),
-                                  isLoading: _isCountriesLoading,
-                                  searchQuery: _countrySearchQuery,
-                                  searchHint:
-                                      l10n.excursionsFilterCountrySearchHint,
-                                  emptyLabel:
-                                      l10n.excursionsFilterCountryNoResults,
-                                  onCountrySelected: _selectCountry,
-                                  onClearCountry: _clearCountry,
-                                ),
-                              ),
-                              SizedBox(
-                                height: profileScaled(
-                                  context,
-                                  16,
-                                  min: 14,
-                                  max: 18,
-                                ),
-                              ),
-                              _LabeledInput(
-                                label: l10n.profileCurrency,
-                                child: _ProfileCurrencySearchField(
-                                  selectedCurrency: _selectedCurrency(),
-                                  selectedCurrencyCode:
-                                      normalizeReferenceCurrencyCode(
-                                        _currencyController.text,
-                                      ),
-                                  searchController: _currencySearchController,
-                                  visibleCurrencies: _visibleCurrencies(),
-                                  isLoading: _isCurrenciesLoading,
-                                  searchQuery: _currencySearchQuery,
-                                  searchHint: l10n.profileCurrencySearchHint,
-                                  emptyLabel: l10n.profileCurrencyNoResults,
-                                  onCurrencySelected: _selectCurrency,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 28, min: 24, max: 32),
-                        ),
-                        _buildPhoneVerificationSection(profile, l10n),
-                        SizedBox(
-                          height: profileScaled(context, 28, min: 24, max: 32),
-                        ),
-                        Center(
-                          child: Text(
-                            l10n.profileDeactivateAccountLabel,
-                            style: AppTextStyle(
-                              color: Color.fromARGB(255, 143, 34, 15),
-                              fontSize: profileScaled(
-                                context,
-                                12,
-                                min: 11,
-                                max: 12,
-                              ),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.1,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    ProfileSectionHeading(
+                      title: l10n.profileSettingsDetailsSection,
+                    ),
+                    SizedBox(
+                      height: profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _ProfileSectionCard(
+                      child: Column(
+                        children: [
+                          _LabeledInput(
+                            key: _firstNameFieldKey,
+                            label: l10n.firstNameLabel,
+                            child: _StyledTextField(
+                              controller: _firstNameController,
+                              hintText: l10n.firstNameLabel,
+                              validator: (value) {
+                                if ((value ?? '').trim().isEmpty) {
+                                  return l10n.firstNameRequired;
+                                }
+                                return null;
+                              },
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _lastNameFieldKey,
+                            label: l10n.lastNameLabel,
+                            child: _StyledTextField(
+                              controller: _lastNameController,
+                              hintText: l10n.lastNameLabel,
+                              validator: (value) {
+                                if ((value ?? '').trim().isEmpty) {
+                                  return l10n.lastNameRequired;
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _nicknameFieldKey,
+                            label: l10n.nicknameLabel,
+                            child: _StyledTextField(
+                              controller: _nicknameController,
+                              hintText: l10n.nicknameLabel,
+                              readOnly: _isNicknameLocked,
+                              helperText: _nicknameSupportingText(l10n),
+                              errorText: _nicknameErrorText(l10n),
+                              textCapitalization: TextCapitalization.none,
+                              validator: (value) {
+                                if (!_isNicknameLocked &&
+                                    (value ?? '').trim().isEmpty) {
+                                  return l10n.nicknameRequired;
+                                }
+                                if (_nicknameErrorText(l10n) != null) {
+                                  return l10n.profileNicknameTaken;
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            key: _countryFieldKey,
+                            label: l10n.profileCountry,
+                            child: _ProfileCountrySearchField(
+                              value: _countryCodeController.text,
+                              selectedCountry: _selectedCountry(),
+                              selectedCountryCode:
+                                  normalizeReferenceCountryCode(
+                                    _countryCodeController.text,
+                                  ),
+                              validator: (value) {
+                                if (normalizeReferenceCountryCode(value) ==
+                                    null) {
+                                  return l10n.profileCountryRequired;
+                                }
+                                return null;
+                              },
+                              searchController: _countrySearchController,
+                              visibleCountries: _visibleCountries(),
+                              isLoading: _isCountriesLoading,
+                              searchQuery: _countrySearchQuery,
+                              searchHint:
+                                  l10n.excursionsFilterCountrySearchHint,
+                              emptyLabel: l10n.excursionsFilterCountryNoResults,
+                              onCountrySelected: _selectCountry,
+                              onClearCountry: _clearCountry,
+                            ),
+                          ),
+                          SizedBox(
+                            height: profileScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          _LabeledInput(
+                            label: l10n.profileCurrency,
+                            child: _ProfileCurrencySearchField(
+                              selectedCurrency: _selectedCurrency(),
+                              selectedCurrencyCode:
+                                  normalizeReferenceCurrencyCode(
+                                    _currencyController.text,
+                                  ),
+                              searchController: _currencySearchController,
+                              visibleCurrencies: _visibleCurrencies(),
+                              isLoading: _isCurrenciesLoading,
+                              searchQuery: _currencySearchQuery,
+                              searchHint: l10n.profileCurrencySearchHint,
+                              emptyLabel: l10n.profileCurrencyNoResults,
+                              onCurrencySelected: _selectCurrency,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    _buildPhoneVerificationSection(profile, l10n),
+                    SizedBox(
+                      height: profileScaled(context, 28, min: 24, max: 32),
+                    ),
+                    Center(
+                      child: Text(
+                        l10n.profileDeactivateAccountLabel,
+                        style: AppTextStyle(
+                          color: _EditProfileColors.of(context).danger,
+                          fontSize: profileScaled(
+                            context,
+                            12,
+                            min: 11,
+                            max: 12,
+                          ),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  left: padding,
-                  right: padding,
-                  bottom:
-                      MediaQuery.paddingOf(context).bottom +
-                      profileScaled(context, 12, min: 10, max: 14),
-                  child: _buildStickySaveButton(l10n),
-                ),
-              ],
+              ),
             ),
           ),
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          minimum: AppEdgeInsets.fromLTRB(
+            padding,
+            profileScaled(context, 10, min: 8, max: 12),
+            padding,
+            profileScaled(context, 14, min: 12, max: 16),
+          ),
+          child: _buildStickySaveButton(l10n),
         ),
       ),
     );
@@ -2024,7 +2019,7 @@ class _EditProfileHero extends StatelessWidget {
                       isUploadingAvatar
                           ? Icons.hourglass_top_rounded
                           : Icons.edit_rounded,
-                      color: _EditProfileColors.of(context).white,
+                      color: _EditProfileColors.of(context).onPrimary,
                       size: profileScaled(context, 16, min: 14, max: 16),
                     ),
                   ),

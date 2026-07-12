@@ -4,6 +4,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('guide verification application enables excursion capability', () async {
+    final source = await File(
+      'lib/screens/profile/guide_verification_screen.dart',
+    ).readAsString();
+
+    final requestStart = source.indexOf('SubmitGuideApplicationRequest(');
+    final requestEnd = source.indexOf('),', requestStart);
+    expect(requestStart, isNonNegative);
+    expect(requestEnd, greaterThan(requestStart));
+
+    final requestSource = source.substring(requestStart, requestEnd);
+    expect(requestSource, contains('isExcursionGuideAvailable: true'));
+  });
+
   test('guide verification screen uses adaptive V2 colors only', () async {
     final source = await File(
       'lib/screens/profile/guide_verification_screen.dart',
@@ -256,7 +270,7 @@ void main() {
       );
       expect(
         actionSource,
-        contains('foregroundColor: context.guideColors.textPrimary'),
+        contains('foregroundColor: context.guideColors.onPrimary'),
       );
       expect(
         actionSource,

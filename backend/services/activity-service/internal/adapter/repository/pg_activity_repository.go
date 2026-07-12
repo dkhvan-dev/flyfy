@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -42,7 +43,8 @@ const activitySelectColumns = `
 	country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url,
 	author_country_code, author_city_id, author_city_name, author_location_captured_at, visibility_password_hash,
 	cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
-	revision, created_at, updated_at
+	revision, created_at, updated_at,
+	source_language, translation_status, translations
 `
 
 const qualifiedActivitySelectColumns = `
@@ -58,7 +60,8 @@ const qualifiedActivitySelectColumns = `
 	a.country_code, a.city_id, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url,
 	a.author_country_code, a.author_city_id, a.author_city_name, a.author_location_captured_at, a.visibility_password_hash,
 	a.cancellation_reason, a.cancellation_source, a.cancelled_by_user_id, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
-	a.revision, a.created_at, a.updated_at
+	a.revision, a.created_at, a.updated_at,
+	a.source_language, a.translation_status, a.translations
 `
 
 func (r *PGActivityRepository) WithTx(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
@@ -85,6 +88,10 @@ func (r *PGActivityRepository) WithTx(ctx context.Context, fn func(repo port.Act
 }
 
 func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.Activity) error {
+	return insertActivity(ctx, r.pool, item)
+}
+
+func insertActivity(ctx context.Context, exec activityDBExecutor, item *model.Activity) error {
 	const query = `
 		INSERT INTO activities (
 			id, host_user_id, source_activity_id,
@@ -99,7 +106,8 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url,
 			author_country_code, author_city_id, author_city_name, author_location_captured_at, visibility_password_hash,
 			cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
-			revision, created_at, updated_at
+			revision, created_at, updated_at,
+			source_language, translation_status, translations
 		) VALUES (
 			$1, $2, $3,
 			$4, $5,
@@ -113,11 +121,16 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			$33, $34, $35, $36, $37, $38, $39, $40,
 			$41, $42, $43, $44, $45,
 			$46, $47, $48, $49, $50, $51, $52, $53,
-			$54, $55, $56
+			$54, $55, $56,
+			$57, $58, $59::jsonb
 		)
 	`
+	translations, err := json.Marshal(model.NormalizeActivityTranslations(item.Translations))
+	if err != nil {
+		return fmt.Errorf("encode activity translations: %w", err)
+	}
 
-	_, err := r.pool.Exec(
+	_, err = exec.Exec(
 		ctx,
 		query,
 		item.ID, item.HostUserID, item.SourceActivityID,
@@ -133,6 +146,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		item.AuthorCountryCode, item.AuthorCityID, item.AuthorCityName, item.AuthorLocationCapturedAt, item.VisibilityPasswordHash,
 		item.CancellationReason, optionalActivityCancellationSourceString(item.CancellationSource), item.CancelledByUserID, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
+		item.SourceLanguage, string(item.TranslationStatus), translations,
 	)
 	if err != nil {
 		return fmt.Errorf("insert activity: %w", err)
@@ -142,6 +156,10 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 }
 
 func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.Activity) error {
+	return updateActivity(ctx, r.pool, item)
+}
+
+func updateActivity(ctx context.Context, exec activityDBExecutor, item *model.Activity) error {
 	const query = `
 		UPDATE activities
 		SET
@@ -198,7 +216,7 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		WHERE id = $1
 	`
 
-	tag, err := r.pool.Exec(
+	tag, err := exec.Exec(
 		ctx,
 		query,
 		item.ID,
@@ -2139,6 +2157,8 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		capacityTypeRaw       string
 		priceTypeRaw          string
 		cancellationSourceRaw *string
+		translationStatusRaw  string
+		translationsRaw       []byte
 	)
 
 	err := row.Scan(
@@ -2209,6 +2229,10 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.Revision,
 		&item.CreatedAt,
 		&item.UpdatedAt,
+
+		&item.SourceLanguage,
+		&translationStatusRaw,
+		&translationsRaw,
 	)
 	if err != nil {
 		return nil, err
@@ -2221,6 +2245,13 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 	item.ModerationStatus = enum.ActivityModerationStatus(moderationStatusRaw)
 	item.CapacityType = enum.ActivityCapacityType(capacityTypeRaw)
 	item.PriceType = enum.ActivityPriceType(priceTypeRaw)
+	item.TranslationStatus = model.NormalizeActivityTranslationStatus(translationStatusRaw)
+	if len(translationsRaw) > 0 {
+		if err = json.Unmarshal(translationsRaw, &item.Translations); err != nil {
+			return nil, fmt.Errorf("decode activity translations: %w", err)
+		}
+	}
+	item.Translations = model.NormalizeActivityTranslations(item.Translations)
 	if cancellationSourceRaw != nil {
 		source := enum.ActivityCancellationSource(*cancellationSourceRaw)
 		item.CancellationSource = &source

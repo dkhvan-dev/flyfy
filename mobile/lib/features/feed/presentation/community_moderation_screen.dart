@@ -482,7 +482,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
             onPressed: () => _loadQueue(),
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),

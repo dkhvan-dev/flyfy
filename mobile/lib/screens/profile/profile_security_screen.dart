@@ -948,9 +948,11 @@ class _PasswordChangeActions extends StatelessWidget {
               onPressed: onPrimaryPressed,
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
                 disabledBackgroundColor: colors.primary.withValues(alpha: 0.35),
-                disabledForegroundColor: colors.textDisabled,
+                disabledForegroundColor: colors.onPrimary.withValues(
+                  alpha: 0.54,
+                ),
                 padding: AppEdgeInsets.symmetric(
                   vertical: profileScaled(context, 15, min: 13, max: 16),
                 ),
@@ -966,7 +968,7 @@ class _PasswordChangeActions extends StatelessWidget {
                       height: profileScaled(context, 20, min: 18, max: 22),
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        color: colors.textPrimary,
+                        color: colors.onPrimary,
                       ),
                     )
                   : Text(

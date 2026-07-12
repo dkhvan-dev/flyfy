@@ -62,6 +62,7 @@ import '../../features/help_center/presentation/support_tickets_screen.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../features/search/presentation/search_route_config.dart';
 import '../../features/search/presentation/search_screen.dart';
+import '../../features/settings/presentation/app_settings_screen.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../features/user_routes/presentation/user_route_details_screen.dart';
 import '../../features/user_routes/presentation/user_routes_screen.dart';
@@ -185,8 +186,17 @@ class AppRouter {
           path: '/login',
           builder: (context, state) {
             final from = state.uri.queryParameters['from'];
-            return _withAndroidBackSwipe(LoginScreen(from: from));
+            final initialRegister =
+                state.uri.queryParameters['mode'] == 'register';
+            return _withAndroidBackSwipe(
+              LoginScreen(from: from, initialRegister: initialRegister),
+            );
           },
+        ),
+        GoRoute(
+          path: '/app-settings',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const AppSettingsScreen()),
         ),
         GoRoute(
           path: '/otp',
@@ -842,6 +852,7 @@ class AppRouter {
   static bool _isPublicRoute(String location) {
     if (location == '/' ||
         location == '/search' ||
+        location == '/app-settings' ||
         location == '/login' ||
         location == '/otp' ||
         location == '/password-reset') {

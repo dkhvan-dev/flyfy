@@ -15,6 +15,12 @@ type FeedRankingPolicy struct {
 	ExperimentKey                     string
 	PostInterestWeight                float64
 	CommunityInterestWeight           float64
+	CommunityInterestMinScore         float64
+	FrequentCommunityMinVisits        int
+	FrequentCommunityMinVisitDays     int
+	FrequentCommunityFreshnessWindow  time.Duration
+	FrequentCommunityHalfLife         time.Duration
+	FrequentCommunityBoostHours       int
 	PostProfileAffinityWeight         float64
 	CityAffinityWeight                float64
 	CountryAffinityWeight             float64
@@ -60,6 +66,12 @@ func DefaultFeedRankingPolicy() FeedRankingPolicy {
 		ExperimentKey:                     "control",
 		PostInterestWeight:                1,
 		CommunityInterestWeight:           0.35,
+		CommunityInterestMinScore:         2,
+		FrequentCommunityMinVisits:        3,
+		FrequentCommunityMinVisitDays:     2,
+		FrequentCommunityFreshnessWindow:  60 * 24 * time.Hour,
+		FrequentCommunityHalfLife:         21 * 24 * time.Hour,
+		FrequentCommunityBoostHours:       6,
 		PostProfileAffinityWeight:         0.18,
 		CityAffinityWeight:                0.25,
 		CountryAffinityWeight:             0.10,
@@ -86,7 +98,7 @@ func DefaultFeedRankingPolicy() FeedRankingPolicy {
 		QualityMinNegativeEvents:          3,
 		QualityNegativePenaltyHours:       24,
 		QualityMaxPenaltyHours:            168,
-		MaxPostsPerCommunityPerPage:       3,
+		MaxPostsPerCommunityPerPage:       2,
 		MaxPostsPerCategoryPerPage:        8,
 		MaxPostsPerAuthorPerPage:          4,
 		MaxPostsPerProfilePerPage:         10,
@@ -107,6 +119,18 @@ func (p FeedRankingPolicy) normalized() FeedRankingPolicy {
 	p.ExperimentKey = normalizeFeedRankingExperimentKey(p.ExperimentKey, defaults.ExperimentKey)
 	p.PostInterestWeight = normalizeFeedRankingWeight(p.PostInterestWeight, defaults.PostInterestWeight)
 	p.CommunityInterestWeight = normalizeFeedRankingWeight(p.CommunityInterestWeight, defaults.CommunityInterestWeight)
+	p.CommunityInterestMinScore = normalizeFeedRankingScore(p.CommunityInterestMinScore, defaults.CommunityInterestMinScore)
+	p.FrequentCommunityMinVisits = normalizeFeedRankingPositiveInt(p.FrequentCommunityMinVisits, defaults.FrequentCommunityMinVisits, 100)
+	p.FrequentCommunityMinVisitDays = normalizeFeedRankingPositiveInt(p.FrequentCommunityMinVisitDays, defaults.FrequentCommunityMinVisitDays, 30)
+	p.FrequentCommunityFreshnessWindow = normalizeFeedRankingDuration(p.FrequentCommunityFreshnessWindow, defaults.FrequentCommunityFreshnessWindow, 365*24*time.Hour)
+	p.FrequentCommunityHalfLife = normalizeFeedRankingDuration(p.FrequentCommunityHalfLife, defaults.FrequentCommunityHalfLife, 365*24*time.Hour)
+	p.FrequentCommunityBoostHours = normalizeFeedRankingHours(p.FrequentCommunityBoostHours, defaults.FrequentCommunityBoostHours, 72)
+	if p.FrequentCommunityMinVisitDays > p.FrequentCommunityMinVisits {
+		p.FrequentCommunityMinVisitDays = p.FrequentCommunityMinVisits
+	}
+	if p.FrequentCommunityHalfLife > p.FrequentCommunityFreshnessWindow {
+		p.FrequentCommunityHalfLife = p.FrequentCommunityFreshnessWindow
+	}
 	p.PostProfileAffinityWeight = normalizeFeedRankingWeight(p.PostProfileAffinityWeight, defaults.PostProfileAffinityWeight)
 	p.CityAffinityWeight = normalizeFeedRankingWeight(p.CityAffinityWeight, defaults.CityAffinityWeight)
 	p.CountryAffinityWeight = normalizeFeedRankingWeight(p.CountryAffinityWeight, defaults.CountryAffinityWeight)
@@ -161,6 +185,12 @@ func feedRankingPolicyWithOverride(base FeedRankingPolicy, override *model.FeedR
 	p.ExperimentKey = normalizeFeedRankingExperimentKey(override.ExperimentKey, p.ExperimentKey)
 	p.PostInterestWeight = feedRankingWeightOverride(override.PostInterestWeight, p.PostInterestWeight)
 	p.CommunityInterestWeight = feedRankingWeightOverride(override.CommunityInterestWeight, p.CommunityInterestWeight)
+	p.CommunityInterestMinScore = feedRankingScoreOverride(override.CommunityInterestMinScore, p.CommunityInterestMinScore)
+	p.FrequentCommunityMinVisits = feedRankingPositiveIntOverride(override.FrequentCommunityMinVisits, p.FrequentCommunityMinVisits, 100)
+	p.FrequentCommunityMinVisitDays = feedRankingPositiveIntOverride(override.FrequentCommunityMinVisitDays, p.FrequentCommunityMinVisitDays, 30)
+	p.FrequentCommunityFreshnessWindow = feedRankingDurationOverride(override.FrequentCommunityFreshnessWindow, p.FrequentCommunityFreshnessWindow, 365*24*time.Hour)
+	p.FrequentCommunityHalfLife = feedRankingDurationOverride(override.FrequentCommunityHalfLife, p.FrequentCommunityHalfLife, 365*24*time.Hour)
+	p.FrequentCommunityBoostHours = feedRankingHoursOverride(override.FrequentCommunityBoostHours, p.FrequentCommunityBoostHours, 72)
 	p.PostProfileAffinityWeight = feedRankingWeightOverride(override.PostProfileAffinityWeight, p.PostProfileAffinityWeight)
 	p.CityAffinityWeight = feedRankingWeightOverride(override.CityAffinityWeight, p.CityAffinityWeight)
 	p.CountryAffinityWeight = feedRankingWeightOverride(override.CountryAffinityWeight, p.CountryAffinityWeight)
@@ -199,7 +229,7 @@ func feedRankingPolicyWithOverride(base FeedRankingPolicy, override *model.FeedR
 	p.NegativeInterestDecayWindow = feedRankingDurationOverride(override.NegativeInterestDecayWindow, p.NegativeInterestDecayWindow, 90*24*time.Hour)
 	p.NegativeInterestMinWeight = feedRankingFractionOverride(override.NegativeInterestMinWeight, p.NegativeInterestMinWeight)
 	p.DirectNegativeFeedbackDecayWindow = feedRankingDurationOverride(override.DirectNegativeFeedbackDecayWindow, p.DirectNegativeFeedbackDecayWindow, 90*24*time.Hour)
-	return p
+	return p.normalized()
 }
 
 func feedRankingWeightOverride(value *float64, fallback float64) float64 {
@@ -207,6 +237,13 @@ func feedRankingWeightOverride(value *float64, fallback float64) float64 {
 		return fallback
 	}
 	return normalizeFeedRankingWeight(*value, fallback)
+}
+
+func feedRankingScoreOverride(value *float64, fallback float64) float64 {
+	if value == nil {
+		return fallback
+	}
+	return normalizeFeedRankingScore(*value, fallback)
 }
 
 func feedRankingFractionOverride(value *float64, fallback float64) float64 {
@@ -257,9 +294,22 @@ func (p FeedRankingPolicy) feedRankJoinsExpression(viewerUserIDPos int) string {
 			LEFT JOIN post_feed_user_interests community_interest
 				ON community_interest.viewer_user_id = $%d
 			   AND community_interest.entity_type = 'community'
-			   AND fi.community_id IS NOT NULL
-			   AND community_interest.entity_id = fi.community_id::text
+			   AND COALESCE(fi.community_id, s.community_id, ci.community_id) IS NOT NULL
+			   AND community_interest.entity_id = COALESCE(fi.community_id, s.community_id, ci.community_id)::text
+			   AND (
+					community_interest.score < 0
+					OR (
+						community_interest.score >= %s
+						AND community_interest.last_event_at >= NOW() - %s
+					)
+			   )
 			   AND community_interest.updated_at < NOW() - %s
+			LEFT JOIN post_feed_user_community_affinities frequent_community_affinity
+				ON frequent_community_affinity.viewer_user_id = $%d
+			   AND frequent_community_affinity.community_id = COALESCE(fi.community_id, s.community_id, ci.community_id)
+			   AND frequent_community_affinity.meaningful_visit_count >= %d
+			   AND frequent_community_affinity.distinct_visit_day_count >= %d
+			   AND frequent_community_affinity.last_visit_at >= NOW() - %s
 			LEFT JOIN post_feed_user_interests profile_interest
 				ON profile_interest.viewer_user_id = $%d
 			   AND profile_interest.entity_type = 'post_profile'
@@ -308,7 +358,19 @@ func (p FeedRankingPolicy) feedRankJoinsExpression(viewerUserIDPos int) string {
 			   AND social_following.target_user_id = s.author_user_id
 			   AND social_following.edge_type = 'following'
 			   AND social_following.active = true
-		`, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, freshnessSQL, viewerUserIDPos, viewerUserIDPos)
+		`,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, p.weightSQL(p.CommunityInterestMinScore), p.durationSQL(p.FrequentCommunityFreshnessWindow), freshnessSQL,
+		viewerUserIDPos, p.FrequentCommunityMinVisits, p.FrequentCommunityMinVisitDays, p.durationSQL(p.FrequentCommunityFreshnessWindow),
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos, freshnessSQL,
+		viewerUserIDPos,
+		viewerUserIDPos,
+	)
 }
 
 func (p FeedRankingPolicy) viewerRankedAtExpression(viewerUserIDPos int, currentCityIDPos int, currentCountryCodePos int) string {
@@ -371,11 +433,12 @@ func (p FeedRankingPolicy) directNegativeFeedbackPenaltyExpression(viewerUserIDP
 func (p FeedRankingPolicy) personalizedScoreExpression(viewerUserIDPos int, currentCityIDPos int, currentCountryCodePos int) string {
 	p = p.normalized()
 
-	parts := make([]string, 0, 11)
+	parts := make([]string, 0, 12)
 	if viewerUserIDPos > 0 {
 		parts = append(parts,
 			fmt.Sprintf("%s * %s", p.interestScoreExpression("post_interest"), p.weightSQL(p.PostInterestWeight)),
-			fmt.Sprintf("%s * %s", p.interestScoreExpression("community_interest"), p.weightSQL(p.CommunityInterestWeight)),
+			fmt.Sprintf("%s * %s", p.communityInterestScoreExpression("community_interest"), p.weightSQL(p.CommunityInterestWeight)),
+			p.frequentCommunityAffinityScoreExpression(),
 			fmt.Sprintf("%s * %s", p.interestScoreExpression("profile_interest"), p.weightSQL(p.PostProfileAffinityWeight)),
 			fmt.Sprintf("%s * %s", p.interestScoreExpression("author_interest"), p.weightSQL(p.AuthorAffinityWeight)),
 			fmt.Sprintf("%s * %s", p.interestScoreExpression("city_interest"), p.weightSQL(p.CityAffinityWeight)),
@@ -411,6 +474,40 @@ func (p FeedRankingPolicy) interestScoreExpression(alias string) string {
 					%s * LEAST(1, GREATEST(%s, 1 - (EXTRACT(EPOCH FROM (NOW() - COALESCE(%s.last_event_at, NOW()))) / %d)))
 				ELSE %s
 				END`, score, score, p.weightSQL(p.NegativeInterestMinWeight), alias, windowSeconds, score)
+}
+
+func (p FeedRankingPolicy) communityInterestScoreExpression(alias string) string {
+	p = p.normalized()
+	alias = strings.TrimSpace(alias)
+	if alias == "" {
+		return "0"
+	}
+	score := fmt.Sprintf("COALESCE(%s.score, 0)", alias)
+	if p.FrequentCommunityHalfLife <= 0 {
+		return p.interestScoreExpression(alias)
+	}
+	halfLifeSeconds := int(p.FrequentCommunityHalfLife.Seconds())
+
+	return fmt.Sprintf(`CASE WHEN %s > 0 THEN
+					%s * POWER(0.5, GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(%s.last_event_at, NOW())))) / %d)
+				ELSE %s
+				END`, score, score, alias, halfLifeSeconds, p.interestScoreExpression(alias))
+}
+
+func (p FeedRankingPolicy) frequentCommunityAffinityScoreExpression() string {
+	p = p.normalized()
+	if p.FrequentCommunityBoostHours <= 0 || p.FrequentCommunityHalfLife <= 0 {
+		return "0"
+	}
+	halfLifeSeconds := int(p.FrequentCommunityHalfLife.Seconds())
+
+	return fmt.Sprintf(`CASE WHEN frequent_community_affinity.viewer_user_id IS NOT NULL
+				THEN GREATEST(1, FLOOR(%d * POWER(
+					0.5,
+					GREATEST(0, EXTRACT(EPOCH FROM (NOW() - frequent_community_affinity.last_visit_at))) / %d
+				)))
+				ELSE 0
+				END`, p.FrequentCommunityBoostHours, halfLifeSeconds)
 }
 
 func (p FeedRankingPolicy) currentGeoScoreExpression(currentCityIDPos int, currentCountryCodePos int) string {
@@ -630,6 +727,13 @@ func normalizeFeedRankingExperimentKey(value string, fallback string) string {
 
 func normalizeFeedRankingWeight(value float64, fallback float64) float64 {
 	if value <= 0 || value > 10 {
+		return fallback
+	}
+	return value
+}
+
+func normalizeFeedRankingScore(value float64, fallback float64) float64 {
+	if value <= 0 || value > 100 {
 		return fallback
 	}
 	return value

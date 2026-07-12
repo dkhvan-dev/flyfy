@@ -16,11 +16,11 @@ import '../../core/ui/pagination_bar.dart';
 import '../../features/stories/models/post_vm.dart';
 import '../../features/stories/editor/presentation/post_create_preflight.dart';
 import '../../features/stories/story_ui.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
-import '../common/app_side_drawer.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _StorySortDirection { asc, desc }
@@ -98,7 +98,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
   static const int _pageSize = 8;
 
   late final PostApi _api;
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -623,129 +622,26 @@ class _StoriesScreenState extends State<StoriesScreen> {
     }
   }
 
-  Future<void> _confirmLogout() async {
-    final l10n = AppLocalizations.of(context)!;
-    final authProvider = context.read<AuthProvider>();
-    final sessionProvider = context.read<SessionProvider>();
-
-    final confirmed = await showAppModalDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        final colors = AppDesignSystem.colorsFor(dialogContext);
-        return AppModalDialogCard(
-          backgroundColor: colors.surfaceRaised,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppBorderRadius.circular(22),
-          ),
-          title: Text(
-            l10n.logoutDialogTitle,
-            style: AppTextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            l10n.logoutDialogMessage,
-            style: AppTextStyle(color: colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(
-                l10n.cancel,
-                style: AppTextStyle(color: colors.textSecondary),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
-              ),
-              child: Text(l10n.logoutConfirmButton),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    await authProvider.logout();
-    await sessionProvider.clearSession();
-    if (mounted) {
-      context.go('/');
-    }
-  }
-
-  Future<void> _closeDrawerIfNeeded() async {
-    final scaffoldState = _scaffoldKey.currentState;
-    if (scaffoldState == null || !scaffoldState.isDrawerOpen) {
-      return;
-    }
-    Navigator.of(context).pop();
-    await Future<void>.delayed(const Duration(milliseconds: 160));
-  }
-
-  Future<void> _runDrawerAction(Future<void> Function() action) async {
-    await _closeDrawerIfNeeded();
-    if (!mounted) {
-      return;
-    }
-    await action();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
     final colors = AppDesignSystem.colorsFor(context);
     final auth = context.watch<AuthProvider>();
-    final session = context.watch<SessionProvider>();
-    final profile = session.profile;
-    final location = resolveDrawerLocation(
-      profile,
-      Localizations.localeOf(context),
-    );
     final isLoggedIn = auth.state == AuthState.authenticated;
+    final postCreationRestricted =
+        isLoggedIn &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.createPost,
+        );
     final totalPages = _totalPages;
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: colors.backgroundDeep,
-      drawerEnableOpenDragGesture: true,
-      drawerEdgeDragWidth: 28,
-      drawerScrimColor: colors.black.withValues(alpha: 0.42),
-      drawer: AppSideDrawer(
-        l10n: l10n,
-        isLoggedIn: isLoggedIn,
-        showGuideBadge: profile?.isGuide ?? false,
-        profile: profile,
-        location: location,
-        activeItem: AppDrawerActiveItem.none,
-        onProfileTap: () =>
-            _runDrawerAction(() async => context.push('/profile')),
-        onHomeTap: () => _runDrawerAction(() async => context.go('/')),
-        onMyActivitiesTap: () =>
-            _runDrawerAction(() async => context.push('/me/activities')),
-        onMyExcursionsTap: () =>
-            _runDrawerAction(() async => context.push('/me/excursions')),
-        onMyStoriesTap: () =>
-            _runDrawerAction(() async => context.push('/me/posts')),
-        onMyStoryArchiveTap: () =>
-            _runDrawerAction(() async => context.push('/me/stories')),
-        onActivitiesTap: () =>
-            _runDrawerAction(() async => context.push('/activities')),
-        onLoginTap: () =>
-            _runDrawerAction(() async => context.push('/login?from=/posts')),
-        onLogoutTap: () => _runDrawerAction(_confirmLogout),
-      ),
       bottomNavigationBar: CreateActionBottomNavigationBar(
         onHomeTap: () => context.go('/'),
         onQrTap: () => context.push('/qr'),
-        onCreateTap: _openCreateStory,
+        onCreateTap: postCreationRestricted ? null : _openCreateStory,
         onServicesTap: () => context.push('/services'),
         onChatsTap: () => context.push('/chats'),
       ),
@@ -784,6 +680,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
                         ),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate.fixed([
+                            if (postCreationRestricted) ...[
+                              const TrustRestrictionNotice(creation: true),
+                              SizedBox(height: adaptive.scale(18)),
+                            ],
                             _StoriesSearchBar(
                               controller: _searchController,
                               hint: l10n.storySearchHint,
@@ -965,7 +865,7 @@ class _MyStoriesStatusTabs extends StatelessWidget {
               ),
               labelStyle: AppTextStyle(
                 color: selected == tab
-                    ? colors.textPrimary
+                    ? colors.onPrimary
                     : colors.textSecondary,
                 fontWeight: FontWeight.w800,
               ),
@@ -1491,7 +1391,7 @@ class _StoriesErrorState extends StatelessWidget {
             onPressed: () => onRetry(),
             style: ElevatedButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
               padding: AppEdgeInsets.symmetric(
                 horizontal: adaptive.scale(20),
                 vertical: adaptive.scale(14),
@@ -1565,7 +1465,7 @@ class _StoriesEmptyState extends StatelessWidget {
               onPressed: onAction,
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
                 padding: AppEdgeInsets.symmetric(
                   horizontal: adaptive.scale(20),
                   vertical: adaptive.scale(12),

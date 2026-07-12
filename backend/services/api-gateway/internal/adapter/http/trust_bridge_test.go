@@ -2,7 +2,9 @@ package http
 
 import (
 	"testing"
+	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
 	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
@@ -39,6 +41,33 @@ func TestRestrictionIDFromAppealPath(t *testing.T) {
 				t.Fatalf("restrictionIDFromAppealPath() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestActiveRestrictionsFromProtoSanitizesPublicPayload(t *testing.T) {
+	expiresAt := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)
+	createdAt := time.Date(2026, 7, 11, 11, 0, 0, 0, time.UTC)
+	items := activeRestrictionsFromProto([]*trustv1.ActiveRestriction{
+		nil,
+		{RestrictionId: "", RestrictionCode: "ACTIVITY_CREATION"},
+		{
+			RestrictionId:   "restriction-1",
+			RestrictionCode: "ACTIVITY_CREATION",
+			ReasonCode:      "staff_restriction",
+			ExpiresAt:       timestamppb.New(expiresAt),
+			CreatedAt:       timestamppb.New(createdAt),
+		},
+	})
+
+	if len(items) != 1 {
+		t.Fatalf("active restrictions = %d, want 1 valid item", len(items))
+	}
+	got := items[0]
+	if got.RestrictionID != "restriction-1" || got.RestrictionCode != "ACTIVITY_CREATION" || got.ReasonCode != "staff_restriction" {
+		t.Fatalf("active restriction payload = %+v", got)
+	}
+	if got.ExpiresAt != expiresAt.Format(time.RFC3339) || got.CreatedAt != createdAt.Format(time.RFC3339) {
+		t.Fatalf("restriction timestamps = %q/%q", got.ExpiresAt, got.CreatedAt)
 	}
 }
 

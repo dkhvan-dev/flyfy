@@ -83,13 +83,13 @@ class RouteModeSelector extends StatelessWidget {
               ),
               foregroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return colors.textPrimary;
+                  return colors.onPrimary;
                 }
                 return colors.textSecondary;
               }),
               iconColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return colors.textPrimary;
+                  return colors.onPrimary;
                 }
                 return colors.primary;
               }),

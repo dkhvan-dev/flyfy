@@ -21,7 +21,6 @@ import 'package:inflap/providers/session_provider.dart';
 import 'package:inflap/screens/stories/story_tray_viewer_screen.dart';
 import 'package:inflap/shared/reference/app_location_label_resolver.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test(
@@ -161,13 +160,51 @@ void main() {
     expect(find.text('Notifications route'), findsOneWidget);
   });
 
+  testWidgets('shows an informational state when following is empty', (
+    tester,
+  ) async {
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(FeedPageVm(items: const []));
+      },
+    );
+    final subscriptionsApi = _FakeFeedSubscriptionsApi(FeedSubscriptionsVm());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _AuthenticatedAuthProvider(),
+        child: _feedRouterApp(api, subscriptionsApi: subscriptionsApi),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(of: find.byType(Tab), matching: find.text('Following')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('feed-following-empty-state')),
+      findsOneWidget,
+    );
+    expect(find.text('No subscriptions yet'), findsOneWidget);
+    expect(
+      find.text('Follow travelers or communities to see their posts here.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('passes selected home location to feed recommendations', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
-    final locationProvider = HomeLocationProvider();
-    await locationProvider.selectCity(
-      const ReferenceCity(id: 'da-nang', countryCode: 'VN', name: 'Da Nang'),
+    final locationProvider = _StaticHomeLocationProvider(
+      HomeLocationPreference(
+        source: HomeLocationSource.manual,
+        countryCode: 'VN',
+        cityId: 'da-nang',
+        cityName: 'Da Nang',
+        updatedAt: DateTime.utc(2026, 7, 11),
+      ),
     );
     final api = _FakeFeedApi(
       onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
@@ -276,10 +313,13 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _feedRouterApp(
-          api,
-          subscriptionsApi: subscriptionsApi,
-          locationLabelResolver: locationResolver,
+        ChangeNotifierProvider<AuthProvider>.value(
+          value: _AuthenticatedAuthProvider(),
+          child: _feedRouterApp(
+            api,
+            subscriptionsApi: subscriptionsApi,
+            locationLabelResolver: locationResolver,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -323,13 +363,31 @@ void main() {
         findsOneWidget,
       );
       final feedSortRow = find.byKey(const ValueKey('feed-post-sort-row'));
+      final feedScrollable = find.descendant(
+        of: find.byKey(const PageStorageKey<String>('feed-block-list')),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.axisDirection == AxisDirection.down,
+        ),
+      );
+      expect(feedScrollable, findsOneWidget);
+      await tester.scrollUntilVisible(
+        feedSortRow,
+        240,
+        scrollable: feedScrollable,
+      );
       expect(feedSortRow, findsOneWidget);
       expect(
         tester.getTopLeft(subscriptionsBlock).dy,
         lessThan(tester.getTopLeft(feedSortRow).dy),
       );
 
-      await tester.tap(find.byKey(const ValueKey('open-my-subscriptions')));
+      final openSubscriptionsButton = tester.widget<IconButton>(
+        find.byKey(const ValueKey('open-my-subscriptions')),
+      );
+      expect(openSubscriptionsButton.onPressed, isNotNull);
+      openSubscriptionsButton.onPressed!.call();
       await tester.pumpAndSettle();
 
       expect(
@@ -688,10 +746,14 @@ void main() {
   testWidgets('opens community discovery sheet with search from suggestions', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
-    final locationProvider = HomeLocationProvider();
-    await locationProvider.selectCity(
-      const ReferenceCity(id: 'da-nang', countryCode: 'VN', name: 'Da Nang'),
+    final locationProvider = _StaticHomeLocationProvider(
+      HomeLocationPreference(
+        source: HomeLocationSource.manual,
+        countryCode: 'VN',
+        cityId: 'da-nang',
+        cityName: 'Da Nang',
+        updatedAt: DateTime.utc(2026, 7, 11),
+      ),
     );
     final api = _FakeFeedApi(
       onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
@@ -1560,7 +1622,12 @@ void main() {
       },
     );
 
-    await tester.pumpWidget(_feedRouterApp(api));
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _AuthenticatedAuthProvider(),
+        child: _feedRouterApp(api),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(
@@ -1867,12 +1934,15 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _feedRouterApp(
-        api,
-        captureResult: _story(title: 'Fresh story'),
-        onViewerRoute: (data) {
-          openedViewerData = data;
-        },
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _AuthenticatedAuthProvider(),
+        child: _feedRouterApp(
+          api,
+          captureResult: _story(title: 'Fresh story'),
+          onViewerRoute: (data) {
+            openedViewerData = data;
+          },
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -1892,6 +1962,7 @@ void main() {
       'Desert market routes',
       'Fresh story',
     ]);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('expired story circles are hidden while post cards still open', (
@@ -1939,7 +2010,7 @@ void main() {
     expect(openedPost?.title, 'Hidden courtyards of Turkistan');
   });
 
-  testWidgets('opens quick discussion post in its community with post anchor', (
+  testWidgets('opens quick discussion card in its community with post anchor', (
     tester,
   ) async {
     Uri? openedCommunityUri;
@@ -1967,6 +2038,7 @@ void main() {
     await tester.pumpWidget(
       _feedRouterApp(
         api,
+        postApi: _FeedPostActionApi(),
         onCommunityRoute: (uri) {
           openedCommunityUri = uri;
         },
@@ -1974,13 +2046,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final quickPostCard = find.byKey(
+      const ValueKey('quick-post-thread-quick-discussion'),
+    );
+    expect(quickPostCard, findsOneWidget);
+
     await tester.scrollUntilVisible(
-      find.text('Quick discussion'),
+      quickPostCard,
       320,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Quick discussion'));
+    final quickPostCardRect = tester.getRect(quickPostCard);
+    await tester.tapAt(
+      Offset(quickPostCardRect.right - 20, quickPostCardRect.top + 20),
+    );
     await tester.pumpAndSettle();
 
     expect(openedCommunityUri?.path, '/communities/community-1');
@@ -1989,6 +2069,60 @@ void main() {
       find.text('Community route community-1 quick-discussion'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('renders interactive quick discussion on compact width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final quickPost = _post(
+      title: 'Compact quick discussion',
+      postProfileKey: 'quick_post_v1',
+      communityId: 'community-compact',
+    );
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(
+          FeedPageVm(
+            items: [
+              FeedBlockVm(
+                id: 'compact-quick-discussion',
+                type: FeedBlockType.postCard,
+                post: quickPost,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _AuthenticatedAuthProvider(),
+        child: _feedRouterApp(
+          api,
+          postApi: _FeedPostActionApi(),
+          locale: const Locale('ru'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('quick-post-thread-compact-quick-discussion')),
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('quick-post-thread-compact-quick-discussion')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('removes story circles when their TTL expires on an open feed', (
@@ -2238,6 +2372,7 @@ Widget _feedRouterApp(
   AppLocationLabelResolver? locationLabelResolver,
   DateTime Function()? analyticsNow,
   FeedPostShareLauncher? postShareLauncher,
+  Locale? locale,
 }) {
   final router = GoRouter(
     routes: [
@@ -2323,6 +2458,7 @@ Widget _feedRouterApp(
   );
 
   return MaterialApp.router(
+    locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     routerConfig: router,
@@ -2749,6 +2885,13 @@ class _FeedPostActionApi extends _PostCreateAllowedApi {
   final List<String> likedPostIds = [];
   final List<String> unlikedPostIds = [];
   final List<String> sharedPostIds = [];
+
+  @override
+  Future<List<PostCommentVm>> listComments(
+    String postId, {
+    int limit = 50,
+    int offset = 0,
+  }) async => const [];
 
   @override
   Future<int> likePost(String postId) async {

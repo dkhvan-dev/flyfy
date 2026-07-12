@@ -64,7 +64,7 @@ func TestRegisterDeviceUpsertsCompatibleToken(t *testing.T) {
 	}
 }
 
-func TestSendNotificationPublishesOnlyForNewIdempotencyKey(t *testing.T) {
+func TestSendNotificationRepublishesAcceptedIdempotentRequest(t *testing.T) {
 	uc := newTestUseCase()
 	userID := uuid.New()
 
@@ -93,8 +93,60 @@ func TestSendNotificationPublishesOnlyForNewIdempotencyKey(t *testing.T) {
 	if first.ID != second.ID {
 		t.Fatalf("expected same request for duplicate idempotency key")
 	}
+	if uc.publisher.publishCount != 2 {
+		t.Fatalf("expected accepted request to be republished, got %d publishes", uc.publisher.publishCount)
+	}
+}
+
+func TestSendNotificationDoesNotRepublishCompletedIdempotentRequest(t *testing.T) {
+	uc := newTestUseCase()
+	input := SendNotificationInput{
+		IdempotencyKey:   "activity:completed:123",
+		SourceService:    "activity-service",
+		RecipientUserIDs: []uuid.UUID{uuid.New()},
+		Payload:          model.NotificationPayload{Title: "Completed"},
+	}
+
+	first, err := uc.SendNotification(context.Background(), input)
+	if err != nil {
+		t.Fatalf("first SendNotification returned error: %v", err)
+	}
+	if err := uc.repo.MarkRequestFanoutCompleted(context.Background(), first.ID, 0); err != nil {
+		t.Fatalf("MarkRequestFanoutCompleted returned error: %v", err)
+	}
+	second, err := uc.SendNotification(context.Background(), input)
+	if err != nil {
+		t.Fatalf("second SendNotification returned error: %v", err)
+	}
+
+	if first.ID != second.ID {
+		t.Fatalf("expected same request for duplicate idempotency key")
+	}
 	if uc.publisher.publishCount != 1 {
-		t.Fatalf("expected one publish, got %d", uc.publisher.publishCount)
+		t.Fatalf("expected completed request not to be republished, got %d publishes", uc.publisher.publishCount)
+	}
+}
+
+func TestSendNotificationRecoversPersistedRequestAfterPublishFailure(t *testing.T) {
+	uc := newTestUseCase()
+	uc.publisher.failuresRemaining = 1
+	input := SendNotificationInput{
+		IdempotencyKey:   "admin:user_restriction:123:created",
+		SourceService:    "admin-panel",
+		RecipientUserIDs: []uuid.UUID{uuid.New()},
+		Payload:          model.NotificationPayload{Title: "Restriction applied"},
+	}
+
+	if _, err := uc.SendNotification(context.Background(), input); err == nil {
+		t.Fatal("expected the first publish to fail")
+	}
+	recovered, err := uc.SendNotification(context.Background(), input)
+	if err != nil {
+		t.Fatalf("retry SendNotification returned error: %v", err)
+	}
+
+	if recovered == nil || uc.publisher.publishCount != 2 {
+		t.Fatalf("expected persisted request to be republished, request=%#v publishes=%d", recovered, uc.publisher.publishCount)
 	}
 }
 
@@ -687,11 +739,16 @@ func (f providerFunc) Send(ctx context.Context, token string, delivery model.Del
 }
 
 type memoryPublisher struct {
-	publishCount int
+	publishCount      int
+	failuresRemaining int
 }
 
 func (p *memoryPublisher) Publish(ctx context.Context, subject string, payload any, messageID string) error {
 	p.publishCount++
+	if p.failuresRemaining > 0 {
+		p.failuresRemaining--
+		return errors.New("publisher unavailable")
+	}
 	return nil
 }
 

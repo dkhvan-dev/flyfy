@@ -1434,6 +1434,8 @@ func (h *Handler) CheckPostCreateEligibility(w http.ResponseWriter, r *http.Requ
 		Limit:             eligibility.Limit,
 		Remaining:         eligibility.Remaining,
 		WindowSeconds:     int64(eligibility.Window / time.Second),
+		CooldownSeconds:   int64(eligibility.Cooldown / time.Second),
+		BlockReason:       eligibility.BlockReason,
 		RetryAfterSeconds: retryAfterSeconds,
 		NextAvailableAt:   nextAvailableAt,
 	})

@@ -297,11 +297,6 @@
     }
   },
   "profileTitle": "Профиль",
-  "drawerStatusVerifiedGuide": "Подтвержденный гид",
-  "drawerStatusGuide": "Гид",
-  "drawerStatusGuideRevoked": "Статус гида отозван",
-  "drawerStatusTraveler": "Путешественник",
-  "drawerStatusCompleteProfile": "Заполните профиль",
   "profileNotAvailable": "Профиль недоступен",
   "profilePhone": "Телефон",
   "profilePhoneVerificationSection": "Подтверждение телефона",
@@ -920,7 +915,6 @@
   "homeTitle": "Inflap",
   "homeSubtitle": "Путешествуйте, находите активности и открывайте новые впечатления",
   "servicesSectionTitle": "Сервисы",
-  "servicesAllButton": "Смотреть все",
   "homeExcursionsTitle": "Экскурсии",
   "homeExcursionsSubtitle": "Подберите интересные маршруты и поездки",
   "homeGuidesTitle": "Гиды",
@@ -974,7 +968,8 @@
   "searchDomainHelpArticle": "Статья помощи",
   "homeSearchHint": "Активности, места, экскурсии...",
   "homeTopDestinations": "Топ направления",
-  "homeSeeAll": "Смотреть все",
+  "homeSeeAll": "Всё",
+  "homeShowAllCard": "Показать все",
   "homeTopStories": "Сейчас обсуждают",
   "homeSmartPostsTitle": "Для вас",
   "homeSmartPostsEmpty": "Подобранные для вас посты появятся здесь.",
@@ -987,6 +982,7 @@
   "homeServiceStories": "Истории",
   "homeServicePlaces": "Места",
   "homeServiceCurrencyConverter": "Курсы валют",
+  "homeServiceAllServices": "Все сервисы",
   "homeServiceStays": "Жилье",
   "homeServiceDelivery": "Доставка",
   "homeServiceTaxi": "Такси",
@@ -1260,6 +1256,8 @@
   "communityTrustActionFailed": "Не удалось выполнить trust-действие. Попробуйте еще раз.",
   "feedEmptyTitle": "В ленте пока пусто",
   "feedEmptyMessage": "Подпишитесь на путешественников и сообщества, чтобы собрать свою ленту.",
+  "feedFollowingEmptyTitle": "Подписок пока нет",
+  "feedFollowingEmptyMessage": "Подпишитесь на путешественников или сообщества, и их публикации появятся здесь.",
   "feedLoadFailedTitle": "Не удалось загрузить ленту",
   "feedLoadFailedMessage": "Проверьте соединение и попробуйте снова.",
   "feedRetryAction": "Повторить",
@@ -1943,6 +1941,19 @@
   "excursionTranslationSourceLanguageEnglish": "английского",
   "excursionTranslationSourceLanguageRussian": "русского",
   "excursionTranslationSourceLanguageKazakh": "казахского",
+  "activityDetailsTranslatedNotice": "Детали активности переведены автоматически с {sourceLanguage}",
+  "@activityDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "activityDetailsShowOriginal": "Показать оригинал",
+  "activityDetailsShowTranslation": "Показать перевод",
+  "activityDetailsTranslationPendingNotice": "Показываем оригинал активности · Перевод готовится",
+  "activityDetailsTranslationUnavailableNotice": "Показываем оригинал активности · Автоперевод временно недоступен",
+  "activityTranslationSourceLanguageEnglish": "английского",
+  "activityTranslationSourceLanguageRussian": "русского",
+  "activityTranslationSourceLanguageKazakh": "казахского",
   "excursionLanguageEnglish": "Английский",
   "excursionLanguageRussian": "Русский",
   "excursionLanguageKazakh": "Казахский",
@@ -2242,8 +2253,8 @@
   "createExcursionIncludedTypeFood": "Питание",
   "createExcursionIncludedTypeTickets": "Билеты",
   "createExcursionIncludedTypeEquipment": "Снаряжение",
-  "createExcursionIncludedTypeGuide": "Гид",
-  "createExcursionIncludedTypePhoto": "Фото",
+  "createExcursionIncludedTypeAccommodation": "Проживание",
+  "createExcursionIncludedTypePermitsFees": "Разрешения и сборы",
   "createExcursionIncludedTypeOther": "Другое",
   "createExcursionStartOffsetLabel": "Старт через, мин",
   "createExcursionSlotDurationLabel": "Длительность, мин",
@@ -3191,11 +3202,11 @@
   "storyEditorValidationContentRequired": "Добавьте хотя бы один блок истории перед публикацией.",
   "storyEditorValidationMediaPending": "Дождитесь завершения загрузки медиа.",
   "postCreateRateLimitTitle": "Лимит постов",
-  "postCreateRateLimitMessage": "Вы уже создали максимум постов за последний час. Новый пост можно будет создать примерно через {minutes} мин.",
+  "postCreateRateLimitMessage": "Следующий пост можно будет опубликовать через {time}.",
   "@postCreateRateLimitMessage": {
     "placeholders": {
-      "minutes": {
-        "type": "int"
+      "time": {
+        "type": "String"
       }
     }
   },
@@ -3749,5 +3760,9 @@
   "contextualHelpTitle": "Вопросы и помощь",
   "contextualHelpOpenAll": "Вся помощь",
   "contextualHelpLoadFailed": "Помощь временно недоступна",
-  "contextualHelpTryAgain": "Повторить"
+  "contextualHelpTryAgain": "Повторить",
+  "trustRestrictionTitle": "Доступ ограничен",
+  "trustCreationRestrictionMessage": "Создание ограничено администратором. Обратитесь в поддержку, если считаете это ошибкой.",
+  "trustFeatureRestrictionMessage": "Доступ к этой функции ограничен администратором. Обратитесь в поддержку, если считаете это ошибкой.",
+  "trustRestrictionSupportAction": "Обратиться в поддержку"
 }

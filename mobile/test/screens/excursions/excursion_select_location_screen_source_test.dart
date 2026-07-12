@@ -65,6 +65,47 @@ void main() {
     },
   );
 
+  test(
+    'location selector header is inset and confirm bar stays flat',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_select_location_screen.dart',
+      ).readAsString();
+
+      final headerStart = source.indexOf('class _LocationTopBar');
+      final sectionStart = source.indexOf('class _LocationSectionTitle');
+      final confirmBarStart = source.indexOf('class _LocationConfirmBar');
+      final coverResolverStart = source.indexOf(
+        'String? _resolvePlaceCoverUrl',
+      );
+      expect(headerStart, isNonNegative);
+      expect(sectionStart, greaterThan(headerStart));
+      expect(confirmBarStart, isNonNegative);
+      expect(coverResolverStart, greaterThan(confirmBarStart));
+
+      final headerSource = source.substring(headerStart, sectionStart);
+      final confirmBarSource = source.substring(
+        confirmBarStart,
+        coverResolverStart,
+      );
+
+      expect(
+        headerSource,
+        contains(
+          'padding: const AppEdgeInsets.symmetric(horizontal: AppSpacing.lg)',
+        ),
+      );
+      expect(
+        confirmBarSource,
+        contains('decoration: AppBoxDecoration(color: colors.background)'),
+      );
+      expect(confirmBarSource, contains('elevation: 0'));
+      expect(confirmBarSource, contains('shadowColor: colors.transparent'));
+      expect(confirmBarSource, isNot(contains('LinearGradient(')));
+      expect(confirmBarSource, isNot(contains('BoxShadow(')));
+    },
+  );
+
   test('location selector receives country from create screen', () async {
     final source = await File(
       'lib/screens/excursions/excursion_select_location_screen.dart',

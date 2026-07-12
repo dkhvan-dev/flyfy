@@ -1,0 +1,10 @@
+Noto Emoji artwork
+
+Source: https://github.com/googlefonts/noto-emoji
+Copyright 2013 Google LLC
+
+The bundled PNG artwork is distributed under the Apache License 2.0 as
+documented by the Noto Emoji project. The project also distributes its emoji
+fonts under the SIL Open Font License 1.1. Copies of both licenses are included
+in this directory.
+

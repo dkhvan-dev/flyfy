@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_screen.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_trust_context.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
+import 'package:inflap/features/trust/providers/trust_access_provider.dart';
+import 'package:inflap/features/trust/widgets/trust_restriction_notice.dart';
+import 'package:provider/provider.dart';
 
 class CreateStoryScreen extends StatelessWidget {
   const CreateStoryScreen({
@@ -34,6 +37,12 @@ class CreateStoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final postCreationRestricted = context
+        .watch<TrustAccessProvider>()
+        .isRestricted(TrustCapability.createPost);
+    if (postCreationRestricted) {
+      return const TrustRestrictedScaffold(creation: true);
+    }
     final communityKeySegment = (communityId ?? '').trim();
 
     return KeyedSubtree(

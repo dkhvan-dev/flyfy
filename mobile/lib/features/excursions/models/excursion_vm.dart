@@ -1,3 +1,5 @@
+import '../excursion_included_items.dart';
+
 class ExcursionVm {
   const ExcursionVm({
     required this.id,
@@ -190,7 +192,10 @@ class ExcursionVm {
     final parsedOffers = offers ?? _offers(json['offers']);
     final primaryOffer = parsedOffers.isNotEmpty ? parsedOffers.first : null;
     final languageCodes = _stringList(json['languageCodes']);
-    final includedItems = _stringList(json['includedItems']);
+    final includedItemsPayload = _includedItemsPayload(
+      json['includedItems'],
+      json['includedItemTranslations'],
+    );
     final translationInfo = _translationInfo(json, parsedOffers);
 
     return ExcursionVm(
@@ -247,10 +252,8 @@ class ExcursionVm {
       coverImageUrl: json['coverImageUrl'] as String?,
       photoFileIds: _stringList(json['photoFileIds']),
       photoImageUrls: _stringList(json['photoImageUrls']),
-      includedItems: includedItems,
-      includedItemTranslations: _includedItemTranslations(
-        json['includedItemTranslations'],
-      ),
+      includedItems: includedItemsPayload.items,
+      includedItemTranslations: includedItemsPayload.translations,
       itinerary: _itinerary(json['itinerary']),
       translations: _translations(json),
       translationInfo: translationInfo,
@@ -342,6 +345,38 @@ class ExcursionVm {
       result[locale] = List.unmodifiable(values);
     }
     return Map.unmodifiable(result);
+  }
+
+  static ({List<String> items, Map<String, List<String>> translations})
+  _includedItemsPayload(Object? rawItems, Object? rawTranslations) {
+    final items = _stringList(rawItems);
+    final translations = _includedItemTranslations(rawTranslations);
+    final retainedIndexes = <int>[
+      for (var index = 0; index < items.length; index++)
+        if (!ExcursionIncludedItemKey.isDeprecated(items[index])) index,
+    ];
+    if (retainedIndexes.length == items.length) {
+      return (items: items, translations: translations);
+    }
+
+    final filteredItems = List<String>.unmodifiable(
+      retainedIndexes.map((index) => items[index]),
+    );
+    final filteredTranslations = <String, List<String>>{};
+    for (final entry in translations.entries) {
+      final values = List<String>.unmodifiable(
+        retainedIndexes.map(
+          (index) => index < entry.value.length ? entry.value[index] : '',
+        ),
+      );
+      if (values.any((value) => value.trim().isNotEmpty)) {
+        filteredTranslations[entry.key] = values;
+      }
+    }
+    return (
+      items: filteredItems,
+      translations: Map.unmodifiable(filteredTranslations),
+    );
   }
 
   static ExcursionTranslationInfoVm _translationInfo(
@@ -563,20 +598,11 @@ class ExcursionVm {
   static const _supportedTranslationLocales = ['en', 'ru', 'kk'];
 
   List<String> localizedIncludedItems(String languageCode) {
-    final normalized = _normalizeLocale(languageCode);
-    final localized =
-        includedItemTranslations[normalized] ??
-        includedItemTranslations[normalized.split('-').first];
-    if (localized == null || localized.isEmpty) {
-      return includedItems;
-    }
-
-    return List<String>.generate(includedItems.length, (index) {
-      if (index >= localized.length || localized[index].trim().isEmpty) {
-        return includedItems[index];
-      }
-      return localized[index].trim();
-    }, growable: false);
+    return _localizedIncludedItems(
+      includedItems,
+      includedItemTranslations,
+      languageCode,
+    );
   }
 }
 
@@ -804,6 +830,10 @@ class ExcursionOfferVm {
   final ExcursionTranslationInfoVm translationInfo;
 
   factory ExcursionOfferVm.fromJson(Map<String, dynamic> json) {
+    final includedItemsPayload = ExcursionVm._includedItemsPayload(
+      json['includedItems'],
+      json['includedItemTranslations'],
+    );
     return ExcursionOfferVm(
       id: (json['id'] as String?) ?? '',
       productId: (json['productId'] as String?) ?? '',
@@ -831,10 +861,8 @@ class ExcursionOfferVm {
       coverFileId: json['coverFileId'] as String?,
       photoFileIds: ExcursionVm._stringList(json['photoFileIds']),
       languageCodes: ExcursionVm._stringList(json['languageCodes']),
-      includedItems: ExcursionVm._stringList(json['includedItems']),
-      includedItemTranslations: ExcursionVm._includedItemTranslations(
-        json['includedItemTranslations'],
-      ),
+      includedItems: includedItemsPayload.items,
+      includedItemTranslations: includedItemsPayload.translations,
       itinerary: ExcursionVm._itinerary(json['itinerary']),
       translations: ExcursionVm._translations(json),
       translationInfo: ExcursionTranslationInfoVm.fromJson(
@@ -844,20 +872,11 @@ class ExcursionOfferVm {
   }
 
   List<String> localizedIncludedItems(String languageCode) {
-    final normalized = _normalizeLocale(languageCode);
-    final localized =
-        includedItemTranslations[normalized] ??
-        includedItemTranslations[normalized.split('-').first];
-    if (localized == null || localized.isEmpty) {
-      return includedItems;
-    }
-
-    return List<String>.generate(includedItems.length, (index) {
-      if (index >= localized.length || localized[index].trim().isEmpty) {
-        return includedItems[index];
-      }
-      return localized[index].trim();
-    }, growable: false);
+    return _localizedIncludedItems(
+      includedItems,
+      includedItemTranslations,
+      languageCode,
+    );
   }
 }
 
@@ -966,6 +985,26 @@ class ExcursionItineraryItemVm {
     return translations[normalized] ??
         translations[normalized.split('-').first];
   }
+}
+
+List<String> _localizedIncludedItems(
+  List<String> items,
+  Map<String, List<String>> translations,
+  String languageCode,
+) {
+  final normalized = _normalizeLocale(languageCode);
+  final localized =
+      translations[normalized] ?? translations[normalized.split('-').first];
+  final result = <String>[];
+  for (var index = 0; index < items.length; index++) {
+    final item = items[index].trim();
+    if (item.isEmpty || ExcursionIncludedItemKey.isDeprecated(item)) continue;
+    final localizedItem = localized != null && index < localized.length
+        ? localized[index].trim()
+        : '';
+    result.add(localizedItem.isEmpty ? item : localizedItem);
+  }
+  return List.unmodifiable(result);
 }
 
 String _normalizeLocale(String value) {

@@ -27,6 +27,8 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /bin/activity-service ./cmd
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /bin/activity-service-backfill-search-index ./cmd/backfill-search-index
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags="-s -w" -o /bin/activity-service-backfill-translations ./cmd/backfill-activity-translations
 
 FROM alpine:3.21
 
@@ -38,6 +40,7 @@ WORKDIR /app
 
 COPY --from=builder /bin/activity-service /app/activity-service
 COPY --from=builder /bin/activity-service-backfill-search-index /app/activity-service-backfill-search-index
+COPY --from=builder /bin/activity-service-backfill-translations /app/activity-service-backfill-translations
 COPY --from=builder /app/backend/services/activity-service/migrations /app/migrations
 
 USER appuser

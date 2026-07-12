@@ -193,6 +193,43 @@ void main() {
     );
   });
 
+  test('maps post publish cooldown metadata from 429 responses', () async {
+    final adapter = _QueuedJsonAdapter([
+      _ResponseStub(
+        {
+          'code': 'post_rate_limited',
+          'message': 'Post publishing rate limit exceeded.',
+          'retryAfterSeconds': 300,
+          'nextAvailableAt': '2026-07-11T12:05:00Z',
+        },
+        statusCode: 429,
+        headers: const {
+          'retry-after': ['299'],
+        },
+      ),
+    ]);
+    final api = _api(adapter);
+
+    await expectLater(
+      api.publish('story-1', _editorRequest()),
+      throwsA(
+        isA<StoryEditorApiException>()
+            .having((error) => error.statusCode, 'statusCode', 429)
+            .having((error) => error.code, 'code', 'post_rate_limited')
+            .having(
+              (error) => error.retryAfter,
+              'retryAfter',
+              const Duration(minutes: 5),
+            )
+            .having(
+              (error) => error.nextAvailableAt,
+              'nextAvailableAt',
+              DateTime.parse('2026-07-11T12:05:00Z'),
+            ),
+      ),
+    );
+  });
+
   test(
     'preserves structured field errors from map keyed backend payloads',
     () async {
@@ -372,10 +409,15 @@ class _FakeSecureStorage extends SecureStorage {
 }
 
 class _ResponseStub {
-  const _ResponseStub(this.payload, {this.statusCode = 200});
+  const _ResponseStub(
+    this.payload, {
+    this.statusCode = 200,
+    this.headers = const {},
+  });
 
   final Map<String, Object?> payload;
   final int statusCode;
+  final Map<String, List<String>> headers;
 }
 
 class _CapturedRequest {
@@ -417,6 +459,7 @@ class _QueuedJsonAdapter implements HttpClientAdapter {
       response.statusCode,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
+        ...response.headers,
       },
     );
   }

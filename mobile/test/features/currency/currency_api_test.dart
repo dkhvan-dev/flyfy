@@ -216,11 +216,9 @@ class _CurrencyListAdapter implements HttpClientAdapter {
     queryParameters = options.uri.queryParameters;
 
     return ResponseBody.fromString(
-      jsonEncode({
-        'items': [
-          {'code': 'USD', 'name': 'Доллар США', 'symbol': r'$'},
-        ],
-      }),
+      jsonEncode([
+        {'code': 'USD', 'name': 'Доллар США', 'symbol': r'$'},
+      ]),
       200,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],

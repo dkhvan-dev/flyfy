@@ -577,6 +577,15 @@ services:
       SEARCH_INDEXING_ENABLED: "true"
       SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
       SEARCH_SERVICE_TIMEOUT: 800ms
+      TRANSLATION_SERVICE_URL: ${TRANSLATION_SERVICE_INTERNAL_HTTP_URL:-http://translation-service:8094}
+      ACTIVITY_ASYNC_TRANSLATION_ENABLED: ${ACTIVITY_ASYNC_TRANSLATION_ENABLED:-true}
+      ACTIVITY_TRANSLATION_WORKER_ENABLED: ${ACTIVITY_TRANSLATION_WORKER_ENABLED:-false}
+      ACTIVITY_TRANSLATION_WORKER_BATCH_SIZE: ${ACTIVITY_TRANSLATION_WORKER_BATCH_SIZE:-10}
+      ACTIVITY_TRANSLATION_WORKER_INTERVAL: ${ACTIVITY_TRANSLATION_WORKER_INTERVAL:-2s}
+      ACTIVITY_TRANSLATION_MAX_ATTEMPTS: ${ACTIVITY_TRANSLATION_MAX_ATTEMPTS:-5}
+      ACTIVITY_TRANSLATION_RETRY_BASE_DELAY: ${ACTIVITY_TRANSLATION_RETRY_BASE_DELAY:-30s}
+      ACTIVITY_TRANSLATION_REQUEST_TIMEOUT: ${ACTIVITY_TRANSLATION_REQUEST_TIMEOUT:-8s}
+      ACTIVITY_TRANSLATION_LOCK_TIMEOUT: ${ACTIVITY_TRANSLATION_LOCK_TIMEOUT:-2m}
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/client.crt
@@ -587,6 +596,24 @@ services:
       TOKEN_SERVICE_ID: activity-service
       TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:?ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET is required}
       TOKEN_SERVICE_CALL_TIMEOUT: 3s
+
+  activity-translation-backfill:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}activity-service:${IMAGE_TAG:-test-latest}
+    profiles:
+      - translation-backfill
+    restart: "no"
+    networks:
+      - internal
+    entrypoint: ["/app/activity-service-backfill-translations"]
+    environment:
+      <<: [*common-env, *db-env]
+      DB_NAME: activity_service_db
+      DB_MAX_CONNS: 5
+      DB_MIN_CONNS: 1
+      ACTIVITY_TRANSLATION_MAX_ATTEMPTS: ${ACTIVITY_TRANSLATION_MAX_ATTEMPTS:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   activity-search-backfill:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}activity-service:${IMAGE_TAG:-test-latest}
@@ -721,8 +748,9 @@ services:
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/ca.crt
       HTTP_PORT: 8087
-      INTERNAL_HTTP_TLS_PORT: ${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      INTERNAL_HTTP_TLS_PORT: ${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-9487}
       POSTGRES_DB: feed_service_db
+      POST_CREATE_COOLDOWN: ${POST_CREATE_COOLDOWN:-5m}
       REDIS_ADDR: redis:6379
       FEED_CACHE_ENABLED: ${FEED_CACHE_ENABLED:-true}
       USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
@@ -1350,8 +1378,8 @@ services:
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/ca.crt
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/server.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/excursion-service}
-      MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-excursion-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/excursion-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,excursion-service}
     volumes: *mtls-translation-service-volumes
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8094/health/ready >/dev/null 2>&1 || exit 1"]

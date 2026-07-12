@@ -92,19 +92,23 @@ func (r *PGUserRestrictionOutboxRepository) MarkUserRestrictionEventFailed(
 	eventID uuid.UUID,
 	reason string,
 	nextAttemptAt time.Time,
+	maxAttempts int,
 ) error {
 	if nextAttemptAt.IsZero() {
 		nextAttemptAt = time.Now().UTC().Add(time.Second)
 	}
+	if maxAttempts <= 0 {
+		maxAttempts = 20
+	}
 	if _, err := r.pool.Exec(ctx, `
 		UPDATE user_restriction_outbox
 		SET attempt_count = attempt_count + 1,
-		    status = CASE WHEN attempt_count + 1 >= 20 THEN 'DEAD' ELSE 'PENDING' END,
+		    status = CASE WHEN attempt_count + 1 >= $4 THEN 'DEAD' ELSE 'PENDING' END,
 		    last_error = $2,
 		    next_attempt_at = $3
 		WHERE id = $1
 		  AND status = 'PENDING'
-	`, eventID, reason, nextAttemptAt); err != nil {
+	`, eventID, reason, nextAttemptAt, maxAttempts); err != nil {
 		return fmt.Errorf("mark user restriction outbox failed: %w", err)
 	}
 	return nil

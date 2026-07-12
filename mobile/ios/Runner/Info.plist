@@ -78,7 +78,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location to suggest your country and city in your profile.</string>
+	<string>We use your location to show nearby activities and suggest your current city.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>We use your photos so you can upload activity cover images and share chat media.</string>
 		<key>NSCameraUsageDescription</key>

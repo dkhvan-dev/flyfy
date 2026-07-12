@@ -1,11 +1,35 @@
 import '../../../shared/formatters/app_money_formatter.dart';
 
+enum ActivityTranslationNoticeState { none, translated, pending, unavailable }
+
+class ActivityLocalizedCopyVm {
+  const ActivityLocalizedCopyVm({
+    required this.title,
+    required this.description,
+  });
+
+  final String title;
+  final String description;
+
+  factory ActivityLocalizedCopyVm.fromJson(Map<String, dynamic> json) {
+    return ActivityLocalizedCopyVm(
+      title: json['title']?.toString().trim() ?? '',
+      description: json['description']?.toString().trim() ?? '',
+    );
+  }
+
+  bool get isComplete => title.isNotEmpty && description.isNotEmpty;
+}
+
 class ActivityListItemVm {
   ActivityListItemVm({
     required this.id,
     required this.hostUserId,
     required this.title,
     required this.description,
+    this.translations = const {},
+    this.sourceLanguage = 'ru',
+    this.translationStatus = 'NONE',
     required this.format,
     required this.status,
     required this.moderationStatus,
@@ -51,6 +75,9 @@ class ActivityListItemVm {
   final String hostUserId;
   final String title;
   final String description;
+  final Map<String, ActivityLocalizedCopyVm> translations;
+  final String sourceLanguage;
+  final String translationStatus;
   final String format;
   final String status;
   final String moderationStatus;
@@ -98,6 +125,13 @@ class ActivityListItemVm {
       hostUserId: json['hostUserId']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
+      translations: _activityTranslations(json['translations']),
+      sourceLanguage: _normalizedActivityLanguage(
+        json['sourceLanguage']?.toString(),
+        fallback: 'ru',
+      ),
+      translationStatus:
+          json['translationStatus']?.toString().trim().toUpperCase() ?? 'NONE',
       format: json['format']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       moderationStatus: json['moderationStatus']?.toString() ?? '',
@@ -165,6 +199,41 @@ class ActivityListItemVm {
 
   bool get isFree => priceType.toUpperCase() == 'FREE';
 
+  ActivityLocalizedCopyVm localizedCopy(String languageCode) {
+    final normalizedLanguage = _normalizedActivityLanguage(
+      languageCode,
+      fallback: sourceLanguage,
+    );
+    final translated = translations[normalizedLanguage];
+    if (translated?.isComplete == true) {
+      return translated!;
+    }
+    return ActivityLocalizedCopyVm(title: title, description: description);
+  }
+
+  ActivityTranslationNoticeState translationNoticeState(String languageCode) {
+    final normalizedLanguage = _normalizedActivityLanguage(
+      languageCode,
+      fallback: sourceLanguage,
+    );
+    if (normalizedLanguage == sourceLanguage) {
+      return ActivityTranslationNoticeState.none;
+    }
+    if (translations[normalizedLanguage]?.isComplete == true) {
+      return ActivityTranslationNoticeState.translated;
+    }
+    switch (translationStatus.toUpperCase()) {
+      case 'PENDING':
+      case 'PARTIAL':
+        return ActivityTranslationNoticeState.pending;
+      case 'FAILED':
+      case 'DISABLED':
+        return ActivityTranslationNoticeState.unavailable;
+      default:
+        return ActivityTranslationNoticeState.none;
+    }
+  }
+
   bool get isCompletedEarly =>
       status.toUpperCase() == 'COMPLETED' &&
       completedAt != null &&
@@ -191,6 +260,31 @@ class ActivityListItemVm {
       useListCurrencyFormat: true,
     );
   }
+}
+
+Map<String, ActivityLocalizedCopyVm> _activityTranslations(Object? value) {
+  if (value is! Map) return const {};
+  final result = <String, ActivityLocalizedCopyVm>{};
+  value.forEach((rawLanguage, rawCopy) {
+    if (rawCopy is! Map) return;
+    final language = _normalizedActivityLanguage(rawLanguage?.toString());
+    if (language.isEmpty) return;
+    final copy = ActivityLocalizedCopyVm.fromJson(
+      rawCopy.map((key, value) => MapEntry(key.toString(), value)),
+    );
+    if (copy.title.isEmpty && copy.description.isEmpty) return;
+    result[language] = copy;
+  });
+  return Map.unmodifiable(result);
+}
+
+String _normalizedActivityLanguage(String? value, {String fallback = ''}) {
+  final normalized = (value ?? '')
+      .trim()
+      .toLowerCase()
+      .split(RegExp('[-_]'))
+      .first;
+  return const {'ru', 'kk', 'en'}.contains(normalized) ? normalized : fallback;
 }
 
 String? _nullableString(dynamic value) {

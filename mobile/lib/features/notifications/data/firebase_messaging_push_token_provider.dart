@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/device/device_context_service.dart';
+import 'initial_notification_permission_service.dart';
 import 'notification_api.dart';
 import 'push_registration_service.dart';
 
@@ -18,6 +19,8 @@ abstract interface class FirebaseMessagingTokenClient {
   Stream<String> get tokenRefreshes;
 
   Future<bool> requestPermission();
+
+  Future<bool> isPermissionGranted();
 
   Future<String?> getToken();
 }
@@ -69,9 +72,22 @@ class DefaultFirebaseMessagingTokenClient
         return false;
     }
   }
+
+  @override
+  Future<bool> isPermissionGranted() async {
+    await _firebaseReady;
+    final settings = await _resolvedMessaging.getNotificationSettings();
+    return _isGranted(settings.authorizationStatus);
+  }
+
+  bool _isGranted(AuthorizationStatus status) {
+    return status == AuthorizationStatus.authorized ||
+        status == AuthorizationStatus.provisional;
+  }
 }
 
-class FirebaseMessagingPushTokenProvider implements PushTokenProvider {
+class FirebaseMessagingPushTokenProvider
+    implements PushTokenProvider, NotificationPermissionRequester {
   FirebaseMessagingPushTokenProvider({
     FirebaseMessagingTokenClient? client,
     this._deviceContextService = const DeviceContextService(),
@@ -105,12 +121,24 @@ class FirebaseMessagingPushTokenProvider implements PushTokenProvider {
   }
 
   @override
+  Future<NotificationPermissionRequestResult>
+  requestNotificationPermission() async {
+    if (!_supportsNotificationPermission()) {
+      return NotificationPermissionRequestResult.unsupported;
+    }
+    final granted = await _client.requestPermission();
+    return granted
+        ? NotificationPermissionRequestResult.granted
+        : NotificationPermissionRequestResult.denied;
+  }
+
+  @override
   Future<PushTokenSnapshot?> getCurrentToken() async {
-    if (!_isSupportedRuntimePlatform()) {
+    if (!_supportsTokenRegistration()) {
       return null;
     }
 
-    final permissionGranted = await _client.requestPermission();
+    final permissionGranted = await _client.isPermissionGranted();
     if (!permissionGranted) {
       return null;
     }
@@ -121,7 +149,7 @@ class FirebaseMessagingPushTokenProvider implements PushTokenProvider {
 
   Future<PushTokenSnapshot?> _snapshotFromToken(String? token) async {
     final normalizedToken = token?.trim() ?? '';
-    if (normalizedToken.isEmpty || !_isSupportedRuntimePlatform()) {
+    if (normalizedToken.isEmpty || !_supportsTokenRegistration()) {
       return null;
     }
 
@@ -139,8 +167,14 @@ class FirebaseMessagingPushTokenProvider implements PushTokenProvider {
     );
   }
 
-  bool _isSupportedRuntimePlatform() {
+  bool _supportsTokenRegistration() {
     return _platformResolver() == FirebasePushRuntimePlatform.android;
+  }
+
+  bool _supportsNotificationPermission() {
+    final platform = _platformResolver();
+    return platform == FirebasePushRuntimePlatform.android ||
+        platform == FirebasePushRuntimePlatform.ios;
   }
 
   static FirebasePushRuntimePlatform _defaultPlatformResolver() {

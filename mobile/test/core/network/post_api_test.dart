@@ -345,6 +345,8 @@ void main() {
       'limit': 10,
       'remaining': 0,
       'windowSeconds': 3600,
+      'cooldownSeconds': 300,
+      'blockReason': 'cooldown',
       'retryAfterSeconds': 1080,
       'nextAvailableAt': '2026-06-14T12:18:00Z',
     });
@@ -365,6 +367,8 @@ void main() {
     expect(eligibility.limit, 10);
     expect(eligibility.remaining, 0);
     expect(eligibility.window, const Duration(hours: 1));
+    expect(eligibility.cooldown, const Duration(minutes: 5));
+    expect(eligibility.blockReason, 'cooldown');
     expect(eligibility.retryAfter, const Duration(minutes: 18));
     expect(eligibility.nextAvailableAt, DateTime.parse('2026-06-14T12:18:00Z'));
   });

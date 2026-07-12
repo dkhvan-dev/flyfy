@@ -21,19 +21,28 @@ import (
 )
 
 type PGPostRepository struct {
-	pool              *pgxpool.Pool
-	feedRankingPolicy FeedRankingPolicy
+	pool                *pgxpool.Pool
+	feedRankingPolicy   FeedRankingPolicy
+	postPublishCooldown time.Duration
 }
 
 func NewPGPostRepository(pool *pgxpool.Pool) *PGPostRepository {
 	return &PGPostRepository{
-		pool:              pool,
-		feedRankingPolicy: DefaultFeedRankingPolicy(),
+		pool:                pool,
+		feedRankingPolicy:   DefaultFeedRankingPolicy(),
+		postPublishCooldown: 5 * time.Minute,
 	}
 }
 
 func (r *PGPostRepository) WithFeedRankingPolicy(policy FeedRankingPolicy) *PGPostRepository {
 	r.feedRankingPolicy = policy.normalized()
+	return r
+}
+
+func (r *PGPostRepository) WithPostPublishCooldown(cooldown time.Duration) *PGPostRepository {
+	if cooldown > 0 {
+		r.postPublishCooldown = cooldown
+	}
 	return r
 }
 
@@ -45,6 +54,11 @@ func (r *PGPostRepository) CreatePost(ctx context.Context, post *model.Post) err
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
+	if post.Status == enum.PostStatusPublished && post.PublishedAt != nil {
+		if err = reservePostPublishCooldownTx(ctx, tx, post.AuthorUserID, post.ID, r.postPublishCooldown); err != nil {
+			return err
+		}
+	}
 
 	const postQuery = `
 		INSERT INTO posts (
@@ -165,6 +179,14 @@ func (r *PGPostRepository) UpdatePost(ctx context.Context, post *model.Post) err
 	previousPost, err := lockPostForCommunityPostCount(ctx, tx, post.ID, post.Revision)
 	if err != nil {
 		return err
+	}
+	if previousPost.Status != enum.PostStatusPublished &&
+		previousPost.PublishedAt == nil &&
+		post.Status == enum.PostStatusPublished &&
+		post.PublishedAt != nil {
+		if err = reservePostPublishCooldownTx(ctx, tx, post.AuthorUserID, post.ID, r.postPublishCooldown); err != nil {
+			return err
+		}
 	}
 
 	const query = `
@@ -1479,7 +1501,7 @@ func (r *PGPostRepository) CountPublishedPostsByAuthorID(ctx context.Context, au
 	return int(count), nil
 }
 
-func (r *PGPostRepository) CountPostsCreatedByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (int, error) {
+func (r *PGPostRepository) CountPostsPublishedByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (int, error) {
 	var count int64
 	err := r.pool.QueryRow(
 		ctx,
@@ -1487,40 +1509,126 @@ func (r *PGPostRepository) CountPostsCreatedByAuthorSince(ctx context.Context, a
 			SELECT COUNT(*)
 			FROM posts
 			WHERE author_user_id = $1
-				AND created_at >= $2
-				AND deleted_at IS NULL
+				AND published_at >= $2
 		`,
 		authorUserID,
 		since.UTC(),
 	).Scan(&count)
 	if err != nil {
-		return 0, fmt.Errorf("count recent posts by author: %w", err)
+		return 0, fmt.Errorf("count recent published posts by author: %w", err)
 	}
 	return int(count), nil
 }
 
-func (r *PGPostRepository) OldestPostCreatedAtByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error) {
+func (r *PGPostRepository) OldestPostPublishedAtByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error) {
 	var oldest sql.NullTime
 	err := r.pool.QueryRow(
 		ctx,
 		`
-			SELECT MIN(created_at)
+			SELECT MIN(published_at)
 			FROM posts
 			WHERE author_user_id = $1
-				AND created_at >= $2
-				AND deleted_at IS NULL
+				AND published_at >= $2
 		`,
 		authorUserID,
 		since.UTC(),
 	).Scan(&oldest)
 	if err != nil {
-		return nil, fmt.Errorf("get oldest recent post by author: %w", err)
+		return nil, fmt.Errorf("get oldest recent published post by author: %w", err)
 	}
 	if !oldest.Valid {
 		return nil, nil
 	}
 	value := oldest.Time.UTC()
 	return &value, nil
+}
+
+func (r *PGPostRepository) PostPublishCooldownUntil(
+	ctx context.Context,
+	authorUserID uuid.UUID,
+) (*time.Time, error) {
+	var nextAvailableAt time.Time
+	err := r.pool.QueryRow(ctx, `
+		SELECT next_available_at
+		FROM post_publish_cooldowns
+		WHERE author_user_id = $1
+	`, authorUserID).Scan(&nextAvailableAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get post publish cooldown: %w", err)
+	}
+	next := nextAvailableAt.UTC()
+	return &next, nil
+}
+
+func reservePostPublishCooldownTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	authorUserID uuid.UUID,
+	postID uuid.UUID,
+	cooldown time.Duration,
+) error {
+	if authorUserID == uuid.Nil || postID == uuid.Nil {
+		return fmt.Errorf("post publish cooldown identifiers are required")
+	}
+	if cooldown <= 0 {
+		cooldown = 5 * time.Minute
+	}
+	cooldownSeconds := int64((cooldown + time.Second - time.Nanosecond) / time.Second)
+
+	insertTag, err := tx.Exec(ctx, `
+		INSERT INTO post_publish_cooldowns (
+			author_user_id,
+			last_post_id,
+			last_published_at,
+			next_available_at,
+			updated_at
+		)
+		VALUES (
+			$1,
+			$2,
+			clock_timestamp(),
+			clock_timestamp() + make_interval(secs => $3::double precision),
+			clock_timestamp()
+		)
+		ON CONFLICT (author_user_id) DO NOTHING
+	`, authorUserID, postID, cooldownSeconds)
+	if err != nil {
+		return fmt.Errorf("insert post publish cooldown: %w", err)
+	}
+	if insertTag.RowsAffected() == 1 {
+		return nil
+	}
+
+	var nextAvailableAt time.Time
+	err = tx.QueryRow(ctx, `
+		UPDATE post_publish_cooldowns
+		SET last_post_id = $2,
+			last_published_at = clock_timestamp(),
+			next_available_at = clock_timestamp() + make_interval(secs => $3::double precision),
+			updated_at = clock_timestamp()
+		WHERE author_user_id = $1
+			AND next_available_at <= clock_timestamp()
+		RETURNING next_available_at
+	`, authorUserID, postID, cooldownSeconds).Scan(&nextAvailableAt)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("refresh post publish cooldown: %w", err)
+	}
+
+	err = tx.QueryRow(ctx, `
+		SELECT next_available_at
+		FROM post_publish_cooldowns
+		WHERE author_user_id = $1
+	`, authorUserID).Scan(&nextAvailableAt)
+	if err != nil {
+		return fmt.Errorf("read active post publish cooldown: %w", err)
+	}
+	return &port.PostPublishCooldownError{NextAvailableAt: nextAvailableAt.UTC()}
 }
 
 func appendPublicPostVisibilityClauses(args []any, clauses []string) ([]any, []string) {

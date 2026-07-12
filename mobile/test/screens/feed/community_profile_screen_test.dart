@@ -533,6 +533,57 @@ void main() {
     expect(dwellEvent.metadata, containsPair('postProfileKey', 'article_v1'));
   });
 
+  testWidgets(
+    'tracks one meaningful community profile visit after ten seconds',
+    (tester) async {
+      var now = DateTime.utc(2026, 7, 11, 12);
+      final feedApi = _FakeFeedApi(community: _community());
+
+      await tester.pumpWidget(
+        _profileApp(
+          feedApi,
+          initialCommunity: _community(),
+          analyticsNow: () => now,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        feedApi.trackedEvents.where(
+          (event) => event.metadata['source'] == 'community_profile_visit',
+        ),
+        isEmpty,
+      );
+
+      now = now.add(const Duration(seconds: 11));
+      await tester.pump(const Duration(seconds: 11));
+
+      final visitEvents = feedApi.trackedEvents
+          .where(
+            (event) => event.metadata['source'] == 'community_profile_visit',
+          )
+          .toList();
+      expect(visitEvents, hasLength(1));
+      final event = visitEvents.single;
+      expect(event.eventType, FeedEventTypes.dwell);
+      expect(event.communityId, 'community-1');
+      expect(event.blockType, 'community_card');
+      expect(event.metadata, containsPair('action', 'meaningful_visit'));
+      expect(event.metadata, containsPair('entityType', 'community'));
+      expect(event.metadata, containsPair('entityId', 'community-1'));
+      expect(event.metadata['dwellMs'], greaterThanOrEqualTo(10000));
+
+      now = now.add(const Duration(minutes: 1));
+      await tester.pump(const Duration(minutes: 1));
+      expect(
+        feedApi.trackedEvents.where(
+          (tracked) => tracked.metadata['source'] == 'community_profile_visit',
+        ),
+        hasLength(1),
+      );
+    },
+  );
+
   testWidgets('merges viewer community posts from mine list after reload', (
     tester,
   ) async {

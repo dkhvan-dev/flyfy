@@ -16,34 +16,82 @@ void main() {
   });
 
   test(
-    'place details hero disables cover fade overlay in light theme',
+    'place details keeps title outside media and city in a hero badge',
     () async {
       final source = await File(
         'lib/screens/places/place_details_screen.dart',
       ).readAsString();
-      final helperStart = source.indexOf(
-        'LinearGradient? _placeHeroOverlayGradient',
-      );
       final heroStart = source.indexOf('Widget _buildHero');
       final mediaPageStart = source.indexOf('Widget _buildHeroMediaPage');
+      final identityStart = source.indexOf('Widget _buildPlaceIdentity');
+      final mapActionStart = source.indexOf('Widget _buildMapAction');
 
-      expect(helperStart, isNonNegative);
       expect(heroStart, isNonNegative);
       expect(mediaPageStart, greaterThan(heroStart));
+      expect(identityStart, greaterThan(mediaPageStart));
+      expect(mapActionStart, greaterThan(identityStart));
 
-      final helperSource = source.substring(helperStart, heroStart);
       final heroSource = source.substring(heroStart, mediaPageStart);
+      final identitySource = source.substring(identityStart, mapActionStart);
 
-      expect(helperSource, contains('Brightness.light'));
-      expect(helperSource, contains('return null;'));
-      expect(heroSource, contains('final heroOverlayGradient ='));
-      expect(heroSource, contains('if (heroOverlayGradient != null)'));
-      expect(heroSource, contains('gradient: heroOverlayGradient'));
+      expect(heroSource, contains("ValueKey('place-hero-city-badge')"));
+      expect(
+        heroSource,
+        contains('backgroundColor: context.placeColors.primary'),
+      );
+      expect(
+        heroSource,
+        contains('foregroundColor: context.placeColors.onPrimary'),
+      );
+      expect(heroSource, contains('locationLabel'));
+      expect(heroSource, isNot(contains('place.title')));
+      expect(heroSource, isNot(contains('_placeHeroOverlayGradient')));
+      expect(identitySource, contains('place.title'));
+      expect(identitySource, contains("ValueKey('place-details-title')"));
+      expect(identitySource, contains('fontSize: a.scale(32'));
+      expect(identitySource, contains('letterSpacing: 0'));
+    },
+  );
+
+  test('place details resolves and falls back to city only', () async {
+    final source = await File(
+      'lib/screens/places/place_details_screen.dart',
+    ).readAsString();
+    final resolverStart = source.indexOf(
+      'Future<String> _resolveLocationLabel',
+    );
+    final excursionsStart = source.indexOf(
+      'Future<void> _openExcursionsForPlace',
+    );
+
+    expect(resolverStart, isNonNegative);
+    expect(excursionsStart, greaterThan(resolverStart));
+
+    final resolverSource = source.substring(resolverStart, excursionsStart);
+    expect(resolverSource, contains('_locationLabelResolver.resolveCity('));
+    expect(resolverSource, contains('return place.cityId.trim();'));
+    expect(resolverSource, isNot(contains('getCountry(')));
+    expect(resolverSource, isNot(contains("parts.join(', ')")));
+    expect(resolverSource, isNot(contains('toUpperCase()')));
+  });
+
+  test(
+    'place details reloads localized content when app locale changes',
+    () async {
+      final source = await File(
+        'lib/screens/places/place_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('String? _requestedLocale;'));
+      expect(source, contains('int _loadGeneration = 0;'));
+      expect(source, contains('if (_requestedLocale != localeName)'));
+      expect(source, contains('final loadGeneration = ++_loadGeneration;'));
+      expect(source, contains('loadGeneration != _loadGeneration'));
     },
   );
 
   test(
-    'place details stat and location cards use visible V2 borders',
+    'place details stat and map action cards use visible V2 borders',
     () async {
       final source = await File(
         'lib/screens/places/place_details_screen.dart',
@@ -53,7 +101,7 @@ void main() {
         'extension _PlaceDetailsColorContext',
         colorsStart,
       );
-      final locationStart = source.indexOf('Widget _buildLocationBlock');
+      final locationStart = source.indexOf('Widget _buildMapAction');
       final statsStart = source.indexOf('Widget _buildStats');
       final experienceStart = source.indexOf('Widget _buildExperience');
 
@@ -77,6 +125,7 @@ void main() {
       );
       expect(locationSource, contains('context.placeColors.detailCardSurface'));
       expect(locationSource, contains('context.placeColors.detailCardBorder'));
+      expect(locationSource, isNot(contains('_resolvedLocationLabel')));
       expect(statsSource, contains('context.placeColors.detailCardSurface'));
       expect(statsSource, contains('context.placeColors.detailCardBorder'));
       expect(statsSource, isNot(contains('white.withValues(alpha: 0.05)')));
@@ -95,7 +144,7 @@ void main() {
         'lib/screens/places/place_details_screen.dart',
       ).readAsString();
 
-      final locationStart = source.indexOf('Widget _buildLocationBlock');
+      final locationStart = source.indexOf('Widget _buildMapAction');
       final statsStart = source.indexOf('Widget _buildStats');
       final accessOptionStart = source.indexOf('class _AccessOptionCard');
       final accessOptionEnd = source.indexOf(
@@ -147,7 +196,7 @@ void main() {
       ).readAsString();
 
       final contentStart = source.indexOf('Widget _buildContent');
-      final locationStart = source.indexOf('Widget _buildLocationBlock');
+      final locationStart = source.indexOf('Widget _buildPlaceIdentity');
       expect(contentStart, isNonNegative);
       expect(locationStart, greaterThan(contentStart));
 
@@ -351,7 +400,7 @@ void main() {
 
       final contentStart = source.indexOf('Widget _buildContent');
       expect(contentStart, isNonNegative);
-      final contentEnd = source.indexOf('  Widget _buildLocationBlock');
+      final contentEnd = source.indexOf('  Widget _buildPlaceIdentity');
       expect(contentEnd, greaterThan(contentStart));
       final contentSource = source.substring(contentStart, contentEnd);
 
@@ -432,8 +481,11 @@ void main() {
     expect(cardSource, contains('border: Border.all('));
     expect(cardSource, contains('color: context.placeColors.border'));
     expect(cardSource, contains('color: context.placeColors.textPrimary'));
-    expect(cardSource, contains('height: 1.62'));
+    expect(cardSource, contains('fontSize: a.scale(18, minFactor: 0.94)'));
+    expect(cardSource, contains('fontWeight: FontWeight.w500'));
+    expect(cardSource, contains('height: 1.6'));
     expect(cardSource, contains('letterSpacing: 0'));
+    expect(source, isNot(contains('return PlaceTextScale(')));
     expect(cardSource, isNot(contains('context.placeColors.primary')));
     expect(cardSource, isNot(contains('letterSpacing: -0.45')));
   });

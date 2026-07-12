@@ -499,7 +499,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: context.guideDashboardColors.primary,
-              foregroundColor: context.guideDashboardColors.textPrimary,
+              foregroundColor: context.guideDashboardColors.onPrimary,
               minimumSize: const Size(0, 48),
               padding: const AppEdgeInsets.symmetric(
                 horizontal: 16,
@@ -2274,9 +2274,6 @@ class _GuideSegmentedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? context.guideDashboardColors.textPrimary
-        : context.guideDashboardColors.amberLight08;
     return Material(
       color: selected
           ? context.guideDashboardColors.primary
@@ -2291,7 +2288,13 @@ class _GuideSegmentedTabButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 18),
+              Icon(
+                icon,
+                color: selected
+                    ? context.guideDashboardColors.onPrimary
+                    : context.guideDashboardColors.amberLight08,
+                size: 18,
+              ),
               const SizedBox(width: 7),
               Flexible(
                 child: Text(
@@ -2300,7 +2303,9 @@ class _GuideSegmentedTabButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: color,
+                    color: selected
+                        ? context.guideDashboardColors.onPrimary
+                        : context.guideDashboardColors.amberLight08,
                     fontWeight: FontWeight.w900,
                     height: 1,
                   ),
@@ -3664,7 +3669,7 @@ class _GuideCancelExcursionSheetState
                         style: FilledButton.styleFrom(
                           backgroundColor: context.guideDashboardColors.primary,
                           foregroundColor:
-                              context.guideDashboardColors.textPrimary,
+                              context.guideDashboardColors.onPrimary,
                           minimumSize: const Size(0, 50),
                         ),
                       );
@@ -4100,9 +4105,8 @@ class _GuideJourneyCard extends StatelessWidget {
                                   style: FilledButton.styleFrom(
                                     backgroundColor:
                                         context.guideDashboardColors.primary,
-                                    foregroundColor: context
-                                        .guideDashboardColors
-                                        .textPrimary,
+                                    foregroundColor:
+                                        context.guideDashboardColors.onPrimary,
                                     minimumSize: const Size(0, 48),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: AppBorderRadius.circular(
@@ -4390,24 +4394,30 @@ class _GeneratedGuideCover extends StatelessWidget {
             ),
           ),
         ),
-        CustomPaint(painter: _GuideCoverPainter(palette, seed)),
+        CustomPaint(
+          painter: _GuideCoverPainter(
+            palette,
+            seed,
+            context.guideDashboardColors.white.withValues(alpha: 0.32),
+          ),
+        ),
       ],
     );
   }
 }
 
 class _GuideCoverPainter extends CustomPainter {
-  const _GuideCoverPainter(this.palette, this.seed);
+  const _GuideCoverPainter(this.palette, this.seed, this.highlightColor);
 
   final _GuideCoverPalette palette;
   final int seed;
+  final Color highlightColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final ridge = Paint()..color = palette.ridge;
     final ridgeDark = Paint()..color = palette.ridgeDark;
-    final highlight = Paint()
-      ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.32);
+    final highlight = Paint()..color = highlightColor;
     final offset = (seed.abs() % 5) * size.width * 0.04;
 
     final back = Path()
@@ -4434,7 +4444,9 @@ class _GuideCoverPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GuideCoverPainter oldDelegate) {
-    return oldDelegate.palette != palette || oldDelegate.seed != seed;
+    return oldDelegate.palette != palette ||
+        oldDelegate.seed != seed ||
+        oldDelegate.highlightColor != highlightColor;
   }
 }
 
@@ -4552,7 +4564,7 @@ class _GuideDashboardInfoCard extends StatelessWidget {
               onPressed: onActionTap,
               style: FilledButton.styleFrom(
                 backgroundColor: context.guideDashboardColors.primary,
-                foregroundColor: context.guideDashboardColors.textPrimary,
+                foregroundColor: context.guideDashboardColors.onPrimary,
               ),
               child: Text(actionLabel!),
             ),

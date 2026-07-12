@@ -767,7 +767,7 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
               style: IconButton.styleFrom(
                 backgroundColor: colors.primary,
                 disabledBackgroundColor: colors.white.withValues(alpha: 0.16),
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
                 disabledForegroundColor: colors.textSecondary.withValues(
                   alpha: 0.38,
                 ),
@@ -778,7 +778,7 @@ class _StoryReplyComposerState extends State<_StoryReplyComposer> {
                       dimension: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: colors.textPrimary,
+                        color: colors.onPrimary,
                       ),
                     )
                   : const Icon(Icons.send_rounded, size: 19),

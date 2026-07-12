@@ -614,6 +614,28 @@ func TestRouteKindNormalizationMigrationRepairsLegacyProductSchema(t *testing.T)
 	}
 }
 
+func TestDeprecatedIncludedItemsMigrationDeletesProductAndOfferRows(t *testing.T) {
+	migration := readMigration(t, "102_remove_deprecated_excursion_included_items.up.sql")
+	for _, fragment := range []string{
+		"DELETE FROM excursion_offer_included_items",
+		"DELETE FROM excursion_included_items",
+		"LOWER(BTRIM(SPLIT_PART(item_text, ':', 1)))",
+		"'guide'",
+		"'photo'",
+		"'гид'",
+		"'фото'",
+	} {
+		if !strings.Contains(migration, fragment) {
+			t.Fatalf("deprecated included items migration missing %q\n%s", fragment, migration)
+		}
+	}
+
+	downMigration := readMigration(t, "102_remove_deprecated_excursion_included_items.down.sql")
+	if !strings.Contains(downMigration, "Intentionally irreversible") {
+		t.Fatalf("deprecated included items down migration should be irreversible:\n%s", downMigration)
+	}
+}
+
 func TestProductLocationBackfillMigrationUsesLinkedOfferLocation(t *testing.T) {
 	migration := readMigration(t, "024_backfill_excursion_product_location_from_offers.up.sql")
 	required := []string{

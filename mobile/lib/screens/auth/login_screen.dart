@@ -14,7 +14,9 @@ enum _AuthEntryMode { login, register }
 
 class LoginScreen extends StatefulWidget {
   final String? from;
-  const LoginScreen({super.key, this.from});
+  final bool initialRegister;
+
+  const LoginScreen({super.key, this.from, this.initialRegister = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -43,6 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialRegister) {
+      _mode = _AuthEntryMode.register;
+    }
     for (final controller in [
       _identifierController,
       _loginPasswordController,
@@ -82,6 +87,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _continueAsGuest() {
     context.read<AuthProvider>().continueAsGuest();
     context.go('/');
+  }
+
+  void _openAppSettings() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.push('/app-settings');
   }
 
   Future<void> _submitLogin() async {
@@ -259,45 +269,65 @@ class _LoginScreenState extends State<LoginScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    InkWell(
-                                      onTap: _continueAsGuest,
-                                      borderRadius: AppBorderRadius.circular(
-                                        999,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          ClipOval(
-                                            child: Image.asset(
-                                              'assets/icons/inflap_app_icon_white_bg_256.png',
-                                              width: logoSize,
-                                              height: logoSize,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: authScaled(
-                                              context,
-                                              8,
-                                              min: 6,
-                                              max: 8,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Inflap',
-                                            style: AppTextStyle(
-                                              fontSize: authScaled(
-                                                context,
-                                                24,
-                                                min: 20,
-                                                max: 24,
+                                    Expanded(
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: InkWell(
+                                          onTap: _continueAsGuest,
+                                          borderRadius:
+                                              AppBorderRadius.circular(999),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ClipOval(
+                                                child: Image.asset(
+                                                  'assets/icons/inflap_app_icon_white_bg_256.png',
+                                                  width: logoSize,
+                                                  height: logoSize,
+                                                  fit: BoxFit.cover,
+                                                ),
                                               ),
-                                              fontWeight: FontWeight.w800,
-                                              color:
-                                                  context.appColors.textPrimary,
-                                            ),
+                                              SizedBox(
+                                                width: authScaled(
+                                                  context,
+                                                  8,
+                                                  min: 6,
+                                                  max: 8,
+                                                ),
+                                              ),
+                                              Flexible(
+                                                child: Text(
+                                                  'Inflap',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: AppTextStyle(
+                                                    fontSize: authScaled(
+                                                      context,
+                                                      24,
+                                                      min: 20,
+                                                      max: 24,
+                                                    ),
+                                                    fontWeight: FontWeight.w800,
+                                                    color: context
+                                                        .appColors
+                                                        .textPrimary,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
+                                    ),
+                                    IconButton(
+                                      key: const ValueKey(
+                                        'auth-app-settings-button',
+                                      ),
+                                      tooltip: l10n.profileSettingsPageTitle,
+                                      onPressed: _openAppSettings,
+                                      color: context.appColors.textPrimary,
+                                      icon: const Icon(Icons.settings_rounded),
                                     ),
                                     TextButton(
                                       onPressed: _continueAsGuest,
@@ -899,12 +929,6 @@ class _AuthModeSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    Color contentColor(Set<WidgetState> states) {
-      return states.contains(WidgetState.selected)
-          ? AppPalette.textPrimary
-          : context.appColors.textPrimary;
-    }
-
     return SegmentedButton<_AuthEntryMode>(
       segments: [
         ButtonSegment<_AuthEntryMode>(
@@ -922,8 +946,16 @@ class _AuthModeSwitch extends StatelessWidget {
       showSelectedIcon: false,
       onSelectionChanged: (selection) => onChanged(selection.first),
       style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.resolveWith<Color>(contentColor),
-        iconColor: WidgetStateProperty.resolveWith<Color>(contentColor),
+        foregroundColor: WidgetStateProperty.resolveWith<Color>(
+          (states) => states.contains(WidgetState.selected)
+              ? context.appColors.onPrimary
+              : context.appColors.textPrimary,
+        ),
+        iconColor: WidgetStateProperty.resolveWith<Color>(
+          (states) => states.contains(WidgetState.selected)
+              ? context.appColors.onPrimary
+              : context.appColors.textPrimary,
+        ),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? AppPalette.primary
@@ -1048,7 +1080,7 @@ class _PrimaryAuthButton extends StatelessWidget {
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
-            color: context.appColors.textPrimary,
+            color: context.appColors.onPrimary,
             strokeWidth: 2.5,
           ),
         ),
@@ -1057,7 +1089,7 @@ class _PrimaryAuthButton extends StatelessWidget {
 
     final contentColor = onPressed == null
         ? context.appColors.textDisabled
-        : context.appColors.textPrimary;
+        : context.appColors.onPrimary;
 
     return FilledButton.icon(
       onPressed: onPressed,

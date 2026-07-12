@@ -21,6 +21,12 @@ func TestFeedConfigExposesRankingPolicyEnvSurface(t *testing.T) {
 		"FEED_RANKING_EXPERIMENT_POLICIES",
 		"FEED_RANKING_POST_INTEREST_WEIGHT",
 		"FEED_RANKING_COMMUNITY_INTEREST_WEIGHT",
+		"FEED_RANKING_COMMUNITY_INTEREST_MIN_SCORE",
+		"FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISITS",
+		"FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISIT_DAYS",
+		"FEED_RANKING_FREQUENT_COMMUNITY_FRESHNESS_WINDOW",
+		"FEED_RANKING_FREQUENT_COMMUNITY_HALF_LIFE",
+		"FEED_RANKING_FREQUENT_COMMUNITY_BOOST_HOURS",
 		"FEED_RANKING_POST_PROFILE_AFFINITY_WEIGHT",
 		"FEED_RANKING_CITY_AFFINITY_WEIGHT",
 		"FEED_RANKING_COUNTRY_AFFINITY_WEIGHT",
@@ -89,6 +95,23 @@ func TestConfigDoesNotExposeLegacyStoryEnvSurface(t *testing.T) {
 	}
 }
 
+func TestLoadParsesPostCreateCooldown(t *testing.T) {
+	t.Setenv("POSTGRES_HOST", "localhost")
+	t.Setenv("POSTGRES_USER", "feed")
+	t.Setenv("POSTGRES_PASSWORD", "secret")
+	t.Setenv("POSTGRES_DB", "feed_service")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("POST_CREATE_COOLDOWN", "5m")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Post.CreateCooldown != 5*time.Minute {
+		t.Fatalf("Post.CreateCooldown = %s, want 5m", cfg.Post.CreateCooldown)
+	}
+}
+
 func TestLoadParsesFeedRankingPolicyEnvOverrides(t *testing.T) {
 	t.Setenv("POSTGRES_HOST", "localhost")
 	t.Setenv("POSTGRES_USER", "feed")
@@ -100,6 +123,12 @@ func TestLoadParsesFeedRankingPolicyEnvOverrides(t *testing.T) {
 	t.Setenv("FEED_RANKING_EXPERIMENT_POLICIES", "rank-social-v2:socialFriendBoostHours=34")
 	t.Setenv("FEED_RANKING_POST_INTEREST_WEIGHT", "1.35")
 	t.Setenv("FEED_RANKING_COMMUNITY_INTEREST_WEIGHT", "0.55")
+	t.Setenv("FEED_RANKING_COMMUNITY_INTEREST_MIN_SCORE", "2.5")
+	t.Setenv("FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISITS", "4")
+	t.Setenv("FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISIT_DAYS", "3")
+	t.Setenv("FEED_RANKING_FREQUENT_COMMUNITY_FRESHNESS_WINDOW", "1080h")
+	t.Setenv("FEED_RANKING_FREQUENT_COMMUNITY_HALF_LIFE", "360h")
+	t.Setenv("FEED_RANKING_FREQUENT_COMMUNITY_BOOST_HOURS", "8")
 	t.Setenv("FEED_RANKING_SOCIAL_FRIEND_BOOST_HOURS", "28")
 	t.Setenv("FEED_RANKING_SOCIAL_FOLLOWING_BOOST_HOURS", "16")
 	t.Setenv("FEED_RANKING_CURRENT_CITY_BOOST_HOURS", "22")
@@ -119,6 +148,12 @@ func TestLoadParsesFeedRankingPolicyEnvOverrides(t *testing.T) {
 		cfg.Feed.RankingExperimentPolicies != "rank-social-v2:socialFriendBoostHours=34" ||
 		cfg.Feed.RankingPostInterestWeight != 1.35 ||
 		cfg.Feed.RankingCommunityInterestWeight != 0.55 ||
+		cfg.Feed.RankingCommunityInterestMinScore != 2.5 ||
+		cfg.Feed.RankingFrequentCommunityMinVisits != 4 ||
+		cfg.Feed.RankingFrequentCommunityMinVisitDays != 3 ||
+		cfg.Feed.RankingFrequentCommunityFreshnessWindow != 1080*time.Hour ||
+		cfg.Feed.RankingFrequentCommunityHalfLife != 360*time.Hour ||
+		cfg.Feed.RankingFrequentCommunityBoostHours != 8 ||
 		cfg.Feed.RankingSocialFriendBoostHours != 28 ||
 		cfg.Feed.RankingSocialFollowingBoostHours != 16 ||
 		cfg.Feed.RankingCurrentCityBoostHours != 22 ||

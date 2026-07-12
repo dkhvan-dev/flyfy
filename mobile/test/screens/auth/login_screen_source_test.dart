@@ -40,6 +40,37 @@ void main() {
     expect(buttonSource, contains('ExcludeSemantics('));
   });
 
+  test('auth header exposes public app settings shortcut', () async {
+    final source = await File(
+      'lib/screens/auth/login_screen.dart',
+    ).readAsString();
+    final routerSource = await File(
+      'lib/core/router/app_router.dart',
+    ).readAsString();
+
+    expect(source, contains("context.push('/app-settings')"));
+    expect(source, contains("'auth-app-settings-button'"));
+    expect(source, contains('tooltip: l10n.profileSettingsPageTitle'));
+    expect(source, contains('widget.initialRegister'));
+    expect(routerSource, contains("path: '/app-settings'"));
+    expect(routerSource, contains("queryParameters['mode'] == 'register'"));
+  });
+
+  test('primary auth action uses the design-system on-primary color', () async {
+    final source = await File(
+      'lib/screens/auth/login_screen.dart',
+    ).readAsString();
+    final buttonStart = source.indexOf('class _PrimaryAuthButton');
+    final buttonEnd = source.indexOf('class _OAuthButton', buttonStart);
+
+    expect(buttonStart, isNonNegative);
+    expect(buttonEnd, greaterThan(buttonStart));
+
+    final buttonSource = source.substring(buttonStart, buttonEnd);
+    expect(buttonSource, contains('context.appColors.onPrimary'));
+    expect(buttonSource, isNot(contains(': context.appColors.textPrimary;')));
+  });
+
   test(
     'authenticated entry keeps previous route under protected target',
     () async {

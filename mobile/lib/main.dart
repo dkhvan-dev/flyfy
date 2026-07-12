@@ -13,10 +13,13 @@ import 'core/network/api_client.dart';
 import 'firebase_options.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'features/notifications/data/firebase_messaging_push_token_provider.dart';
+import 'features/notifications/data/initial_notification_permission_service.dart';
 import 'features/notifications/data/notification_api.dart';
 import 'features/notifications/data/push_registration_service.dart';
 import 'features/notifications/presentation/push_notification_banner.dart';
 import 'features/notifications/presentation/push_notification_coordinator.dart';
+import 'features/trust/providers/trust_access_provider.dart';
+import 'core/ui/app_asset_licenses.dart';
 import 'core/ui/app_design_system.dart';
 import 'providers/auth_provider.dart';
 import 'providers/currency_rate_provider.dart';
@@ -38,6 +41,7 @@ import 'providers/excursion_schedule_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerAppAssetLicenses();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   runApp(const SuperApp());
 }
@@ -54,42 +58,59 @@ class SuperApp extends StatefulWidget {
   State<SuperApp> createState() => _SuperAppState();
 }
 
-class _SuperAppState extends State<SuperApp> {
+class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
   static const _deferredStartupDelay = Duration(milliseconds: 350);
   static const _deferredPushStartupDelay = Duration(seconds: 6);
 
   late final Completer<void> _firebaseReadyCompleter;
   late final Future<void> _firebaseReady;
+  late final Completer<void> _initialPermissionsReadyCompleter;
+  late final Future<void> _initialPermissionsReady;
   late final AuthSessionEvents _authSessionEvents;
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
   late final ThemeModeProvider _themeModeProvider;
+  late final HomeLocationProvider _homeLocationProvider;
   late final NotificationBadgeProvider _notificationBadgeProvider;
+  late final TrustAccessProvider _trustAccessProvider;
+  late final FirebaseMessagingPushTokenProvider _pushTokenProvider;
+  late final InitialNotificationPermissionService _notificationPermissions;
   late final PushRegistrationService _pushRegistrationService;
   late final PushNotificationBannerController _pushNotificationBannerController;
   late final PushNotificationCoordinator _pushNotificationCoordinator;
   late final GoRouter _router;
+  bool _initialPermissionsStartupReady = false;
+  bool _initialPermissionsInFlight = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _firebaseReadyCompleter = Completer<void>();
     _firebaseReady = _firebaseReadyCompleter.future;
+    _initialPermissionsReadyCompleter = Completer<void>();
+    _initialPermissionsReady = _initialPermissionsReadyCompleter.future;
     _authSessionEvents = AuthSessionEvents.instance;
     _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
     _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
     _localeProvider = LocaleProvider();
     _themeModeProvider = ThemeModeProvider();
+    _homeLocationProvider = HomeLocationProvider();
     _notificationBadgeProvider = NotificationBadgeProvider();
+    _trustAccessProvider = TrustAccessProvider();
+    _pushTokenProvider = FirebaseMessagingPushTokenProvider(
+      firebaseReady: _firebaseReady,
+    );
+    _notificationPermissions = InitialNotificationPermissionService(
+      requester: _pushTokenProvider,
+    );
     _pushRegistrationService = PushRegistrationService(
       client: NotificationApi(
         apiClient: ApiClient(authSessionEvents: _authSessionEvents),
       ),
-      tokenProvider: FirebaseMessagingPushTokenProvider(
-        firebaseReady: _firebaseReady,
-      ),
+      tokenProvider: _pushTokenProvider,
     );
     _pushNotificationBannerController = PushNotificationBannerController();
     _router = AppRouter.router(_authProvider);
@@ -102,7 +123,7 @@ class _SuperAppState extends State<SuperApp> {
         ),
       ]),
       routeHandler: _router.go,
-      onNotificationReceived: (_) => _refreshNotificationBadgeAfterPush(),
+      onNotificationReceived: _handlePushNotificationReceived,
     );
 
     _scheduleDeferredStartupWork();
@@ -110,11 +131,17 @@ class _SuperAppState extends State<SuperApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (!_initialPermissionsReadyCompleter.isCompleted) {
+      _initialPermissionsReadyCompleter.complete();
+    }
     _authProvider.dispose();
     _sessionProvider.dispose();
     _localeProvider.dispose();
     _themeModeProvider.dispose();
+    _homeLocationProvider.dispose();
     _notificationBadgeProvider.dispose();
+    _trustAccessProvider.dispose();
     unawaited(_pushNotificationCoordinator.dispose());
     unawaited(_pushNotificationBannerController.dispose());
     super.dispose();
@@ -130,7 +157,9 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<ThemeModeProvider>.value(
           value: _themeModeProvider,
         ),
-        ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+        ChangeNotifierProvider<HomeLocationProvider>.value(
+          value: _homeLocationProvider,
+        ),
         ChangeNotifierProvider(create: (_) => CurrencyRateProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
@@ -140,6 +169,9 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider<NotificationBadgeProvider>.value(
           value: _notificationBadgeProvider,
+        ),
+        ChangeNotifierProvider<TrustAccessProvider>.value(
+          value: _trustAccessProvider,
         ),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],
@@ -157,11 +189,15 @@ class _SuperAppState extends State<SuperApp> {
                 controller: _pushNotificationBannerController,
                 child: _DismissKeyboardOnTap(
                   child: AppKeyboardDismissOnScroll(
-                    child: _PushRegistrationBridge(
-                      registrationService: _pushRegistrationService,
-                      child: _PresenceHeartbeatBridge(
-                        child: _AttendanceSyncBridge(
-                          child: child ?? const SizedBox.shrink(),
+                    child: _TrustAccessSessionBridge(
+                      provider: _trustAccessProvider,
+                      child: _PushRegistrationBridge(
+                        registrationService: _pushRegistrationService,
+                        initialPermissionsReady: _initialPermissionsReady,
+                        child: _PresenceHeartbeatBridge(
+                          child: _AttendanceSyncBridge(
+                            child: child ?? const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),
@@ -197,19 +233,79 @@ class _SuperAppState extends State<SuperApp> {
     await Future<void>.delayed(_deferredStartupDelay);
     if (!mounted) return;
 
-    unawaited(_localeProvider.load());
+    final localeReady = _localeProvider.load();
     unawaited(_themeModeProvider.load());
     unawaited(_bootstrapAuth());
-    unawaited(_runDeferredPushStartupWork());
+    unawaited(_runDeferredPushStartupWork(localeReady: localeReady));
   }
 
-  Future<void> _runDeferredPushStartupWork() async {
+  Future<void> _runDeferredPushStartupWork({
+    required Future<void> localeReady,
+  }) async {
     await Future<void>.delayed(_deferredPushStartupDelay);
     if (!mounted) return;
 
     await _initializeFirebaseMessaging();
     if (!mounted) return;
+
+    try {
+      await localeReady;
+    } catch (_) {
+      // Permission prompts can safely use the system locale as a fallback.
+    }
+    if (!mounted) return;
+
+    _initialPermissionsStartupReady = true;
+    await _requestInitialPermissions();
+    if (!mounted) return;
     await _startPushNotifications();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _initialPermissionsStartupReady) {
+      unawaited(_requestInitialPermissions());
+    }
+  }
+
+  Future<void> _requestInitialPermissions() async {
+    if (!_initialPermissionsStartupReady ||
+        _initialPermissionsReadyCompleter.isCompleted ||
+        _initialPermissionsInFlight ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+
+    _initialPermissionsInFlight = true;
+    try {
+      try {
+        await _notificationPermissions.requestPermissionOnce();
+        // Warm up the FCM token independently from authentication. The token
+        // is sent to the backend only by _PushRegistrationBridge after login.
+        await _pushTokenProvider.getCurrentToken();
+      } catch (_) {
+        // Notification access is optional and retried on the next app launch.
+      }
+      if (!_canContinueInitialPermissionFlow) return;
+
+      try {
+        await _homeLocationProvider.requestInitialLocationPermission(
+          languageCode: _localeProvider.locale.languageCode,
+        );
+      } catch (_) {
+        // Location access is optional and must not block app startup.
+      }
+      if (!_canContinueInitialPermissionFlow) return;
+
+      _initialPermissionsReadyCompleter.complete();
+    } finally {
+      _initialPermissionsInFlight = false;
+    }
+  }
+
+  bool get _canContinueInitialPermissionFlow {
+    return mounted &&
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
   }
 
   Future<void> _initializeFirebaseMessaging() async {
@@ -237,9 +333,12 @@ class _SuperAppState extends State<SuperApp> {
     }
   }
 
-  void _refreshNotificationBadgeAfterPush() {
+  void _handlePushNotificationReceived(PushNotificationEnvelope envelope) {
     unawaited(_notificationBadgeProvider.refresh(forceRefresh: true));
     unawaited(_refreshNotificationBadgeAfterPropagationDelay());
+    if (_sessionProvider.isAuthenticated) {
+      unawaited(_trustAccessProvider.handlePushData(envelope.data));
+    }
   }
 
   Future<void> _refreshNotificationBadgeAfterPropagationDelay() async {
@@ -257,13 +356,83 @@ class _SuperAppState extends State<SuperApp> {
   }
 }
 
+class _TrustAccessSessionBridge extends StatefulWidget {
+  const _TrustAccessSessionBridge({
+    required this.provider,
+    required this.child,
+  });
+
+  final TrustAccessProvider provider;
+  final Widget child;
+
+  @override
+  State<_TrustAccessSessionBridge> createState() =>
+      _TrustAccessSessionBridgeState();
+}
+
+class _TrustAccessSessionBridgeState extends State<_TrustAccessSessionBridge>
+    with WidgetsBindingObserver {
+  String? _activeUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _activeUserId != null) {
+      unawaited(widget.provider.refresh(force: true));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<SessionProvider>();
+    final userId = session.profile?.userId.trim() ?? '';
+    if (session.isAuthenticated && userId.isNotEmpty) {
+      if (_activeUserId != userId) {
+        _activeUserId = userId;
+        _scheduleRefresh();
+      }
+    } else if (_activeUserId != null) {
+      _activeUserId = null;
+      _scheduleClear();
+    }
+    return widget.child;
+  }
+
+  void _scheduleRefresh() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _activeUserId == null) return;
+      unawaited(widget.provider.refresh(force: true));
+    });
+  }
+
+  void _scheduleClear() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _activeUserId != null) return;
+      widget.provider.clear();
+    });
+  }
+}
+
 class _PushRegistrationBridge extends StatefulWidget {
   const _PushRegistrationBridge({
     required this.registrationService,
+    required this.initialPermissionsReady,
     required this.child,
   });
 
   final PushRegistrationService registrationService;
+  final Future<void> initialPermissionsReady;
   final Widget child;
 
   @override
@@ -340,8 +509,15 @@ class _PushRegistrationBridgeState extends State<_PushRegistrationBridge>
 
     _registrationInFlight = true;
     try {
+      await widget.initialPermissionsReady;
+      if (!mounted) return;
+
+      final currentSession = context.read<SessionProvider>();
+      final currentUserId = currentSession.profile?.userId ?? '';
+      if (!currentSession.isAuthenticated || currentUserId.isEmpty) return;
+
       await widget.registrationService.registerCurrentDevice(
-        userId: userId,
+        userId: currentUserId,
         force: force,
       );
     } catch (_) {

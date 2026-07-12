@@ -10,16 +10,21 @@ import 'package:inflap/features/feed/presentation/community_members_screen.dart'
 import 'package:inflap/features/feed/presentation/community_moderation_screen.dart';
 import 'package:inflap/features/feed/presentation/community_profile_screen.dart';
 import 'package:inflap/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/features/settings/presentation/app_settings_screen.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_trust_context.dart';
 import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/features/trust/providers/trust_access_provider.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/activity_provider.dart';
 import 'package:inflap/providers/auth_provider.dart';
+import 'package:inflap/providers/locale_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
+import 'package:inflap/providers/theme_mode_provider.dart';
 import 'package:inflap/screens/activities/activity_details_screen.dart';
 import 'package:inflap/screens/activities/create_activity_screen.dart';
 import 'package:inflap/screens/stories/story_tray_viewer_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('keyboard focus is cleared when navigator route changes', (
@@ -172,6 +177,56 @@ void main() {
     expect(find.byKey(const ValueKey('login-form')), findsOneWidget);
   });
 
+  testWidgets('app settings route is public for unauthenticated users', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final authProvider = AuthProvider(
+      secureStorage: _UnauthenticatedSecureStorage(),
+    );
+    final localeProvider = LocaleProvider(systemLocales: const [Locale('en')]);
+    final themeModeProvider = ThemeModeProvider();
+    await authProvider.checkAuthStatus();
+    await localeProvider.load();
+    await themeModeProvider.load();
+    final router = AppRouter.router(authProvider);
+    addTearDown(() {
+      router.dispose();
+      authProvider.dispose();
+      localeProvider.dispose();
+      themeModeProvider.dispose();
+    });
+
+    router.go('/app-settings');
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
+          ChangeNotifierProvider<ThemeModeProvider>.value(
+            value: themeModeProvider,
+          ),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AndroidBackSwipeScope),
+        matching: find.byType(AppSettingsScreen),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('login-form')), findsNothing);
+  });
+
   testWidgets('community discovery and profile routes are public', (
     tester,
   ) async {
@@ -272,8 +327,11 @@ void main() {
     router.go('/posts/create?communityId=community-42');
 
     await tester.pumpWidget(
-      ChangeNotifierProvider<AuthProvider>.value(
-        value: authProvider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
+        ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -313,8 +371,11 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ChangeNotifierProvider<AuthProvider>.value(
-        value: authProvider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
+        ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

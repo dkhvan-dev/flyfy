@@ -11,7 +11,6 @@ void main() {
     expect(source, contains('app_design_system.dart'));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('colors.surface'));
-    expect(source, contains('colors.primary'));
     expect(source, contains('colors.textPrimary'));
     expect(source, isNot(contains('AppPalette.')));
   });

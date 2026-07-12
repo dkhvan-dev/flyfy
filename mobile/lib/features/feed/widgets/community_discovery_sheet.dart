@@ -733,7 +733,7 @@ class _CommunityDiscoveryFiltersSheetState
                               dimension: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: colors.textPrimary,
+                                color: colors.onPrimary,
                               ),
                             )
                           : Text(

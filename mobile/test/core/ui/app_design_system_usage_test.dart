@@ -13,6 +13,9 @@ void main() {
       for (final rule in _rules) {
         final matches = rule.pattern.allMatches(source);
         for (final match in matches) {
+          if (_isAllowedImmutableAssetPrimitive(file, source, match.start)) {
+            continue;
+          }
           final line = _lineNumber(source, match.start);
           offenders.add(
             '${file.path.replaceFirst('${projectRoot.path}/', '')}:$line ${rule.message}',
@@ -98,9 +101,22 @@ Iterable<File> _uiSourceFiles(Directory libDir) sync* {
 bool _isExcluded(File file) {
   final path = file.path;
   return path.endsWith('/core/ui/app_design_system.dart') ||
-      path.endsWith('/core/ui/app_design_system.dart') ||
       path.endsWith('/core/ui/app_colors.dart') ||
       path.contains('/l10n/generated/');
+}
+
+bool _isAllowedImmutableAssetPrimitive(File file, String source, int offset) {
+  if (!file.path.endsWith('/screens/currency/currency_converter_screen.dart')) {
+    return false;
+  }
+
+  // National flag artwork uses prescribed colors and must not follow app
+  // theme tokens. Keep the exception scoped to its private palette only.
+  final paletteStart = source.indexOf(
+    'abstract final class _CurrencyFlagPalette',
+  );
+  final paletteEnd = source.indexOf('class _CurrencyFlagIcon', paletteStart);
+  return paletteStart >= 0 && offset >= paletteStart && offset < paletteEnd;
 }
 
 int _lineNumber(String source, int offset) {

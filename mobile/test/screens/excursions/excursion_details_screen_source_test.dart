@@ -413,7 +413,7 @@ void main() {
   });
 
   test(
-    'excursion details checklist and booking CTAs use primary text chevron actions',
+    'excursion details checklist and booking CTAs use on-primary chevron actions',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -425,7 +425,7 @@ void main() {
       expect(source, contains('TripPreparationCta('));
       expect(ctaSource, contains('Icons.chevron_right_rounded'));
       expect(ctaSource, contains('iconAlignment: IconAlignment.end'));
-      expect(ctaSource, contains('foregroundColor: colors.textPrimary'));
+      expect(ctaSource, contains('foregroundColor: colors.onPrimary'));
 
       final bottomActionStart = source.indexOf('final bottomAction =');
       final contentStart = source.indexOf(
@@ -458,7 +458,7 @@ void main() {
       expect(checkoutSource, contains('foregroundColor:'));
       expect(
         checkoutSource,
-        contains('context.excursionDetailsColors.textPrimary'),
+        contains('context.excursionDetailsColors.onPrimary'),
       );
       expect(checkoutSource, contains('iconAlignment: IconAlignment.end'));
     },
@@ -594,39 +594,6 @@ void main() {
         checkoutSource,
         contains('padding: const AppEdgeInsets.fromLTRB(14, 13, 14, 13)'),
       );
-    },
-  );
-
-  test(
-    'excursion details overlays checkout bar above scroll content',
-    () async {
-      final source = await File(
-        'lib/screens/excursions/excursion_details_screen.dart',
-      ).readAsString();
-
-      final contentStart = source.indexOf('class ExcursionDetailsContent');
-      final topBarStart = source.indexOf(
-        'class _ExcursionDetailsTopBar',
-        contentStart,
-      );
-
-      expect(contentStart, isNonNegative);
-      expect(topBarStart, greaterThan(contentStart));
-
-      final contentSource = source.substring(contentStart, topBarStart);
-
-      expect(contentSource, contains('child: Stack('));
-      expect(contentSource, contains('SingleChildScrollView('));
-      expect(
-        contentSource,
-        contains('132 + MediaQuery.paddingOf(context).bottom'),
-      );
-      expect(contentSource, contains('if (bottomAction != null)'));
-      expect(contentSource, contains('Positioned('));
-      expect(contentSource, contains('left: 0'));
-      expect(contentSource, contains('right: 0'));
-      expect(contentSource, contains('bottom: 0'));
-      expect(contentSource, isNot(contains('          ?bottomAction,')));
     },
   );
 

@@ -13,10 +13,23 @@ import (
 
 var (
 	ErrPostRevisionConflict      = errors.New("post revision conflict")
+	ErrPostPublishCooldownActive = errors.New("post publish cooldown is active")
 	ErrPostCommentRateLimited    = errors.New("post comment rate limited")
 	ErrPostReportNotFound        = errors.New("post report not found")
 	ErrPostReportAlreadyResolved = errors.New("post report already resolved")
 )
+
+type PostPublishCooldownError struct {
+	NextAvailableAt time.Time
+}
+
+func (e *PostPublishCooldownError) Error() string {
+	return ErrPostPublishCooldownActive.Error()
+}
+
+func (e *PostPublishCooldownError) Unwrap() error {
+	return ErrPostPublishCooldownActive
+}
 
 type PostRepository interface {
 	CreatePost(ctx context.Context, post *model.Post) error
@@ -42,8 +55,9 @@ type PostRepository interface {
 	ListFeedSocialEdges(ctx context.Context, viewerUserID uuid.UUID, targetUserIDs []uuid.UUID) (map[uuid.UUID]model.FeedSocialEdgeSet, error)
 	CountPosts(ctx context.Context, filter model.PostListFilter) (int, error)
 	CountPublishedPostsByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error)
-	CountPostsCreatedByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (int, error)
-	OldestPostCreatedAtByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error)
+	CountPostsPublishedByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (int, error)
+	OldestPostPublishedAtByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error)
+	PostPublishCooldownUntil(ctx context.Context, authorUserID uuid.UUID) (*time.Time, error)
 	CreateCommunity(ctx context.Context, community *model.Community) error
 	UpdateCommunity(ctx context.Context, community *model.Community) error
 	ListCommunities(ctx context.Context, filter model.CommunityListFilter) ([]*model.Community, error)

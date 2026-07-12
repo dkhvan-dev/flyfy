@@ -391,7 +391,10 @@ func (uc *NotificationUseCase) SendNotification(
 	if err != nil {
 		return nil, err
 	}
-	if !inserted {
+	if created == nil {
+		return nil, fmt.Errorf("notification repository returned an empty request")
+	}
+	if !inserted && strings.EqualFold(strings.TrimSpace(created.Status), "fanout_completed") {
 		return created, nil
 	}
 

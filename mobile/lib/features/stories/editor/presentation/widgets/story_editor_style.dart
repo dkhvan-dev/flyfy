@@ -84,7 +84,7 @@ ThemeData storyEditorTheme(BuildContext context) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: colors.primary,
-        foregroundColor: colors.textPrimary,
+        foregroundColor: colors.onPrimary,
         disabledBackgroundColor: colors.surfaceHigh,
         disabledForegroundColor: colors.textDisabled,
       ),
@@ -112,7 +112,7 @@ ThemeData storyEditorTheme(BuildContext context) {
       style: ButtonStyle(
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return colors.textPrimary;
+            return colors.onPrimary;
           }
           return colors.primary;
         }),

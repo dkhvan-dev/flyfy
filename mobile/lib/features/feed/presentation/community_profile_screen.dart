@@ -56,8 +56,10 @@ class CommunityProfileScreen extends StatefulWidget {
   State<CommunityProfileScreen> createState() => _CommunityProfileScreenState();
 }
 
-class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
+class _CommunityProfileScreenState extends State<CommunityProfileScreen>
+    with WidgetsBindingObserver {
   static const _storiesPageLimit = 10;
+  static const _meaningfulCommunityVisitDuration = Duration(seconds: 10);
 
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   late final PostApi _postApi = widget.postApi ?? PostApi();
@@ -79,16 +81,26 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
   String? _pendingScrollPostId;
   final Map<String, GlobalKey> _postItemKeys = <String, GlobalKey>{};
   final Set<String> _sentPostImpressionKeys = <String>{};
+  Timer? _communityVisitTimer;
+  DateTime? _communityVisitSegmentStartedAt;
+  Duration _communityVisitActiveDuration = Duration.zero;
+  AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
+  bool _communityProfileIsActive = true;
+  bool _communityVisitTracked = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _appLifecycleState =
+        WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.resumed;
     _scrollController = ScrollController()..addListener(_maybeLoadMoreStories);
     _community = widget.initialCommunity;
     _pendingScrollPostId = _trimmedOrNull(widget.initialPostId);
     _isLoading = widget.initialCommunity == null;
     _loadCommunity(showLoading: widget.initialCommunity == null);
     _loadStories(showLoading: true);
+    _syncCommunityVisitTracking();
   }
 
   @override
@@ -102,8 +114,139 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
 
   @override
   void dispose() {
+    _setCommunityProfileActive(false);
+    _communityVisitTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appLifecycleState = state;
+    _syncCommunityVisitTracking();
+  }
+
+  bool get _canTrackCommunityVisit =>
+      !_communityVisitTracked &&
+      _communityProfileIsActive &&
+      _appLifecycleState == AppLifecycleState.resumed &&
+      (_community?.id.trim().isNotEmpty ?? false);
+
+  void _setCommunityProfileActive(bool isActive) {
+    if (_communityProfileIsActive == isActive) {
+      return;
+    }
+    _communityProfileIsActive = isActive;
+    _syncCommunityVisitTracking();
+  }
+
+  void _syncCommunityVisitTracking() {
+    if (!_canTrackCommunityVisit) {
+      _pauseCommunityVisitSegment();
+      _trackCommunityVisitIfQualified();
+      return;
+    }
+
+    _communityVisitSegmentStartedAt ??= _analyticsNow();
+    _scheduleCommunityVisitTimer();
+  }
+
+  void _pauseCommunityVisitSegment() {
+    _communityVisitTimer?.cancel();
+    _communityVisitTimer = null;
+    final startedAt = _communityVisitSegmentStartedAt;
+    if (startedAt == null) {
+      return;
+    }
+    final now = _analyticsNow();
+    if (!now.isBefore(startedAt)) {
+      _communityVisitActiveDuration += now.difference(startedAt);
+    }
+    _communityVisitSegmentStartedAt = null;
+  }
+
+  void _scheduleCommunityVisitTimer() {
+    if (_communityVisitTimer != null || !_canTrackCommunityVisit) {
+      return;
+    }
+    final activeDuration = _currentCommunityVisitDuration();
+    final remaining = _meaningfulCommunityVisitDuration - activeDuration;
+    if (remaining <= Duration.zero) {
+      _trackCommunityVisitIfQualified();
+      return;
+    }
+    _communityVisitTimer = Timer(remaining, () {
+      _communityVisitTimer = null;
+      _trackCommunityVisitIfQualified();
+      if (!_communityVisitTracked) {
+        _scheduleCommunityVisitTimer();
+      }
+    });
+  }
+
+  Duration _currentCommunityVisitDuration() {
+    final startedAt = _communityVisitSegmentStartedAt;
+    if (startedAt == null) {
+      return _communityVisitActiveDuration;
+    }
+    final now = _analyticsNow();
+    if (now.isBefore(startedAt)) {
+      return _communityVisitActiveDuration;
+    }
+    return _communityVisitActiveDuration + now.difference(startedAt);
+  }
+
+  void _trackCommunityVisitIfQualified() {
+    if (_communityVisitTracked) {
+      return;
+    }
+    final activeDuration = _currentCommunityVisitDuration();
+    if (activeDuration < _meaningfulCommunityVisitDuration) {
+      return;
+    }
+    final community = _community;
+    final communityId = community?.id.trim() ?? '';
+    if (community == null || communityId.isEmpty) {
+      return;
+    }
+
+    _communityVisitTracked = true;
+    _communityVisitTimer?.cancel();
+    _communityVisitTimer = null;
+    _communityVisitSegmentStartedAt = null;
+    _communityVisitActiveDuration = activeDuration;
+    final topic = (community.topic ?? '').trim();
+    unawaited(
+      _sendFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: FeedEventTypes.dwell,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'community:$communityId:profile',
+          blockType: 'community_card',
+          communityId: communityId,
+          rank: 0,
+          occurredAt: _analyticsNow(),
+          metadata: {
+            'source': 'community_profile_visit',
+            'action': 'meaningful_visit',
+            'entityType': 'community',
+            'entityId': communityId,
+            'dwellMs': activeDuration.inMilliseconds.clamp(
+              _meaningfulCommunityVisitDuration.inMilliseconds,
+              30 * 60 * 1000,
+            ),
+            if (topic.isNotEmpty) 'topic': topic,
+            if ((community.countryCode ?? '').trim().isNotEmpty)
+              'countryCode': community.countryCode!.trim(),
+            if ((community.cityId ?? '').trim().isNotEmpty)
+              'cityId': community.cityId!.trim(),
+          },
+        ),
+      ]),
+    );
   }
 
   Future<void> _loadCommunity({bool showLoading = true}) async {
@@ -129,6 +272,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
         _error = null;
         _isLoading = false;
       });
+      _syncCommunityVisitTracking();
     } catch (error) {
       if (!mounted) {
         return;
@@ -356,7 +500,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
               ),
               child: Text(l10n.profileUnfollowConfirm),
             ),
@@ -499,13 +643,23 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       return;
     }
 
-    final createdPost = await context.push<PostVm>(uri.toString());
+    _setCommunityProfileActive(false);
+    PostVm? createdPost;
+    try {
+      createdPost = await context.push<PostVm>(uri.toString());
+    } finally {
+      if (mounted) {
+        _setCommunityProfileActive(true);
+      }
+    }
     if (!mounted) {
       return;
     }
-    if (createdPost != null && _belongsToCommunity(createdPost, community.id)) {
+    final resolvedCreatedPost = createdPost;
+    if (resolvedCreatedPost != null &&
+        _belongsToCommunity(resolvedCreatedPost, community.id)) {
       setState(() {
-        _stories = _upsertCommunityPost(_stories, createdPost);
+        _stories = _upsertCommunityPost(_stories, resolvedCreatedPost);
       });
     }
     await Future.wait([
@@ -515,9 +669,10 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
     if (!mounted) {
       return;
     }
-    if (createdPost != null && _belongsToCommunity(createdPost, community.id)) {
+    if (resolvedCreatedPost != null &&
+        _belongsToCommunity(resolvedCreatedPost, community.id)) {
       setState(() {
-        _stories = _upsertCommunityPost(_stories, createdPost);
+        _stories = _upsertCommunityPost(_stories, resolvedCreatedPost);
       });
     }
   }
@@ -536,10 +691,12 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
     if (slug.trim().isEmpty) {
       return;
     }
+    _setCommunityProfileActive(false);
     unawaited(
       context.push<void>('/posts/${Uri.encodeComponent(slug)}').whenComplete(
         () {
           if (mounted) {
+            _setCommunityProfileActive(true);
             _trackCommunityPostDwell(story, openedAt);
           }
         },
@@ -669,12 +826,21 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       path: '/posts/${Uri.encodeComponent(postId)}/edit',
       queryParameters: const {'returnOnSave': '1'},
     );
-    final updatedPost = await context.push<PostVm>(uri.toString(), extra: post);
-    if (!mounted || updatedPost == null) {
+    _setCommunityProfileActive(false);
+    PostVm? updatedPost;
+    try {
+      updatedPost = await context.push<PostVm>(uri.toString(), extra: post);
+    } finally {
+      if (mounted) {
+        _setCommunityProfileActive(true);
+      }
+    }
+    final resolvedUpdatedPost = updatedPost;
+    if (!mounted || resolvedUpdatedPost == null) {
       return;
     }
     setState(() {
-      _stories = _upsertCommunityPost(_stories, updatedPost);
+      _stories = _upsertCommunityPost(_stories, resolvedUpdatedPost);
     });
   }
 
@@ -696,7 +862,14 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       path: '/communities/${Uri.encodeComponent(community.id)}/moderation',
       queryParameters: title.isEmpty ? null : {'title': title},
     );
-    context.push(uri.toString());
+    _setCommunityProfileActive(false);
+    unawaited(
+      context.push<void>(uri.toString()).whenComplete(() {
+        if (mounted) {
+          _setCommunityProfileActive(true);
+        }
+      }),
+    );
   }
 
   void _openMembers() {
@@ -717,7 +890,14 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       path: '/communities/${Uri.encodeComponent(community.id)}/members',
       queryParameters: title.isEmpty ? null : {'title': title},
     );
-    context.push(uri.toString());
+    _setCommunityProfileActive(false);
+    unawaited(
+      context.push<void>(uri.toString()).whenComplete(() {
+        if (mounted) {
+          _setCommunityProfileActive(true);
+        }
+      }),
+    );
   }
 
   Future<void> _reportCommunity() async {
@@ -896,7 +1076,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
             onPressed: () => _loadCommunity(),
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -1358,7 +1538,9 @@ class _CommunityProfileHeader extends StatelessWidget {
                             backgroundColor: community.followedByViewer
                                 ? colors.surfaceHigh
                                 : colors.primary,
-                            foregroundColor: colors.textPrimary,
+                            foregroundColor: community.followedByViewer
+                                ? colors.textPrimary
+                                : colors.onPrimary,
                             minimumSize: const Size.fromHeight(52),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(999),
@@ -1370,7 +1552,9 @@ class _CommunityProfileHeader extends StatelessWidget {
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: colors.textPrimary,
+                                    color: community.followedByViewer
+                                        ? colors.textPrimary
+                                        : colors.onPrimary,
                                   ),
                                 )
                               : Icon(
@@ -1572,8 +1756,9 @@ class _CommunityHeaderActionsMenu extends StatelessWidget {
       child: Material(
         color: colors.primary,
         shape: const CircleBorder(),
-        child: const _CommunityHeaderRoundButtonShell(
+        child: _CommunityHeaderRoundButtonShell(
           icon: Icons.more_horiz_rounded,
+          foregroundColor: colors.onPrimary,
         ),
       ),
       itemBuilder: (context) => [
@@ -1685,7 +1870,10 @@ class _CommunityHeaderRoundButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           customBorder: const CircleBorder(),
-          child: _CommunityHeaderRoundButtonShell(icon: icon),
+          child: _CommunityHeaderRoundButtonShell(
+            icon: icon,
+            foregroundColor: colors.onPrimary,
+          ),
         ),
       ),
     );
@@ -1693,17 +1881,19 @@ class _CommunityHeaderRoundButton extends StatelessWidget {
 }
 
 class _CommunityHeaderRoundButtonShell extends StatelessWidget {
-  const _CommunityHeaderRoundButtonShell({required this.icon});
+  const _CommunityHeaderRoundButtonShell({
+    required this.icon,
+    required this.foregroundColor,
+  });
 
   final IconData icon;
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppDesignSystem.colorsFor(context);
-
     return SizedBox.square(
       dimension: 48,
-      child: Icon(icon, color: colors.textPrimary, size: 24),
+      child: Icon(icon, color: foregroundColor, size: 24),
     );
   }
 }

@@ -47,6 +47,28 @@ func TestLoadSearchServiceConfigFromEnvironment(t *testing.T) {
 	}
 }
 
+func TestLoadActivityTranslationConfig(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("TRANSLATION_SERVICE_URL", "https://translation-service:9497")
+	t.Setenv("ACTIVITY_TRANSLATION_WORKER_ENABLED", "true")
+	t.Setenv("ACTIVITY_TRANSLATION_WORKER_BATCH_SIZE", "17")
+	t.Setenv("ACTIVITY_TRANSLATION_REQUEST_TIMEOUT", "6s")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.Translation.AsyncEnabled || !cfg.Translation.WorkerEnabled {
+		t.Fatalf("translation flags = %+v", cfg.Translation)
+	}
+	if cfg.Translation.BaseURL != "https://translation-service:9497" ||
+		cfg.Translation.WorkerBatchSize != 17 ||
+		cfg.Translation.RequestTimeout != 6*time.Second {
+		t.Fatalf("translation config = %+v", cfg.Translation)
+	}
+}
+
 func TestLoadMTLSConfigFromEnvironment(t *testing.T) {
 	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
 	t.Setenv("MTLS_MODE", "enforce")

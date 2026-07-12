@@ -16,6 +16,8 @@ import '../../features/places/data/place_api.dart';
 import '../../features/places/models/place_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
@@ -42,6 +44,7 @@ final class _ExcursionsColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
@@ -715,6 +718,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
+      contentHandlesBottomSafeArea: true,
       backgroundColor: context.excursionsColors.transparent,
       builder: (context) => _ExcursionsFiltersSheet(
         initialFilters: _filters,
@@ -755,7 +759,13 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     final profile = context.watch<SessionProvider>().profile;
     final locationProvider = context.watch<HomeLocationProvider>();
     final isLoggedIn = auth.state == AuthState.authenticated;
-    final canCreateExcursion = profile?.isGuide == true;
+    final tourPublishingRestricted =
+        isLoggedIn &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.publishTour,
+        );
+    final canCreateExcursion =
+        profile?.isGuide == true && !tourPublishingRestricted;
 
     _scheduleApplyDefaultCityFilter(locationProvider);
 
@@ -832,6 +842,11 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   activeFilterCount: _filters.activeCount,
                                 ),
                                 const SizedBox(height: 18),
+                                if (profile?.isGuide == true &&
+                                    tourPublishingRestricted) ...[
+                                  const TrustRestrictionNotice(creation: true),
+                                  const SizedBox(height: 18),
+                                ],
                                 if (isLoggedIn) ...[
                                   SurfaceStoryTray(
                                     surface: 'excursions',
@@ -2175,7 +2190,7 @@ class _ExcursionsFilterChip extends StatelessWidget {
                 Icon(
                   icon,
                   color: selected
-                      ? context.excursionsColors.white
+                      ? context.excursionsColors.onPrimary
                       : context.excursionsColors.orangeLight15,
                   size: 16,
                 ),
@@ -2188,7 +2203,7 @@ class _ExcursionsFilterChip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
                     color: selected
-                        ? context.excursionsColors.white
+                        ? context.excursionsColors.onPrimary
                         : context.excursionsColors.orangeLight15,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -2294,7 +2309,7 @@ class _ExcursionsSegmentButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
                 color: selected
-                    ? context.excursionsColors.white
+                    ? context.excursionsColors.onPrimary
                     : context.excursionsColors.orangeLight15,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,

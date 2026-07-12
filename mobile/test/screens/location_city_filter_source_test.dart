@@ -165,10 +165,9 @@ void main() {
 
       expect(
         mainSource,
-        contains(
-          'ChangeNotifierProvider(create: (_) => HomeLocationProvider())',
-        ),
+        contains('ChangeNotifierProvider<HomeLocationProvider>.value('),
       );
+      expect(mainSource, contains('value: _homeLocationProvider'));
       expect(mainSource, isNot(contains('setProfileFallback(')));
       expect(mainSource, isNot(contains('session.profile?.countryCode')));
       expect(mainSource, isNot(contains('session.profile?.timezone')));

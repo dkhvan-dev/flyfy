@@ -3,6 +3,7 @@ package dto
 type UpdateActivityRequest struct {
 	Title              *string  `json:"title,omitempty"`
 	Description        *string  `json:"description,omitempty"`
+	SourceLanguage     *string  `json:"sourceLanguage,omitempty"`
 	Visibility         *string  `json:"visibility,omitempty"`
 	CategorySlug       *string  `json:"categorySlug,omitempty"`
 	SubcategorySlug    *string  `json:"subcategorySlug,omitempty"`

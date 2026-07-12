@@ -484,6 +484,7 @@ func (u *GuideUseCase) SubmitGuideApplication(
 		strings.TrimSpace(input.ProfessionalDocumentType) == "" {
 		return nil, model.ErrInvalidGuideDocumentType
 	}
+	applyDefaultGuideApplicationCapabilities(&input)
 
 	if u.userClient == nil {
 		return nil, fmt.Errorf("user service client is not configured")
@@ -802,6 +803,18 @@ func (u *GuideUseCase) enforceGuideFraud(ctx context.Context, input port.FraudAs
 
 func valueOrFalse(value *bool) bool {
 	return value != nil && *value
+}
+
+func applyDefaultGuideApplicationCapabilities(input *SubmitGuideApplicationInput) {
+	if input == nil ||
+		input.IsPrivateGuideAvailable != nil ||
+		input.IsActivityHostAvailable != nil ||
+		input.IsExcursionGuideAvailable != nil {
+		return
+	}
+
+	enabled := true
+	input.IsExcursionGuideAvailable = &enabled
 }
 
 type ListPublicGuidesInput struct {

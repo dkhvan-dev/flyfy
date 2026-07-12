@@ -326,6 +326,21 @@ func (u *PolicyUseCase) GetTrustProfile(ctx context.Context, userID uuid.UUID) (
 	return profile, nil
 }
 
+func (u *PolicyUseCase) GetTrustContext(ctx context.Context, userID uuid.UUID) (model.TrustContext, error) {
+	profile, err := u.GetTrustProfile(ctx, userID)
+	if err != nil {
+		return model.TrustContext{}, err
+	}
+	restrictions, err := u.repo.ListActiveRestrictions(ctx, userID, time.Now().UTC())
+	if err != nil {
+		return model.TrustContext{}, err
+	}
+	return model.TrustContext{
+		Profile:            profile,
+		ActiveRestrictions: restrictions,
+	}, nil
+}
+
 func (u *PolicyUseCase) setProfileStatus(ctx context.Context, userID uuid.UUID, status model.TrustStatus, now time.Time) error {
 	profile, err := u.GetTrustProfile(ctx, userID)
 	if err != nil {

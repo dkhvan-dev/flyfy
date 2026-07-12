@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -23,11 +25,13 @@ import (
 	fraudadapter "kz/inflap/backend/services/activity-service/internal/adapter/fraud"
 	grpcadapter "kz/inflap/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/activity-service/internal/adapter/http"
+	metricsadapter "kz/inflap/backend/services/activity-service/internal/adapter/metrics"
 	notificationadapter "kz/inflap/backend/services/activity-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/activity-service/internal/adapter/payment"
 	"kz/inflap/backend/services/activity-service/internal/adapter/repository"
 	searchindexadapter "kz/inflap/backend/services/activity-service/internal/adapter/searchindex"
 	switchesadapter "kz/inflap/backend/services/activity-service/internal/adapter/switches"
+	translationadapter "kz/inflap/backend/services/activity-service/internal/adapter/translation"
 	"kz/inflap/backend/services/activity-service/internal/app"
 	"kz/inflap/backend/services/activity-service/internal/config"
 	"kz/inflap/backend/services/activity-service/internal/domain/port"
@@ -68,8 +72,17 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed dial file-manager grpc")
 	}
 	defer fileManagerClient.Close()
+	translator, closeTranslationAuth, err := newActivityTranslationClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed initialize translation-service client")
+	}
+	defer closeTranslationAuth()
+	if cfg.Translation.WorkerEnabled && translator == nil {
+		log.Fatal().Msg("TRANSLATION_SERVICE_URL is required when activity translation worker is enabled")
+	}
 
-	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	activityUC := app.NewActivityUseCase(repo, fileManagerClient).
+		WithAsyncTranslationConfig(cfg.Translation.AsyncEnabled, cfg.Translation.MaxAttempts)
 	activityUC.SetUserProfileResolver(actorResolver)
 	if cfg.SearchService.Enabled {
 		searchIndexOptions, closeSearchIndexAuth := newSearchIndexOptions(cfg)
@@ -156,6 +169,8 @@ func main() {
 	)
 
 	httpMux := http.NewServeMux()
+	translationMetrics := metricsadapter.NewActivityTranslation()
+	httpMux.Handle("GET /metrics", translationMetrics)
 	httpHandler.Register(httpMux)
 
 	httpServer := &http.Server{
@@ -196,6 +211,7 @@ func main() {
 	grpcErrCh := make(chan error, 1)
 	backgroundCtx, stopBackground := context.WithCancel(context.Background())
 	defer stopBackground()
+	var backgroundWG sync.WaitGroup
 
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.Port).Msg("HTTP server started")
@@ -243,7 +259,35 @@ func main() {
 		}()
 	}
 
-	go runActivityLifecycleTicker(backgroundCtx, activityUC)
+	backgroundWG.Add(1)
+	go func() {
+		defer backgroundWG.Done()
+		runActivityLifecycleTicker(backgroundCtx, activityUC)
+	}()
+	translationWorker := app.NewActivityTranslationWorker(
+		app.ActivityTranslationWorkerConfig{
+			Enabled:        cfg.Translation.WorkerEnabled,
+			WorkerID:       activityTranslationWorkerID(),
+			BatchSize:      cfg.Translation.WorkerBatchSize,
+			PollInterval:   cfg.Translation.WorkerInterval,
+			RequestTimeout: cfg.Translation.RequestTimeout,
+			RetryBaseDelay: cfg.Translation.RetryBaseDelay,
+			LockTimeout:    cfg.Translation.WorkerLockTimeout,
+		},
+		repo,
+		translator,
+		translationMetrics,
+	)
+	translationWorker.SetAppliedHook(activityUC.SyncActivitySearchDocumentByID)
+	if cfg.Translation.WorkerEnabled {
+		backgroundWG.Add(1)
+		go func() {
+			defer backgroundWG.Done()
+			if runErr := translationWorker.Run(backgroundCtx); runErr != nil {
+				log.Error().Err(runErr).Msg("activity translation worker stopped")
+			}
+		}()
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -266,6 +310,7 @@ func main() {
 
 	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
 	stopBackground()
+	backgroundWG.Wait()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
@@ -344,6 +389,64 @@ func newInternalActivityHTTPMTLSServer(cfg *config.Config, handler http.Handler,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
+}
+
+func newActivityTranslationClient(
+	cfg *config.Config,
+) (*translationadapter.Client, func(), error) {
+	if strings.TrimSpace(cfg.Translation.BaseURL) == "" {
+		return nil, func() {}, nil
+	}
+	translationHTTPClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Translation.BaseURL)),
+		cfg.Translation.RequestTimeout,
+	)
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("initialize translation-service mTLS transport: %w", err)
+	}
+	options := []translationadapter.Option{
+		translationadapter.WithHTTPClient(translationHTTPClient),
+	}
+	closeAuth := func() {}
+	if cfg.TokenService.Enabled() {
+		source, sourceErr := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
+			Target:        cfg.TokenService.Target,
+			ServiceID:     cfg.TokenService.ServiceID,
+			ServiceSecret: cfg.TokenService.ServiceSecret,
+			CallTimeout:   cfg.TokenService.CallTimeout,
+			TransportAuth: cfg.MTLS.ClientConfig(
+				transportauth.ServerNameFromTarget(cfg.TokenService.Target),
+			),
+		})
+		if sourceErr != nil {
+			return nil, func() {}, fmt.Errorf("initialize translation service token source: %w", sourceErr)
+		}
+		options = append(options, translationadapter.WithServiceTokenSource(source))
+		closeAuth = func() {
+			if closeErr := source.Close(); closeErr != nil {
+				log.Warn().Err(closeErr).Msg("close translation service token source")
+			}
+		}
+		log.Info().Str("service_id", cfg.TokenService.ServiceID).Msg("translation service JWT auth enabled")
+	} else if cfg.App.IsProduction() {
+		return nil, func() {}, fmt.Errorf("TOKEN_SERVICE_SECRET is required for translation-service calls in production")
+	} else {
+		log.Warn().Msg("translation service JWT auth disabled; using legacy internal token")
+	}
+	return translationadapter.NewClient(
+		cfg.Translation.BaseURL,
+		cfg.Translation.RequestTimeout,
+		cfg.Security.InternalServiceToken,
+		options...,
+	), closeAuth, nil
+}
+
+func activityTranslationWorkerID() string {
+	hostname, err := os.Hostname()
+	if err != nil || strings.TrimSpace(hostname) == "" {
+		hostname = "unknown-host"
+	}
+	return fmt.Sprintf("%s:%d", hostname, os.Getpid())
 }
 
 func newSearchIndexOptions(cfg *config.Config) ([]searchindexadapter.Option, func()) {

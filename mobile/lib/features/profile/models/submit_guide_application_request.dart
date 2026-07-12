@@ -11,6 +11,7 @@ class SubmitGuideApplicationRequest {
     this.about,
     this.experienceYears,
     this.comment,
+    this.isExcursionGuideAvailable = true,
   });
 
   final String type;
@@ -24,6 +25,7 @@ class SubmitGuideApplicationRequest {
   final String? about;
   final int? experienceYears;
   final String? comment;
+  final bool isExcursionGuideAvailable;
 
   Map<String, dynamic> toJson() {
     return {
@@ -40,6 +42,7 @@ class SubmitGuideApplicationRequest {
       if ((about ?? '').trim().isNotEmpty) 'about': about!.trim(),
       if (experienceYears != null) 'experienceYears': experienceYears,
       if ((comment ?? '').trim().isNotEmpty) 'comment': comment!.trim(),
+      'isExcursionGuideAvailable': isExcursionGuideAvailable,
     };
   }
 }

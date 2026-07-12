@@ -143,57 +143,88 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 	return convs, rows.Err()
 }
 
+type messageScanValues struct {
+	sendStatus                *string
+	stickerPayload            []byte
+	storyReplyPayload         []byte
+	forwardedFromSenderName   *string
+	moderationStatus          *string
+	moderationReasonCodes     []string
+	moderationPublicComment   *string
+	moderationInternalComment *string
+}
+
+func messageScanDestinations(message *model.Message, values *messageScanValues) []any {
+	return []any{
+		&message.ID,
+		&message.ConversationID,
+		&message.SenderUserID,
+		&message.ClientMessageID,
+		&message.Type,
+		&values.sendStatus,
+		&message.Content,
+		&message.StickerID,
+		&message.StickerFileID,
+		&values.stickerPayload,
+		&message.ReplyToMessageID,
+		&values.storyReplyPayload,
+		&message.ForwardedFromMessageID,
+		&message.ForwardedFromSenderUserID,
+		&values.forwardedFromSenderName,
+		&message.ForwardCount,
+		&message.EditedAt,
+		&message.DeletedAt,
+		&values.moderationStatus,
+		&values.moderationReasonCodes,
+		&message.ModerationRiskScore,
+		&message.ModerationTriggeredAt,
+		&message.ModerationReviewedAt,
+		&message.ModerationReviewedBy,
+		&values.moderationPublicComment,
+		&values.moderationInternalComment,
+		&message.ModerationRevision,
+		&message.SentAt,
+	}
+}
+
+func (values *messageScanValues) apply(message *model.Message) {
+	message.StickerPayload = decodeStickerPayload(values.stickerPayload)
+	message.StoryReply = decodeStoryReplyContext(values.storyReplyPayload)
+	if values.forwardedFromSenderName != nil {
+		message.ForwardedFromSenderName = *values.forwardedFromSenderName
+	}
+	message.SendStatus = defaultMessageSendStatus("")
+	if values.sendStatus != nil && strings.TrimSpace(*values.sendStatus) != "" {
+		message.SendStatus = defaultMessageSendStatus(*values.sendStatus)
+	}
+	message.ModerationStatus = model.MessageModerationStatusVisible
+	if values.moderationStatus != nil && strings.TrimSpace(*values.moderationStatus) != "" {
+		message.ModerationStatus = strings.TrimSpace(*values.moderationStatus)
+	}
+	message.ModerationReasonCodes = append([]string(nil), values.moderationReasonCodes...)
+	if values.moderationPublicComment != nil {
+		message.ModerationPublicComment = *values.moderationPublicComment
+	}
+	if values.moderationInternalComment != nil {
+		message.ModerationInternalComment = *values.moderationInternalComment
+	}
+	if message.ModerationRevision <= 0 {
+		message.ModerationRevision = 1
+	}
+}
+
 func scanMessage(row pgx.Row) (*model.Message, error) {
-	var m model.Message
-	var stickerPayload []byte
-	var storyReplyPayload []byte
-	var forwardedFromSenderName *string
-	var moderationStatus *string
-	var moderationReasonCodes []string
-	var moderationPublicComment *string
-	var moderationInternalComment *string
-	var sendStatus *string
-	err := row.Scan(
-		&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &sendStatus, &m.Content,
-		&m.StickerID, &m.StickerFileID, &stickerPayload,
-		&m.ReplyToMessageID, &storyReplyPayload, &m.ForwardedFromMessageID,
-		&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
-		&m.ForwardCount, &m.EditedAt, &m.DeletedAt,
-		&moderationStatus, &moderationReasonCodes, &m.ModerationRiskScore,
-		&m.ModerationTriggeredAt, &m.ModerationReviewedAt, &m.ModerationReviewedBy,
-		&moderationPublicComment, &moderationInternalComment, &m.ModerationRevision,
-		&m.SentAt,
-	)
+	var message model.Message
+	var values messageScanValues
+	err := row.Scan(messageScanDestinations(&message, &values)...)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("scan message: %w", err)
 	}
-	m.StickerPayload = decodeStickerPayload(stickerPayload)
-	m.StoryReply = decodeStoryReplyContext(storyReplyPayload)
-	if forwardedFromSenderName != nil {
-		m.ForwardedFromSenderName = *forwardedFromSenderName
-	}
-	m.SendStatus = defaultMessageSendStatus("")
-	if sendStatus != nil && strings.TrimSpace(*sendStatus) != "" {
-		m.SendStatus = defaultMessageSendStatus(*sendStatus)
-	}
-	m.ModerationStatus = model.MessageModerationStatusVisible
-	if moderationStatus != nil && strings.TrimSpace(*moderationStatus) != "" {
-		m.ModerationStatus = strings.TrimSpace(*moderationStatus)
-	}
-	m.ModerationReasonCodes = append([]string(nil), moderationReasonCodes...)
-	if moderationPublicComment != nil {
-		m.ModerationPublicComment = *moderationPublicComment
-	}
-	if moderationInternalComment != nil {
-		m.ModerationInternalComment = *moderationInternalComment
-	}
-	if m.ModerationRevision <= 0 {
-		m.ModerationRevision = 1
-	}
-	return &m, nil
+	values.apply(&message)
+	return &message, nil
 }
 
 func scanMessageReaction(row pgx.Row) (*model.MessageReaction, error) {
@@ -399,52 +430,13 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 
 	var msgs []*model.Message
 	for rows.Next() {
-		var m model.Message
-		var stickerPayload []byte
-		var storyReplyPayload []byte
-		var forwardedFromSenderName *string
-		var moderationStatus *string
-		var moderationReasonCodes []string
-		var moderationPublicComment *string
-		var moderationInternalComment *string
-		var sendStatus *string
-		if err := rows.Scan(
-			&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &sendStatus, &m.Content,
-			&m.StickerID, &m.StickerFileID, &stickerPayload,
-			&m.ReplyToMessageID, &storyReplyPayload, &m.ForwardedFromMessageID,
-			&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
-			&m.ForwardCount, &m.EditedAt, &m.DeletedAt,
-			&moderationStatus, &moderationReasonCodes, &m.ModerationRiskScore,
-			&m.ModerationTriggeredAt, &m.ModerationReviewedAt, &m.ModerationReviewedBy,
-			&moderationPublicComment, &moderationInternalComment, &m.ModerationRevision,
-			&m.SentAt,
-		); err != nil {
+		var message model.Message
+		var values messageScanValues
+		if err := rows.Scan(messageScanDestinations(&message, &values)...); err != nil {
 			return nil, fmt.Errorf("scan message row: %w", err)
 		}
-		m.StickerPayload = decodeStickerPayload(stickerPayload)
-		m.StoryReply = decodeStoryReplyContext(storyReplyPayload)
-		if forwardedFromSenderName != nil {
-			m.ForwardedFromSenderName = *forwardedFromSenderName
-		}
-		m.SendStatus = defaultMessageSendStatus("")
-		if sendStatus != nil && strings.TrimSpace(*sendStatus) != "" {
-			m.SendStatus = defaultMessageSendStatus(*sendStatus)
-		}
-		m.ModerationStatus = model.MessageModerationStatusVisible
-		if moderationStatus != nil && strings.TrimSpace(*moderationStatus) != "" {
-			m.ModerationStatus = strings.TrimSpace(*moderationStatus)
-		}
-		m.ModerationReasonCodes = append([]string(nil), moderationReasonCodes...)
-		if moderationPublicComment != nil {
-			m.ModerationPublicComment = *moderationPublicComment
-		}
-		if moderationInternalComment != nil {
-			m.ModerationInternalComment = *moderationInternalComment
-		}
-		if m.ModerationRevision <= 0 {
-			m.ModerationRevision = 1
-		}
-		msgs = append(msgs, &m)
+		values.apply(&message)
+		msgs = append(msgs, &message)
 	}
 	return msgs, rows.Err()
 }
@@ -659,68 +651,19 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 	var pins []*model.ConversationPin
 	for rows.Next() {
 		pin := &model.ConversationPin{Message: &model.Message{}}
-		var stickerPayload []byte
-		var storyReplyPayload []byte
-		var forwardedFromSenderName *string
-		var moderationStatus *string
-		var moderationReasonCodes []string
-		var moderationPublicComment *string
-		var moderationInternalComment *string
-		if err := rows.Scan(
+		var values messageScanValues
+		destinations := []any{
 			&pin.ID,
 			&pin.ConversationID,
 			&pin.MessageID,
 			&pin.PinnedByUserID,
 			&pin.PinnedAt,
-			&pin.Message.ID,
-			&pin.Message.ConversationID,
-			&pin.Message.SenderUserID,
-			&pin.Message.ClientMessageID,
-			&pin.Message.Type,
-			&pin.Message.Content,
-			&pin.Message.StickerID,
-			&pin.Message.StickerFileID,
-			&stickerPayload,
-			&pin.Message.ReplyToMessageID,
-			&storyReplyPayload,
-			&pin.Message.ForwardedFromMessageID,
-			&pin.Message.ForwardedFromSenderUserID,
-			&forwardedFromSenderName,
-			&pin.Message.ForwardCount,
-			&pin.Message.EditedAt,
-			&pin.Message.DeletedAt,
-			&moderationStatus,
-			&moderationReasonCodes,
-			&pin.Message.ModerationRiskScore,
-			&pin.Message.ModerationTriggeredAt,
-			&pin.Message.ModerationReviewedAt,
-			&pin.Message.ModerationReviewedBy,
-			&moderationPublicComment,
-			&moderationInternalComment,
-			&pin.Message.ModerationRevision,
-			&pin.Message.SentAt,
-		); err != nil {
+		}
+		destinations = append(destinations, messageScanDestinations(pin.Message, &values)...)
+		if err := rows.Scan(destinations...); err != nil {
 			return nil, fmt.Errorf("scan pinned message: %w", err)
 		}
-		pin.Message.StickerPayload = decodeStickerPayload(stickerPayload)
-		pin.Message.StoryReply = decodeStoryReplyContext(storyReplyPayload)
-		if forwardedFromSenderName != nil {
-			pin.Message.ForwardedFromSenderName = *forwardedFromSenderName
-		}
-		pin.Message.ModerationStatus = model.MessageModerationStatusVisible
-		if moderationStatus != nil && strings.TrimSpace(*moderationStatus) != "" {
-			pin.Message.ModerationStatus = strings.TrimSpace(*moderationStatus)
-		}
-		pin.Message.ModerationReasonCodes = append([]string(nil), moderationReasonCodes...)
-		if moderationPublicComment != nil {
-			pin.Message.ModerationPublicComment = *moderationPublicComment
-		}
-		if moderationInternalComment != nil {
-			pin.Message.ModerationInternalComment = *moderationInternalComment
-		}
-		if pin.Message.ModerationRevision <= 0 {
-			pin.Message.ModerationRevision = 1
-		}
+		values.apply(pin.Message)
 		pins = append(pins, pin)
 	}
 	return pins, rows.Err()
@@ -932,53 +875,21 @@ func (r *PGChatRepository) UpdateMessageModeration(
 
 func scanMessageWithTrailingConversation(row pgx.Row) (*model.ChatMessageModerationItem, error) {
 	var message model.Message
-	var stickerPayload []byte
-	var storyReplyPayload []byte
-	var forwardedFromSenderName *string
-	var moderationStatus *string
-	var moderationReasonCodes []string
-	var moderationPublicComment *string
-	var moderationInternalComment *string
+	var values messageScanValues
 	var conversationTitle *string
 	item := &model.ChatMessageModerationItem{}
-	err := row.Scan(
-		&message.ID, &message.ConversationID, &message.SenderUserID, &message.ClientMessageID,
-		&message.Type, &message.Content,
-		&message.StickerID, &message.StickerFileID, &stickerPayload,
-		&message.ReplyToMessageID, &storyReplyPayload, &message.ForwardedFromMessageID,
-		&message.ForwardedFromSenderUserID, &forwardedFromSenderName,
-		&message.ForwardCount, &message.EditedAt, &message.DeletedAt,
-		&moderationStatus, &moderationReasonCodes, &message.ModerationRiskScore,
-		&message.ModerationTriggeredAt, &message.ModerationReviewedAt, &message.ModerationReviewedBy,
-		&moderationPublicComment, &moderationInternalComment, &message.ModerationRevision,
-		&message.SentAt,
+	destinations := messageScanDestinations(&message, &values)
+	destinations = append(destinations,
 		&item.ConversationType, &conversationTitle, &item.ActivityID, &item.ExcursionScheduleSlotID,
 	)
+	err := row.Scan(destinations...)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("scan chat message moderation row: %w", err)
 	}
-	if forwardedFromSenderName != nil {
-		message.ForwardedFromSenderName = *forwardedFromSenderName
-	}
-	message.StickerPayload = decodeStickerPayload(stickerPayload)
-	message.StoryReply = decodeStoryReplyContext(storyReplyPayload)
-	message.ModerationStatus = model.MessageModerationStatusVisible
-	if moderationStatus != nil && strings.TrimSpace(*moderationStatus) != "" {
-		message.ModerationStatus = strings.TrimSpace(*moderationStatus)
-	}
-	message.ModerationReasonCodes = append([]string(nil), moderationReasonCodes...)
-	if moderationPublicComment != nil {
-		message.ModerationPublicComment = *moderationPublicComment
-	}
-	if moderationInternalComment != nil {
-		message.ModerationInternalComment = *moderationInternalComment
-	}
-	if message.ModerationRevision <= 0 {
-		message.ModerationRevision = 1
-	}
+	values.apply(&message)
 	item.ID = message.ID
 	item.ConversationID = message.ConversationID
 	if conversationTitle != nil {

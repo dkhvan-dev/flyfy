@@ -164,7 +164,9 @@ class _ArticleActions extends StatelessWidget {
                   backgroundColor: _isPrimary(action.type)
                       ? colors.primary
                       : colors.surfaceHigh,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: _isPrimary(action.type)
+                      ? colors.onPrimary
+                      : colors.textPrimary,
                   minimumSize: const Size(44, 42),
                   padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(

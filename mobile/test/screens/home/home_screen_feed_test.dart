@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inflap/core/network/post_api.dart';
 import 'package:inflap/features/activities/models/activity_category_vm.dart';
 import 'package:inflap/features/activities/models/activity_list_item_vm.dart';
 import 'package:inflap/features/places/data/place_api.dart';
@@ -24,12 +25,34 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('guest profile button opens public app settings', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+          placeApi: _FakePlaceApi(),
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-profile-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('App settings route'), findsOneWidget);
+  });
+
   testWidgets(
     'loads guest home trending posts from feed surface with location',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final feedApi = _FakeFeedApi(
-        page: FeedPageVm(
+        trendingPage: FeedPageVm(
           items: [
             FeedBlockVm(
               id: 'home-stories-tray',
@@ -39,7 +62,10 @@ void main() {
             FeedBlockVm(
               id: 'home-post-card',
               type: FeedBlockType.postCard,
-              post: _post('hidden-courtyards-of-turkistan'),
+              post: _post(
+                'hidden-courtyards-of-turkistan',
+                postProfileKey: 'quick_post_v1',
+              ),
             ),
             FeedBlockVm(
               id: 'home-post-card-2',
@@ -80,10 +106,10 @@ void main() {
       expect(feedApi.calls, [
         const _FeedCall(
           surface: 'home',
-          tab: 'for_you',
+          tab: 'trending',
           countryCode: 'KZ',
           cityId: 'almaty',
-          limit: 20,
+          limit: 4,
         ),
       ]);
       expect(find.text('Trending now'), findsOneWidget);
@@ -92,6 +118,218 @@ void main() {
       expect(find.text('Almaty photo walk'), findsOneWidget);
       expect(find.text('Local cafe notes'), findsNothing);
       expect(find.text('Silk Road notes'), findsNothing);
+
+      await _revealLastHorizontalItem(
+        tester,
+        sectionTitle: find.text('Trending now'),
+        dragCount: 3,
+      );
+      expect(find.text('Show all'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'reserves sparse cold-start posts for authenticated For you section',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final feedApi = _FakeFeedApi(
+        page: FeedPageVm(
+          items: [
+            for (var index = 1; index <= 3; index++)
+              FeedBlockVm(
+                id: 'cold-start-post-$index',
+                type: FeedBlockType.postCard,
+                post: _post(
+                  'cold-start-$index',
+                  title: 'Cold start post $index',
+                ),
+              ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            placeApi: _FakePlaceApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          authenticated: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('For you'),
+        520,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('For you'), findsOneWidget);
+      expect(find.text('Posts picked for you will appear here.'), findsNothing);
+      expect(find.text('Cold start post 2'), findsOneWidget);
+      expect(find.text('Cold start post 3'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'loads independent trending and For you feeds without duplicates',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final feedApi = _FakeFeedApi(
+        trendingPage: FeedPageVm(
+          items: [
+            FeedBlockVm(
+              id: 'trending-shared',
+              type: FeedBlockType.postCard,
+              post: _post('shared-post', title: 'Shared ranking post'),
+            ),
+            FeedBlockVm(
+              id: 'trending-2',
+              type: FeedBlockType.postCard,
+              post: _post('trending-2', title: 'Trending post 2'),
+            ),
+            FeedBlockVm(
+              id: 'trending-3',
+              type: FeedBlockType.postCard,
+              post: _post('trending-3', title: 'Trending post 3'),
+            ),
+          ],
+        ),
+        page: FeedPageVm(
+          items: [
+            FeedBlockVm(
+              id: 'for-you-shared',
+              type: FeedBlockType.postCard,
+              post: _post('shared-post', title: 'Shared ranking post'),
+            ),
+            for (var index = 1; index <= 11; index++)
+              FeedBlockVm(
+                id: 'for-you-$index',
+                type: FeedBlockType.postCard,
+                post: _post(
+                  'personalized-$index',
+                  title: 'Personalized post $index',
+                ),
+              ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            placeApi: _FakePlaceApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          authenticated: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(feedApi.calls, [
+        const _FeedCall(
+          surface: 'home',
+          tab: 'trending',
+          countryCode: 'KZ',
+          cityId: 'almaty',
+          limit: 4,
+        ),
+        const _FeedCall(
+          surface: 'home',
+          tab: 'for_you',
+          countryCode: 'KZ',
+          cityId: 'almaty',
+          limit: 20,
+        ),
+      ]);
+      expect(find.text('Shared ranking post'), findsOneWidget);
+      for (var index = 1; index <= 10; index++) {
+        expect(find.text('Personalized post $index'), findsOneWidget);
+      }
+      expect(find.text('Personalized post 11'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'renders smart quick discussions inline and opens the anchored community',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final feedApi = _FakeFeedApi(
+        page: FeedPageVm(
+          items: [
+            FeedBlockVm(
+              id: 'article-post',
+              type: FeedBlockType.postCard,
+              post: _post('article-post', title: 'City guide'),
+            ),
+            FeedBlockVm(
+              id: 'quick-smart',
+              type: FeedBlockType.postCard,
+              post: _post(
+                'quick-smart',
+                title: 'Who wants to walk?',
+                postProfileKey: 'quick_post_v1',
+                communityId: 'community-1',
+              ),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            postApi: _FakePostApi(),
+            placeApi: _FakePlaceApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          authenticated: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final quickPostCard = find.byKey(
+        const ValueKey('quick-post-thread-quick-smart'),
+      );
+      await tester.scrollUntilVisible(
+        quickPostCard,
+        520,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(quickPostCard, findsOneWidget);
+      final quickPostCardRect = tester.getRect(quickPostCard);
+      await tester.tapAt(
+        Offset(quickPostCardRect.right - 20, quickPostCardRect.top + 20),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Community route community-1 quick-smart'),
+        findsOneWidget,
+      );
+      expect(find.text('Post route quick-smart'), findsNothing);
+      expect(
+        feedApi.trackedEvents,
+        contains(
+          isA<FeedEventRequest>()
+              .having((event) => event.eventType, 'eventType', 'click')
+              .having((event) => event.postId, 'postId', 'quick-smart'),
+        ),
+      );
     },
   );
 
@@ -120,7 +358,7 @@ void main() {
     expect(headerLocation.includeCountry, isFalse);
   });
 
-  testWidgets('home services preview does not show Help Center', (
+  testWidgets('home services preview opens all services instead of rates', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -141,6 +379,19 @@ void main() {
 
     expect(find.text('Services'), findsWidgets);
     expect(find.text('Help Center'), findsNothing);
+    expect(find.text('Exchange Rates'), findsNothing);
+    expect(find.text('All'), findsNothing);
+    expect(find.text('Show all'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('All services'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('All services'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Services route'), findsOneWidget);
   });
 
   testWidgets('loads top destinations around current device coordinates', (
@@ -181,6 +432,40 @@ void main() {
       'locale': 'en',
       'limit': 10,
     });
+  });
+
+  testWidgets('top destinations append show all only when more places exist', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final places = List.generate(
+      10,
+      (index) => _place(id: 'place-$index', title: 'Destination $index'),
+    );
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+          placeApi: _FakePlaceApi(items: places, total: 11),
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await _revealLastHorizontalItem(
+      tester,
+      sectionTitle: find.text('Top Destinations'),
+      dragCount: 8,
+    );
+    expect(find.text('Show all'), findsOneWidget);
+    await tester.tap(find.text('Show all'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Places route'), findsOneWidget);
   });
 
   testWidgets(
@@ -283,6 +568,13 @@ void main() {
     expect(feedApi.calls, [
       const _FeedCall(
         surface: 'home',
+        tab: 'trending',
+        countryCode: 'KZ',
+        cityId: 'almaty',
+        limit: 4,
+      ),
+      const _FeedCall(
+        surface: 'home',
         tab: 'for_you',
         countryCode: 'KZ',
         cityId: 'almaty',
@@ -305,7 +597,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final feedApi = _FakeFeedApi(
-      page: FeedPageVm(
+      trendingPage: FeedPageVm(
         items: [
           FeedBlockVm(
             id: 'home-post-card',
@@ -343,7 +635,7 @@ void main() {
     final event = feedApi.trackedEvents.single;
     expect(event.eventType, 'click');
     expect(event.surface, 'home');
-    expect(event.tab, 'for_you');
+    expect(event.tab, 'trending');
     expect(event.blockId, 'home-post-card');
     expect(event.blockType, 'post_card');
     expect(event.postId, 'hidden-courtyards-of-turkistan');
@@ -357,7 +649,7 @@ void main() {
   testWidgets('opens home top posts through the post route', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final feedApi = _FakeFeedApi(
-      page: FeedPageVm(
+      trendingPage: FeedPageVm(
         items: [
           FeedBlockVm(
             id: 'home-post-card',
@@ -411,7 +703,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final feedApi = _FakeFeedApi(
-      page: FeedPageVm(
+      trendingPage: FeedPageVm(
         items: [
           FeedBlockVm(
             id: 'home-post-card',
@@ -582,6 +874,31 @@ void main() {
   });
 }
 
+Finder _horizontalScrollables() {
+  return find.byWidgetPredicate(
+    (widget) =>
+        widget is Scrollable &&
+        (widget.axisDirection == AxisDirection.right ||
+            widget.axisDirection == AxisDirection.left),
+  );
+}
+
+Future<void> _revealLastHorizontalItem(
+  WidgetTester tester, {
+  required Finder sectionTitle,
+  required int dragCount,
+}) async {
+  await tester.ensureVisible(sectionTitle);
+  await tester.pumpAndSettle();
+
+  final scrollable = _horizontalScrollables().last;
+  for (var index = 0; index < dragCount; index++) {
+    await tester.drag(scrollable, const Offset(-520, 0), warnIfMissed: false);
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
+}
+
 Future<_FakeFeedApi> _tapHomeService(
   WidgetTester tester,
   String serviceLabel,
@@ -628,6 +945,15 @@ Widget _homeApp(
             Scaffold(body: Text('Post route ${state.pathParameters['slug']}')),
       ),
       GoRoute(
+        path: '/communities/:communityId',
+        builder: (context, state) => Scaffold(
+          body: Text(
+            'Community route ${state.pathParameters['communityId']} '
+            '${state.uri.queryParameters['postId']}',
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/places/:id',
         builder: (context, state) => const Scaffold(body: SizedBox.shrink()),
       ),
@@ -644,8 +970,22 @@ Widget _homeApp(
         builder: (context, state) => const Scaffold(body: SizedBox.shrink()),
       ),
       GoRoute(
+        path: '/services',
+        builder: (context, state) =>
+            const Scaffold(body: Text('Services route')),
+      ),
+      GoRoute(
+        path: '/places',
+        builder: (context, state) => const Scaffold(body: Text('Places route')),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const Scaffold(body: SizedBox.shrink()),
+      ),
+      GoRoute(
+        path: '/app-settings',
+        builder: (context, state) =>
+            const Scaffold(body: Text('App settings route')),
       ),
     ],
   );
@@ -789,9 +1129,10 @@ class _FakeGuideApi extends GuideApi {
 }
 
 class _FakePlaceApi extends PlaceApi {
-  _FakePlaceApi({this.items = const []});
+  _FakePlaceApi({this.items = const [], this.total});
 
   final List<PlaceVm> items;
+  final int? total;
   final List<Map<String, Object?>> calls = [];
 
   @override
@@ -837,15 +1178,21 @@ class _FakePlaceApi extends PlaceApi {
         'offset': offset,
       }..removeWhere((_, value) => value == null || value == 0),
     );
-    return (items: items, total: items.length);
+    return (items: items, total: total ?? items.length);
   }
 }
 
 class _FakeFeedApi implements FeedApi {
-  _FakeFeedApi({FeedPageVm? page, List<FeedPageVm>? pages})
-    : _pages = pages ?? [page ?? FeedPageVm(items: const [])];
+  _FakeFeedApi({
+    FeedPageVm? page,
+    List<FeedPageVm>? pages,
+    FeedPageVm? trendingPage,
+  }) : _forYouPages = pages ?? [page ?? FeedPageVm(items: const [])],
+       _trendingPage = trendingPage ?? FeedPageVm(items: const []);
 
-  final List<FeedPageVm> _pages;
+  final List<FeedPageVm> _forYouPages;
+  final FeedPageVm _trendingPage;
+  int _forYouPageIndex = 0;
   final List<_FeedCall> calls = [];
   final List<FeedEventRequest> trackedEvents = [];
 
@@ -868,11 +1215,15 @@ class _FakeFeedApi implements FeedApi {
         limit: limit,
       ),
     );
-    final pageIndex = calls.length - 1;
-    if (pageIndex >= _pages.length) {
+    if (tab == 'trending') {
+      return _trendingPage;
+    }
+    if (_forYouPageIndex >= _forYouPages.length) {
       return FeedPageVm(items: const []);
     }
-    return _pages[pageIndex];
+    final page = _forYouPages[_forYouPageIndex];
+    _forYouPageIndex += 1;
+    return page;
   }
 
   @override
@@ -909,6 +1260,15 @@ class _FakeFeedApi implements FeedApi {
     trackedEvents.addAll(events);
     return events.length;
   }
+}
+
+class _FakePostApi extends PostApi {
+  @override
+  Future<List<PostCommentVm>> listComments(
+    String postId, {
+    int limit = 20,
+    int offset = 0,
+  }) async => const [];
 }
 
 class _FeedCall {
@@ -950,7 +1310,13 @@ class _FeedCall {
   }
 }
 
-PostVm _post(String id, {String? title, bool seenByViewer = false}) {
+PostVm _post(
+  String id, {
+  String? title,
+  bool seenByViewer = false,
+  String postProfileKey = 'article_v1',
+  String? communityId,
+}) {
   final now = DateTime.utc(2026, 1, 1);
   return PostVm(
     id: id,
@@ -960,6 +1326,8 @@ PostVm _post(String id, {String? title, bool seenByViewer = false}) {
     category: 'JOURNAL',
     status: 'PUBLISHED',
     format: 'ARTICLE',
+    postProfileKey: postProfileKey,
+    communityId: communityId,
     tags: const ['travel'],
     stats: PostStatsVm(views: 1, likes: 0, comments: 0, shares: 0),
     author: PostAuthorVm(
@@ -976,12 +1344,12 @@ PostVm _post(String id, {String? title, bool seenByViewer = false}) {
   );
 }
 
-PlaceVm _place() {
+PlaceVm _place({String id = 'place-1', String title = 'Dragon Bridge'}) {
   return PlaceVm(
-    id: 'place-1',
+    id: id,
     locale: 'en',
     defaultLocale: 'en',
-    title: 'Dragon Bridge',
+    title: title,
     description: 'A modern bridge across the Han River.',
     countryCode: 'VN',
     cityId: 'danang',

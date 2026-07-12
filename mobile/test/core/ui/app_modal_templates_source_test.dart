@@ -19,10 +19,18 @@ void main() {
     expect(source, contains('Future<T?> showAppActionSheet<T>'));
     expect(source, contains('DraggableScrollableSheet('));
     expect(source, contains('SafeArea('));
-    expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
+    expect(source, contains('final mediaQuery = MediaQuery.of(routeContext)'));
+    expect(
+      source,
+      contains('final keyboardInset = mediaQuery.viewInsets.bottom'),
+    );
     expect(source, contains('bool isScrollControlled = true'));
     expect(source, contains('bool isDismissible = true'));
-    expect(source, contains('bool extendToBottom = false'));
+    expect(source, contains('bool contentHandlesBottomSafeArea = false'));
+    expect(source, contains('const _maxModalHeightRatio = 0.92'));
+    expect(source, contains('.clamp(0.1, _maxModalHeightRatio)'));
+    expect(source, contains('BoxConstraints(maxHeight: customSheetMaxHeight)'));
+    expect(source, isNot(contains('extendToBottom')));
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('AppButtonStyles.primary(colors)'));
     expect(source, isNot(contains('AppPalette.')));
@@ -31,7 +39,7 @@ void main() {
     expect(source, isNot(contains('AppColors.')));
   });
 
-  test('custom app modal sheets can opt into edge-to-bottom surfaces', () {
+  test('all custom app modal sheets use physical-bottom surfaces', () {
     final source = File(
       'lib/core/ui/app_modal_templates.dart',
     ).readAsStringSync();
@@ -39,13 +47,16 @@ void main() {
     final actionSheetStart = source.indexOf('Future<T?> showAppActionSheet<T>');
     final sheetSource = source.substring(sheetStart, actionSheetStart);
 
-    expect(sheetSource, contains('final customContentBottomInset'));
-    expect(sheetSource, contains('extendToBottom'));
-    expect(sheetSource, contains('? 0.0'));
+    expect(sheetSource, contains("ValueKey('app-modal-custom-sheet-surface')"));
+    expect(sheetSource, contains('final navigationSafeInset ='));
+    expect(sheetSource, contains('final customContentBottomPadding ='));
     expect(
       sheetSource,
-      contains('AppEdgeInsets.only(bottom: customContentBottomInset)'),
+      contains('AppEdgeInsets.only(bottom: customContentBottomPadding)'),
     );
+    expect(sheetSource, contains('backgroundColor: colors.transparent'));
+    expect(sheetSource, contains('useSafeArea: false'));
+    expect(sheetSource, isNot(contains('extendToBottom')));
   });
 
   test('app modal bottom sheets use full viewport width by default', () {
@@ -139,13 +150,16 @@ void main() {
       expect(scaffoldSource, contains('AppSpacing.xl + bottomSafeAreaPadding'));
       expect(
         sheetSource,
-        contains(
-          'final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom',
-        ),
+        contains('final systemBottomPadding = mediaQuery.viewPadding.bottom'),
       );
       expect(
         sheetSource,
-        contains('bottomSafeAreaPadding: systemBottomPadding'),
+        contains('bottomSafeAreaPadding: navigationSafeInset'),
+      );
+      expect(sheetSource, contains("'app-modal-titled-sheet-surface'"));
+      expect(
+        sheetSource,
+        isNot(contains('AppEdgeInsets.only(bottom: systemBottomPadding)')),
       );
     },
   );
@@ -254,6 +268,12 @@ void main() {
         'showDialog': RegExp(r'\bshowDialog\s*(?:<|\()'),
         'showGeneralDialog': RegExp(r'\bshowGeneralDialog\s*(?:<|\()'),
         'showModalBottomSheet': RegExp(r'\bshowModalBottomSheet\s*(?:<|\()'),
+        'showBottomSheet': RegExp(r'\bshowBottomSheet\s*(?:<|\()'),
+        'showCupertinoModalPopup': RegExp(
+          r'\bshowCupertinoModalPopup\s*(?:<|\()',
+        ),
+        'ModalBottomSheetRoute': RegExp(r'\bModalBottomSheetRoute\s*(?:<|\()'),
+        'BottomSheet': RegExp(r'\bBottomSheet\s*\('),
         'AlertDialog': RegExp(r'\bAlertDialog\s*\('),
         'SimpleDialog': RegExp(r'\bSimpleDialog\s*\('),
         'DraggableScrollableSheet': RegExp(r'\bDraggableScrollableSheet\s*\('),

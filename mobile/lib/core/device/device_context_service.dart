@@ -28,6 +28,16 @@ class DeviceCoordinates {
 class DeviceContextService {
   const DeviceContextService();
 
+  Future<bool> requestLocationPermission() async {
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    return permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+  }
+
   Future<String?> getLocalTimezone() async {
     try {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();

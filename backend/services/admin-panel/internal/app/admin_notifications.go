@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -272,60 +273,68 @@ func (u *UserModerationUseCase) notifyUserModerationDecision(
 	})
 }
 
-func (u *UserModerationUseCase) notifyUserRestrictionCreated(
-	ctx context.Context,
-	item model.UserManualRestriction,
-) {
-	if u.notify == nil || item.UserID == uuid.Nil {
-		return
-	}
-	dispatchAdminNotification(ctx, u.notify, port.UserNotificationInput{
-		IdempotencyKey:   fmt.Sprintf("admin:user_restriction:%s:created", item.ID),
-		RecipientUserIDs: []uuid.UUID{item.UserID},
-		Category:         adminNotificationCategoryAccount,
-		Priority:         adminNotificationPriorityHigh,
-		Title:            "Account restriction applied",
-		Body:             userRestrictionCreatedBody(item.RestrictionCode),
-		DeepLink:         adminNotificationCategoryDeepLink(adminNotificationCategoryAccount),
-		Data: map[string]string{
-			"adminEvent":      "user_restriction_created",
-			"targetType":      "USER",
-			"targetId":        item.UserID.String(),
-			"restrictionId":   item.ID.String(),
-			"restrictionCode": string(item.RestrictionCode),
-			"reasonCode":      item.ReasonCode,
-		},
-		CollapseKey: fmt.Sprintf("admin:user:%s:account", item.UserID),
-		TTL:         adminNotificationTTL,
-	})
+type userRestrictionNotificationPayload struct {
+	RestrictionID   uuid.UUID                 `json:"restrictionId"`
+	UserID          uuid.UUID                 `json:"userId"`
+	RestrictionCode model.UserRestrictionCode `json:"restrictionCode"`
+	ReasonCode      string                    `json:"reasonCode"`
 }
 
-func (u *UserModerationUseCase) notifyUserRestrictionLifted(
-	ctx context.Context,
-	item model.UserManualRestriction,
-) {
-	if u.notify == nil || item.UserID == uuid.Nil {
-		return
+func userRestrictionNotificationInput(
+	event model.UserRestrictionOutboxEvent,
+) (port.UserNotificationInput, error) {
+	payload := userRestrictionNotificationPayload{
+		RestrictionID: event.AggregateID,
+		UserID:        event.UserID,
 	}
-	dispatchAdminNotification(ctx, u.notify, port.UserNotificationInput{
-		IdempotencyKey:   fmt.Sprintf("admin:user_restriction:%s:lifted", item.ID),
-		RecipientUserIDs: []uuid.UUID{item.UserID},
+	if len(event.Payload) > 0 {
+		if err := json.Unmarshal(event.Payload, &payload); err != nil {
+			return port.UserNotificationInput{}, fmt.Errorf("%w: decode restriction notification payload", ErrInvalidInput)
+		}
+	}
+	if payload.RestrictionID == uuid.Nil {
+		payload.RestrictionID = event.AggregateID
+	}
+	if payload.UserID == uuid.Nil {
+		payload.UserID = event.UserID
+	}
+	if payload.RestrictionID == uuid.Nil || payload.UserID == uuid.Nil || payload.RestrictionCode == "" {
+		return port.UserNotificationInput{}, fmt.Errorf("%w: incomplete restriction notification payload", ErrInvalidInput)
+	}
+
+	input := port.UserNotificationInput{
+		RecipientUserIDs: []uuid.UUID{payload.UserID},
 		Category:         adminNotificationCategoryAccount,
-		Priority:         adminNotificationPriorityNormal,
-		Title:            "Account restriction lifted",
-		Body:             "A restriction on your account has been lifted.",
 		DeepLink:         adminNotificationCategoryDeepLink(adminNotificationCategoryAccount),
 		Data: map[string]string{
-			"adminEvent":      "user_restriction_lifted",
 			"targetType":      "USER",
-			"targetId":        item.UserID.String(),
-			"restrictionId":   item.ID.String(),
-			"restrictionCode": string(item.RestrictionCode),
-			"reasonCode":      item.ReasonCode,
+			"targetId":        payload.UserID.String(),
+			"restrictionId":   payload.RestrictionID.String(),
+			"restrictionCode": string(payload.RestrictionCode),
+			"reasonCode":      strings.TrimSpace(payload.ReasonCode),
 		},
-		CollapseKey: fmt.Sprintf("admin:user:%s:account", item.UserID),
+		CollapseKey: fmt.Sprintf("admin:user:%s:account", payload.UserID),
 		TTL:         adminNotificationTTL,
-	})
+	}
+
+	switch event.EventType {
+	case model.UserRestrictionOutboxEventCreated:
+		input.IdempotencyKey = fmt.Sprintf("admin:user_restriction:%s:created", payload.RestrictionID)
+		input.Priority = adminNotificationPriorityHigh
+		input.Title = "Account restriction applied"
+		input.Body = userRestrictionCreatedBody(payload.RestrictionCode)
+		input.Data["adminEvent"] = "user_restriction_created"
+	case model.UserRestrictionOutboxEventLifted:
+		input.IdempotencyKey = fmt.Sprintf("admin:user_restriction:%s:lifted", payload.RestrictionID)
+		input.Priority = adminNotificationPriorityNormal
+		input.Title = "Account restriction lifted"
+		input.Body = "A restriction on your account has been lifted."
+		input.Data["adminEvent"] = "user_restriction_lifted"
+	default:
+		return port.UserNotificationInput{}, fmt.Errorf("%w: unsupported restriction outbox event %q", ErrInvalidInput, event.EventType)
+	}
+
+	return input, nil
 }
 
 func dispatchAdminNotification(

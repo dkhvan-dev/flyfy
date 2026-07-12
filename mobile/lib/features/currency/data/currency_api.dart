@@ -37,11 +37,14 @@ class CurrencyApi {
       options: Options(extra: const {'requiresAuth': false}),
     );
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
-            ? data['items'] as List<dynamic>?
-            : null) ??
-        const [];
+    final List<dynamic> items;
+    if (data is List<dynamic>) {
+      items = data;
+    } else if (data is Map<String, dynamic> && data['items'] is List) {
+      items = data['items'] as List<dynamic>;
+    } else {
+      items = const [];
+    }
 
     final currencies = items
         .whereType<Map<String, dynamic>>()

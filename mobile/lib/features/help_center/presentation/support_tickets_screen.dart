@@ -2085,11 +2085,11 @@ class _ReplyComposer extends StatelessWidget {
                   onPressed: enabled && !isSending ? onSend : null,
                   style: IconButton.styleFrom(
                     backgroundColor: colors.primary,
-                    foregroundColor: colors.textPrimary,
+                    foregroundColor: colors.onPrimary,
                     disabledBackgroundColor: colors.primary.withValues(
                       alpha: 0.34,
                     ),
-                    disabledForegroundColor: colors.textPrimary.withValues(
+                    disabledForegroundColor: colors.onPrimary.withValues(
                       alpha: 0.58,
                     ),
                     minimumSize: const Size(46, 46),
@@ -2099,7 +2099,7 @@ class _ReplyComposer extends StatelessWidget {
                           dimension: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: colors.textPrimary,
+                            color: colors.onPrimary,
                           ),
                         )
                       : const Icon(Icons.send_rounded),
@@ -2261,14 +2261,14 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: colors.textPrimary,
+                          color: colors.onPrimary,
                         ),
                       )
                     : const Icon(Icons.send_rounded),
                 label: Text(l10n.supportTicketCSATSubmit),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   disabledBackgroundColor: colors.surfaceHigh,
                   disabledForegroundColor: colors.textDisabled,
                   minimumSize: const Size(0, 44),
@@ -2639,9 +2639,9 @@ class _SupportTicketStateMessage extends StatelessWidget {
               label: Text(actionLabel),
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
                 disabledBackgroundColor: colors.primary.withValues(alpha: 0.34),
-                disabledForegroundColor: colors.textPrimary.withValues(
+                disabledForegroundColor: colors.onPrimary.withValues(
                   alpha: 0.58,
                 ),
                 minimumSize: const Size(44, 44),

@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
-import '../../core/network/reference_api.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/places/place_ui.dart';
@@ -30,6 +29,7 @@ import '../../providers/excursion_provider.dart';
 import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
+import '../../shared/reference/app_location_label_resolver.dart';
 import '../excursions/excursions_screen.dart';
 import '../excursions/widgets/excursion_review_management_sheet.dart';
 import '../map/map_screen.dart';
@@ -45,6 +45,7 @@ final class _PlaceDetailsColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primaryPressed => colors.primaryPressed;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
@@ -81,29 +82,6 @@ extension _PlaceDetailsColorContext on BuildContext {
   _PlaceDetailsColors get placeColors => _PlaceDetailsColors.of(this);
 }
 
-LinearGradient? _placeHeroOverlayGradient(BuildContext context) {
-  if (Theme.of(context).brightness == Brightness.light) {
-    return null;
-  }
-
-  return LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      context.placeColors.transparent,
-      context.placeColors.background.withValues(alpha: 0.96),
-    ],
-    stops: const [0.42, 1.0],
-  );
-}
-
-Color _placeHeroTitleColor(BuildContext context, {required bool hasMedia}) {
-  if (!hasMedia && Theme.of(context).brightness == Brightness.light) {
-    return context.placeColors.textPrimary;
-  }
-  return context.placeColors.white;
-}
-
 class PlaceDetailsScreen extends StatefulWidget {
   const PlaceDetailsScreen({
     super.key,
@@ -123,7 +101,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
   final FileApi _fileApi = FileApi();
-  final ReferenceApi _referenceApi = ReferenceApi();
+  final AppLocationLabelResolver _locationLabelResolver =
+      AppLocationLabelResolver();
   final ScrollController _scrollController = ScrollController();
   final PageController _heroImageController = PageController();
 
@@ -140,7 +119,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   String? _locationLabel;
   int _currentImageIndex = 0;
   bool _didResolveInitialPlace = false;
-  bool _didScheduleInitialLoad = false;
+  String? _requestedLocale;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
@@ -150,17 +130,20 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
     if (!_didResolveInitialPlace) {
-      final locale = Localizations.localeOf(context);
       if (canDisplayInitialPlaceForLocale(widget.initialPlace, locale)) {
         _place = widget.initialPlace;
       }
       _didResolveInitialPlace = true;
     }
-    if (!_didScheduleInitialLoad) {
-      _didScheduleInitialLoad = true;
+    final localeName = locale.languageCode;
+    if (_requestedLocale != localeName) {
+      _requestedLocale = localeName;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadData();
+        if (mounted && _requestedLocale == localeName) {
+          _loadData();
+        }
       });
     }
   }
@@ -174,6 +157,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
+    final loadGeneration = ++_loadGeneration;
     final currentUserId =
         (context.read<SessionProvider>().profile?.userId ?? '').trim();
     setState(() {
@@ -192,7 +176,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         excursionProvider.loadExcursionReviews(landmarkId: widget.placeId),
       ]);
 
-      if (!mounted) return;
+      if (!mounted || loadGeneration != _loadGeneration) return;
       final place = results[0] as PlaceVm;
       final reviewResult =
           results[1] as ({List<PlaceReviewVm> items, int total});
@@ -200,6 +184,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           (results[2] as PlaceReviewVm?) ??
           _findReviewByAuthor(reviewResult.items, currentUserId);
       final locationLabel = await _resolveLocationLabel(place, locale);
+      if (!mounted || loadGeneration != _loadGeneration) return;
       final mediaCount = place.media.length;
       final imageIndex = mediaCount == 0
           ? 0
@@ -216,7 +201,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         _checkingCurrentUserReview = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || loadGeneration != _loadGeneration) return;
       setState(() {
         _error = 'load_failed';
         _loading = false;
@@ -258,50 +243,23 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
   Future<String> _resolveLocationLabel(PlaceVm place, String locale) async {
     final fallback = _fallbackLocationLabel(place);
-    final countryCode = place.countryCode.trim().toUpperCase();
     final cityId = place.cityId.trim();
-    if (countryCode.isEmpty && cityId.isEmpty) {
-      return fallback;
-    }
+    if (cityId.isEmpty) return fallback;
 
     try {
-      final cityFuture = countryCode.isEmpty
-          ? Future<List<ReferenceCity>>.value(const [])
-          : _referenceApi.citiesByCountry(countryCode, lang: locale);
-      final countryFuture = countryCode.isEmpty
-          ? Future<ReferenceCountry?>.value(null)
-          : _referenceApi.getCountry(countryCode, lang: locale);
-
-      final results = await Future.wait<dynamic>([cityFuture, countryFuture]);
-      final cities = results[0] as List<ReferenceCity>;
-      final country = results[1] as ReferenceCountry?;
-
-      String? cityName;
-      for (final city in cities) {
-        if (city.id == cityId) {
-          cityName = city.name;
-          break;
-        }
-      }
-
-      final parts = <String>[
-        if ((cityName ?? cityId).trim().isNotEmpty) (cityName ?? cityId).trim(),
-        if ((country?.name ?? countryCode).trim().isNotEmpty)
-          (country?.name ?? countryCode).trim(),
-      ];
-      return parts.isEmpty ? fallback : parts.join(', ');
+      final city = await _locationLabelResolver.resolveCity(
+        countryCode: place.countryCode,
+        cityId: cityId,
+        localeName: locale,
+      );
+      return city.trim().isEmpty ? fallback : city.trim();
     } catch (_) {
       return fallback;
     }
   }
 
   String _fallbackLocationLabel(PlaceVm place) {
-    final parts = <String>[
-      if (place.cityId.trim().isNotEmpty) place.cityId.trim(),
-      if (place.countryCode.trim().isNotEmpty)
-        place.countryCode.trim().toUpperCase(),
-    ];
-    return parts.join(', ');
+    return place.cityId.trim();
   }
 
   Future<void> _openExcursionsForPlace() async {
@@ -661,66 +619,64 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PlaceTextScale(
-      child: Builder(
-        builder: (context) {
-          final adaptive = PlaceAdaptive.of(context);
-          final l10n = AppLocalizations.of(context)!;
-          final waitingForLocalizedDetails =
-              _loading && (_place == null || _locationLabel == null);
+    return Builder(
+      builder: (context) {
+        final adaptive = PlaceAdaptive.of(context);
+        final l10n = AppLocalizations.of(context)!;
+        final waitingForLocalizedDetails =
+            _loading && (_place == null || _locationLabel == null);
 
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
-            child: Scaffold(
-              backgroundColor: context.placeColors.background,
-              body: SafeArea(
-                bottom: false,
-                child: waitingForLocalizedDetails
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: context.placeColors.primary,
-                        ),
-                      )
-                    : _error != null && _place == null
-                    ? _buildError(l10n, adaptive)
-                    : Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Column(
-                              children: [
-                                _buildTopBar(adaptive, l10n),
-                                Expanded(
-                                  child: RefreshIndicator(
-                                    color: context.placeColors.primary,
-                                    backgroundColor:
-                                        context.placeColors.background,
-                                    onRefresh: _loadData,
-                                    child: CustomScrollView(
-                                      controller: _scrollController,
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      slivers: [
-                                        SliverToBoxAdapter(
-                                          child: _buildHero(adaptive, l10n),
-                                        ),
-                                        SliverToBoxAdapter(
-                                          child: _buildContent(adaptive, l10n),
-                                        ),
-                                      ],
-                                    ),
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Scaffold(
+            backgroundColor: context.placeColors.background,
+            body: SafeArea(
+              bottom: false,
+              child: waitingForLocalizedDetails
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: context.placeColors.primary,
+                      ),
+                    )
+                  : _error != null && _place == null
+                  ? _buildError(l10n, adaptive)
+                  : Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Column(
+                            children: [
+                              _buildTopBar(adaptive, l10n),
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: context.placeColors.primary,
+                                  backgroundColor:
+                                      context.placeColors.background,
+                                  onRefresh: _loadData,
+                                  child: CustomScrollView(
+                                    controller: _scrollController,
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    slivers: [
+                                      SliverToBoxAdapter(
+                                        child: _buildHero(adaptive, l10n),
+                                      ),
+                                      SliverToBoxAdapter(
+                                        child: _buildContent(adaptive, l10n),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          _buildBottomCta(adaptive, l10n),
-                        ],
-                      ),
-              ),
+                        ),
+                        _buildBottomCta(adaptive, l10n),
+                      ],
+                    ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -860,13 +816,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             ..sort((x, y) => x.position.compareTo(y.position)))
         : <PlaceMediaVm>[];
 
-    final padX = a.scale(28);
     final locationLabel = _resolvedLocationLabel(place);
-    final heroOverlayGradient = _placeHeroOverlayGradient(context);
-    final heroTitleColor = _placeHeroTitleColor(
-      context,
-      hasMedia: media.isNotEmpty,
-    );
+    final showBadges = locationLabel.isNotEmpty || place.rating >= 4.0;
 
     return SizedBox(
       height: heroHeight,
@@ -886,90 +837,68 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             )
           else
             _heroPlaceholder(),
-          if (heroOverlayGradient != null)
-            Positioned.fill(
+          if (media.length > 1)
+            Positioned(
+              left: a.scale(16),
+              right: a.scale(16),
+              top: a.scale(14),
               child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: AppBoxDecoration(gradient: heroOverlayGradient),
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: AppBoxDecoration(
+                      color: context.placeColors.black.withValues(alpha: 0.38),
+                      borderRadius: AppBorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: AppEdgeInsets.symmetric(
+                        horizontal: a.scale(8),
+                        vertical: a.scale(7),
+                      ),
+                      child: _buildImageIndicator(media.length, a),
+                    ),
+                  ),
                 ),
               ),
             ),
-          Positioned(
-            left: padX,
-            right: padX,
-            bottom: a.scale(38, minFactor: 0.68),
-            child: IgnorePointer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (media.length > 1) ...[
-                    Center(child: _buildImageIndicator(media.length, a)),
-                    SizedBox(height: a.scale(12)),
-                  ],
-                  if (place.rating >= 4.0) ...[
-                    Container(
-                      height: a.scale(27, minFactor: 0.9),
-                      padding: AppEdgeInsets.symmetric(horizontal: a.scale(13)),
-                      alignment: Alignment.center,
-                      decoration: AppBoxDecoration(
-                        color: context.placeColors.primary,
-                        borderRadius: AppBorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        l10n.placeMustVisitBadge.toUpperCase(),
-                        style: AppTextStyle(
-                          color: context.placeColors.white,
-                          fontSize: a.scale(11),
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(height: a.scale(10)),
-                  ],
-                  Text(
-                    place.title,
-                    style: AppTextStyle(
-                      color: heroTitleColor,
-                      fontSize: a.scale(38, minFactor: 0.86),
-                      fontWeight: FontWeight.w900,
-                      height: 0.95,
-                      letterSpacing: -3.0,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: a.scale(8)),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_rounded,
-                        color: context.placeColors.primary,
-                        size: a.scale(14),
-                      ),
-                      SizedBox(width: a.scale(6)),
-                      Expanded(
+          if (showBadges)
+            Positioned(
+              key: const ValueKey('place-hero-badges'),
+              left: a.scale(16),
+              right: a.scale(16),
+              bottom: a.scale(14),
+              child: IgnorePointer(
+                child: Wrap(
+                  spacing: a.scale(10),
+                  runSpacing: a.scale(8),
+                  children: [
+                    if (locationLabel.isNotEmpty)
+                      _buildHeroBadge(
+                        key: const ValueKey('place-hero-city-badge'),
+                        backgroundColor: context.placeColors.primary,
+                        foregroundColor: context.placeColors.onPrimary,
+                        maxWidth: a.scale(220, maxFactor: 1),
                         child: Text(
-                          locationLabel.toUpperCase(),
-                          style: AppTextStyle(
-                            color: context.placeColors.primary,
-                            fontSize: a.scale(14, minFactor: 0.82),
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                          ),
+                          locationLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    if (place.rating >= 4.0)
+                      _buildHeroBadge(
+                        backgroundColor: context.placeColors.white.withValues(
+                          alpha: 0.94,
+                        ),
+                        foregroundColor: context.placeColors.black,
+                        child: Text(
+                          l10n.placeMustVisitBadge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1037,6 +966,45 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
+  Widget _buildHeroBadge({
+    Key? key,
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required Widget child,
+    double? maxWidth,
+  }) {
+    return Container(
+      key: key,
+      padding: const AppEdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: AppBoxDecoration(
+        color: backgroundColor,
+        borderRadius: AppBorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: context.placeColors.black.withValues(alpha: 0.24),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: maxWidth == null
+            ? const BoxConstraints()
+            : BoxConstraints(maxWidth: maxWidth),
+        child: DefaultTextStyle(
+          style: AppTextStyle(
+            color: foregroundColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+            letterSpacing: 0,
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   Widget _heroPlaceholder() {
     return Container(
       color: context.placeColors.white.withValues(alpha: 0.05),
@@ -1076,9 +1044,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildPlaceIdentity(place, a),
+            SizedBox(height: a.scale(20, minFactor: 0.84)),
             _buildStats(place, a, l10n),
             SizedBox(height: a.scale(18, minFactor: 0.72)),
-            _buildLocationBlock(place, a, l10n),
+            _buildMapAction(a, l10n),
             SizedBox(height: a.scale(46, minFactor: 0.72)),
             _buildExperience(place, a, l10n),
             if (hasStructuredVisitPlanning) ...[
@@ -1134,12 +1104,25 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
-  Widget _buildLocationBlock(
-    PlaceVm v,
-    PlaceAdaptive a,
-    AppLocalizations l10n,
-  ) {
-    final locationLabel = _resolvedLocationLabel(v);
+  Widget _buildPlaceIdentity(PlaceVm place, PlaceAdaptive a) {
+    return Semantics(
+      header: true,
+      child: Text(
+        place.title,
+        key: const ValueKey('place-details-title'),
+        softWrap: true,
+        style: AppTextStyle(
+          color: context.placeColors.textPrimary,
+          fontSize: a.scale(32, minFactor: 0.88, maxFactor: 1.02),
+          fontWeight: FontWeight.w900,
+          height: 1.08,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapAction(PlaceAdaptive a, AppLocalizations l10n) {
     final radius = AppBorderRadius.circular(a.radius(16));
 
     return Semantics(
@@ -1180,34 +1163,17 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 ),
                 SizedBox(width: a.scale(12, minFactor: 0.78)),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        locationLabel,
-                        style: AppTextStyle(
-                          color: context.placeColors.textPrimary,
-                          fontSize: a.scale(16, minFactor: 0.86),
-                          fontWeight: FontWeight.w900,
-                          height: 1.15,
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: a.scale(3, minFactor: 0.7)),
-                      Text(
-                        l10n.placeMapLink,
-                        style: AppTextStyle(
-                          color: context.placeColors.secondary,
-                          fontSize: a.scale(12, minFactor: 0.88),
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: Text(
+                    l10n.placeMapLink,
+                    style: AppTextStyle(
+                      color: context.placeColors.textPrimary,
+                      fontSize: a.scale(17, minFactor: 0.9),
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                      letterSpacing: 0,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 SizedBox(width: a.scale(10, minFactor: 0.72)),
@@ -1379,7 +1345,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
     return Container(
       width: double.infinity,
-      padding: AppEdgeInsets.all(a.scale(16, minFactor: 0.82)),
+      padding: AppEdgeInsets.all(a.scale(18, minFactor: 0.88)),
       decoration: AppBoxDecoration(
         color: context.placeColors.surfaceHigh,
         borderRadius: radius,
@@ -1389,9 +1355,9 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         description,
         style: AppTextStyle(
           color: context.placeColors.textPrimary,
-          fontSize: a.scale(16, minFactor: 0.88),
-          fontWeight: FontWeight.w600,
-          height: 1.62,
+          fontSize: a.scale(18, minFactor: 0.94),
+          fontWeight: FontWeight.w500,
+          height: 1.6,
           letterSpacing: 0,
         ),
       ),
@@ -2094,7 +2060,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.placeColors.primary,
-                      foregroundColor: context.placeColors.textPrimary,
+                      foregroundColor: context.placeColors.onPrimary,
                       elevation: 0,
                       minimumSize: Size(double.infinity, a.scale(44)),
                       padding: AppEdgeInsets.symmetric(horizontal: a.scale(14)),
@@ -2173,7 +2139,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             onPressed: _isOpeningExcursions ? null : _openExcursionsForPlace,
             style: ElevatedButton.styleFrom(
               backgroundColor: context.placeColors.primary,
-              foregroundColor: context.placeColors.textPrimary,
+              foregroundColor: context.placeColors.onPrimary,
               shadowColor: context.placeColors.primary.withValues(alpha: 0.22),
               elevation: 12,
               shape: RoundedRectangleBorder(
@@ -2191,7 +2157,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        context.placeColors.textPrimary,
+                        context.placeColors.onPrimary,
                       ),
                     ),
                   ),
@@ -4102,7 +4068,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                   onPressed: canSubmit ? _submit : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.placeColors.primary,
-                    foregroundColor: context.placeColors.textPrimary,
+                    foregroundColor: context.placeColors.onPrimary,
                     disabledBackgroundColor: context.placeColors.white
                         .withValues(alpha: 0.12),
                     disabledForegroundColor: context.placeColors.textMuted,
@@ -4121,7 +4087,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: context.placeColors.textPrimary,
+                                color: context.placeColors.onPrimary,
                               ),
                             ),
                             const SizedBox(width: 10),

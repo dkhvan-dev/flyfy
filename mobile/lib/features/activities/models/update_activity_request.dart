@@ -4,6 +4,7 @@ class UpdateActivityRequest {
   UpdateActivityRequest({
     this.title,
     this.description,
+    this.sourceLanguage,
     this.visibility,
     this.categorySlug,
     this.subcategorySlug,
@@ -48,6 +49,7 @@ class UpdateActivityRequest {
 
   final String? title;
   final String? description;
+  final String? sourceLanguage;
   final String? visibility;
   final String? categorySlug;
   final String? subcategorySlug;
@@ -97,6 +99,7 @@ class UpdateActivityRequest {
     return {
       if (title != null) 'title': title,
       if (description != null) 'description': description,
+      if (sourceLanguage != null) 'sourceLanguage': sourceLanguage,
       if (visibility != null) 'visibility': visibility,
       if (categorySlug != null) 'categorySlug': categorySlug,
       if (hasSubcategorySlug) 'hasSubcategorySlug': true,

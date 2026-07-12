@@ -824,7 +824,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                               dimension: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: colors.textPrimary,
+                                color: colors.onPrimary,
                               ),
                             )
                           : const Icon(Icons.send_rounded),
@@ -837,7 +837,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.primary,
-                        foregroundColor: colors.textPrimary,
+                        foregroundColor: colors.onPrimary,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(8),

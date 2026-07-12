@@ -54,8 +54,11 @@ type Activity struct {
 	HostUserID       uuid.UUID
 	SourceActivityID *uuid.UUID
 
-	Title       string
-	Description string
+	Title             string
+	Description       string
+	Translations      ActivityTranslations
+	SourceLanguage    string
+	TranslationStatus ActivityTranslationStatus
 
 	Format           enum.ActivityFormat
 	Status           enum.ActivityStatus
@@ -125,14 +128,17 @@ type NewActivityParams struct {
 	HostUserID       uuid.UUID
 	SourceActivityID *uuid.UUID
 
-	Title           string
-	Description     string
-	Format          enum.ActivityFormat
-	Visibility      enum.ActivityVisibility
-	CategorySlug    string
-	SubcategorySlug *string
-	LanguageCode    string
-	Timezone        string
+	Title             string
+	Description       string
+	Translations      ActivityTranslations
+	SourceLanguage    string
+	TranslationStatus ActivityTranslationStatus
+	Format            enum.ActivityFormat
+	Visibility        enum.ActivityVisibility
+	CategorySlug      string
+	SubcategorySlug   *string
+	LanguageCode      string
+	Timezone          string
 
 	StartAt              time.Time
 	EndAt                time.Time
@@ -180,13 +186,32 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		authorLocationCapturedAt = &capturedAt
 	}
 
+	sourceLanguage, ok := NormalizeActivityTranslationLanguage(params.SourceLanguage)
+	if !ok {
+		if strings.TrimSpace(params.SourceLanguage) != "" {
+			return nil, ErrInvalidActivityTranslationLanguage
+		}
+		sourceLanguage = "ru"
+	}
+	translations := NormalizeActivityTranslations(params.Translations)
+	if translations == nil {
+		translations = make(ActivityTranslations)
+	}
+	translations[sourceLanguage] = ActivityLocalizedCopy{
+		Title:       strings.TrimSpace(params.Title),
+		Description: strings.TrimSpace(params.Description),
+	}
+
 	item := &Activity{
 		ID:               uuid.New(),
 		HostUserID:       params.HostUserID,
 		SourceActivityID: params.SourceActivityID,
 
-		Title:       strings.TrimSpace(params.Title),
-		Description: strings.TrimSpace(params.Description),
+		Title:             strings.TrimSpace(params.Title),
+		Description:       strings.TrimSpace(params.Description),
+		Translations:      translations,
+		SourceLanguage:    sourceLanguage,
+		TranslationStatus: NormalizeActivityTranslationStatus(string(params.TranslationStatus)),
 
 		Format:                params.Format,
 		Status:                enum.ActivityStatusEnrollmentOpen,
@@ -288,6 +313,9 @@ func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool, skipDuration
 	}
 	if strings.TrimSpace(a.LanguageCode) == "" {
 		return ErrInvalidLanguageCode
+	}
+	if _, ok := NormalizeActivityTranslationLanguage(a.SourceLanguage); !ok {
+		return ErrInvalidActivityTranslationLanguage
 	}
 	if strings.TrimSpace(a.Timezone) == "" {
 		return ErrInvalidTimezone

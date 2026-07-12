@@ -64,8 +64,10 @@ func main() {
 
 	feedRankingPolicy := feedRankingPolicyFromConfig(cfg.Feed).Normalized()
 	feedCuratedBlockPolicy := feedCuratedBlockPolicyFromConfig(cfg.Feed).Normalized()
+	feedDiversityPolicy := feedDiversityPolicyFromConfig(cfg.Feed).Normalized()
 	repo := repository.NewPGPostRepository(pool).
-		WithFeedRankingPolicy(feedRankingPolicy)
+		WithFeedRankingPolicy(feedRankingPolicy).
+		WithPostPublishCooldown(cfg.Post.CreateCooldown)
 	notificationHTTPClient, err := newNotificationServiceHTTPClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to configure notification-service mTLS client")
@@ -100,10 +102,12 @@ func main() {
 	postFeedCache, closePostFeedCache := newPostFeedCache(ctx, cfg)
 	defer closePostFeedCache()
 	useCase := app.NewPostUseCase(repo, userClient, cfg.Public.PostShareBaseURL).
+		WithPostCreateCooldown(cfg.Post.CreateCooldown).
 		WithPostMediaBinder(fileManagerClient).
 		WithRouteReferenceValidator(userRouteClient).
 		WithPostNotificationGateway(notificationClient).
 		WithFeedCuratedBlockPolicy(feedCuratedBlockPolicy).
+		WithFeedDiversityPolicy(feedDiversityPolicy).
 		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey).
 		WithFeedExperimentVariants(cfg.Feed.RankingExperimentVariants).
 		WithFeedExperimentPolicyOverrides(cfg.Feed.RankingExperimentPolicies)
@@ -256,11 +260,26 @@ func feedCuratedBlockPolicyFromConfig(cfg config.FeedConfig) app.FeedCuratedBloc
 	}
 }
 
+func feedDiversityPolicyFromConfig(cfg config.FeedConfig) app.FeedDiversityPolicy {
+	return app.FeedDiversityPolicy{
+		MaxPostsPerCommunityPerPage: cfg.RankingMaxPostsPerCommunityPerPage,
+		MaxPostsPerCategoryPerPage:  cfg.RankingMaxPostsPerCategoryPerPage,
+		MaxPostsPerAuthorPerPage:    cfg.RankingMaxPostsPerAuthorPerPage,
+		MaxPostsPerProfilePerPage:   cfg.RankingMaxPostsPerProfilePerPage,
+	}
+}
+
 func feedRankingPolicyFromConfig(cfg config.FeedConfig) repository.FeedRankingPolicy {
 	return repository.FeedRankingPolicy{
 		ExperimentKey:                     cfg.RankingExperimentKey,
 		PostInterestWeight:                cfg.RankingPostInterestWeight,
 		CommunityInterestWeight:           cfg.RankingCommunityInterestWeight,
+		CommunityInterestMinScore:         cfg.RankingCommunityInterestMinScore,
+		FrequentCommunityMinVisits:        cfg.RankingFrequentCommunityMinVisits,
+		FrequentCommunityMinVisitDays:     cfg.RankingFrequentCommunityMinVisitDays,
+		FrequentCommunityFreshnessWindow:  cfg.RankingFrequentCommunityFreshnessWindow,
+		FrequentCommunityHalfLife:         cfg.RankingFrequentCommunityHalfLife,
+		FrequentCommunityBoostHours:       cfg.RankingFrequentCommunityBoostHours,
 		PostProfileAffinityWeight:         cfg.RankingPostProfileAffinityWeight,
 		CityAffinityWeight:                cfg.RankingCityAffinityWeight,
 		CountryAffinityWeight:             cfg.RankingCountryAffinityWeight,

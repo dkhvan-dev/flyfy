@@ -527,6 +527,10 @@ void main() {
 
     expect(find.text('Transport'), findsOneWidget);
     expect(find.text('Food'), findsOneWidget);
+    expect(find.text('Accommodation'), findsOneWidget);
+    expect(find.text('Permits & fees'), findsOneWidget);
+    expect(find.text('Guide'), findsNothing);
+    expect(find.text('Photo'), findsNothing);
     expect(find.text('transport'), findsNothing);
     expect(find.text('food'), findsNothing);
   });
@@ -900,7 +904,14 @@ const _excursionWithIncludedTypeKeys = ExcursionVm(
       priceAmount: 50000,
       currency: 'KZT',
       languageCodes: ['en'],
-      includedItems: ['transport', 'food'],
+      includedItems: [
+        'transport',
+        'food',
+        'accommodation',
+        'permits_fees',
+        'guide',
+        'photo',
+      ],
     ),
   ],
 );

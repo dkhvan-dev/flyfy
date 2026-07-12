@@ -27,6 +27,8 @@ import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/home_location_provider.dart';
@@ -1740,6 +1742,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return CreateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
+      sourceLanguage:
+          widget.activity?.sourceLanguage ??
+          Localizations.localeOf(context).languageCode,
       format: _format,
       visibility: _visibility,
       categorySlug: _selectedCategorySlug!,
@@ -1832,6 +1837,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return UpdateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
+      sourceLanguage:
+          widget.activity?.sourceLanguage ??
+          Localizations.localeOf(context).languageCode,
       visibility: _visibility,
       categorySlug: _didCategoryChange ? _selectedCategorySlug : null,
       subcategorySlug: _selectedSubcategorySlug,
@@ -1925,7 +1933,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: context.createActivityColors.transparent,
+      backgroundColor: context.createActivityColors.warmSurface18,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.sheetTop,
+        side: BorderSide(
+          color: context.createActivityColors.outlineOverlayLight,
+        ),
+      ),
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1956,7 +1970,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: context.createActivityColors.transparent,
+      backgroundColor: context.createActivityColors.warmSurface18,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.sheetTop,
+        side: BorderSide(
+          color: context.createActivityColors.outlineOverlayLight,
+        ),
+      ),
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1979,7 +1999,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showAppModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: context.createActivityColors.transparent,
+      backgroundColor: context.createActivityColors.warmSurface18,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.sheetTop,
+        side: BorderSide(
+          color: context.createActivityColors.outlineOverlayLight,
+        ),
+      ),
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -2301,6 +2327,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activityCreationRestricted =
+        !widget.isEditMode &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.createActivity,
+        );
+    if (activityCreationRestricted) {
+      return const TrustRestrictedScaffold(creation: true);
+    }
     final l10n = AppLocalizations.of(context)!;
     final stepBackSwipeEdgeWidth = _stepBackSwipeEdgeWidth(context);
 
@@ -2436,6 +2470,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final horizontalPadding = isCompact ? 16.0 : (isWide ? 24.0 : 20.0);
     final blockSpacing = isCompact ? 18.0 : 20.0;
     final descriptionHeight = isCompact ? 140.0 : 150.0;
+    final fileUploadRestricted = context
+        .watch<TrustAccessProvider>()
+        .isRestricted(TrustCapability.uploadFile);
 
     return ListView(
       padding: AppEdgeInsets.fromLTRB(
@@ -2445,22 +2482,25 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         24 + media.viewInsets.bottom,
       ),
       children: [
-        _Step1FieldSection(
-          label: l10n.createCoverSection,
-          child: _CoverUploadCard(
-            title: _hasAnyCoverPreview
-                ? l10n.createCoverChangeAction
-                : l10n.createCoverUploadTitle,
-            hint: _coverUploadErrorMessage ?? l10n.createCoverUploadHint,
-            imageUrl: _hasExistingCoverImage
-                ? resolveActivityCoverUrl(widget.activity!)
-                : null,
-            previewBytes: _coverPreviewBytes,
-            isUploading: _isCoverUploading,
-            hasError: _coverUploadErrorMessage != null,
-            onTap: _pickCoverImage,
+        if (fileUploadRestricted)
+          const TrustRestrictionNotice()
+        else
+          _Step1FieldSection(
+            label: l10n.createCoverSection,
+            child: _CoverUploadCard(
+              title: _hasAnyCoverPreview
+                  ? l10n.createCoverChangeAction
+                  : l10n.createCoverUploadTitle,
+              hint: _coverUploadErrorMessage ?? l10n.createCoverUploadHint,
+              imageUrl: _hasExistingCoverImage
+                  ? resolveActivityCoverUrl(widget.activity!)
+                  : null,
+              previewBytes: _coverPreviewBytes,
+              isUploading: _isCoverUploading,
+              hasError: _coverUploadErrorMessage != null,
+              onTap: _pickCoverImage,
+            ),
           ),
-        ),
         SizedBox(height: blockSpacing),
         _Step1FieldSection(
           label: l10n.createTitleLabel,
@@ -3177,7 +3217,7 @@ class _ActivityAmberConfirmDialog extends StatelessWidget {
                             backgroundColor:
                                 context.createActivityColors.primary,
                             foregroundColor:
-                                context.createActivityColors.textPrimary,
+                                context.createActivityColors.onPrimary,
                             padding: const AppEdgeInsets.symmetric(
                               vertical: 15,
                             ),
@@ -3414,22 +3454,6 @@ class _StepIndicator extends StatelessWidget {
                 : isActive
                 ? context.createActivityColors.primary
                 : context.createActivityColors.border;
-            final stepChild = isDone
-                ? Icon(
-                    Icons.check_rounded,
-                    color: context.createActivityColors.white,
-                  )
-                : Text(
-                    '${stepIndex + 1}',
-                    style: AppTextStyle(
-                      color: isActive
-                          ? context.createActivityColors.white
-                          : context.createActivityColors.orangeLight37,
-                      fontSize: isActive ? 20 : 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  );
-
             return Material(
               color: context.createActivityColors.transparent,
               shape: const CircleBorder(),
@@ -3471,7 +3495,23 @@ class _StepIndicator extends StatelessWidget {
                       width: isActive ? 1.3 : 1,
                     ),
                   ),
-                  child: Center(child: stepChild),
+                  child: Center(
+                    child: isDone
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: context.createActivityColors.white,
+                          )
+                        : Text(
+                            '${stepIndex + 1}',
+                            style: AppTextStyle(
+                              color: isActive
+                                  ? context.createActivityColors.onPrimary
+                                  : context.createActivityColors.orangeLight37,
+                              fontSize: isActive ? 20 : 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                  ),
                 ),
               ),
             );
@@ -3564,36 +3604,18 @@ class _BottomNavBar extends StatelessWidget {
 
       return SafeArea(
         top: false,
-        child: Container(
+        child: Padding(
           padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             14,
             horizontalPadding,
             16,
           ),
-          decoration: AppBoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                context.createActivityColors.warmInk54.withValues(alpha: 0),
-                context.createActivityColors.warmInk54.withValues(alpha: 0.9),
-                context.createActivityColors.warmInk54,
-              ],
-            ),
-            border: Border(
-              top: BorderSide(
-                color: context.createActivityColors.primary.withValues(
-                  alpha: 0.18,
-                ),
-              ),
-            ),
-          ),
           child: ElevatedButton(
             onPressed: isSubmitting ? null : onNext,
             style: ElevatedButton.styleFrom(
               backgroundColor: context.createActivityColors.primary,
-              foregroundColor: context.createActivityColors.textPrimary,
+              foregroundColor: context.createActivityColors.onPrimary,
               minimumSize: Size.fromHeight(buttonHeight),
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(999),
@@ -3606,7 +3628,7 @@ class _BottomNavBar extends StatelessWidget {
                     width: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: context.createActivityColors.textPrimary,
+                      color: context.createActivityColors.onPrimary,
                     ),
                   )
                 : FittedBox(
@@ -3635,21 +3657,13 @@ class _BottomNavBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Container(
+      child: Padding(
         padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 20),
-        decoration: AppBoxDecoration(
-          color: context.createActivityColors.warmOverlayInk04,
-          border: Border(
-            top: BorderSide(
-              color: context.createActivityColors.outlineOverlayLight,
-            ),
-          ),
-        ),
         child: ElevatedButton(
           onPressed: isSubmitting ? null : onNext,
           style: ElevatedButton.styleFrom(
             backgroundColor: context.createActivityColors.primary,
-            foregroundColor: context.createActivityColors.textPrimary,
+            foregroundColor: context.createActivityColors.onPrimary,
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(18),
@@ -3661,7 +3675,7 @@ class _BottomNavBar extends StatelessWidget {
                   width: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: context.createActivityColors.textPrimary,
+                    color: context.createActivityColors.onPrimary,
                   ),
                 )
               : Text(
@@ -3698,7 +3712,7 @@ class _Step2NavBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onNext,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(60),
-        foregroundColor: context.createActivityColors.textPrimary,
+        foregroundColor: context.createActivityColors.onPrimary,
         backgroundColor: context.createActivityColors.primary,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -3711,7 +3725,7 @@ class _Step2NavBar extends StatelessWidget {
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: context.createActivityColors.textPrimary,
+                color: context.createActivityColors.onPrimary,
               ),
             )
           : FittedBox(
@@ -3737,30 +3751,12 @@ class _Step2NavBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Container(
+      child: Padding(
         padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           14,
           horizontalPadding,
           14,
-        ),
-        decoration: AppBoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              context.createActivityColors.warmInk54.withValues(alpha: 0),
-              context.createActivityColors.warmInk54.withValues(alpha: 0.88),
-              context.createActivityColors.warmInk54,
-            ],
-          ),
-          border: Border(
-            top: BorderSide(
-              color: context.createActivityColors.blueMuted24.withValues(
-                alpha: 0.16,
-              ),
-            ),
-          ),
         ),
         child: SizedBox(width: double.infinity, child: nextButton),
       ),
@@ -3908,9 +3904,6 @@ class _Step2FormatSegmented extends StatelessWidget {
       child: Row(
         children: entries.map((entry) {
           final isActive = entry.key == value;
-          final labelColor = isActive
-              ? context.createActivityColors.textPrimary
-              : context.createActivityColors.primary;
           return Expanded(
             child: GestureDetector(
               onTap: () => onChanged(entry.key),
@@ -3945,7 +3938,13 @@ class _Step2FormatSegmented extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(icons[entry.key], size: iconSize, color: labelColor),
+                      Icon(
+                        icons[entry.key],
+                        size: iconSize,
+                        color: isActive
+                            ? context.createActivityColors.onPrimary
+                            : context.createActivityColors.primary,
+                      ),
                       SizedBox(width: spacing),
                       Flexible(
                         child: Text(
@@ -3953,7 +3952,9 @@ class _Step2FormatSegmented extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: labelColor,
+                            color: isActive
+                                ? context.createActivityColors.onPrimary
+                                : context.createActivityColors.primary,
                             fontSize: fontSize,
                             fontWeight: FontWeight.w700,
                           ),
@@ -4314,10 +4315,6 @@ class _Step3ChoiceChip extends StatelessWidget {
     final textScale = MediaQuery.of(context).textScaler.scale(1);
     final horizontalPadding = width <= 360 ? 8.0 : 12.0;
     final fontSize = width <= 360 || textScale > 1.05 ? 12.0 : 15.0;
-    final labelColor = isSelected
-        ? context.createActivityColors.textPrimary
-        : context.createActivityColors.textPrimary;
-
     return Material(
       color: context.createActivityColors.transparent,
       child: InkWell(
@@ -4348,7 +4345,9 @@ class _Step3ChoiceChip extends StatelessWidget {
               label,
               maxLines: 1,
               style: AppTextStyle(
-                color: labelColor,
+                color: isSelected
+                    ? context.createActivityColors.onPrimary
+                    : context.createActivityColors.textPrimary,
                 fontSize: fontSize,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.4,
@@ -4721,7 +4720,7 @@ class _Step3LimitField extends StatelessWidget {
                           hintStyle: hintStyle,
                           isDense: true,
                           filled: false,
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: AppInsets.none,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -4765,7 +4764,7 @@ class _Step3ActionBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onPrimaryAction,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(62),
-        foregroundColor: context.createActivityColors.textPrimary,
+        foregroundColor: context.createActivityColors.onPrimary,
         backgroundColor: context.createActivityColors.primary,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -4778,7 +4777,7 @@ class _Step3ActionBar extends StatelessWidget {
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: context.createActivityColors.textPrimary,
+                color: context.createActivityColors.onPrimary,
               ),
             )
           : FittedBox(
@@ -5500,182 +5499,137 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
   Widget build(BuildContext context) {
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.42;
 
-    return AppModalSheetFrame(
-      useSafeArea: false,
-      onTapOutside: () => Navigator.of(context).maybePop(),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: SizedBox(
-          width: double.infinity,
-          child: Padding(
-            padding: AppEdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: SafeArea(
-              top: false,
-              bottom: false,
-              child: DecoratedBox(
-                decoration: AppBoxDecoration(
-                  color: context.createActivityColors.warmSurface18,
-                  borderRadius: AppRadius.sheetTop,
-                  border: Border.all(
-                    color: context.createActivityColors.outlineOverlayLight,
-                  ),
-                ),
-                child: Padding(
-                  padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.title,
-                              style: AppTextStyle(
-                                color: context.createActivityColors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: context
-                                  .createActivityColors
-                                  .textCoolSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxHeight: maxListHeight),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: widget.items.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final entry = widget.items.entries.elementAt(index);
-                            final selected = entry.key == _selected;
-                            void selectItem() {
-                              setState(() => _selected = entry.key);
-                            }
-
-                            return Semantics(
-                              container: true,
-                              button: true,
-                              selected: selected,
-                              label: entry.value,
-                              onTap: selectItem,
-                              child: ExcludeSemantics(
-                                child: InkWell(
-                                  borderRadius: AppBorderRadius.circular(18),
-                                  onTap: selectItem,
-                                  child: Container(
-                                    padding: const AppEdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 14,
-                                    ),
-                                    decoration: AppBoxDecoration(
-                                      color: selected
-                                          ? context.createActivityColors.primary
-                                                .withValues(alpha: 0.18)
-                                          : context
-                                                .createActivityColors
-                                                .surfaceHigh,
-                                      borderRadius: AppBorderRadius.circular(
-                                        18,
-                                      ),
-                                      border: Border.all(
-                                        color: selected
-                                            ? context
-                                                  .createActivityColors
-                                                  .primary
-                                            : context
-                                                  .createActivityColors
-                                                  .outlineOverlayLight,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          widget.iconForSlug(entry.key),
-                                          color: context
-                                              .createActivityColors
-                                              .primary,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            entry.value,
-                                            style: AppTextStyle(
-                                              color: context
-                                                  .createActivityColors
-                                                  .textPrimary,
-                                              fontSize: 15,
-                                              fontWeight: selected
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          selected
-                                              ? Icons.check_circle_rounded
-                                              : Icons.chevron_right_rounded,
-                                          color: selected
-                                              ? context
-                                                    .createActivityColors
-                                                    .primary
-                                              : context
-                                                    .createActivityColors
-                                                    .textCaption,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _selected == null
-                              ? null
-                              : () => Navigator.of(context).pop(_selected),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                context.createActivityColors.primary,
-                            disabledBackgroundColor:
-                                context.createActivityColors.surfaceCoolLight,
-                            foregroundColor:
-                                context.createActivityColors.textPrimary,
-                            minimumSize: const Size.fromHeight(54),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppBorderRadius.circular(18),
-                            ),
-                          ),
-                          child: Text(
-                            widget.actionLabel,
-                            style: AppTextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                    ],
+    return Padding(
+      padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: AppTextStyle(
+                    color: context.createActivityColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.createActivityColors.textCoolSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxListHeight),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: widget.items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final entry = widget.items.entries.elementAt(index);
+                final selected = entry.key == _selected;
+                void selectItem() {
+                  setState(() => _selected = entry.key);
+                }
+
+                return Semantics(
+                  container: true,
+                  button: true,
+                  selected: selected,
+                  label: entry.value,
+                  onTap: selectItem,
+                  child: ExcludeSemantics(
+                    child: InkWell(
+                      borderRadius: AppBorderRadius.circular(18),
+                      onTap: selectItem,
+                      child: Container(
+                        padding: const AppEdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: AppBoxDecoration(
+                          color: selected
+                              ? context.createActivityColors.primary.withValues(
+                                  alpha: 0.18,
+                                )
+                              : context.createActivityColors.surfaceHigh,
+                          borderRadius: AppBorderRadius.circular(18),
+                          border: Border.all(
+                            color: selected
+                                ? context.createActivityColors.primary
+                                : context
+                                      .createActivityColors
+                                      .outlineOverlayLight,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              widget.iconForSlug(entry.key),
+                              color: context.createActivityColors.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                entry.value,
+                                style: AppTextStyle(
+                                  color:
+                                      context.createActivityColors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              selected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.chevron_right_rounded,
+                              color: selected
+                                  ? context.createActivityColors.primary
+                                  : context.createActivityColors.textCaption,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-        ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _selected == null
+                  ? null
+                  : () => Navigator.of(context).pop(_selected),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.createActivityColors.primary,
+                disabledBackgroundColor:
+                    context.createActivityColors.surfaceCoolLight,
+                foregroundColor: context.createActivityColors.onPrimary,
+                minimumSize: const Size.fromHeight(54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppBorderRadius.circular(18),
+                ),
+              ),
+              child: Text(
+                widget.actionLabel,
+                style: AppTextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

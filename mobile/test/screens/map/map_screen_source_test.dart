@@ -599,7 +599,7 @@ void main() {
     expect(mapSource, contains('if (showSaveRoute)'));
   });
 
-  test('map save route buttons use primary text color', () async {
+  test('map save route buttons use contrast-aware text colors', () async {
     final mapSource = await File(
       'lib/screens/map/map_screen.dart',
     ).readAsString();
@@ -624,10 +624,18 @@ void main() {
 
     expect(saveButtonSections.length, greaterThanOrEqualTo(1));
     for (final section in saveButtonSections) {
-      expect(
-        section,
-        contains('foregroundColor: context.mapColors.textPrimary'),
-      );
+      if (section.contains('backgroundColor: context.mapColors.amberWash05')) {
+        expect(
+          section,
+          contains('foregroundColor: context.mapColors.textPrimary'),
+        );
+      } else {
+        expect(section, contains('backgroundColor: context.mapColors.primary'));
+        expect(
+          section,
+          contains('foregroundColor: context.mapColors.onPrimary'),
+        );
+      }
       expect(
         section,
         isNot(contains('foregroundColor: context.mapColors.warmInk90')),

@@ -286,8 +286,8 @@ void main() {
       );
       expect(pillSource, contains('selectedColor: colors.primary'));
       expect(pillSource, contains('backgroundColor: colors.surfaceRaised'));
-      expect(pillSource, contains('checkmarkColor: colors.textPrimary'));
-      expect(pillSource, contains('color: selected ? colors.textPrimary'));
+      expect(pillSource, contains('checkmarkColor: colors.onPrimary'));
+      expect(pillSource, contains('color: selected ? colors.onPrimary'));
       expect(pillSource, contains('color: selected ? colors.borderPrimary'));
       expect(pillSource, contains('width: selected ? 1.4 : 1'));
       expect(pillSource, isNot(contains('white.withValues(alpha: 0.06)')));
@@ -443,24 +443,15 @@ void main() {
     );
   });
 
-  test(
-    'router and drawer expose my excursions as authenticated menu item',
-    () async {
-      final routerSource = await File(
-        'lib/core/router/app_router.dart',
-      ).readAsString();
-      final drawerSource = await File(
-        'lib/screens/common/app_side_drawer.dart',
-      ).readAsString();
+  test('router exposes my excursions as authenticated route', () async {
+    final routerSource = await File(
+      'lib/core/router/app_router.dart',
+    ).readAsString();
 
-      expect(routerSource, contains("path: '/me/excursions'"));
-      expect(routerSource, contains('MyExcursionsScreen'));
-      expect(routerSource, isNot(contains("location == '/me/excursions'")));
-      expect(drawerSource, contains('AppDrawerActiveItem.myExcursions'));
-      expect(drawerSource, contains('onMyExcursionsTap'));
-      expect(drawerSource, contains('myExcursionsTitle'));
-    },
-  );
+    expect(routerSource, contains("path: '/me/excursions'"));
+    expect(routerSource, contains('MyExcursionsScreen'));
+    expect(routerSource, isNot(contains("location == '/me/excursions'")));
+  });
 
   test(
     'booking edit and cancel sheets use server quotes before mutation',

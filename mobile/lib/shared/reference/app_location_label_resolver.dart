@@ -67,14 +67,33 @@ class AppLocationLabelResolver {
     String? cityName,
     required String localeName,
   }) async {
-    final labels = await _resolveLabels(
-      countryCode: countryCode,
-      cityId: cityId,
-      cityName: cityName,
-      localeName: localeName,
-    );
+    final lang = _normalizeLanguage(localeName);
+    final normalizedCountryCode = _normalizeCountryCode(countryCode);
+    final normalizedCityId = _normalizeText(cityId);
+    final normalizedCityName = _normalizeText(cityName);
 
-    return labels.city ?? '';
+    var city = normalizedCityId == null
+        ? null
+        : await _resolveCity(normalizedCityId, lang);
+    if (city == null && normalizedCityName != null) {
+      city = await _resolveCityByName(
+        normalizedCityName,
+        countryCode: normalizedCountryCode,
+        lang: lang,
+      );
+    }
+    if (city == null &&
+        normalizedCountryCode != null &&
+        normalizedCityId != null) {
+      city = await _resolveCityFromCountryCatalog(
+        normalizedCountryCode,
+        cityId: normalizedCityId,
+        cityName: normalizedCityName,
+        lang: lang,
+      );
+    }
+
+    return _normalizeText(city?.name) ?? normalizedCityName ?? '';
   }
 
   Future<String> resolveAddress({

@@ -416,6 +416,8 @@ class PostCreateEligibilityVm {
     required this.remaining,
     required this.window,
     required this.retryAfter,
+    this.cooldown = Duration.zero,
+    this.blockReason,
     this.nextAvailableAt,
   });
 
@@ -425,6 +427,8 @@ class PostCreateEligibilityVm {
       limit: _parseInt(json['limit']) ?? 0,
       remaining: _parseInt(json['remaining']) ?? 0,
       window: Duration(seconds: _parseInt(json['windowSeconds']) ?? 0),
+      cooldown: Duration(seconds: _parseInt(json['cooldownSeconds']) ?? 0),
+      blockReason: _normalizeNullableString(json['blockReason']),
       retryAfter: Duration(seconds: _parseInt(json['retryAfterSeconds']) ?? 0),
       nextAvailableAt: DateTime.tryParse(
         json['nextAvailableAt']?.toString() ?? '',
@@ -436,6 +440,8 @@ class PostCreateEligibilityVm {
   final int limit;
   final int remaining;
   final Duration window;
+  final Duration cooldown;
+  final String? blockReason;
   final Duration retryAfter;
   final DateTime? nextAvailableAt;
 }
@@ -484,6 +490,11 @@ PostListPage _parsePostListPage(
 
 int? _parseInt(Object? value) {
   return int.tryParse(value?.toString() ?? '');
+}
+
+String? _normalizeNullableString(Object? value) {
+  final normalized = value?.toString().trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 String? _normalizedCsvOrNull(List<String>? values) {

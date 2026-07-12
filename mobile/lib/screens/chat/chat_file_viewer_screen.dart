@@ -105,7 +105,7 @@ class _ChatFileViewerScreenState extends State<ChatFileViewerScreen> {
                     opacity: contentOpacity.toDouble(),
                     child: Center(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
+                        padding: const AppEdgeInsets.symmetric(
                           horizontal: 28,
                           vertical: 84,
                         ),
@@ -175,17 +175,17 @@ class _ChatFileViewerScreenState extends State<ChatFileViewerScreen> {
                                           height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: colors.textPrimary,
+                                            color: colors.onPrimary,
                                           ),
                                         )
                                       : const Icon(Icons.open_in_new_rounded),
                                   label: Text(l10n.chatExternalLinkOpenAction),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: colors.primary,
-                                    foregroundColor: colors.textPrimary,
+                                    foregroundColor: colors.onPrimary,
                                     disabledBackgroundColor: colors.primary
                                         .withValues(alpha: 0.5),
-                                    disabledForegroundColor: colors.textPrimary
+                                    disabledForegroundColor: colors.onPrimary
                                         .withValues(alpha: 0.72),
                                     minimumSize: const Size.fromHeight(54),
                                     shape: RoundedRectangleBorder(

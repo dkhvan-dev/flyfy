@@ -141,12 +141,13 @@ func (s *Server) GetTrustProfile(ctx context.Context, req *trustv1.GetTrustProfi
 		return nil, mapError(err)
 	}
 
-	profile, err := s.usecase.GetTrustProfile(ctx, userID)
+	trustContext, err := s.usecase.GetTrustContext(ctx, userID)
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return &trustv1.GetTrustProfileResponse{
-		Profile: trustProfileToProto(profile),
+		Profile:            trustProfileToProto(trustContext.Profile),
+		ActiveRestrictions: activeRestrictionsToProto(trustContext.ActiveRestrictions),
 	}, nil
 }
 
@@ -371,6 +372,34 @@ func trustStatusToProto(status model.TrustStatus) trustv1.TrustStatus {
 	default:
 		return trustv1.TrustStatus_TRUST_STATUS_UNSPECIFIED
 	}
+}
+
+func activeRestrictionsToProto(items []model.RuntimeRestriction) []*trustv1.ActiveRestriction {
+	result := make([]*trustv1.ActiveRestriction, 0, len(items))
+	for _, item := range items {
+		result = append(result, &trustv1.ActiveRestriction{
+			RestrictionId:   item.ID.String(),
+			RestrictionCode: item.RestrictionCode,
+			ReasonCode:      item.ReasonCode,
+			ExpiresAt:       timestampFromTimePtr(item.ExpiresAt),
+			CreatedAt:       timestampFromTime(item.CreatedAt),
+		})
+	}
+	return result
+}
+
+func timestampFromTime(value time.Time) *timestamppb.Timestamp {
+	if value.IsZero() {
+		return nil
+	}
+	return timestamppb.New(value.UTC())
+}
+
+func timestampFromTimePtr(value *time.Time) *timestamppb.Timestamp {
+	if value == nil {
+		return nil
+	}
+	return timestampFromTime(*value)
 }
 
 func restrictionAppealToProto(appeal model.RestrictionAppeal) *trustv1.RestrictionAppeal {

@@ -91,6 +91,30 @@ func TestCreatePublicApprovedActivityIndexesSearchDocument(t *testing.T) {
 	}
 }
 
+func TestActivitySearchDocumentIncludesGeneratedTranslations(t *testing.T) {
+	item := &model.Activity{
+		ID:             uuid.New(),
+		Title:          "Поход в горы",
+		Description:    "Подробное описание похода в горы.",
+		SourceLanguage: "ru",
+		Translations: model.ActivityTranslations{
+			"ru": {Title: "Поход в горы", Description: "Подробное описание похода в горы."},
+			"en": {Title: "Mountain hike", Description: "Detailed mountain hike description."},
+		},
+		Visibility:       enum.ActivityVisibilityPublic,
+		ModerationStatus: enum.ActivityModerationStatusApproved,
+	}
+
+	document := activitySearchDocument(item, nil)
+
+	if document.Locale != "ru" || document.Title["en"] != "Mountain hike" {
+		t.Fatalf("locale/title translations = %q/%#v", document.Locale, document.Title)
+	}
+	if document.Description["en"] != "Detailed mountain hike description." {
+		t.Fatalf("description translations = %#v", document.Description)
+	}
+}
+
 func TestCreateFlaggedPostModerationActivityIndexesSearchDocument(t *testing.T) {
 	t.Parallel()
 

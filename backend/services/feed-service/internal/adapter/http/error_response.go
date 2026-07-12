@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -76,11 +77,13 @@ const (
 )
 
 type errorResponse struct {
-	Error   string            `json:"error"`
-	Message string            `json:"message"`
-	Code    string            `json:"code"`
-	Kind    string            `json:"kind"`
-	Fields  map[string]string `json:"fields,omitempty"`
+	Error             string            `json:"error"`
+	Message           string            `json:"message"`
+	Code              string            `json:"code"`
+	Kind              string            `json:"kind"`
+	Fields            map[string]string `json:"fields,omitempty"`
+	RetryAfterSeconds int64             `json:"retryAfterSeconds,omitempty"`
+	NextAvailableAt   *string           `json:"nextAvailableAt,omitempty"`
 }
 
 type localizedError struct {
@@ -95,6 +98,11 @@ type mappedError struct {
 
 func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err error) {
 	if mapped, ok := mapBusinessError(err); ok {
+		var rateLimitErr *app.PostRateLimitError
+		if errors.As(err, &rateLimitErr) {
+			writePostRateLimitError(w, r, mapped.status, mapped.code, rateLimitErr)
+			return
+		}
 		if validationFields := validationFieldsForError(err); len(validationFields) > 0 {
 			writeErrorWithFields(w, r, mapped.status, mapped.code, validationFields)
 			return
@@ -104,6 +112,36 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 	}
 
 	writeTechnicalError(w, r, err)
+}
+
+func writePostRateLimitError(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	code string,
+	err *app.PostRateLimitError,
+) {
+	text := businessErrorText(code, localeFromRequest(r))
+	retryAfterSeconds := int64(0)
+	if err != nil && err.RetryAfter > 0 {
+		retryAfterSeconds = int64((err.RetryAfter + time.Second - time.Nanosecond) / time.Second)
+	}
+	if retryAfterSeconds > 0 {
+		w.Header().Set("Retry-After", strconv.FormatInt(retryAfterSeconds, 10))
+	}
+	var nextAvailableAt *string
+	if err != nil && !err.NextAvailableAt.IsZero() {
+		formatted := err.NextAvailableAt.UTC().Format(time.RFC3339)
+		nextAvailableAt = &formatted
+	}
+	writeJSON(w, status, errorResponse{
+		Error:             text.Error,
+		Message:           text.Message,
+		Code:              code,
+		Kind:              errorKindBusiness,
+		RetryAfterSeconds: retryAfterSeconds,
+		NextAvailableAt:   nextAvailableAt,
+	})
 }
 
 func validationFieldsForError(err error) map[string]string {

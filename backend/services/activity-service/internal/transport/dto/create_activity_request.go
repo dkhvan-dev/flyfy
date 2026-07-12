@@ -3,6 +3,7 @@ package dto
 type CreateActivityRequest struct {
 	Title           string   `json:"title"`
 	Description     string   `json:"description"`
+	SourceLanguage  string   `json:"sourceLanguage,omitempty"`
 	Format          string   `json:"format"`
 	Visibility      string   `json:"visibility"`
 	CategorySlug    string   `json:"categorySlug"`

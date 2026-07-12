@@ -23,9 +23,10 @@ import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
-import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -34,7 +35,6 @@ import '../../providers/session_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
-import '../common/app_side_drawer.dart';
 import '../map/map_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
@@ -52,7 +52,7 @@ final class _ActivitiesColors {
   }
 
   Color get primary => colors.primary;
-  Color get primaryText => isLight ? const Color(0xFFB45309) : colors.primary;
+  Color get primaryText => isLight ? colors.warning : colors.primary;
   Color get primaryPressed => colors.primaryPressed;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
@@ -121,8 +121,6 @@ final class _ActivitiesColors {
   Color get orangeWash15 => colors.textPrimary;
   Color get orangeWash29 => colors.primary;
   Color get redSoft04 => colors.danger;
-  Color get surfaceCool => colors.surfaceHigh;
-  Color get textCoolSecondary => colors.textSecondary;
   Color get warmInk100 => colors.backgroundDeep;
   Color get warmInk16 => colors.backgroundDeep;
   Color get warmInk35 => colors.background;
@@ -152,17 +150,13 @@ enum _ActivitySortField { date, price }
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
   static const int _discoverPageSize = 8;
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final GuideApi _guideApi = GuideApi();
 
   _DiscoverFilters _filters = const _DiscoverFilters();
   String _searchQuery = '';
   String? _loadedHostedUserId;
-  String? _guideBadgeUserId;
-  bool _showGuideBadge = false;
   int _currentPage = 1;
   _ActivitySortField _sortField = _ActivitySortField.date;
   bool _sortAscending = true;
@@ -342,98 +336,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     );
   }
 
-  Future<void> _confirmLogout() async {
-    final l10n = AppLocalizations.of(context)!;
-    final authProvider = context.read<AuthProvider>();
-    final sessionProvider = context.read<SessionProvider>();
-
-    final confirmed = await showAppModalDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AppModalDialogCard(
-          backgroundColor: context.activitiesColors.surfaceCool,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppBorderRadius.circular(20),
-          ),
-          title: Text(
-            l10n.logoutDialogTitle,
-            style: AppTextStyle(
-              color: context.activitiesColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            l10n.logoutDialogMessage,
-            style: AppTextStyle(
-              color: context.activitiesColors.textCoolSecondary,
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(
-                l10n.cancel,
-                style: AppTextStyle(
-                  color: context.activitiesColors.textCoolSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.activitiesColors.primary,
-                foregroundColor: context.activitiesColors.textPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppBorderRadius.circular(12),
-                ),
-              ),
-              child: Text(l10n.logoutConfirmButton),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    await authProvider.logout();
-    await sessionProvider.clearSession();
-
-    if (mounted) {
-      context.go('/');
-    }
-  }
-
-  Future<void> _openMyActivities() async {
-    final authProvider = context.read<AuthProvider>();
-
-    if (authProvider.state != AuthState.authenticated) {
-      context.push('/login?from=/me/activities');
-      return;
-    }
-
-    context.push('/me/activities');
-  }
-
-  void _openProfile() {
-    context.push('/profile');
-  }
-
-  Future<void> _closeDrawerIfNeeded() async {
-    final scaffoldState = _scaffoldKey.currentState;
-    if (scaffoldState == null || !scaffoldState.isDrawerOpen) return;
-
-    Navigator.of(context).pop();
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-  }
-
-  Future<void> _runDrawerAction(Future<void> Function() action) async {
-    await _closeDrawerIfNeeded();
-    if (!mounted) return;
-    await action();
-  }
-
   Future<void> _refreshActivities(String? currentUserId) async {
     final provider = context.read<ActivityProvider>();
 
@@ -457,41 +359,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ActivityProvider>().loadMyActivities();
-    });
-  }
-
-  void _ensureGuideBadgeState(String? currentUserId) {
-    final normalizedUserId = (currentUserId ?? '').trim();
-    if (normalizedUserId.isEmpty) {
-      _guideBadgeUserId = null;
-      _showGuideBadge = false;
-      return;
-    }
-
-    if (_guideBadgeUserId == normalizedUserId) {
-      return;
-    }
-
-    _guideBadgeUserId = normalizedUserId;
-    _showGuideBadge = false;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        final guide = await _guideApi.getMyGuideProfileOrNull();
-        if (!mounted || _guideBadgeUserId != normalizedUserId) {
-          return;
-        }
-        setState(() {
-          _showGuideBadge = guide?.isVerified == true;
-        });
-      } catch (_) {
-        if (!mounted || _guideBadgeUserId != normalizedUserId) {
-          return;
-        }
-        setState(() {
-          _showGuideBadge = false;
-        });
-      }
     });
   }
 
@@ -546,49 +413,25 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final session = context.watch<SessionProvider>();
     final locationProvider = context.watch<HomeLocationProvider>();
     final isLoggedIn = auth.state == AuthState.authenticated;
+    final activityCreationRestricted =
+        isLoggedIn &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.createActivity,
+        );
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
-    final location = resolveDrawerLocation(
-      profile,
-      Localizations.localeOf(context),
-    );
 
     _ensureHostedActivitiesLoaded(currentUserId);
-    _ensureGuideBadgeState(currentUserId);
     _scheduleApplyDefaultLocationFilter(locationProvider);
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: context.activitiesColors.warmInk35,
-      drawerEnableOpenDragGesture: true,
-      drawerEdgeDragWidth: 28,
-      drawerScrimColor: context.activitiesColors.black.withValues(alpha: 0.42),
-      drawer: AppSideDrawer(
-        l10n: l10n,
-        isLoggedIn: isLoggedIn,
-        showGuideBadge: _showGuideBadge,
-        profile: profile,
-        location: location,
-        activeItem: AppDrawerActiveItem.none,
-        onProfileTap: () => _runDrawerAction(() async => _openProfile()),
-        onHomeTap: () => _runDrawerAction(() async => context.go('/')),
-        onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
-        onMyExcursionsTap: () =>
-            _runDrawerAction(() async => context.push('/me/excursions')),
-        onMyStoriesTap: () =>
-            _runDrawerAction(() async => context.push('/me/posts')),
-        onMyStoryArchiveTap: () =>
-            _runDrawerAction(() async => context.push('/me/stories')),
-        onActivitiesTap: () => _runDrawerAction(() async {}),
-        onLoginTap: () => _runDrawerAction(
-          () async => context.push('/login?from=/activities'),
-        ),
-        onLogoutTap: () => _runDrawerAction(_confirmLogout),
-      ),
       bottomNavigationBar: CreateActionBottomNavigationBar(
         onHomeTap: () => context.go('/'),
         onQrTap: () => context.push('/qr'),
-        onCreateTap: () => _onCreateTap(context),
+        onCreateTap: activityCreationRestricted
+            ? null
+            : () => _onCreateTap(context),
         onServicesTap: () => context.push('/services'),
         onChatsTap: () => context.push('/chats'),
       ),
@@ -676,6 +519,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     horizontalPadding: 0,
                                   ),
                                   SizedBox(height: layout.sectionGap),
+                                  if (activityCreationRestricted) ...[
+                                    const TrustRestrictionNotice(
+                                      creation: true,
+                                    ),
+                                    SizedBox(height: layout.sectionGap),
+                                  ],
                                   if (isLoggedIn) ...[
                                     SurfaceStoryTray(
                                       surface: 'activities',
@@ -1424,6 +1273,7 @@ class _DiscoverActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toString();
+    final localizedCopy = item.localizedCopy(locale);
     final colors = context.activitiesColors;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final compactMeta =
@@ -1450,6 +1300,7 @@ class _DiscoverActivityCard extends StatelessWidget {
           cityId: item.cityId,
           cityName: item.cityName,
           fallbackText: locationFallbackText,
+          includeCountry: false,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: style,
@@ -1648,7 +1499,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                       height: _activitiesScaled(context, 14, min: 10, max: 14),
                     ),
                     Text(
-                      item.title,
+                      localizedCopy.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
@@ -3013,7 +2864,7 @@ class _PrimaryPillButton extends StatelessWidget {
       onPressed: onTap,
       style: FilledButton.styleFrom(
         backgroundColor: context.activitiesColors.primary,
-        foregroundColor: context.activitiesColors.textPrimary,
+        foregroundColor: context.activitiesColors.onPrimary,
         minimumSize: Size(0, minHeight),
         padding: AppEdgeInsets.symmetric(
           horizontal: _activitiesScaled(context, 22, min: 16, max: 22),
@@ -3345,11 +3196,12 @@ List<MapActivityTarget> _buildActivityMapTargets(
     final priceLabel = item.isFree
         ? l10n.createPriceFree
         : item.formattedPriceLabel(localeName);
+    final localizedCopy = item.localizedCopy(localeName);
 
     targets.add(
       MapActivityTarget(
         id: item.id,
-        title: item.title,
+        title: localizedCopy.title,
         latitude: item.latitude!,
         longitude: item.longitude!,
         detailRoute: '/activities/${Uri.encodeComponent(item.id)}',
@@ -3357,7 +3209,7 @@ List<MapActivityTarget> _buildActivityMapTargets(
         metaLabel: '$categoryLabel · $dateLabel · $priceLabel',
         startLabel: dateLabel,
         priceLabel: priceLabel,
-        avatarLabel: _activityAvatarLabel(item.title),
+        avatarLabel: _activityAvatarLabel(localizedCopy.title),
         icon: artSpec.icon,
         accentColor: artSpec.colorsFor(context).last,
       ),
@@ -3673,6 +3525,10 @@ List<ActivityListItemVm> _applyDiscoverFilters(
     final haystack = [
       item.title,
       item.description,
+      for (final copy in item.translations.values) ...[
+        copy.title,
+        copy.description,
+      ],
       item.shortLocation,
       categoryLabelsBySlug[slug] ?? '',
       item.tags.join(' '),

@@ -1459,11 +1459,11 @@ class _BookingFooter extends StatelessWidget {
                       : onConfirm,
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
-                    foregroundColor: colors.textPrimary,
+                    foregroundColor: colors.onPrimary,
                     disabledBackgroundColor: colors.primary.withValues(
                       alpha: 0.45,
                     ),
-                    disabledForegroundColor: colors.textPrimary.withValues(
+                    disabledForegroundColor: colors.onPrimary.withValues(
                       alpha: 0.68,
                     ),
                     shape: const StadiumBorder(),
@@ -1480,7 +1480,7 @@ class _BookingFooter extends StatelessWidget {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: colors.textPrimary,
+                              color: colors.onPrimary,
                             ),
                           )
                         : Text(
@@ -1768,7 +1768,7 @@ class _CounterButton extends StatelessWidget {
         child: Icon(
           icon,
           color: filled
-              ? colors.textPrimary
+              ? colors.onPrimary
               : emphasized
               ? colors.primary.withValues(alpha: enabled ? 1 : 0.34)
               : bookingColors.muted.withValues(alpha: enabled ? 1 : 0.35),
@@ -2025,7 +2025,7 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(16),
                   ),

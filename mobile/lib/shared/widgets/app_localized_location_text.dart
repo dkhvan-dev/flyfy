@@ -55,7 +55,15 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
     final resolved = _resolvedText?.trim() ?? '';
     if (resolved.isNotEmpty) return resolved;
 
-    return widget.fallbackText.trim();
+    return _fallbackText;
+  }
+
+  String get _fallbackText {
+    final fallback = widget.fallbackText.trim();
+    if (widget.includeCountry) return fallback;
+
+    final cityName = widget.cityName?.trim() ?? '';
+    return cityName.isNotEmpty ? cityName : _cityOnlyLabel(fallback);
   }
 
   @override
@@ -81,7 +89,7 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
   Future<void> _resolve() async {
     final serial = ++_requestSerial;
     final localeName = Localizations.localeOf(context).toString();
-    final fallback = widget.fallbackText.trim();
+    final fallback = _fallbackText;
     if (_hasReferenceLookup) {
       if (_resolvedText != null) {
         setState(() => _resolvedText = null);

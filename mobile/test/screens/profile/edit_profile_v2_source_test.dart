@@ -19,68 +19,53 @@ void main() {
     expect(source, isNot(contains('AppPalette.')));
   });
 
-  test(
-    'edit profile save action overlays transparent profile content',
-    () async {
-      final source = await File(
-        'lib/screens/profile/edit_profile_screen.dart',
-      ).readAsString();
+  test('edit profile save action stays outside scroll content', () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
 
-      final scaffoldStart = source.indexOf('child: Scaffold(');
-      final bodyStart = source.indexOf(
-        'body: ProfileResponsiveScope(',
-        scaffoldStart,
-      );
-      final backgroundStart = source.indexOf(
-        'child: ProfileGlassBackground(',
-        bodyStart,
-      );
-      final stackStart = source.indexOf('child: Stack(', backgroundStart);
-      final safeAreaStart = source.indexOf('SafeArea(', stackStart);
-      final saveOverlayStart = source.indexOf('Positioned(', stackStart);
-      final saveButtonStart = source.indexOf(
-        'child: _buildStickySaveButton(l10n)',
-        saveOverlayStart,
-      );
+    final scaffoldStart = source.indexOf('child: Scaffold(');
+    final bodyStart = source.indexOf(
+      'body: ProfileResponsiveScope(',
+      scaffoldStart,
+    );
+    final backgroundStart = source.indexOf(
+      'child: ProfileGlassBackground(',
+      bodyStart,
+    );
+    final safeAreaStart = source.indexOf('child: SafeArea(', backgroundStart);
+    final bottomNavigationStart = source.indexOf(
+      'bottomNavigationBar: SafeArea(',
+      bodyStart,
+    );
+    final saveButtonStart = source.indexOf(
+      'child: _buildStickySaveButton(l10n)',
+      bottomNavigationStart,
+    );
 
-      expect(scaffoldStart, isNonNegative);
-      expect(bodyStart, greaterThan(scaffoldStart));
-      expect(backgroundStart, greaterThan(bodyStart));
-      expect(stackStart, greaterThan(backgroundStart));
-      expect(safeAreaStart, greaterThan(stackStart));
-      expect(saveOverlayStart, greaterThan(stackStart));
-      expect(saveButtonStart, greaterThan(saveOverlayStart));
-      expect(
-        source.substring(scaffoldStart, bodyStart),
-        contains('extendBody: true'),
-      );
-      expect(
-        source.substring(scaffoldStart, bodyStart),
-        isNot(contains('bottomNavigationBar:')),
-      );
-      expect(
-        source.substring(backgroundStart, stackStart),
-        isNot(contains('SafeArea(')),
-      );
-      expect(
-        source.substring(safeAreaStart, saveOverlayStart),
-        contains('bottom: false'),
-      );
-
-      final saveOverlaySource = source.substring(
-        saveOverlayStart,
-        saveButtonStart,
-      );
-      expect(
-        saveOverlaySource,
-        contains('MediaQuery.paddingOf(context).bottom'),
-      );
-      expect(saveOverlaySource, isNot(contains('Container(')));
-      expect(saveOverlaySource, isNot(contains('DecoratedBox(')));
-      expect(saveOverlaySource, isNot(contains('AppBoxDecoration(')));
-      expect(saveOverlaySource, isNot(contains('ColoredBox(')));
-    },
-  );
+    expect(scaffoldStart, isNonNegative);
+    expect(bodyStart, greaterThan(scaffoldStart));
+    expect(backgroundStart, greaterThan(bodyStart));
+    expect(safeAreaStart, greaterThan(backgroundStart));
+    expect(bottomNavigationStart, greaterThan(bodyStart));
+    expect(saveButtonStart, greaterThan(bottomNavigationStart));
+    expect(
+      source.substring(scaffoldStart, bottomNavigationStart),
+      isNot(contains('extendBody: true')),
+    );
+    expect(
+      source.substring(safeAreaStart, bottomNavigationStart),
+      contains('bottom: false'),
+    );
+    expect(
+      source.substring(backgroundStart, bottomNavigationStart),
+      isNot(contains('Positioned(')),
+    );
+    expect(
+      source.substring(bottomNavigationStart, saveButtonStart),
+      contains('top: false'),
+    );
+  });
 
   test(
     'edit profile input fields use visible V2 surfaces and borders',

@@ -12,10 +12,7 @@ void main() {
     expect(source, contains('waitUntilFirstFrameRasterized'));
     expect(source, contains('Future<void>.delayed(_deferredStartupDelay)'));
     expect(source, contains('static const _deferredPushStartupDelay'));
-    expect(
-      source,
-      contains('Future<void> _runDeferredPushStartupWork() async'),
-    );
+    expect(source, contains('Future<void> _runDeferredPushStartupWork({'));
     expect(source, contains('FirebaseMessaging.onBackgroundMessage('));
     expect(source, contains('_firebaseMessagingBackgroundHandler'));
 
@@ -31,9 +28,14 @@ void main() {
 
     final startupBody = source.substring(
       source.indexOf('  Future<void> _runDeferredStartupWork() async {'),
-      source.indexOf('  Future<void> _runDeferredPushStartupWork() async {'),
+      source.indexOf('  Future<void> _runDeferredPushStartupWork({'),
     );
-    expect(startupBody, contains('unawaited(_runDeferredPushStartupWork())'));
+    expect(
+      startupBody,
+      contains(
+        'unawaited(_runDeferredPushStartupWork(localeReady: localeReady));',
+      ),
+    );
     expect(startupBody, isNot(contains('_initializeFirebaseMessaging()')));
     expect(startupBody, isNot(contains('_startPushNotifications()')));
 

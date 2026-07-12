@@ -35,6 +35,7 @@ const (
 	defaultPostReportAutoHideThreshold = 3
 	postCreateRateLimitMax             = 10
 	postCreateRateLimitWindow          = time.Hour
+	defaultPostCreateCooldown          = 5 * time.Minute
 	commentCreateWindow                = 3 * time.Hour
 	defaultStoryTTL                    = 24 * time.Hour
 )
@@ -84,9 +85,16 @@ type PostCreateEligibility struct {
 	Limit           int
 	Remaining       int
 	Window          time.Duration
+	Cooldown        time.Duration
+	BlockReason     string
 	RetryAfter      time.Duration
 	NextAvailableAt *time.Time
 }
+
+const (
+	PostCreateBlockReasonCooldown   = "cooldown"
+	PostCreateBlockReasonHourlyRate = "hourly_limit"
+)
 
 type PostCommentView struct {
 	Comment       *model.PostComment
@@ -277,6 +285,8 @@ type PostUseCase struct {
 	feedExperimentVariants   []feedExperimentVariant
 	feedExperimentPolicies   map[string]model.FeedRankingPolicyOverride
 	feedCuratedBlockPolicy   FeedCuratedBlockPolicy
+	feedDiversityPolicy      FeedDiversityPolicy
+	postCreateCooldown       time.Duration
 }
 
 func NewPostUseCase(repo port.PostRepository, users UserServiceClient, postsBaseURL string) *PostUseCase {
@@ -285,10 +295,19 @@ func NewPostUseCase(repo port.PostRepository, users UserServiceClient, postsBase
 		users:                  users,
 		postsBaseURL:           strings.TrimRight(strings.TrimSpace(postsBaseURL), "/"),
 		feedCuratedBlockPolicy: DefaultFeedCuratedBlockPolicy(),
+		feedDiversityPolicy:    DefaultFeedDiversityPolicy(),
+		postCreateCooldown:     defaultPostCreateCooldown,
 		feedExperimentAssignment: FeedExperimentAssignment{
 			RankingExperiment: defaultFeedExperimentKey,
 		},
 	}
+}
+
+func (u *PostUseCase) WithPostCreateCooldown(cooldown time.Duration) *PostUseCase {
+	if cooldown > 0 {
+		u.postCreateCooldown = cooldown
+	}
+	return u
 }
 
 func (u *PostUseCase) WithCommunitySearchIndexer(indexer CommunitySearchIndexer) *PostUseCase {
@@ -334,6 +353,11 @@ func (u *PostUseCase) WithFeedExperimentPolicyOverrides(spec string) *PostUseCas
 
 func (u *PostUseCase) WithFeedCuratedBlockPolicy(policy FeedCuratedBlockPolicy) *PostUseCase {
 	u.feedCuratedBlockPolicy = policy.Normalized()
+	return u
+}
+
+func (u *PostUseCase) WithFeedDiversityPolicy(policy FeedDiversityPolicy) *PostUseCase {
+	u.feedDiversityPolicy = policy.Normalized()
 	return u
 }
 
@@ -494,9 +518,6 @@ func (u *PostUseCase) createPost(ctx context.Context, subject string, input Crea
 		return nil, err
 	}
 	now := time.Now().UTC()
-	if err := u.ensurePostCreateRateLimit(ctx, authorUserID, now); err != nil {
-		return nil, err
-	}
 	profile, err := u.resolvePostProfileDefaults(ctx, input.PostProfileKey)
 	if err != nil {
 		return nil, err
@@ -506,6 +527,11 @@ func (u *PostUseCase) createPost(ctx context.Context, subject string, input Crea
 	post, err := normalizePostInputWithProfile(postID, input, profile)
 	if err != nil {
 		return nil, err
+	}
+	if post.Status == enum.PostStatusPublished {
+		if err := u.ensurePostCreateRateLimit(ctx, authorUserID, now); err != nil {
+			return nil, err
+		}
 	}
 	document, err := postDocumentFromNormalizedBlocks(post.ContentBlocks)
 	if err != nil {
@@ -556,6 +582,9 @@ func (u *PostUseCase) createPost(ctx context.Context, subject string, input Crea
 	}
 
 	if err = u.repo.CreatePost(ctx, post); err != nil {
+		if rateLimitErr := postRateLimitErrorFromRepository(err, time.Now().UTC()); rateLimitErr != nil {
+			return nil, rateLimitErr
+		}
 		return nil, fmt.Errorf("create post: %w", err)
 	}
 	if postHasMedia(mediaPlan) {
@@ -587,6 +616,9 @@ func (u *PostUseCase) createPost(ctx context.Context, subject string, input Crea
 		applyPostActivityCreationState(post, profile)
 		post.UpdatedAt = time.Now().UTC()
 		if err = u.repo.UpdatePost(ctx, post); err != nil {
+			if rateLimitErr := postRateLimitErrorFromRepository(err, time.Now().UTC()); rateLimitErr != nil {
+				return nil, rateLimitErr
+			}
 			return nil, fmt.Errorf("finalize post media: %w", err)
 		}
 		post.Revision++
@@ -602,16 +634,25 @@ func (u *PostUseCase) ensurePostCreateRateLimit(ctx context.Context, authorUserI
 		return err
 	}
 	if !eligibility.CanCreate {
-		return ErrPostRateLimited
+		return newPostRateLimitError(now, eligibility.NextAvailableAt)
 	}
 	return nil
 }
 
 func (u *PostUseCase) postCreateEligibility(ctx context.Context, authorUserID uuid.UUID, now time.Time) (*PostCreateEligibility, error) {
-	windowStart := now.Add(-postCreateRateLimitWindow)
-	count, err := u.repo.CountPostsCreatedByAuthorSince(ctx, authorUserID, windowStart)
+	cooldown := u.postCreateCooldown
+	if cooldown <= 0 {
+		cooldown = defaultPostCreateCooldown
+	}
+	cooldownUntil, err := u.repo.PostPublishCooldownUntil(ctx, authorUserID)
 	if err != nil {
-		return nil, fmt.Errorf("count recent posts by author: %w", err)
+		return nil, fmt.Errorf("get post publish cooldown: %w", err)
+	}
+
+	windowStart := now.Add(-postCreateRateLimitWindow)
+	count, err := u.repo.CountPostsPublishedByAuthorSince(ctx, authorUserID, windowStart)
+	if err != nil {
+		return nil, fmt.Errorf("count recent published posts by author: %w", err)
 	}
 
 	remaining := postCreateRateLimitMax - count
@@ -619,34 +660,62 @@ func (u *PostUseCase) postCreateEligibility(ctx context.Context, authorUserID uu
 		remaining = 0
 	}
 	eligibility := &PostCreateEligibility{
-		CanCreate: count < postCreateRateLimitMax,
+		CanCreate: true,
 		Limit:     postCreateRateLimitMax,
 		Remaining: remaining,
 		Window:    postCreateRateLimitWindow,
-	}
-	if eligibility.CanCreate {
-		return eligibility, nil
+		Cooldown:  cooldown,
 	}
 
-	oldest, err := u.repo.OldestPostCreatedAtByAuthorSince(ctx, authorUserID, windowStart)
-	if err != nil {
-		return nil, fmt.Errorf("get oldest recent post by author: %w", err)
+	var blockedUntil *time.Time
+	if cooldownUntil != nil && cooldownUntil.After(now) {
+		next := cooldownUntil.UTC()
+		blockedUntil = &next
+		eligibility.BlockReason = PostCreateBlockReasonCooldown
 	}
-	if oldest == nil {
-		next := now.Add(postCreateRateLimitWindow)
+
+	if count >= postCreateRateLimitMax {
+		oldest, oldestErr := u.repo.OldestPostPublishedAtByAuthorSince(ctx, authorUserID, windowStart)
+		if oldestErr != nil {
+			return nil, fmt.Errorf("get oldest recent published post by author: %w", oldestErr)
+		}
+		hourlyNext := now.Add(postCreateRateLimitWindow)
+		if oldest != nil {
+			hourlyNext = oldest.UTC().Add(postCreateRateLimitWindow)
+		}
+		if blockedUntil == nil || hourlyNext.After(*blockedUntil) {
+			blockedUntil = &hourlyNext
+			eligibility.BlockReason = PostCreateBlockReasonHourlyRate
+		}
+	}
+
+	if blockedUntil != nil && blockedUntil.After(now) {
+		eligibility.CanCreate = false
+		next := blockedUntil.UTC()
 		eligibility.NextAvailableAt = &next
-		eligibility.RetryAfter = postCreateRateLimitWindow
-		return eligibility, nil
+		eligibility.RetryAfter = next.Sub(now)
 	}
-
-	next := oldest.UTC().Add(postCreateRateLimitWindow)
-	retryAfter := next.Sub(now)
-	if retryAfter < 0 {
-		retryAfter = 0
-	}
-	eligibility.NextAvailableAt = &next
-	eligibility.RetryAfter = retryAfter
 	return eligibility, nil
+}
+
+func newPostRateLimitError(now time.Time, nextAvailableAt *time.Time) error {
+	next := now.Add(defaultPostCreateCooldown)
+	if nextAvailableAt != nil && nextAvailableAt.After(now) {
+		next = nextAvailableAt.UTC()
+	}
+	return &PostRateLimitError{
+		RetryAfter:      next.Sub(now),
+		NextAvailableAt: next,
+	}
+}
+
+func postRateLimitErrorFromRepository(err error, now time.Time) error {
+	var cooldownErr *port.PostPublishCooldownError
+	if !errors.As(err, &cooldownErr) {
+		return nil
+	}
+	next := cooldownErr.NextAvailableAt.UTC()
+	return newPostRateLimitError(now, &next)
 }
 
 func (u *PostUseCase) UpdatePost(ctx context.Context, subject string, postID uuid.UUID, input UpdatePostInput) (*PostView, error) {
@@ -2153,6 +2222,7 @@ func (u *PostUseCase) updateOwnedPost(
 	if existing.Revision != revision {
 		return nil, ErrPostRevisionConflict
 	}
+	wasNeverPublished := existing.Status != enum.PostStatusPublished && existing.PublishedAt == nil
 
 	input, err := inputForExisting(existing)
 	if err != nil {
@@ -2191,6 +2261,11 @@ func (u *PostUseCase) updateOwnedPost(
 	if existing.Status == enum.PostStatusPublished && existing.PublishedAt == nil {
 		existing.PublishedAt = &now
 	}
+	if wasNeverPublished && existing.Status == enum.PostStatusPublished {
+		if err := u.ensurePostCreateRateLimit(ctx, actorUserID, now); err != nil {
+			return nil, err
+		}
+	}
 	applyPostActivityCreationState(existing, profile)
 
 	mediaPlan, err := buildPostMediaPlan(existing, actorUserID)
@@ -2211,6 +2286,9 @@ func (u *PostUseCase) updateOwnedPost(
 	if err = u.repo.UpdatePost(ctx, existing); err != nil {
 		if errors.Is(err, port.ErrPostRevisionConflict) {
 			return nil, ErrPostRevisionConflict
+		}
+		if rateLimitErr := postRateLimitErrorFromRepository(err, time.Now().UTC()); rateLimitErr != nil {
+			return nil, rateLimitErr
 		}
 		return nil, fmt.Errorf("update post: %w", err)
 	}

@@ -4,6 +4,7 @@ class CreateActivityRequest {
   CreateActivityRequest({
     required this.title,
     required this.description,
+    this.sourceLanguage = 'ru',
     required this.format,
     required this.visibility,
     required this.categorySlug,
@@ -37,6 +38,7 @@ class CreateActivityRequest {
 
   final String title;
   final String description;
+  final String sourceLanguage;
   final String format;
   final String visibility;
   final String categorySlug;
@@ -71,6 +73,7 @@ class CreateActivityRequest {
     return {
       'title': title,
       'description': description,
+      'sourceLanguage': sourceLanguage,
       'format': format,
       'visibility': visibility,
       'categorySlug': categorySlug,

@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS post_moderation_outbox CASCADE;
 DROP TABLE IF EXISTS post_reports CASCADE;
 DROP TABLE IF EXISTS post_seen CASCADE;
 DROP TABLE IF EXISTS post_view_sketches CASCADE;
+DROP TABLE IF EXISTS post_publish_cooldowns CASCADE;
 DROP TABLE IF EXISTS posts CASCADE;
 DROP TABLE IF EXISTS post_profile_schema_versions CASCADE;
 DROP TABLE IF EXISTS community_instance_materialization_events CASCADE;

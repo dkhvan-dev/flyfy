@@ -13,6 +13,12 @@ func TestFeedRankingPolicyFromConfigMapsFeedRankingKnobs(t *testing.T) {
 		RankingExperimentVariants:                "control=75,rank-v2=25",
 		RankingPostInterestWeight:                1.2,
 		RankingCommunityInterestWeight:           0.4,
+		RankingCommunityInterestMinScore:         2.5,
+		RankingFrequentCommunityMinVisits:        4,
+		RankingFrequentCommunityMinVisitDays:     3,
+		RankingFrequentCommunityFreshnessWindow:  45 * 24 * time.Hour,
+		RankingFrequentCommunityHalfLife:         15 * 24 * time.Hour,
+		RankingFrequentCommunityBoostHours:       8,
 		RankingPostProfileAffinityWeight:         0.25,
 		RankingCityAffinityWeight:                0.3,
 		RankingCountryAffinityWeight:             0.2,
@@ -58,10 +64,17 @@ func TestFeedRankingPolicyFromConfigMapsFeedRankingKnobs(t *testing.T) {
 
 	policy := feedRankingPolicyFromConfig(cfg)
 	curatedPolicy := feedCuratedBlockPolicyFromConfig(cfg)
+	diversityPolicy := feedDiversityPolicyFromConfig(cfg)
 
 	if policy.ExperimentKey != "rank-v2" ||
 		policy.PostInterestWeight != 1.2 ||
 		policy.CommunityInterestWeight != 0.4 ||
+		policy.CommunityInterestMinScore != 2.5 ||
+		policy.FrequentCommunityMinVisits != 4 ||
+		policy.FrequentCommunityMinVisitDays != 3 ||
+		policy.FrequentCommunityFreshnessWindow != 45*24*time.Hour ||
+		policy.FrequentCommunityHalfLife != 15*24*time.Hour ||
+		policy.FrequentCommunityBoostHours != 8 ||
 		policy.PostProfileAffinityWeight != 0.25 ||
 		policy.CityAffinityWeight != 0.3 ||
 		policy.CountryAffinityWeight != 0.2 ||
@@ -106,5 +119,11 @@ func TestFeedRankingPolicyFromConfigMapsFeedRankingKnobs(t *testing.T) {
 		curatedPolicy.MaxOfficialNewsCardsPerPage != 0 ||
 		curatedPolicy.MaxProfileCardsPerPage != 1 {
 		t.Fatalf("curated policy did not map feed config: %+v", curatedPolicy)
+	}
+	if diversityPolicy.MaxPostsPerCommunityPerPage != 2 ||
+		diversityPolicy.MaxPostsPerCategoryPerPage != 6 ||
+		diversityPolicy.MaxPostsPerAuthorPerPage != 4 ||
+		diversityPolicy.MaxPostsPerProfilePerPage != 7 {
+		t.Fatalf("diversity policy did not map feed config: %+v", diversityPolicy)
 	}
 }

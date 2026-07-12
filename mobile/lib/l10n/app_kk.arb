@@ -297,11 +297,6 @@
     }
   },
   "profileTitle": "Профиль",
-  "drawerStatusVerifiedGuide": "Расталған гид",
-  "drawerStatusGuide": "Гид",
-  "drawerStatusGuideRevoked": "Гид мәртебесі қайтарылды",
-  "drawerStatusTraveler": "Саяхатшы",
-  "drawerStatusCompleteProfile": "Профильді толтырыңыз",
   "profileNotAvailable": "Профиль қолжетімсіз",
   "profilePhone": "Телефон",
   "profilePhoneVerificationSection": "Телефонды растау",
@@ -920,7 +915,6 @@
   "homeTitle": "Inflap",
   "homeSubtitle": "Саяхаттап, белсенділіктерді тауып, жаңа әсерлер ашыңыз",
   "servicesSectionTitle": "Сервистер",
-  "servicesAllButton": "Барлығын көру",
   "homeExcursionsTitle": "Экскурсиялар",
   "homeExcursionsSubtitle": "Қызықты бағыттар мен сапарларды таңдаңыз",
   "homeGuidesTitle": "Гидтер",
@@ -974,7 +968,8 @@
   "searchDomainHelpArticle": "Көмек мақаласы",
   "homeSearchHint": "Белсенділіктер, орындар, экскурсиялар...",
   "homeTopDestinations": "Үздік бағыттар",
-  "homeSeeAll": "Барлығын көру",
+  "homeSeeAll": "Барлығы",
+  "homeShowAllCard": "Барлығын көрсету",
   "homeTopStories": "Қазір талқылануда",
   "homeSmartPostsTitle": "Сіз үшін",
   "homeSmartPostsEmpty": "Сізге арналған посттар осы жерде пайда болады.",
@@ -987,6 +982,7 @@
   "homeServiceStories": "Хикаялар",
   "homeServicePlaces": "Орындар",
   "homeServiceCurrencyConverter": "Валюта бағамдары",
+  "homeServiceAllServices": "Барлық қызметтер",
   "homeServiceStays": "Тұру",
   "homeServiceDelivery": "Жеткізу",
   "homeServiceTaxi": "Такси",
@@ -1260,6 +1256,8 @@
   "communityTrustActionFailed": "Trust әрекетін орындау мүмкін болмады. Қайта көріңіз.",
   "feedEmptyTitle": "Лентада әзірге ештеңе жоқ",
   "feedEmptyMessage": "Лентаңызды қалыптастыру үшін саяхатшылар мен қауымдастықтарға жазылыңыз.",
+  "feedFollowingEmptyTitle": "Жазылымдар әзірге жоқ",
+  "feedFollowingEmptyMessage": "Саяхатшыларға немесе қауымдастықтарға жазылыңыз, олардың жазбалары осында көрсетіледі.",
   "feedLoadFailedTitle": "Лентаны жүктеу мүмкін болмады",
   "feedLoadFailedMessage": "Байланысты тексеріп, қайта көріңіз.",
   "feedRetryAction": "Қайталау",
@@ -1943,6 +1941,19 @@
   "excursionTranslationSourceLanguageEnglish": "ағылшын",
   "excursionTranslationSourceLanguageRussian": "орыс",
   "excursionTranslationSourceLanguageKazakh": "қазақ",
+  "activityDetailsTranslatedNotice": "Белсенділік мәліметтері {sourceLanguage} тілінен автоматты түрде аударылды",
+  "@activityDetailsTranslatedNotice": {
+    "placeholders": {
+      "sourceLanguage": {}
+    }
+  },
+  "activityDetailsShowOriginal": "Түпнұсқаны көрсету",
+  "activityDetailsShowTranslation": "Аударманы көрсету",
+  "activityDetailsTranslationPendingNotice": "Белсенділіктің түпнұсқасы көрсетіліп тұр · Аударма дайындалып жатыр",
+  "activityDetailsTranslationUnavailableNotice": "Белсенділіктің түпнұсқасы көрсетіліп тұр · Автоматты аударма уақытша қолжетімсіз",
+  "activityTranslationSourceLanguageEnglish": "ағылшын",
+  "activityTranslationSourceLanguageRussian": "орыс",
+  "activityTranslationSourceLanguageKazakh": "қазақ",
   "excursionLanguageEnglish": "Ағылшын",
   "excursionLanguageRussian": "Орыс",
   "excursionLanguageKazakh": "Қазақ",
@@ -2242,8 +2253,8 @@
   "createExcursionIncludedTypeFood": "Тамақ",
   "createExcursionIncludedTypeTickets": "Билеттер",
   "createExcursionIncludedTypeEquipment": "Жабдық",
-  "createExcursionIncludedTypeGuide": "Гид",
-  "createExcursionIncludedTypePhoto": "Фото",
+  "createExcursionIncludedTypeAccommodation": "Тұру",
+  "createExcursionIncludedTypePermitsFees": "Рұқсаттар мен алымдар",
   "createExcursionIncludedTypeOther": "Басқа",
   "createExcursionStartOffsetLabel": "Басталуы, мин",
   "createExcursionSlotDurationLabel": "Ұзақтығы, мин",
@@ -3191,11 +3202,11 @@
   "storyEditorValidationContentRequired": "Жарияламас бұрын кемінде бір хикая блогын қосыңыз.",
   "storyEditorValidationMediaPending": "Медиа жүктеліп болғанша күтіңіз.",
   "postCreateRateLimitTitle": "Пост лимиті",
-  "postCreateRateLimitMessage": "Соңғы бір сағатта ең көп пост санын жасадыңыз. Жаңа постты шамамен {minutes} мин. кейін жасауға болады.",
+  "postCreateRateLimitMessage": "Келесі постты {time} кейін жариялауға болады.",
   "@postCreateRateLimitMessage": {
     "placeholders": {
-      "minutes": {
-        "type": "int"
+      "time": {
+        "type": "String"
       }
     }
   },
@@ -3749,5 +3760,9 @@
   "contextualHelpTitle": "Сұрақтар мен көмек",
   "contextualHelpOpenAll": "Барлық көмек",
   "contextualHelpLoadFailed": "Көмек уақытша қолжетімсіз",
-  "contextualHelpTryAgain": "Қайталау"
+  "contextualHelpTryAgain": "Қайталау",
+  "trustRestrictionTitle": "Қолжетімділік шектелген",
+  "trustCreationRestrictionMessage": "Жасау мүмкіндігін әкімші шектеді. Мұны қате деп санасаңыз, қолдау қызметіне хабарласыңыз.",
+  "trustFeatureRestrictionMessage": "Бұл мүмкіндікті әкімші шектеді. Мұны қате деп санасаңыз, қолдау қызметіне хабарласыңыз.",
+  "trustRestrictionSupportAction": "Қолдау қызметіне жазу"
 }

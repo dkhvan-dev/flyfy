@@ -30,6 +30,7 @@ import '../../features/routing/models/routing_models.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
+import '../../features/excursions/excursion_included_items.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../features/excursions/excursion_search.dart';
 import '../../features/help_center/data/help_center_api.dart';
@@ -1112,163 +1113,148 @@ class _ExcursionDetailsContentState extends State<ExcursionDetailsContent> {
           ],
         ),
       ),
-      child: Stack(
+      child: Column(
         children: [
-          Column(
-            children: [
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const AppEdgeInsets.fromLTRB(24, 10, 24, 0),
-                  child: _ExcursionDetailsTopBar(
-                    onBackTap: widget.onBackTap,
-                    onNotificationsTap: widget.onNotificationsTap,
-                  ),
-                ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const AppEdgeInsets.fromLTRB(24, 10, 24, 0),
+              child: _ExcursionDetailsTopBar(
+                onBackTap: widget.onBackTap,
+                onNotificationsTap: widget.onNotificationsTap,
               ),
-              SizedBox(
-                height: _excursionDetailsScaled(context, 14, min: 12, max: 16),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: AppEdgeInsets.only(
-                    bottom: bottomAction == null
-                        ? 24
-                        : 132 + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _ExcursionHero(
-                        excursion: widget.excursion,
-                        selectedOffer: activeSelectedOffer,
-                        localizedLandmark: widget.localizedLandmark,
-                        localizedPlacesById: widget.localizedPlacesById,
-                        locationLabelResolver: widget.locationLabelResolver,
-                        contentLanguageCode: appLanguageCode,
-                        reviews: widget.excursionReviews,
-                      ),
-                      Padding(
-                        padding: const AppEdgeInsets.fromLTRB(24, 26, 24, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _ExcursionStatsGrid(
-                              excursion: widget.excursion,
-                              selectedOffer: activeSelectedOffer,
-                            ),
-                            const SizedBox(height: 24),
-                            TripPreparationCta(
-                              title: l10n.travelChecklistCtaTitle,
-                              subtitle: l10n.travelChecklistCtaSubtitle,
-                              actionLabel: widget.activeChecklistBooking == null
-                                  ? l10n.travelChecklistPreviewAction
-                                  : l10n.travelChecklistOpen,
-                              onTap: widget.activeChecklistBooking == null
-                                  ? (widget.onChecklistPreviewTap ??
-                                        widget.onBookTap)
-                                  : (widget.onFullChecklistTap ??
-                                        widget.onBookTap),
-                            ),
-                            if (widget.helpCenterApi != null) ...[
-                              const SizedBox(height: 24),
-                              ContextualHelpSection(
-                                api: widget.helpCenterApi,
-                                surface: HelpCenterSurface.excursionDetails,
-                                tags: [
-                                  'excursions',
-                                  'guides',
-                                  if (widget.showCheckoutPrice) 'payments',
-                                  if ((widget.excursion.categorySlug ?? '')
-                                      .trim()
-                                      .isNotEmpty)
-                                    widget.excursion.categorySlug!.trim(),
-                                ],
-                                userState: widget.showMessageGuide
-                                    ? 'traveler'
-                                    : 'guide',
-                                supportContext: {
-                                  'excursion_id': widget.excursion.id,
-                                },
-                                onActionSelected: widget.onHelpActionSelected,
-                              ),
-                            ],
-                            const SizedBox(height: 40),
-                            _ExcursionExperienceSection(
-                              excursion: widget.excursion,
-                              localizedLandmark: widget.localizedLandmark,
-                              contentLanguageCode: appLanguageCode,
-                            ),
-                            const SizedBox(height: 44),
-                            _ExcursionOffersSection(
-                              excursion: widget.excursion,
-                              offers: visibleOffers,
-                              selectedOffer: widget.selectedOffer,
-                              currentUserId: widget.currentUserId,
-                              isCurrentUserGuide: widget.isCurrentUserGuide,
-                              enableRemoteOffers: widget.enableRemoteOffers,
-                              offerProfiles: widget.offerProfiles,
-                              showMessageGuide: widget.showMessageGuide,
-                              isMessageGuideLoading:
-                                  widget.isMessageGuideLoading,
-                              onOfferSelected: widget.onOfferSelected,
-                              onOfferProfileTap: widget.onOfferProfileTap,
-                              onMessageGuideTap: widget.onMessageGuideTap,
-                              onOffersChanged: widget.onOffersChanged,
-                            ),
-                            if (activeSelectedOffer != null &&
-                                activeSelectedOffer
-                                    .includedItems
-                                    .isNotEmpty) ...[
-                              const SizedBox(height: 44),
-                              _ExcursionSelectedOfferIncludedSection(
-                                selectedOffer: activeSelectedOffer,
-                                languageCode: appLanguageCode,
-                              ),
-                            ],
-                            const SizedBox(height: 44),
-                            _ExcursionMapPreview(
-                              excursion: widget.excursion,
-                              locationLabelResolver:
-                                  widget.locationLabelResolver,
-                              isBuildingRoute: widget.isBuildingRoute,
-                              onRoutePreviewTap: widget.onRoutePreviewTap,
-                            ),
-                            const SizedBox(height: 44),
-                            _ExcursionItinerarySection(
-                              excursion: widget.excursion,
-                              localizedLandmark: widget.localizedLandmark,
-                              languageCode: itineraryLanguageCode,
-                              translationNoticeState: translationNoticeState,
-                              translationSourceLanguage:
-                                  translationInfo.sourceLanguage,
-                              showingOriginal: _showOriginalItinerary,
-                              onToggleTranslation: () {
-                                setState(() {
-                                  _showOriginalItinerary =
-                                      !_showOriginalItinerary;
-                                });
-                              },
-                            ),
-                            if (widget.excursionReviews.isNotEmpty) ...[
-                              const SizedBox(height: 44),
-                              _ExcursionReviewsSection(
-                                reviews: widget.excursionReviews,
-                                currentUserId: widget.currentUserId,
-                                onReviewLongPress: widget.onReviewLongPress,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          if (bottomAction != null)
-            Positioned(left: 0, right: 0, bottom: 0, child: bottomAction),
+          SizedBox(
+            height: _excursionDetailsScaled(context, 14, min: 12, max: 16),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const AppEdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ExcursionHero(
+                    excursion: widget.excursion,
+                    selectedOffer: activeSelectedOffer,
+                    localizedLandmark: widget.localizedLandmark,
+                    localizedPlacesById: widget.localizedPlacesById,
+                    locationLabelResolver: widget.locationLabelResolver,
+                    contentLanguageCode: appLanguageCode,
+                    reviews: widget.excursionReviews,
+                  ),
+                  Padding(
+                    padding: const AppEdgeInsets.fromLTRB(24, 26, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ExcursionStatsGrid(
+                          excursion: widget.excursion,
+                          selectedOffer: activeSelectedOffer,
+                        ),
+                        const SizedBox(height: 24),
+                        TripPreparationCta(
+                          title: l10n.travelChecklistCtaTitle,
+                          subtitle: l10n.travelChecklistCtaSubtitle,
+                          actionLabel: widget.activeChecklistBooking == null
+                              ? l10n.travelChecklistPreviewAction
+                              : l10n.travelChecklistOpen,
+                          onTap: widget.activeChecklistBooking == null
+                              ? (widget.onChecklistPreviewTap ??
+                                    widget.onBookTap)
+                              : (widget.onFullChecklistTap ?? widget.onBookTap),
+                        ),
+                        if (widget.helpCenterApi != null) ...[
+                          const SizedBox(height: 24),
+                          ContextualHelpSection(
+                            api: widget.helpCenterApi,
+                            surface: HelpCenterSurface.excursionDetails,
+                            tags: [
+                              'excursions',
+                              'guides',
+                              if (widget.showCheckoutPrice) 'payments',
+                              if ((widget.excursion.categorySlug ?? '')
+                                  .trim()
+                                  .isNotEmpty)
+                                widget.excursion.categorySlug!.trim(),
+                            ],
+                            userState: widget.showMessageGuide
+                                ? 'traveler'
+                                : 'guide',
+                            supportContext: {
+                              'excursion_id': widget.excursion.id,
+                            },
+                            onActionSelected: widget.onHelpActionSelected,
+                          ),
+                        ],
+                        const SizedBox(height: 40),
+                        _ExcursionExperienceSection(
+                          excursion: widget.excursion,
+                          localizedLandmark: widget.localizedLandmark,
+                          contentLanguageCode: appLanguageCode,
+                        ),
+                        const SizedBox(height: 44),
+                        _ExcursionOffersSection(
+                          excursion: widget.excursion,
+                          offers: visibleOffers,
+                          selectedOffer: widget.selectedOffer,
+                          currentUserId: widget.currentUserId,
+                          isCurrentUserGuide: widget.isCurrentUserGuide,
+                          enableRemoteOffers: widget.enableRemoteOffers,
+                          offerProfiles: widget.offerProfiles,
+                          showMessageGuide: widget.showMessageGuide,
+                          isMessageGuideLoading: widget.isMessageGuideLoading,
+                          onOfferSelected: widget.onOfferSelected,
+                          onOfferProfileTap: widget.onOfferProfileTap,
+                          onMessageGuideTap: widget.onMessageGuideTap,
+                          onOffersChanged: widget.onOffersChanged,
+                        ),
+                        if (activeSelectedOffer != null &&
+                            activeSelectedOffer.includedItems.isNotEmpty) ...[
+                          const SizedBox(height: 44),
+                          _ExcursionSelectedOfferIncludedSection(
+                            selectedOffer: activeSelectedOffer,
+                            languageCode: appLanguageCode,
+                          ),
+                        ],
+                        const SizedBox(height: 44),
+                        _ExcursionMapPreview(
+                          excursion: widget.excursion,
+                          locationLabelResolver: widget.locationLabelResolver,
+                          isBuildingRoute: widget.isBuildingRoute,
+                          onRoutePreviewTap: widget.onRoutePreviewTap,
+                        ),
+                        const SizedBox(height: 44),
+                        _ExcursionItinerarySection(
+                          excursion: widget.excursion,
+                          localizedLandmark: widget.localizedLandmark,
+                          languageCode: itineraryLanguageCode,
+                          translationNoticeState: translationNoticeState,
+                          translationSourceLanguage:
+                              translationInfo.sourceLanguage,
+                          showingOriginal: _showOriginalItinerary,
+                          onToggleTranslation: () {
+                            setState(() {
+                              _showOriginalItinerary = !_showOriginalItinerary;
+                            });
+                          },
+                        ),
+                        if (widget.excursionReviews.isNotEmpty) ...[
+                          const SizedBox(height: 44),
+                          _ExcursionReviewsSection(
+                            reviews: widget.excursionReviews,
+                            currentUserId: widget.currentUserId,
+                            onReviewLongPress: widget.onReviewLongPress,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ?bottomAction,
         ],
       ),
     );
@@ -2218,8 +2204,8 @@ enum _ExcursionIncludedFeatureType {
   food,
   tickets,
   equipment,
-  guide,
-  photo,
+  accommodation,
+  permitsFees,
   other,
 }
 
@@ -2235,6 +2221,7 @@ List<_ExcursionIncludedFeature> _resolveExcursionIncludedFeatures(
   String languageCode,
 ) {
   return source
+      .where((item) => !ExcursionIncludedItemKey.isDeprecated(item))
       .map((item) => _parseExcursionIncludedFeature(item, languageCode))
       .where((feature) => feature.label.isNotEmpty)
       .toList(growable: false);
@@ -2309,8 +2296,17 @@ _ExcursionIncludedFeatureType? _includedFeatureTypeFromPrefix(String prefix) {
     'gear' ||
     'снаряжение' ||
     'жабдық' => _ExcursionIncludedFeatureType.equipment,
-    'guide' || 'гид' => _ExcursionIncludedFeatureType.guide,
-    'photo' || 'photos' || 'фото' => _ExcursionIncludedFeatureType.photo,
+    'accommodation' ||
+    'lodging' ||
+    'stay' ||
+    'проживание' ||
+    'тұру' => _ExcursionIncludedFeatureType.accommodation,
+    'permits_fees' ||
+    'permits fees' ||
+    'permits & fees' ||
+    'permits and fees' ||
+    'разрешения и сборы' ||
+    'рұқсаттар мен алымдар' => _ExcursionIncludedFeatureType.permitsFees,
     'other' || 'другое' || 'басқа' => _ExcursionIncludedFeatureType.other,
     _ => null,
   };
@@ -2342,15 +2338,15 @@ String _includedFeatureTypeLabel(
       'ru': 'Снаряжение',
       'kk': 'Жабдық',
     },
-    _ExcursionIncludedFeatureType.guide => const {
-      'en': 'Guide',
-      'ru': 'Гид',
-      'kk': 'Гид',
+    _ExcursionIncludedFeatureType.accommodation => const {
+      'en': 'Accommodation',
+      'ru': 'Проживание',
+      'kk': 'Тұру',
     },
-    _ExcursionIncludedFeatureType.photo => const {
-      'en': 'Photo',
-      'ru': 'Фото',
-      'kk': 'Фото',
+    _ExcursionIncludedFeatureType.permitsFees => const {
+      'en': 'Permits & fees',
+      'ru': 'Разрешения и сборы',
+      'kk': 'Рұқсаттар мен алымдар',
     },
     _ExcursionIncludedFeatureType.other => const {
       'en': 'Included',
@@ -2438,15 +2434,22 @@ _ExcursionIncludedFeatureType _guessIncludedFeatureType(String label) {
       normalized.contains('жабдық')) {
     return _ExcursionIncludedFeatureType.equipment;
   }
-  if (normalized.contains('photo') ||
-      normalized.contains('фото') ||
-      normalized.contains('сурет')) {
-    return _ExcursionIncludedFeatureType.photo;
+  if (normalized.contains('accommodation') ||
+      normalized.contains('lodging') ||
+      normalized.contains('hotel') ||
+      normalized.contains('прожив') ||
+      normalized.contains('отель') ||
+      normalized.contains('қонақүй') ||
+      normalized.contains('тұру')) {
+    return _ExcursionIncludedFeatureType.accommodation;
   }
-  if (normalized.contains('guide') ||
-      normalized.contains('гид') ||
-      normalized.contains('нұсқаушы')) {
-    return _ExcursionIncludedFeatureType.guide;
+  if (normalized.contains('permit') ||
+      normalized.contains('fee') ||
+      normalized.contains('разреш') ||
+      normalized.contains('сбор') ||
+      normalized.contains('рұқсат') ||
+      normalized.contains('алым')) {
+    return _ExcursionIncludedFeatureType.permitsFees;
   }
   return _ExcursionIncludedFeatureType.other;
 }
@@ -2458,8 +2461,8 @@ IconData _includedFeatureIcon(_ExcursionIncludedFeature feature) {
     _ExcursionIncludedFeatureType.food => Icons.restaurant_rounded,
     _ExcursionIncludedFeatureType.tickets => Icons.confirmation_number_rounded,
     _ExcursionIncludedFeatureType.equipment => Icons.backpack_rounded,
-    _ExcursionIncludedFeatureType.guide => Icons.person_pin_circle_rounded,
-    _ExcursionIncludedFeatureType.photo => Icons.photo_camera_rounded,
+    _ExcursionIncludedFeatureType.accommodation => Icons.hotel_rounded,
+    _ExcursionIncludedFeatureType.permitsFees => Icons.receipt_long_rounded,
     _ExcursionIncludedFeatureType.other => Icons.check_circle_rounded,
   };
 }
@@ -5089,8 +5092,7 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(58),
                       backgroundColor: context.excursionDetailsColors.primary,
-                      foregroundColor:
-                          context.excursionDetailsColors.textPrimary,
+                      foregroundColor: context.excursionDetailsColors.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(15),
                       ),

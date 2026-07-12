@@ -8,6 +8,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
 
     final provider = ThemeModeProvider();
+    expect(provider.themeMode, ThemeMode.system);
+    expect(provider.selectedMode, AppThemeModePreference.system);
+
     await provider.load();
 
     expect(provider.themeMode, ThemeMode.system);

@@ -126,7 +126,7 @@ class FeatureStubScreen extends StatelessWidget {
                             onPressed: () => context.go('/'),
                             style: FilledButton.styleFrom(
                               backgroundColor: colors.primary,
-                              foregroundColor: colors.textPrimary,
+                              foregroundColor: colors.onPrimary,
                               minimumSize: const Size(180, 54),
                             ),
                             child: Text(l10n.homeNavHome),

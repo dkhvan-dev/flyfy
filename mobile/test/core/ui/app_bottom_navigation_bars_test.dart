@@ -58,6 +58,45 @@ void main() {
     expect(find.text('2'), findsOneWidget);
     expect(find.text('10'), findsNothing);
   });
+
+  testWidgets('create action bar omits the plus when creation is unavailable', (
+    tester,
+  ) async {
+    final chatProvider = ChatProvider(
+      chatApi: _FakeChatApi(conversations: const []),
+      wsService: _FakeChatWsService(),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<ChatProvider>.value(
+        value: chatProvider,
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            bottomNavigationBar: CreateActionBottomNavigationBar(
+              onHomeTap: () {},
+              onQrTap: () {},
+              onServicesTap: () {},
+              onChatsTap: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('bottom-nav-create-action')),
+      findsNothing,
+    );
+    expect(find.byIcon(Icons.add_rounded), findsNothing);
+  });
 }
 
 ConversationVm _conversation(String id, {required int unreadCount}) {

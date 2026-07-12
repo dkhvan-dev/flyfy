@@ -568,7 +568,7 @@ class _SendButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle(
-                color: colors.textPrimary.withValues(
+                color: colors.onPrimary.withValues(
                   alpha: onTap == null ? 0.48 : 1,
                 ),
                 fontSize: 14,

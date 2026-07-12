@@ -77,7 +77,7 @@ class AppListSearchField extends StatelessWidget {
                 disabledBorder: InputBorder.none,
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+                contentPadding: AppInsets.none,
                 hintText: hintText,
                 hintStyle: AppTextStyle(color: colors.textMuted),
               ),

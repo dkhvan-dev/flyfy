@@ -36,6 +36,8 @@ type PostCreateEligibilityResponse struct {
 	Limit             int     `json:"limit"`
 	Remaining         int     `json:"remaining"`
 	WindowSeconds     int64   `json:"windowSeconds"`
+	CooldownSeconds   int64   `json:"cooldownSeconds"`
+	BlockReason       string  `json:"blockReason,omitempty"`
 	RetryAfterSeconds int64   `json:"retryAfterSeconds"`
 	NextAvailableAt   *string `json:"nextAvailableAt,omitempty"`
 }

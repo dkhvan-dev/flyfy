@@ -290,6 +290,134 @@ void main() {
     expect(api.queries, ['Almaty']);
     expect(api.languages, ['ru']);
   });
+
+  test(
+    'initial location permission is requested once and updates location',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final api = _FakeReferenceApi(
+        cities: const [
+          ReferenceCity(id: 'astana', countryCode: 'KZ', name: 'Astana'),
+        ],
+      );
+      final deviceContext = _FakeDeviceContextService(
+        suggestion: DeviceLocationSuggestion(
+          countryCode: 'KZ',
+          countryName: 'Kazakhstan',
+          cityName: 'Astana',
+          latitude: 51.1605,
+          longitude: 71.4704,
+        ),
+      );
+      final provider = HomeLocationProvider(
+        referenceApi: api,
+        deviceContextService: deviceContext,
+      );
+
+      await provider.requestInitialLocationPermission(languageCode: 'en');
+      await provider.requestInitialLocationPermission(languageCode: 'en');
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getBool(HomeLocationProvider.initialPermissionRequestStorageKey),
+        isTrue,
+      );
+      expect(deviceContext.locationPermissionRequestCount, 1);
+      expect(deviceContext.requestPermissionValues, [false]);
+      expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+      expect(provider.effectiveLocation.cityId, 'astana');
+      expect(provider.effectiveLocation.cityName, 'Astana');
+    },
+  );
+
+  test('denied initial location permission is not requested again', () async {
+    SharedPreferences.setMockInitialValues({});
+    final deviceContext = _FakeDeviceContextService(
+      suggestion: null,
+      locationPermissionGranted: false,
+    );
+    final provider = HomeLocationProvider(
+      referenceApi: _FakeReferenceApi(cities: const []),
+      deviceContextService: deviceContext,
+    );
+
+    await provider.requestInitialLocationPermission(languageCode: 'en');
+    await provider.requestInitialLocationPermission(languageCode: 'en');
+
+    expect(deviceContext.locationPermissionRequestCount, 1);
+    expect(deviceContext.requestPermissionValues, isEmpty);
+    expect(provider.effectiveLocation.source, HomeLocationSource.fallback);
+  });
+
+  test('a transient location permission failure can be retried', () async {
+    SharedPreferences.setMockInitialValues({});
+    final deviceContext = _FakeDeviceContextService(
+      suggestion: null,
+      locationPermissionFailuresRemaining: 1,
+    );
+    final provider = HomeLocationProvider(
+      referenceApi: _FakeReferenceApi(cities: const []),
+      deviceContextService: deviceContext,
+    );
+
+    await provider.requestInitialLocationPermission(languageCode: 'en');
+
+    var preferences = await SharedPreferences.getInstance();
+    expect(deviceContext.locationPermissionRequestCount, 1);
+    expect(
+      preferences.getBool(
+        HomeLocationProvider.initialPermissionRequestStorageKey,
+      ),
+      isNull,
+    );
+
+    await provider.requestInitialLocationPermission(languageCode: 'en');
+
+    preferences = await SharedPreferences.getInstance();
+    expect(deviceContext.locationPermissionRequestCount, 2);
+    expect(
+      preferences.getBool(
+        HomeLocationProvider.initialPermissionRequestStorageKey,
+      ),
+      isTrue,
+    );
+  });
+
+  test(
+    'initial location detection preserves a manually selected city',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        HomeLocationProvider.storageKey: jsonEncode({
+          'source': HomeLocationSource.manual.name,
+          'countryCode': 'UZ',
+          'cityId': 'tashkent',
+          'cityName': 'Tashkent',
+          'updatedAt': DateTime.utc(2026, 7, 11).toIso8601String(),
+        }),
+      });
+      final deviceContext = _FakeDeviceContextService(
+        suggestion: DeviceLocationSuggestion(
+          countryCode: 'KZ',
+          countryName: 'Kazakhstan',
+          cityName: 'Almaty',
+          latitude: 43.2389,
+          longitude: 76.8897,
+        ),
+      );
+      final provider = HomeLocationProvider(
+        referenceApi: _FakeReferenceApi(cities: const []),
+        deviceContextService: deviceContext,
+      );
+
+      await provider.requestInitialLocationPermission(languageCode: 'en');
+
+      expect(deviceContext.locationPermissionRequestCount, 1);
+      expect(deviceContext.requestPermissionValues, isEmpty);
+      expect(provider.effectiveLocation.source, HomeLocationSource.manual);
+      expect(provider.effectiveLocation.cityId, 'tashkent');
+      expect(provider.effectiveLocation.cityName, 'Tashkent');
+    },
+  );
 }
 
 class _FakeReferenceApi extends ReferenceApi {
@@ -324,11 +452,29 @@ class _FakeReferenceApi extends ReferenceApi {
 }
 
 class _FakeDeviceContextService extends DeviceContextService {
-  _FakeDeviceContextService({required this.suggestion, this.timezone});
+  _FakeDeviceContextService({
+    required this.suggestion,
+    this.timezone,
+    this.locationPermissionGranted = true,
+    this.locationPermissionFailuresRemaining = 0,
+  });
 
   final DeviceLocationSuggestion? suggestion;
   final String? timezone;
+  final bool locationPermissionGranted;
+  int locationPermissionFailuresRemaining;
   final List<bool> requestPermissionValues = [];
+  int locationPermissionRequestCount = 0;
+
+  @override
+  Future<bool> requestLocationPermission() async {
+    locationPermissionRequestCount += 1;
+    if (locationPermissionFailuresRemaining > 0) {
+      locationPermissionFailuresRemaining -= 1;
+      throw StateError('location_service_unavailable');
+    }
+    return locationPermissionGranted;
+  }
 
   @override
   Future<DeviceLocationSuggestion?> detectLocationSuggestion({

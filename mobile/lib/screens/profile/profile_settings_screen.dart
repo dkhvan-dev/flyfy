@@ -8,12 +8,11 @@ import '../../core/network/debug_network_inspector.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
-import '../../core/ui/app_language_sheet.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/settings/widgets/app_preferences_section.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
-import '../../providers/theme_mode_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
@@ -136,95 +135,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
-  Future<void> _openAppLanguageSettings() {
-    return showAppLanguageSheet(context);
-  }
-
-  Future<void> _openAppThemeSettings() {
-    final themeModeProvider = context.read<ThemeModeProvider>();
-    final l10n = AppLocalizations.of(context)!;
-
-    return showAppModalBottomSheet<void>(
-      context: context,
-      title: l10n.appThemeTitle,
-      subtitle: l10n.appThemeSubtitle,
-      icon: Icons.contrast_rounded,
-      initialChildSize: 0.64,
-      minChildSize: 0.52,
-      maxChildSize: 0.88,
-      builder: (sheetContext) {
-        final colors = AppDesignSystem.colorsFor(sheetContext);
-        return RadioGroup<AppThemeModePreference>(
-          groupValue: themeModeProvider.selectedMode,
-          onChanged: (value) async {
-            if (value == null) return;
-
-            await themeModeProvider.setThemeMode(value);
-            if (sheetContext.mounted) {
-              Navigator.of(sheetContext).pop();
-            }
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final mode in AppThemeModePreference.values)
-                RadioListTile<AppThemeModePreference>(
-                  value: mode,
-                  activeColor: colors.primary,
-                  contentPadding: AppEdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.trailing,
-                  secondary: Icon(_themeModeIcon(mode), color: colors.primary),
-                  title: Text(
-                    _themeModeLabel(l10n, mode),
-                    style: AppTextStyle(
-                      color: colors.textPrimary,
-                      fontSize: profileScaled(context, 15, min: 14, max: 16),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _themeModeDescription(l10n, mode),
-                    style: AppTextStyle(
-                      color: colors.textMuted,
-                      fontSize: profileScaled(context, 13, min: 12, max: 13),
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _themeModeLabel(AppLocalizations l10n, AppThemeModePreference mode) {
-    return switch (mode) {
-      AppThemeModePreference.system => l10n.appThemeSystem,
-      AppThemeModePreference.light => l10n.appThemeLight,
-      AppThemeModePreference.dark => l10n.appThemeDark,
-    };
-  }
-
-  String _themeModeDescription(
-    AppLocalizations l10n,
-    AppThemeModePreference mode,
-  ) {
-    return switch (mode) {
-      AppThemeModePreference.system => l10n.appThemeSystemDescription,
-      AppThemeModePreference.light => l10n.appThemeLightDescription,
-      AppThemeModePreference.dark => l10n.appThemeDarkDescription,
-    };
-  }
-
-  IconData _themeModeIcon(AppThemeModePreference mode) {
-    return switch (mode) {
-      AppThemeModePreference.system => Icons.brightness_auto_rounded,
-      AppThemeModePreference.light => Icons.light_mode_rounded,
-      AppThemeModePreference.dark => Icons.dark_mode_rounded,
-    };
-  }
-
   void _openDebugNetworkInspector() {
     DebugNetworkInspector.open();
   }
@@ -293,8 +203,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
     final padding = profileScaled(context, 20, min: 14, max: 20);
     final lang = Localizations.localeOf(context).languageCode;
-    final selectedThemeMode = context.watch<ThemeModeProvider>().selectedMode;
-
     return Theme(
       data: AppDesignSystem.themeFor(context),
       child: Scaffold(
@@ -358,17 +266,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       subtitle: l10n.profileSettingsEditSubtitle,
                       onTap: _openEditProfile,
                     ),
-                    _SettingsActionTile(
-                      icon: Icons.language_rounded,
-                      title: l10n.appLanguageTitle,
-                      subtitle: l10n.profileLocale,
-                      onTap: _openAppLanguageSettings,
-                    ),
-                    _SettingsActionTile(
-                      icon: Icons.contrast_rounded,
-                      title: l10n.appThemeTitle,
-                      subtitle: _themeModeLabel(l10n, selectedThemeMode),
-                      onTap: _openAppThemeSettings,
+                    const AppPreferencesSection(),
+                    SizedBox(
+                      height: profileScaled(context, 14, min: 10, max: 14),
                     ),
                     _SettingsActionTile(
                       icon: Icons.notifications_none_rounded,
@@ -732,7 +632,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(true),
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.primary,
-                            foregroundColor: colors.textPrimary,
+                            foregroundColor: colors.onPrimary,
                             minimumSize: const Size(132, 48),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(999),

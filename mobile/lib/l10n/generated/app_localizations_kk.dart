@@ -817,21 +817,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
-  String get drawerStatusVerifiedGuide => 'Расталған гид';
-
-  @override
-  String get drawerStatusGuide => 'Гид';
-
-  @override
-  String get drawerStatusGuideRevoked => 'Гид мәртебесі қайтарылды';
-
-  @override
-  String get drawerStatusTraveler => 'Саяхатшы';
-
-  @override
-  String get drawerStatusCompleteProfile => 'Профильді толтырыңыз';
-
-  @override
   String get profileNotAvailable => 'Профиль қолжетімсіз';
 
   @override
@@ -2606,9 +2591,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get servicesSectionTitle => 'Сервистер';
 
   @override
-  String get servicesAllButton => 'Барлығын көру';
-
-  @override
   String get homeExcursionsTitle => 'Экскурсиялар';
 
   @override
@@ -2760,7 +2742,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeTopDestinations => 'Үздік бағыттар';
 
   @override
-  String get homeSeeAll => 'Барлығын көру';
+  String get homeSeeAll => 'Барлығы';
+
+  @override
+  String get homeShowAllCard => 'Барлығын көрсету';
 
   @override
   String get homeTopStories => 'Қазір талқылануда';
@@ -2798,6 +2783,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeServiceCurrencyConverter => 'Валюта бағамдары';
+
+  @override
+  String get homeServiceAllServices => 'Барлық қызметтер';
 
   @override
   String get homeServiceStays => 'Тұру';
@@ -3526,6 +3514,13 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get feedEmptyMessage =>
       'Лентаңызды қалыптастыру үшін саяхатшылар мен қауымдастықтарға жазылыңыз.';
+
+  @override
+  String get feedFollowingEmptyTitle => 'Жазылымдар әзірге жоқ';
+
+  @override
+  String get feedFollowingEmptyMessage =>
+      'Саяхатшыларға немесе қауымдастықтарға жазылыңыз, олардың жазбалары осында көрсетіледі.';
 
   @override
   String get feedLoadFailedTitle => 'Лентаны жүктеу мүмкін болмады';
@@ -5115,6 +5110,34 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionTranslationSourceLanguageKazakh => 'қазақ';
 
   @override
+  String activityDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Белсенділік мәліметтері $sourceLanguage тілінен автоматты түрде аударылды';
+  }
+
+  @override
+  String get activityDetailsShowOriginal => 'Түпнұсқаны көрсету';
+
+  @override
+  String get activityDetailsShowTranslation => 'Аударманы көрсету';
+
+  @override
+  String get activityDetailsTranslationPendingNotice =>
+      'Белсенділіктің түпнұсқасы көрсетіліп тұр · Аударма дайындалып жатыр';
+
+  @override
+  String get activityDetailsTranslationUnavailableNotice =>
+      'Белсенділіктің түпнұсқасы көрсетіліп тұр · Автоматты аударма уақытша қолжетімсіз';
+
+  @override
+  String get activityTranslationSourceLanguageEnglish => 'ағылшын';
+
+  @override
+  String get activityTranslationSourceLanguageRussian => 'орыс';
+
+  @override
+  String get activityTranslationSourceLanguageKazakh => 'қазақ';
+
+  @override
   String get excursionLanguageEnglish => 'Ағылшын';
 
   @override
@@ -5811,10 +5834,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createExcursionIncludedTypeEquipment => 'Жабдық';
 
   @override
-  String get createExcursionIncludedTypeGuide => 'Гид';
+  String get createExcursionIncludedTypeAccommodation => 'Тұру';
 
   @override
-  String get createExcursionIncludedTypePhoto => 'Фото';
+  String get createExcursionIncludedTypePermitsFees => 'Рұқсаттар мен алымдар';
 
   @override
   String get createExcursionIncludedTypeOther => 'Басқа';
@@ -8417,8 +8440,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get postCreateRateLimitTitle => 'Пост лимиті';
 
   @override
-  String postCreateRateLimitMessage(int minutes) {
-    return 'Соңғы бір сағатта ең көп пост санын жасадыңыз. Жаңа постты шамамен $minutes мин. кейін жасауға болады.';
+  String postCreateRateLimitMessage(String time) {
+    return 'Келесі постты $time кейін жариялауға болады.';
   }
 
   @override
@@ -9707,4 +9730,18 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get contextualHelpTryAgain => 'Қайталау';
+
+  @override
+  String get trustRestrictionTitle => 'Қолжетімділік шектелген';
+
+  @override
+  String get trustCreationRestrictionMessage =>
+      'Жасау мүмкіндігін әкімші шектеді. Мұны қате деп санасаңыз, қолдау қызметіне хабарласыңыз.';
+
+  @override
+  String get trustFeatureRestrictionMessage =>
+      'Бұл мүмкіндікті әкімші шектеді. Мұны қате деп санасаңыз, қолдау қызметіне хабарласыңыз.';
+
+  @override
+  String get trustRestrictionSupportAction => 'Қолдау қызметіне жазу';
 }

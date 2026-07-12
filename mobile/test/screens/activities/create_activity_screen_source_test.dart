@@ -854,7 +854,7 @@ void main() {
       );
       expect(limitSource, contains('context.createActivityColors.surfaceWarm'));
       expect(limitSource, contains('filled: false'));
-      expect(limitSource, contains('contentPadding: EdgeInsets.zero'));
+      expect(limitSource, contains('contentPadding: AppInsets.none'));
       expect(limitSource, isNot(contains('warmSurface48')));
       expect(
         limitSource,
@@ -1082,16 +1082,26 @@ void main() {
 
       expect(segmentedSource, contains('Border.all('));
       expect(segmentedSource, contains('context.createActivityColors.border'));
-      expect(segmentedSource, contains('final labelColor = isActive'));
       expect(
         segmentedSource,
-        contains('context.createActivityColors.textPrimary'),
+        contains('? context.createActivityColors.onPrimary'),
+      );
+      expect(
+        segmentedSource,
+        contains(': context.createActivityColors.primary'),
       );
       expect(segmentedSource, contains('context.createActivityColors.primary'));
-      expect(chipSource, contains('final labelColor ='));
+      expect(
+        segmentedSource,
+        contains('context.createActivityColors.surfaceRaised'),
+      );
       expect(chipSource, contains('Border.all('));
       expect(chipSource, contains('context.createActivityColors.border'));
-      expect(chipSource, contains('color: labelColor'));
+      expect(chipSource, contains('? context.createActivityColors.onPrimary'));
+      expect(
+        chipSource,
+        contains(': context.createActivityColors.textPrimary'),
+      );
       expect(
         chipSource,
         isNot(contains('color: context.createActivityColors.white')),
@@ -1282,24 +1292,48 @@ void main() {
     expect(sheetSource, isNot(contains('maxHeight: 360')));
   });
 
-  test('create activity picker sheets use full-width modal frame', () async {
-    final source = await File(
-      'lib/screens/activities/create_activity_screen.dart',
-    ).readAsString();
+  test(
+    'create activity picker delegates surface and scrim to modal helper',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
 
-    final sheetStart = source.indexOf('class _CategoryPickerSheet');
-    expect(sheetStart, isNonNegative);
+      final sheetStart = source.indexOf('class _CategoryPickerSheet');
+      expect(sheetStart, isNonNegative);
 
-    final sheetSource = source.substring(sheetStart);
-    expect(sheetSource, contains('AppModalSheetFrame('));
-    expect(
-      sheetSource,
-      contains('onTapOutside: () => Navigator.of(context).maybePop()'),
-    );
-    expect(sheetSource, contains('width: double.infinity'));
-    expect(sheetSource, isNot(contains('left: 16')));
-    expect(sheetSource, isNot(contains('right: 16')));
-  });
+      final sheetSource = source.substring(sheetStart);
+      expect(sheetSource, isNot(contains('AppModalSheetFrame(')));
+      expect(sheetSource, isNot(contains('MediaQuery.of(context).viewInsets')));
+      expect(
+        sheetSource,
+        contains('padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20)'),
+      );
+
+      final pickerCallStart = source.indexOf(
+        'Future<void> _openCategoryPicker',
+      );
+      final pickerCallEnd = source.indexOf(
+        'IconData _categoryIconForSlug',
+        pickerCallStart,
+      );
+      final pickerCallsSource = source.substring(
+        pickerCallStart,
+        pickerCallEnd,
+      );
+      expect(
+        pickerCallsSource,
+        contains('backgroundColor: context.createActivityColors.warmSurface18'),
+      );
+      expect(pickerCallsSource, contains('borderRadius: AppRadius.sheetTop'));
+      expect(
+        pickerCallsSource,
+        isNot(
+          contains('backgroundColor: context.createActivityColors.transparent'),
+        ),
+      );
+    },
+  );
 
   test('edit activity locks meeting address one hour before start', () async {
     final source = await File(
@@ -1489,4 +1523,24 @@ void main() {
     expect(pickerSource, contains('onTap: selectItem'));
     expect(pickerSource, contains('ExcludeSemantics('));
   });
+
+  test(
+    'next-step action bars keep only the button on a clear surface',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final navStart = source.indexOf('class _BottomNavBar');
+      final navEnd = source.indexOf('class _Step1FieldSection', navStart);
+
+      expect(navStart, isNonNegative);
+      expect(navEnd, greaterThan(navStart));
+
+      final navSource = source.substring(navStart, navEnd);
+      expect(navSource, contains('child: Padding('));
+      expect(navSource, isNot(contains('LinearGradient(')));
+      expect(navSource, isNot(contains('warmInk54')));
+      expect(navSource, isNot(contains('warmOverlayInk04')));
+    },
+  );
 }

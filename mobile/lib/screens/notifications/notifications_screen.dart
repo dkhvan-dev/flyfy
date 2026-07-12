@@ -447,7 +447,7 @@ class _NotificationCategoryScreenState
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: context.appColors.textPrimary,
+                                      color: context.appColors.onPrimary,
                                     ),
                                   )
                                 : const Icon(Icons.done_all_rounded),

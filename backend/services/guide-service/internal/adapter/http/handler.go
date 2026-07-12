@@ -436,6 +436,10 @@ func (h *Handler) ListPublicGuides(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.useCase.ListPublicGuideCards(r.Context(), input)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("request_id", RequestIDFromContext(r.Context())).
+			Msg("failed to list public guides")
 		writeError(w, http.StatusInternalServerError, "failed to list public guides")
 		return
 	}

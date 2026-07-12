@@ -107,10 +107,21 @@ void main() {
     final sectionSource = source.substring(sectionStart, nextSectionStart);
     expect(sectionSource, contains('AppLocalizedLocationText('));
     expect(sectionSource, contains('addressText: activity.addressText'));
+    expect(sectionSource, contains('includeCountry: false'));
     expect(
       sectionSource,
       isNot(contains('child: Text(\n                showProtectedNotice')),
     );
+
+    final fallbackStart = source.indexOf('class _MeetingLocationFallbackCard');
+    final fallbackEnd = source.indexOf(
+      'class _MeetingLeaveAction',
+      fallbackStart,
+    );
+    expect(fallbackStart, isNonNegative);
+    expect(fallbackEnd, greaterThan(fallbackStart));
+    final fallbackSource = source.substring(fallbackStart, fallbackEnd);
+    expect(fallbackSource, contains('includeCountry: false'));
   });
 
   test(
@@ -482,7 +493,7 @@ void main() {
 
       expect(source, contains('Icons.chevron_right_rounded'));
       expect(source, isNot(contains('Icons.arrow_forward_rounded')));
-      expect(source, contains('foregroundColor: colors.textPrimary'));
+      expect(source, contains('foregroundColor: colors.onPrimary'));
       expect(source, contains('iconAlignment: IconAlignment.end'));
     },
   );

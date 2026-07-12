@@ -36,6 +36,7 @@ final class _StoryDetailsColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get secondary => colors.secondary;
   Color get secondaryContainer => colors.secondaryContainer;
@@ -1075,7 +1076,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _StoryDetailsColors.of(context).primary,
-                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
+                foregroundColor: _StoryDetailsColors.of(context).onPrimary,
               ),
               child: Text(l10n.storyDeleteCommentAction),
             ),
@@ -1185,7 +1186,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _StoryDetailsColors.of(context).primary,
-                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
+                foregroundColor: _StoryDetailsColors.of(context).onPrimary,
               ),
               child: Text(l10n.storyDeleteAction),
             ),
@@ -1552,7 +1553,7 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                       backgroundColor: _StoryDetailsColors.of(context).primary,
                       foregroundColor: _StoryDetailsColors.of(
                         context,
-                      ).textPrimary,
+                      ).onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(
                           adaptive.radius(18),
@@ -2353,7 +2354,7 @@ class _CommentComposer extends StatelessWidget {
                   : onSubmit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _StoryDetailsColors.of(context).primary,
-                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
+                foregroundColor: _StoryDetailsColors.of(context).onPrimary,
                 minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
                 shape: RoundedRectangleBorder(
                   borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
@@ -2365,7 +2366,7 @@ class _CommentComposer extends StatelessWidget {
                       height: adaptive.scale(18),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: _StoryDetailsColors.of(context).textPrimary,
+                        color: _StoryDetailsColors.of(context).onPrimary,
                       ),
                     )
                   : isEditing
@@ -3524,7 +3525,7 @@ class _StoryDetailErrorState extends StatelessWidget {
               onPressed: () => onRetry(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _StoryDetailsColors.of(context).primary,
-                foregroundColor: _StoryDetailsColors.of(context).textPrimary,
+                foregroundColor: _StoryDetailsColors.of(context).onPrimary,
               ),
               child: Text(retryLabel),
             ),

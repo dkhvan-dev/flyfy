@@ -294,7 +294,7 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
             onPressed: () => _loadCommunities(),
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -398,7 +398,7 @@ class _CommunityDiscoverySearchBar extends StatelessWidget {
                   controller: controller,
                   textInputAction: TextInputAction.search,
                   onSubmitted: onSubmitted,
-                  decoration: InputDecoration(
+                  decoration: AppInputDecoration(
                     hintText: hintText,
                     prefixIcon: Icon(
                       Icons.search_rounded,
@@ -411,17 +411,17 @@ class _CommunityDiscoverySearchBar extends StatelessWidget {
                     ),
                     filled: true,
                     fillColor: colors.surface,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: AppInsets.none,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(color: colors.borderSoft),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(color: colors.borderSoft),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(color: colors.primary, width: 1.4),
                     ),
                   ),

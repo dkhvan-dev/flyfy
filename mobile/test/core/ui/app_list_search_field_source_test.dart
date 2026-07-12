@@ -67,7 +67,7 @@ void main() {
         clearButtonStart,
       );
 
-      expect(textFieldSource, contains('contentPadding: EdgeInsets.zero'));
+      expect(textFieldSource, contains('contentPadding: AppInsets.none'));
     },
   );
 

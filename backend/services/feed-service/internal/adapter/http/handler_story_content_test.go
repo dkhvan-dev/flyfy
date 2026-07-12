@@ -2639,7 +2639,7 @@ const (
 	postHTTPSubjectOther = "other-subject"
 )
 
-func TestPostCreateEligibilityEndpointReportsRateLimit(t *testing.T) {
+func TestPostCreateEligibilityEndpointIgnoresDrafts(t *testing.T) {
 	h := newPostHTTPTestHarness(t)
 	const postCreateLimit = 10
 	for i := 0; i < postCreateLimit; i++ {
@@ -2665,14 +2665,127 @@ func TestPostCreateEligibilityEndpointReportsRateLimit(t *testing.T) {
 		NextAvailableAt   *string `json:"nextAvailableAt"`
 	}
 	decodeJSONResponse(t, rec, &body)
-	if body.CanCreate {
-		t.Fatal("canCreate = true, want false")
+	if !body.CanCreate {
+		t.Fatal("canCreate = false, want true when only drafts exist")
 	}
-	if body.Limit != postCreateLimit || body.Remaining != 0 {
-		t.Fatalf("limit/remaining = %d/%d, want %d/0", body.Limit, body.Remaining, postCreateLimit)
+	if body.Limit != postCreateLimit || body.Remaining != postCreateLimit {
+		t.Fatalf("limit/remaining = %d/%d, want %d/%d", body.Limit, body.Remaining, postCreateLimit, postCreateLimit)
 	}
-	if body.WindowSeconds <= 0 || body.RetryAfterSeconds <= 0 || body.NextAvailableAt == nil {
-		t.Fatalf("eligibility timing = %+v, want positive retry metadata", body)
+	if body.WindowSeconds <= 0 || body.RetryAfterSeconds != 0 || body.NextAvailableAt != nil {
+		t.Fatalf("eligibility timing = %+v, want no active limit", body)
+	}
+}
+
+func TestPostCreateEligibilityEndpointReportsHourlyPublishLimit(t *testing.T) {
+	h := newPostHTTPTestHarness(t)
+	now := time.Now().UTC()
+	for i := 0; i < 10; i++ {
+		publishedAt := now.Add(-time.Duration(6+i*5) * time.Minute)
+		post := &model.Post{
+			ID:               uuid.New(),
+			AuthorUserID:     h.ownerID,
+			Status:           enum.PostStatusPublished,
+			PublishedAt:      &publishedAt,
+			CreatedAt:        publishedAt,
+			UpdatedAt:        publishedAt,
+			ModerationStatus: enum.ModerationStatusNotRequired,
+		}
+		h.repo.posts[post.ID] = post
+	}
+
+	rec := h.doJSON(http.MethodGet, "/v1/posts/create-eligibility", postHTTPSubjectOwner, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("eligibility status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var body struct {
+		CanCreate         bool    `json:"canCreate"`
+		Remaining         int     `json:"remaining"`
+		CooldownSeconds   int64   `json:"cooldownSeconds"`
+		BlockReason       string  `json:"blockReason"`
+		RetryAfterSeconds int64   `json:"retryAfterSeconds"`
+		NextAvailableAt   *string `json:"nextAvailableAt"`
+	}
+	decodeJSONResponse(t, rec, &body)
+	if body.CanCreate || body.Remaining != 0 || body.BlockReason != app.PostCreateBlockReasonHourlyRate {
+		t.Fatalf("eligibility = %+v, want hourly limit", body)
+	}
+	if body.CooldownSeconds != 300 || body.RetryAfterSeconds <= 0 || body.NextAvailableAt == nil {
+		t.Fatalf("eligibility timing = %+v, want 5-minute policy and retry metadata", body)
+	}
+}
+
+func TestPostCreateEligibilityEndpointReportsPublishCooldown(t *testing.T) {
+	h := newPostHTTPTestHarness(t)
+	publishedAt := time.Now().UTC().Add(-2 * time.Minute)
+	post := &model.Post{
+		ID:               uuid.New(),
+		AuthorUserID:     h.ownerID,
+		Status:           enum.PostStatusPublished,
+		PublishedAt:      &publishedAt,
+		CreatedAt:        publishedAt,
+		UpdatedAt:        publishedAt,
+		ModerationStatus: enum.ModerationStatusNotRequired,
+	}
+	h.repo.posts[post.ID] = post
+
+	rec := h.doJSON(http.MethodGet, "/v1/posts/create-eligibility", postHTTPSubjectOwner, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("eligibility status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var body struct {
+		CanCreate         bool   `json:"canCreate"`
+		Remaining         int    `json:"remaining"`
+		CooldownSeconds   int64  `json:"cooldownSeconds"`
+		BlockReason       string `json:"blockReason"`
+		RetryAfterSeconds int64  `json:"retryAfterSeconds"`
+	}
+	decodeJSONResponse(t, rec, &body)
+	if body.CanCreate || body.Remaining != 9 || body.BlockReason != app.PostCreateBlockReasonCooldown {
+		t.Fatalf("eligibility = %+v, want active publish cooldown", body)
+	}
+	if body.CooldownSeconds != 300 || body.RetryAfterSeconds < 175 || body.RetryAfterSeconds > 181 {
+		t.Fatalf("eligibility timing = %+v, want about three minutes", body)
+	}
+}
+
+func TestCreatePublishedPostReturnsCooldownContract(t *testing.T) {
+	h := newPostHTTPTestHarness(t)
+	publishedAt := time.Now().UTC().Add(-2 * time.Minute)
+	post := &model.Post{
+		ID:               uuid.New(),
+		AuthorUserID:     h.ownerID,
+		Status:           enum.PostStatusPublished,
+		PublishedAt:      &publishedAt,
+		CreatedAt:        publishedAt,
+		UpdatedAt:        publishedAt,
+		ModerationStatus: enum.ModerationStatusNotRequired,
+	}
+	h.repo.posts[post.ID] = post
+
+	rec := h.doJSON(http.MethodPost, "/v1/posts", postHTTPSubjectOwner, map[string]any{
+		"format":         "POST",
+		"status":         "PUBLISHED",
+		"postProfileKey": "quick_post_v1",
+		"structuredData": map[string]any{"body": "Еще одна публикация"},
+	})
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("create status = %d, want 429; body: %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Code              string  `json:"code"`
+		Kind              string  `json:"kind"`
+		RetryAfterSeconds int64   `json:"retryAfterSeconds"`
+		NextAvailableAt   *string `json:"nextAvailableAt"`
+	}
+	decodeJSONResponse(t, rec, &body)
+	if body.Code != errorCodePostRateLimited || body.Kind != errorKindBusiness {
+		t.Fatalf("error contract = %+v", body)
+	}
+	if body.RetryAfterSeconds < 175 || body.RetryAfterSeconds > 181 || body.NextAvailableAt == nil {
+		t.Fatalf("rate limit timing = %+v", body)
+	}
+	if rec.Header().Get("Retry-After") == "" {
+		t.Fatal("Retry-After header is missing")
 	}
 }
 
@@ -3449,35 +3562,35 @@ func (r *postHTTPMemoryRepository) CountPublishedPostsByAuthorID(_ context.Conte
 	return total, nil
 }
 
-func (r *postHTTPMemoryRepository) CountPostsCreatedByAuthorSince(_ context.Context, authorUserID uuid.UUID, since time.Time) (int, error) {
+func (r *postHTTPMemoryRepository) CountPostsPublishedByAuthorSince(_ context.Context, authorUserID uuid.UUID, since time.Time) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	total := 0
 	for _, post := range r.posts {
 		if post.AuthorUserID == authorUserID &&
-			post.DeletedAt == nil &&
-			!post.CreatedAt.Before(since) {
+			post.PublishedAt != nil &&
+			!post.PublishedAt.Before(since) {
 			total++
 		}
 	}
 	return total, nil
 }
 
-func (r *postHTTPMemoryRepository) OldestPostCreatedAtByAuthorSince(_ context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error) {
+func (r *postHTTPMemoryRepository) OldestPostPublishedAtByAuthorSince(_ context.Context, authorUserID uuid.UUID, since time.Time) (*time.Time, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	var oldest *time.Time
 	for _, post := range r.posts {
 		if post.AuthorUserID != authorUserID ||
-			post.DeletedAt != nil ||
-			post.CreatedAt.Before(since) {
+			post.PublishedAt == nil ||
+			post.PublishedAt.Before(since) {
 			continue
 		}
-		createdAt := post.CreatedAt.UTC()
-		if oldest == nil || createdAt.Before(*oldest) {
-			oldest = &createdAt
+		publishedAt := post.PublishedAt.UTC()
+		if oldest == nil || publishedAt.Before(*oldest) {
+			oldest = &publishedAt
 		}
 	}
 	if oldest == nil {
@@ -3485,6 +3598,27 @@ func (r *postHTTPMemoryRepository) OldestPostCreatedAtByAuthorSince(_ context.Co
 	}
 	value := *oldest
 	return &value, nil
+}
+
+func (r *postHTTPMemoryRepository) PostPublishCooldownUntil(_ context.Context, authorUserID uuid.UUID) (*time.Time, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var latest *time.Time
+	for _, post := range r.posts {
+		if post.AuthorUserID != authorUserID || post.PublishedAt == nil {
+			continue
+		}
+		publishedAt := post.PublishedAt.UTC()
+		if latest == nil || publishedAt.After(*latest) {
+			latest = &publishedAt
+		}
+	}
+	if latest == nil {
+		return nil, nil
+	}
+	next := latest.Add(5 * time.Minute)
+	return &next, nil
 }
 
 func (r *postHTTPMemoryRepository) ListCommunities(_ context.Context, filter model.CommunityListFilter) ([]*model.Community, error) {

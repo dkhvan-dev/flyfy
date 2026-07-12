@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +32,11 @@ Future<bool> ensurePostCreateAllowed(
     if (!context.mounted) {
       return false;
     }
-    await _showPostRateLimitSheet(context, eligibility);
+    await showPostRateLimitSheet(
+      context,
+      retryAfter: eligibility.retryAfter,
+      nextAvailableAt: eligibility.nextAvailableAt,
+    );
     return false;
   } on DioException catch (error) {
     if (!context.mounted) {
@@ -53,14 +59,13 @@ Future<bool> ensurePostCreateAllowed(
   }
 }
 
-Future<void> _showPostRateLimitSheet(
-  BuildContext context,
-  PostCreateEligibilityVm eligibility,
-) {
+Future<void> showPostRateLimitSheet(
+  BuildContext context, {
+  required Duration retryAfter,
+  DateTime? nextAvailableAt,
+}) {
   final l10n = AppLocalizations.of(context)!;
   final colors = AppDesignSystem.colorsFor(context);
-  final retrySeconds = eligibility.retryAfter.inSeconds;
-  final retryMinutes = retrySeconds <= 0 ? 1 : ((retrySeconds + 59) ~/ 60);
   return showAppModalBottomSheet<void>(
     context: context,
     isDismissible: true,
@@ -103,8 +108,9 @@ Future<void> _showPostRateLimitSheet(
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  l10n.postCreateRateLimitMessage(retryMinutes),
+                PostRateLimitCountdownText(
+                  retryAfter: retryAfter,
+                  nextAvailableAt: nextAvailableAt,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colors.textSecondary,
                     height: 1.35,
@@ -116,7 +122,7 @@ Future<void> _showPostRateLimitSheet(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: colors.primary,
-                      foregroundColor: colors.textPrimary,
+                      foregroundColor: colors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),
                     onPressed: () => Navigator.of(sheetContext).pop(),
@@ -130,6 +136,110 @@ Future<void> _showPostRateLimitSheet(
       );
     },
   );
+}
+
+class PostRateLimitCountdownText extends StatefulWidget {
+  const PostRateLimitCountdownText({
+    super.key,
+    required this.retryAfter,
+    this.nextAvailableAt,
+    this.style,
+    this.textAlign,
+    this.onElapsed,
+    this.now = DateTime.now,
+  });
+
+  final Duration retryAfter;
+  final DateTime? nextAvailableAt;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final VoidCallback? onElapsed;
+  final DateTime Function() now;
+
+  @override
+  State<PostRateLimitCountdownText> createState() =>
+      _PostRateLimitCountdownTextState();
+}
+
+class _PostRateLimitCountdownTextState
+    extends State<PostRateLimitCountdownText> {
+  Timer? _timer;
+  late DateTime _deadline;
+  Duration _remaining = Duration.zero;
+  bool _elapsedNotified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  @override
+  void didUpdateWidget(PostRateLimitCountdownText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.retryAfter != widget.retryAfter ||
+        oldWidget.nextAvailableAt != widget.nextAvailableAt) {
+      _startCountdown();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _timer?.cancel();
+    _elapsedNotified = false;
+    final now = widget.now().toUtc();
+    _deadline = widget.retryAfter > Duration.zero
+        ? now.add(widget.retryAfter)
+        : widget.nextAvailableAt?.toUtc() ?? now;
+    _updateRemaining(notify: false);
+    if (_remaining > Duration.zero) {
+      _timer = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) => _updateRemaining(),
+      );
+    }
+  }
+
+  void _updateRemaining({bool notify = true}) {
+    final difference = _deadline.difference(widget.now().toUtc());
+    final remaining = difference <= Duration.zero
+        ? Duration.zero
+        : Duration(seconds: (difference.inMilliseconds + 999) ~/ 1000);
+    if (notify && mounted) {
+      setState(() => _remaining = remaining);
+    } else {
+      _remaining = remaining;
+    }
+    if (remaining == Duration.zero && !_elapsedNotified) {
+      _elapsedNotified = true;
+      _timer?.cancel();
+      widget.onElapsed?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Text(
+      l10n.postCreateRateLimitMessage(_formatCountdown(_remaining)),
+      key: const ValueKey('post-rate-limit-countdown'),
+      style: widget.style,
+      textAlign: widget.textAlign,
+    );
+  }
+}
+
+String _formatCountdown(Duration value) {
+  final seconds = value.inSeconds.clamp(0, 359999);
+  final minutesPart = seconds ~/ 60;
+  final secondsPart = seconds % 60;
+  return '${minutesPart.toString().padLeft(2, '0')}:'
+      '${secondsPart.toString().padLeft(2, '0')}';
 }
 
 void _showPreflightWarning(BuildContext context) {

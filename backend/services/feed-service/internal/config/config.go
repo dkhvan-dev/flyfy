@@ -27,6 +27,7 @@ type Config struct {
 	TokenService  TokenServiceConfig
 	SearchService SearchServiceConfig
 	Public        PublicConfig
+	Post          PostConfig
 	Feed          FeedConfig
 	MTLS          transportauth.EnvConfig
 }
@@ -171,6 +172,10 @@ type PublicConfig struct {
 	PostShareBaseURL string `env:"FEED_STORY_SHARE_BASE_URL, default=https://inflap.app/posts"`
 }
 
+type PostConfig struct {
+	CreateCooldown time.Duration `env:"POST_CREATE_COOLDOWN, default=5m"`
+}
+
 type FeedConfig struct {
 	ProjectionWorkerEnabled                  bool          `env:"FEED_PROJECTION_WORKER_ENABLED, default=true"`
 	ProjectionWorkerPollInterval             time.Duration `env:"FEED_PROJECTION_WORKER_POLL_INTERVAL, default=5s"`
@@ -187,6 +192,12 @@ type FeedConfig struct {
 	RankingExperimentPolicies                string        `env:"FEED_RANKING_EXPERIMENT_POLICIES, default="`
 	RankingPostInterestWeight                float64       `env:"FEED_RANKING_POST_INTEREST_WEIGHT, default=1"`
 	RankingCommunityInterestWeight           float64       `env:"FEED_RANKING_COMMUNITY_INTEREST_WEIGHT, default=0.35"`
+	RankingCommunityInterestMinScore         float64       `env:"FEED_RANKING_COMMUNITY_INTEREST_MIN_SCORE, default=2"`
+	RankingFrequentCommunityMinVisits        int           `env:"FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISITS, default=3"`
+	RankingFrequentCommunityMinVisitDays     int           `env:"FEED_RANKING_FREQUENT_COMMUNITY_MIN_VISIT_DAYS, default=2"`
+	RankingFrequentCommunityFreshnessWindow  time.Duration `env:"FEED_RANKING_FREQUENT_COMMUNITY_FRESHNESS_WINDOW, default=1440h"`
+	RankingFrequentCommunityHalfLife         time.Duration `env:"FEED_RANKING_FREQUENT_COMMUNITY_HALF_LIFE, default=504h"`
+	RankingFrequentCommunityBoostHours       int           `env:"FEED_RANKING_FREQUENT_COMMUNITY_BOOST_HOURS, default=6"`
 	RankingPostProfileAffinityWeight         float64       `env:"FEED_RANKING_POST_PROFILE_AFFINITY_WEIGHT, default=0.18"`
 	RankingCityAffinityWeight                float64       `env:"FEED_RANKING_CITY_AFFINITY_WEIGHT, default=0.25"`
 	RankingCountryAffinityWeight             float64       `env:"FEED_RANKING_COUNTRY_AFFINITY_WEIGHT, default=0.10"`
@@ -213,7 +224,7 @@ type FeedConfig struct {
 	RankingQualityMinNegativeEvents          int           `env:"FEED_RANKING_QUALITY_MIN_NEGATIVE_EVENTS, default=3"`
 	RankingQualityNegativePenaltyHours       int           `env:"FEED_RANKING_QUALITY_NEGATIVE_PENALTY_HOURS, default=24"`
 	RankingQualityMaxPenaltyHours            int           `env:"FEED_RANKING_QUALITY_MAX_PENALTY_HOURS, default=168"`
-	RankingMaxPostsPerCommunityPerPage       int           `env:"FEED_RANKING_MAX_POSTS_PER_COMMUNITY_PER_PAGE, default=3"`
+	RankingMaxPostsPerCommunityPerPage       int           `env:"FEED_RANKING_MAX_POSTS_PER_COMMUNITY_PER_PAGE, default=2"`
 	RankingMaxPostsPerCategoryPerPage        int           `env:"FEED_RANKING_MAX_POSTS_PER_CATEGORY_PER_PAGE, default=8"`
 	RankingMaxPostsPerAuthorPerPage          int           `env:"FEED_RANKING_MAX_POSTS_PER_AUTHOR_PER_PAGE, default=4"`
 	RankingMaxPostsPerProfilePerPage         int           `env:"FEED_RANKING_MAX_POSTS_PER_PROFILE_PER_PAGE, default=10"`

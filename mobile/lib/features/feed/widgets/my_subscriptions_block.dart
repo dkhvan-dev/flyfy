@@ -895,7 +895,7 @@ class _SegmentedTabButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? colors.textPrimary : colors.textSecondary,
+                color: selected ? colors.onPrimary : colors.textSecondary,
               ),
               const SizedBox(width: 7),
               Flexible(
@@ -905,7 +905,7 @@ class _SegmentedTabButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected ? colors.textPrimary : colors.textSecondary,
+                    color: selected ? colors.onPrimary : colors.textSecondary,
                     fontWeight: FontWeight.w900,
                     height: 1,
                   ),

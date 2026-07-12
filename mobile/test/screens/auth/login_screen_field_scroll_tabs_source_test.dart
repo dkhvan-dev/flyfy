@@ -29,7 +29,7 @@ void main() {
         source,
         matches(
           RegExp(
-            r'states\.contains\(WidgetState\.selected\)[\s\S]*?\?\s*AppPalette\.textPrimary[\s\S]*?:\s*context\.appColors\.textPrimary',
+            r'states\.contains\(WidgetState\.selected\)[\s\S]*?\?\s*context\.appColors\.onPrimary[\s\S]*?:\s*context\.appColors\.textPrimary',
           ),
         ),
       );

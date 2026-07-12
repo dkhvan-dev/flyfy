@@ -431,10 +431,7 @@ void main() {
 
       expect(source, contains('ContextualStoryTrayBlock('));
       expect(source, contains("surface: 'home'"));
-      expect(
-        source,
-        contains('_homeStoryTrayStoriesFromFeedBlocks(page.items)'),
-      );
+      expect(source, contains('forYouResult!.page!.items'));
       expect(source, contains('viewerAvatarFileId:'));
 
       final trayStart = source.indexOf('ContextualStoryTrayBlock(');
@@ -734,7 +731,7 @@ void main() {
   );
 
   test(
-    'home services preview shows six catalog items and opens all services',
+    'home services preview replaces exchange rates with all services tile',
     () async {
       final source = await File(
         'lib/screens/home/home_screen.dart',
@@ -756,25 +753,64 @@ void main() {
       expect(source, contains('buildTravelServiceCatalog('));
       expect(source, contains('l10n,'));
       expect(source, contains('_homeServicesPreview('));
-      expect(source, contains('.take(6)'));
+      expect(source, contains('.take(5)'));
       expect(source, contains("service.route != '/travel-checklist'"));
-      expect(source, contains('actionLabel: l10n.servicesAllButton'));
-      expect(source, contains('onActionTap: _openServices'));
+      expect(source, contains("service.route != '/currency-converter'"));
+      expect(source, contains('title: l10n.homeServiceAllServices'));
+      expect(source, contains('icon: Icons.apps_rounded'));
+      expect(source, contains("route: '/services'"));
+      expect(source, isNot(contains('actionLabel: l10n.servicesAllButton')));
       expect(source, contains('ServiceGrid('));
       expect(source, contains('onServiceTap: _openService'));
       expect(source, isNot(contains('_FeatureEntriesGrid(')));
       expect(source, isNot(contains('_buildFeatureEntries(')));
       expect(source, isNot(contains('homeFeaturedStays')));
       expect(source, isNot(contains('homeCarRentals')));
-      expect(ruArb, contains('"servicesAllButton": "Смотреть все"'));
-      expect(enArb, contains('"servicesAllButton": "See all"'));
-      expect(kkArb, contains('"servicesAllButton": "Барлығын көру"'));
+      expect(ruArb, contains('"homeServiceAllServices": "Все сервисы"'));
+      expect(enArb, contains('"homeServiceAllServices": "All services"'));
+      expect(kkArb, contains('"homeServiceAllServices": "Барлық қызметтер"'));
+      expect(ruArb, isNot(contains('"servicesAllButton"')));
+      expect(enArb, isNot(contains('"servicesAllButton"')));
+      expect(kkArb, isNot(contains('"servicesAllButton"')));
       expect(ruArb, contains('"homeRecommendedActivities": "Топ активности"'));
       expect(enArb, contains('"homeRecommendedActivities": "Top activities"'));
       expect(
         kkArb,
         contains('"homeRecommendedActivities": "Үздік белсенділіктер"'),
       );
+    },
+  );
+
+  test(
+    'home all actions are conditional and carousel end cards use totals',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+      final enArb = await File('lib/l10n/app_en.arb').readAsString();
+      final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(source, contains('_topPlaces.isNotEmpty'));
+      expect(source, contains('topPosts.isNotEmpty'));
+      expect(source, contains('recommendedActivities.isNotEmpty'));
+      expect(source, contains('homePostStreamItems.isNotEmpty'));
+      expect(source, contains('_topPlacesTotal > _topPlaces.length'));
+      expect(source, contains('final hasMoreTopPosts = _homeTrendingHasMore;'));
+      expect(source, contains('class _HomeShowAllCarouselCard'));
+      expect(source, contains('Icons.arrow_forward_rounded'));
+      expect(
+        RegExp(
+          r'itemCount: items\.length \+ \(showAllAction \? 1 : 0\)',
+        ).allMatches(source).length,
+        2,
+      );
+      expect(ruArb, contains('"homeSeeAll": "Всё"'));
+      expect(enArb, contains('"homeSeeAll": "All"'));
+      expect(kkArb, contains('"homeSeeAll": "Барлығы"'));
+      expect(ruArb, contains('"homeShowAllCard": "Показать все"'));
+      expect(enArb, contains('"homeShowAllCard": "Show all"'));
+      expect(kkArb, contains('"homeShowAllCard": "Барлығын көрсету"'));
     },
   );
 
@@ -814,6 +850,23 @@ void main() {
       expect(source, contains('onProfileTap: _openProfile'));
     },
   );
+
+  test('home guest avatar opens public app settings', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+    final methodStart = source.indexOf('void _openProfile()');
+    final methodEnd = source.indexOf('void _openActivities()', methodStart);
+
+    expect(methodStart, isNonNegative);
+    expect(methodEnd, greaterThan(methodStart));
+
+    final methodSource = source.substring(methodStart, methodEnd);
+    expect(methodSource, contains('context.read<AuthProvider>()'));
+    expect(methodSource, contains("'/profile' : '/app-settings'"));
+    expect(source, contains("ValueKey('home-profile-button')"));
+    expect(source, contains('l10n.profileSettingsPageTitle'));
+  });
 
   test(
     'promo carousel is passive and sizes cards from content metrics',
@@ -1105,4 +1158,46 @@ void main() {
       );
     },
   );
+
+  test('home post and activity empty states share arrow-free design', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+    final cardStart = source.indexOf('class _HomeEmptyStateCard');
+    final smartPostsStart = source.indexOf('class _HomeSmartPostsSection');
+    final emptyStateStart = source.indexOf('if (recommendedItems.isEmpty)');
+    final populatedStateStart = source.indexOf(
+      'final items = recommendedItems.take(3)',
+      emptyStateStart,
+    );
+
+    expect(cardStart, isNonNegative);
+    expect(smartPostsStart, greaterThan(cardStart));
+    expect(emptyStateStart, isNonNegative);
+    expect(populatedStateStart, greaterThan(emptyStateStart));
+
+    final cardSource = source.substring(cardStart, smartPostsStart);
+    final activityEmptyStateSource = source.substring(
+      emptyStateStart,
+      populatedStateStart,
+    );
+    final smartPostsSource = source.substring(
+      smartPostsStart,
+      source.indexOf('class _HomeSmartPostLoadingCard', smartPostsStart),
+    );
+
+    expect(cardSource, isNot(contains('Icons.arrow_forward_ios_rounded')));
+    expect(cardSource, isNot(contains('InkWell(')));
+    expect(cardSource, isNot(contains('GestureDetector(')));
+    expect(cardSource, isNot(contains('onTap')));
+    expect(cardSource, contains('width: 56'));
+    expect(cardSource, contains('fontSize: 16'));
+    expect(cardSource, contains('fontSize: 13'));
+    expect(activityEmptyStateSource, contains('_HomeEmptyStateCard('));
+    expect(activityEmptyStateSource, contains('title: l10n.noActivitiesYet'));
+    expect(smartPostsSource, contains('_HomeEmptyStateCard('));
+    expect(smartPostsSource, contains('title: l10n.storyEmptyTitle'));
+    expect(smartPostsSource, contains('subtitle: l10n.homeSmartPostsEmpty'));
+    expect(source, isNot(contains('onEmptyTap')));
+  });
 }

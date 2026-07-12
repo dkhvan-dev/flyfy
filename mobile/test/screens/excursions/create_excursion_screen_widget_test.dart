@@ -6,10 +6,14 @@ import 'package:provider/provider.dart';
 import 'package:inflap/core/network/excursion_api.dart';
 import 'package:inflap/core/network/reference_api.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
+import 'package:inflap/features/currency/data/currency_api.dart';
+import 'package:inflap/features/currency/data/currency_catalog_repository.dart';
+import 'package:inflap/features/currency/models/currency_conversion_result.dart';
 import 'package:inflap/features/places/data/place_api.dart';
 import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/features/trust/providers/trust_access_provider.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/excursion_provider.dart';
 import 'package:inflap/providers/home_location_provider.dart';
@@ -24,6 +28,7 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => ExcursionProvider()),
           ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+          ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
         ],
         child: const MaterialApp(
           localizationsDelegates: [
@@ -58,6 +63,7 @@ void main() {
           providers: [
             ChangeNotifierProvider(create: (_) => ExcursionProvider()),
             ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+            ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
           ],
           child: MaterialApp(
             builder: (context, child) {
@@ -93,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final surface = find.byKey(
-        const ValueKey('excursion-itinerary-slot-sheet-surface'),
+        const ValueKey('app-modal-custom-sheet-surface'),
       );
       final confirm = find.byKey(
         const ValueKey('excursion-itinerary-slot-confirm'),
@@ -103,6 +109,109 @@ void main() {
       expect(tester.getBottomRight(surface).dy, closeTo(844, 0.1));
       expect(
         tester.getBottomRight(confirm).dy,
+        lessThanOrEqualTo(844 - navigationBarHeight),
+      );
+    },
+  );
+
+  testWidgets(
+    'currency and included sheets reach bottom while content clears Android navigation',
+    (tester) async {
+      const navigationBarHeight = 48.0;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+      final currencyCatalogRepository = CurrencyCatalogRepository(
+        api: _FakeCurrencyApi(),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (_) => ExcursionProvider(
+                excursionApi: _FakeExcursionApi(_editableExcursion),
+              ),
+            ),
+            ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+            ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
+          ],
+          child: MaterialApp(
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  padding: const EdgeInsets.only(bottom: navigationBarHeight),
+                  viewPadding: const EdgeInsets.only(
+                    bottom: navigationBarHeight,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: CreateExcursionScreen(
+              excursionId: 'excursion-edit',
+              initialExcursion: _editableExcursion,
+              currencyCatalogRepository: currencyCatalogRepository,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Next Step'));
+      await tester.pumpAndSettle();
+      expect(find.text('Max Group Size'), findsOneWidget);
+      await tester.tap(find.text('Next Step'));
+      await tester.pumpAndSettle();
+      expect(find.text('Investment Per Person'), findsOneWidget);
+
+      final storyAndPriceList = find.ancestor(
+        of: find.text('Investment Per Person'),
+        matching: find.byType(ListView),
+      );
+      expect(storyAndPriceList, findsOneWidget);
+      await tester.drag(storyAndPriceList, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(find.text('Currency'), findsOneWidget);
+      await tester.tap(find.text('tenge'));
+      await tester.pumpAndSettle();
+
+      final currencySurface = find.byKey(
+        const ValueKey('app-modal-custom-sheet-surface'),
+      );
+      expect(currencySurface, findsOneWidget);
+      expect(tester.getBottomRight(currencySurface).dy, closeTo(844, 0.1));
+      expect(
+        tester.getBottomRight(find.byType(ListTile).last).dy,
+        lessThanOrEqualTo(844 - navigationBarHeight),
+      );
+
+      await tester.tap(find.text('US dollar'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Included Items'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Change'));
+      await tester.pumpAndSettle();
+
+      final includedSurface = find.byKey(
+        const ValueKey('app-modal-custom-sheet-surface'),
+      );
+      final includedSave = find.byKey(
+        const ValueKey('excursion-included-items-save'),
+      );
+      expect(includedSurface, findsOneWidget);
+      expect(includedSave, findsOneWidget);
+      expect(tester.getBottomRight(includedSurface).dy, closeTo(844, 0.1));
+      expect(
+        tester.getBottomRight(includedSave).dy,
         lessThanOrEqualTo(844 - navigationBarHeight),
       );
     },
@@ -120,6 +229,7 @@ void main() {
               ),
             ),
             ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+            ChangeNotifierProvider(create: (_) => TrustAccessProvider()),
           ],
           child: const MaterialApp(
             localizationsDelegates: [
@@ -437,6 +547,13 @@ class _FakeReferenceApi extends ReferenceApi {
   }
 }
 
+class _FakeCurrencyApi extends CurrencyApi {
+  @override
+  Future<List<CurrencyOption>> listCurrencies({String? locale}) async {
+    return defaultCurrencyOptions;
+  }
+}
+
 const _editableExcursion = ExcursionVm(
   id: 'excursion-edit',
   title: 'Charyn Canyon',
@@ -462,6 +579,14 @@ const _editableExcursion = ExcursionVm(
       durationMinutes: 30,
       title: 'Hotel pickup',
       description: 'Meet your guide.',
+    ),
+    ExcursionItineraryItemVm(
+      id: 'step-2',
+      sortOrder: 1,
+      startOffsetMinutes: 30,
+      durationMinutes: 90,
+      title: 'Canyon walk',
+      description: 'Explore the canyon with your guide.',
     ),
   ],
 );

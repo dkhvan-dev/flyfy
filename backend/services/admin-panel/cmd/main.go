@@ -183,6 +183,7 @@ func main() {
 	restrictionOutboxWorker := app.NewRestrictionOutboxWorker(
 		restrictionOutboxRepo,
 		trustClient,
+		notificationClient,
 		app.RestrictionOutboxWorkerConfig{
 			PollInterval: cfg.Trust.OutboxPollInterval,
 			BatchSize:    cfg.Trust.OutboxBatchSize,

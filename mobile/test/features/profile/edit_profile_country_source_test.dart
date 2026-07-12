@@ -55,7 +55,9 @@ void main() {
       );
       expect(
         countrySection,
-        contains('emptyLabel: l10n.excursionsFilterCountryNoResults'),
+        matches(
+          RegExp(r'emptyLabel:\s*l10n\.excursionsFilterCountryNoResults'),
+        ),
       );
       expect(countrySection, isNot(contains('_StyledTextField(')));
     },

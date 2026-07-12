@@ -811,21 +811,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTitle => 'Profile';
 
   @override
-  String get drawerStatusVerifiedGuide => 'Verified guide';
-
-  @override
-  String get drawerStatusGuide => 'Guide';
-
-  @override
-  String get drawerStatusGuideRevoked => 'Guide status revoked';
-
-  @override
-  String get drawerStatusTraveler => 'Traveler';
-
-  @override
-  String get drawerStatusCompleteProfile => 'Complete profile';
-
-  @override
   String get profileNotAvailable => 'Profile is not available';
 
   @override
@@ -2588,9 +2573,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get servicesSectionTitle => 'Services';
 
   @override
-  String get servicesAllButton => 'See all';
-
-  @override
   String get homeExcursionsTitle => 'Excursions';
 
   @override
@@ -2742,7 +2724,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTopDestinations => 'Top Destinations';
 
   @override
-  String get homeSeeAll => 'See All';
+  String get homeSeeAll => 'All';
+
+  @override
+  String get homeShowAllCard => 'Show all';
 
   @override
   String get homeTopStories => 'Trending now';
@@ -2779,6 +2764,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeServiceCurrencyConverter => 'Exchange Rates';
+
+  @override
+  String get homeServiceAllServices => 'All services';
 
   @override
   String get homeServiceStays => 'Stays';
@@ -3501,6 +3489,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get feedEmptyMessage =>
       'Follow travelers and communities to shape your feed.';
+
+  @override
+  String get feedFollowingEmptyTitle => 'No subscriptions yet';
+
+  @override
+  String get feedFollowingEmptyMessage =>
+      'Follow travelers or communities to see their posts here.';
 
   @override
   String get feedLoadFailedTitle => 'Could not load feed';
@@ -5083,6 +5078,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionTranslationSourceLanguageKazakh => 'Kazakh';
 
   @override
+  String activityDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Activity details were automatically translated from $sourceLanguage';
+  }
+
+  @override
+  String get activityDetailsShowOriginal => 'Show original';
+
+  @override
+  String get activityDetailsShowTranslation => 'Show translation';
+
+  @override
+  String get activityDetailsTranslationPendingNotice =>
+      'Showing the original activity details · Translation is being prepared';
+
+  @override
+  String get activityDetailsTranslationUnavailableNotice =>
+      'Showing the original activity details · Auto-translation is temporarily unavailable';
+
+  @override
+  String get activityTranslationSourceLanguageEnglish => 'English';
+
+  @override
+  String get activityTranslationSourceLanguageRussian => 'Russian';
+
+  @override
+  String get activityTranslationSourceLanguageKazakh => 'Kazakh';
+
+  @override
   String get excursionLanguageEnglish => 'English';
 
   @override
@@ -5777,10 +5800,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createExcursionIncludedTypeEquipment => 'Equipment';
 
   @override
-  String get createExcursionIncludedTypeGuide => 'Guide';
+  String get createExcursionIncludedTypeAccommodation => 'Accommodation';
 
   @override
-  String get createExcursionIncludedTypePhoto => 'Photo';
+  String get createExcursionIncludedTypePermitsFees => 'Permits & fees';
 
   @override
   String get createExcursionIncludedTypeOther => 'Other';
@@ -8360,8 +8383,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get postCreateRateLimitTitle => 'Post limit';
 
   @override
-  String postCreateRateLimitMessage(int minutes) {
-    return 'You have created the maximum number of posts in the last hour. You can create another post in about $minutes min.';
+  String postCreateRateLimitMessage(String time) {
+    return 'You can publish another post in $time.';
   }
 
   @override
@@ -9645,4 +9668,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contextualHelpTryAgain => 'Retry';
+
+  @override
+  String get trustRestrictionTitle => 'Access restricted';
+
+  @override
+  String get trustCreationRestrictionMessage =>
+      'Creation is restricted by an administrator. Contact support if you believe this is a mistake.';
+
+  @override
+  String get trustFeatureRestrictionMessage =>
+      'This feature is restricted by an administrator. Contact support if you believe this is a mistake.';
+
+  @override
+  String get trustRestrictionSupportAction => 'Contact support';
 }

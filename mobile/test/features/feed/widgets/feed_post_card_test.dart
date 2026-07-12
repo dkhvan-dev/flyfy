@@ -22,6 +22,8 @@ void main() {
       ),
     );
 
+    expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+
     await tester.tap(find.byKey(const ValueKey('open-feed-post-article-1')));
     await tester.pumpAndSettle();
 

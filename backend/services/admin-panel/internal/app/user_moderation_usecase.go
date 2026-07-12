@@ -191,7 +191,6 @@ func (u *UserModerationUseCase) CreateUserRestriction(
 		"restrictionCode": params.RestrictionCode,
 		"reasonCode":      params.ReasonCode,
 	})
-	u.notifyUserRestrictionCreated(ctx, item)
 	return item, nil
 }
 
@@ -221,7 +220,6 @@ func (u *UserModerationUseCase) LiftUserRestriction(
 		"restrictionId": params.RestrictionID,
 		"reasonCode":    params.ReasonCode,
 	})
-	u.notifyUserRestrictionLifted(ctx, item)
 	return item, nil
 }
 

@@ -750,7 +750,7 @@ class _FollowersErrorState extends StatelessWidget {
               onPressed: onRetry,
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
-                foregroundColor: colors.textPrimary,
+                foregroundColor: colors.onPrimary,
               ),
               child: Text(retryLabel),
             ),

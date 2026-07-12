@@ -894,7 +894,7 @@ class _StoryTemplatePickerField extends StatelessWidget {
           children: [
             for (final preset in _templatePresetValues)
               Material(
-                color: Colors.transparent,
+                color: sheetContext.appColors.transparent,
                 child: InkWell(
                   borderRadius: AppBorderRadius.circular(16),
                   onTap: () => Navigator.of(sheetContext).pop(preset),
@@ -1188,7 +1188,7 @@ class _MetadataPopupField extends StatelessWidget {
           children: [
             for (final item in values)
               Material(
-                color: Colors.transparent,
+                color: sheetContext.appColors.transparent,
                 child: InkWell(
                   borderRadius: AppBorderRadius.circular(16),
                   onTap: () => Navigator.of(sheetContext).pop(item),

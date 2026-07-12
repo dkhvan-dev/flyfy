@@ -476,6 +476,7 @@ func createActivityInputFromRequest(actorUserID uuid.UUID, req dto.CreateActivit
 		HostUserID:                     actorUserID,
 		Title:                          req.Title,
 		Description:                    req.Description,
+		SourceLanguage:                 req.SourceLanguage,
 		Format:                         enum.ActivityFormat(strings.TrimSpace(req.Format)),
 		Visibility:                     enum.ActivityVisibility(strings.TrimSpace(req.Visibility)),
 		CategorySlug:                   req.CategorySlug,
@@ -735,6 +736,7 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		ActivityID:                     activityID,
 		Title:                          req.Title,
 		Description:                    req.Description,
+		SourceLanguage:                 req.SourceLanguage,
 		Visibility:                     visibility,
 		CategorySlug:                   req.CategorySlug,
 		SubcategorySlug:                requestSubcategorySlug(req.SubcategorySlug, req.SubCategorySlug),
@@ -1318,6 +1320,9 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		SourceActivityID:               sourceActivityID,
 		Title:                          item.Title,
 		Description:                    item.Description,
+		Translations:                   mapActivityTranslations(item.Translations),
+		SourceLanguage:                 item.SourceLanguage,
+		TranslationStatus:              string(item.TranslationStatus),
 		Format:                         string(item.Format),
 		Status:                         string(item.Status),
 		Visibility:                     string(item.Visibility),
@@ -1364,6 +1369,21 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		CreatedAt:                      item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:                      item.UpdatedAt.UTC().Format(time.RFC3339),
 	}, nil
+}
+
+func mapActivityTranslations(input model.ActivityTranslations) map[string]dto.ActivityLocalizedCopy {
+	translations := model.NormalizeActivityTranslations(input)
+	if len(translations) == 0 {
+		return nil
+	}
+	result := make(map[string]dto.ActivityLocalizedCopy, len(translations))
+	for language, copy := range translations {
+		result[language] = dto.ActivityLocalizedCopy{
+			Title:       copy.Title,
+			Description: copy.Description,
+		}
+	}
+	return result
 }
 
 func (h *Handler) toActivityDetailResponse(ctx context.Context, item *model.Activity) (dto.ActivityResponse, error) {
@@ -1501,6 +1521,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 
 		errors.Is(err, model.ErrInvalidActivityTitle),
 		errors.Is(err, model.ErrInvalidActivityDescription),
+		errors.Is(err, model.ErrInvalidActivityTranslationLanguage),
 		errors.Is(err, model.ErrInvalidActivityFormat),
 		errors.Is(err, model.ErrInvalidActivityStatus),
 		errors.Is(err, model.ErrInvalidActivityVisibility),

@@ -19,8 +19,10 @@ import '../../models/post_profile_contract.dart';
 import '../../models/post_vm.dart';
 import '../../story_ui.dart';
 import '../../widgets/story_document_renderer.dart';
+import '../data/story_editor_api.dart';
 import '../domain/story_document.dart';
 import '../../../../providers/user_routes_provider.dart';
+import 'post_create_preflight.dart';
 import 'story_editor_controller.dart';
 import 'story_editor_trust_context.dart';
 import 'widgets/story_add_block_sheet.dart';
@@ -41,6 +43,7 @@ final class _StoryEditorColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
@@ -907,6 +910,16 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
     if (!mounted) return;
     if (story != null) {
       _openSavedPost(story, returnToCaller: returnToCaller);
+      return;
+    }
+    final error = _controller.state.saveStatus.error;
+    if (error is StoryEditorApiException &&
+        (error.code == 'post_rate_limited' || error.statusCode == 429)) {
+      await showPostRateLimitSheet(
+        context,
+        retryAfter: error.retryAfter,
+        nextAvailableAt: error.nextAvailableAt,
+      );
       return;
     }
     _openFirstValidationError();
@@ -1963,7 +1976,7 @@ class _RouteReferencePickerStateView extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: StoryPalette.textSoft,
+                color: context.storyEditorColors.textSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1973,7 +1986,7 @@ class _RouteReferencePickerStateView extends StatelessWidget {
                 onPressed: onAction,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.storyEditorColors.primary,
-                  foregroundColor: context.storyEditorColors.textPrimary,
+                  foregroundColor: context.storyEditorColors.onPrimary,
                 ),
                 child: Text(actionLabel!),
               ),
@@ -2043,7 +2056,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: StoryPalette.text,
+                          color: context.storyEditorColors.textPrimary,
                           fontSize: adaptive.scale(15.5),
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0,
@@ -2056,9 +2069,8 @@ class _RouteReferencePickerTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
-                            color: StoryPalette.textSoft.withValues(
-                              alpha: 0.82,
-                            ),
+                            color: context.storyEditorColors.textSecondary
+                                .withValues(alpha: 0.82),
                             fontSize: adaptive.scale(12.5),
                             height: 1.22,
                             fontWeight: FontWeight.w500,
@@ -2190,7 +2202,7 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
             ),
             child: DecoratedBox(
               decoration: AppBoxDecoration(
-                color: StoryPalette.surfaceRaised,
+                color: context.storyEditorColors.surfaceRaised,
                 borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
                 border: Border.all(
                   color: context.storyEditorColors.primary.withValues(
@@ -2227,7 +2239,7 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
                       child: Text(
                         label,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: StoryPalette.text,
+                          color: context.storyEditorColors.textPrimary,
                           fontWeight: FontWeight.w800,
                         ),
                         maxLines: 2,
@@ -3074,7 +3086,7 @@ class _StoryTemplateConflictSheet extends StatelessWidget {
                           _storyTemplateCategoryLabel(l10n, template.category),
                         ),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: StoryPalette.textSoft,
+                          color: context.storyEditorColors.textSecondary,
                           height: 1.35,
                         ),
                       ),
@@ -3185,7 +3197,7 @@ class _TemplateConflictOption extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: StoryPalette.text,
+                          color: context.storyEditorColors.textPrimary,
                           fontSize: adaptive.scale(15.5),
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0,
@@ -3197,7 +3209,8 @@ class _TemplateConflictOption extends StatelessWidget {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyle(
-                          color: StoryPalette.textSoft.withValues(alpha: 0.82),
+                          color: context.storyEditorColors.textSecondary
+                              .withValues(alpha: 0.82),
                           fontSize: adaptive.scale(12.5),
                           height: 1.22,
                           fontWeight: FontWeight.w500,
@@ -3275,7 +3288,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
                 child: DecoratedBox(
                   key: const ValueKey('story-editor-preview-cover'),
                   decoration: AppBoxDecoration(
-                    color: StoryPalette.surfaceRaised,
+                    color: context.storyEditorColors.surfaceRaised,
                     border: Border.all(
                       color: context.storyEditorColors.borderSecondary,
                     ),
@@ -3284,7 +3297,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
                       ? Center(
                           child: Icon(
                             Icons.image_outlined,
-                            color: StoryPalette.textMuted,
+                            color: context.storyEditorColors.textMuted,
                             size: adaptive.scale(42),
                           ),
                         )
@@ -3294,7 +3307,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
                           errorBuilder: (_, _, _) => Center(
                             child: Icon(
                               Icons.broken_image_outlined,
-                              color: StoryPalette.textMuted,
+                              color: context.storyEditorColors.textMuted,
                               size: adaptive.scale(36),
                             ),
                           ),
@@ -3323,7 +3336,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
             Text(
               title,
               style: AppTextStyle(
-                color: StoryPalette.text,
+                color: context.storyEditorColors.textPrimary,
                 fontSize: adaptive.scale(28, minFactor: 0.78, maxFactor: 1.04),
                 height: 1.08,
                 fontWeight: FontWeight.w900,
@@ -3419,7 +3432,7 @@ class _PreviewTagChip extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyle(
-            color: StoryPalette.textSoft,
+            color: context.storyEditorColors.textSecondary,
             fontSize: adaptive.scale(12),
             fontWeight: FontWeight.w700,
           ),

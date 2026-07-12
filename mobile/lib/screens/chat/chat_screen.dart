@@ -25,6 +25,7 @@ import '../../core/network/file_api.dart';
 import '../../core/network/sticker_api.dart';
 import '../../core/platform/clipboard_media_service.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../core/ui/app_emoji.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
@@ -34,6 +35,8 @@ import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../features/chat/utils/sticker_asset_format.dart';
 import '../../features/chat/utils/sticker_pack_ordering.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
@@ -58,6 +61,7 @@ final class _ChatColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primaryPressed => colors.primaryPressed;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
@@ -109,7 +113,7 @@ final class _ChatColors {
   Color messageBorder(bool highlighted) => highlighted
       ? colors.secondary.withValues(alpha: 0.42)
       : colors.transparent;
-  Color get actionOnPrimary => colors.textPrimary;
+  Color get actionOnPrimary => colors.onPrimary;
   Color get transparent => colors.transparent;
   Color get black => colors.black;
   Color get white => colors.white;
@@ -180,7 +184,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final _stickerApi = StickerApi();
   final _clipboardMediaService = ClipboardMediaService();
   final _voiceRecorder = AudioRecorder();
-  final _messageController = TextEditingController();
+  final _messageController = AppEmojiEditingController();
+  final _composerTextScrollController = ScrollController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   final Map<String, GlobalKey> _messageItemKeys = {};
@@ -226,6 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _messageController.dispose();
+    _composerTextScrollController.dispose();
     _scrollController.dispose();
     _focusNode.removeListener(_handleComposerFocusChanged);
     _focusNode.dispose();
@@ -2127,6 +2133,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUserId = context.select<SessionProvider, String>(
       (session) => session.profile?.userId ?? '',
     );
+    final trustAccess = context.watch<TrustAccessProvider>();
+    final chatRestricted = trustAccess.isRestricted(
+      TrustCapability.sendChatMessage,
+    );
+    final fileUploadRestricted = trustAccess.isRestricted(
+      TrustCapability.uploadFile,
+    );
 
     return Scaffold(
       backgroundColor: context.chatColors.background,
@@ -2174,6 +2187,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   _openSharedContent(conv, currentUserId, chat.messages),
                 ),
               ),
+              if (chatRestricted || fileUploadRestricted)
+                const Padding(
+                  padding: AppEdgeInsets.fromLTRB(12, 10, 12, 0),
+                  child: TrustRestrictionNotice(),
+                ),
               if (conv.pinnedMessages.isNotEmpty)
                 _PinnedMessagesBar(
                   pinnedMessages: conv.pinnedMessages,
@@ -2197,7 +2215,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   messagingClosed: messagingClosed,
                   highlightedMessageId: _highlightedMessageId,
                   messageKeyForId: _messageItemKey,
-                  onReplyMessage: _selectReplyMessage,
+                  onReplyMessage: chatRestricted ? (_) {} : _selectReplyMessage,
                   onMessageLongPress: (message) =>
                       unawaited(_showMessageActions(message)),
                   onReactionSelected: (message, emoji) =>
@@ -2209,9 +2227,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       unawaited(_handleMessageLinkTap(url)),
                 ),
               ),
-              if (!messagingClosed)
+              if (!messagingClosed && !chatRestricted)
                 _ChatComposer(
                   controller: _messageController,
+                  textScrollController: _composerTextScrollController,
                   focusNode: _focusNode,
                   pendingAttachments: _pendingAttachments,
                   replyToMessage: _replyToMessage,
@@ -2254,6 +2273,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   voiceStopping: _voiceStopping,
                   voiceDuration: _voiceRecordingDuration,
                   messagingClosed: false,
+                  attachmentsEnabled: !fileUploadRestricted,
                 ),
             ],
           );
@@ -3331,7 +3351,7 @@ class _ReplyPreviewTextState extends State<_ReplyPreviewText> {
     );
 
     if (syncPreview.isNotEmpty) {
-      return Text(
+      return AppEmojiText(
         syncPreview,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -3491,7 +3511,7 @@ class _ReactionChoiceButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: AppLocalizations.of(context)!.chatReactionSheetTitle,
+      label: emoji,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -3511,10 +3531,7 @@ class _ReactionChoiceButton extends StatelessWidget {
             ),
           ),
           child: Center(
-            child: Text(
-              emoji,
-              style: AppTextStyle(fontSize: _scale(context, 24)),
-            ),
+            child: AppEmoji(value: emoji, size: _scale(context, 24)),
           ),
         ),
       ),
@@ -4110,12 +4127,10 @@ class _ReadReceiptReactionBadge extends StatelessWidget {
           color: context.chatColors.primary.withValues(alpha: 0.28),
         ),
       ),
-      child: Text(
-        emoji,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.clip,
-        style: AppTextStyle(fontSize: _scale(context, 14), height: 1),
+      child: AppEmoji(
+        value: emoji,
+        size: _scale(context, 14),
+        semanticLabel: emoji,
       ),
     );
   }
@@ -4480,8 +4495,10 @@ class _HyperlinkedMessageTextState extends State<_HyperlinkedMessageText> {
 
   @override
   Widget build(BuildContext context) {
+    final textStyle = appEmojiCompatibleTextStyle(widget.style);
+    final linkStyle = appEmojiCompatibleTextStyle(widget.linkStyle);
     if (_links.isEmpty) {
-      return Text(widget.text, style: widget.style);
+      return AppEmojiText(widget.text, style: widget.style);
     }
 
     final spans = <InlineSpan>[];
@@ -4489,22 +4506,34 @@ class _HyperlinkedMessageTextState extends State<_HyperlinkedMessageText> {
     for (var index = 0; index < _links.length; index++) {
       final link = _links[index];
       if (link.start > cursor) {
-        spans.add(TextSpan(text: widget.text.substring(cursor, link.start)));
+        spans.addAll(
+          appEmojiInlineSpans(
+            context,
+            widget.text.substring(cursor, link.start),
+            style: textStyle,
+          ),
+        );
       }
       spans.add(
         TextSpan(
           text: widget.text.substring(link.start, link.end),
-          style: widget.linkStyle,
+          style: linkStyle,
           recognizer: _recognizers[index],
         ),
       );
       cursor = link.end;
     }
     if (cursor < widget.text.length) {
-      spans.add(TextSpan(text: widget.text.substring(cursor)));
+      spans.addAll(
+        appEmojiInlineSpans(
+          context,
+          widget.text.substring(cursor),
+          style: textStyle,
+        ),
+      );
     }
 
-    return Text.rich(TextSpan(style: widget.style, children: spans));
+    return Text.rich(TextSpan(style: textStyle, children: spans));
   }
 }
 
@@ -4584,9 +4613,10 @@ class _MessageReactionStrip extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    reaction.emoji,
-                    style: AppTextStyle(fontSize: _scale(context, 13)),
+                  AppEmoji(
+                    value: reaction.emoji,
+                    size: _scale(context, 13),
+                    semanticLabel: reaction.emoji,
                   ),
                   SizedBox(width: _scale(context, 4)),
                   Text(
@@ -5188,10 +5218,10 @@ class _StickerPlaceholder extends StatelessWidget {
                 ),
               )
             : normalizedEmoji.isNotEmpty
-            ? Text(
-                normalizedEmoji,
-                textAlign: TextAlign.center,
-                style: AppTextStyle(fontSize: _scale(context, 28), height: 1),
+            ? AppEmoji(
+                value: normalizedEmoji,
+                size: _scale(context, 28),
+                semanticLabel: normalizedEmoji,
               )
             : Icon(
                 Icons.image_not_supported_outlined,
@@ -5374,7 +5404,7 @@ class _PendingMessageMediaCollage extends StatelessWidget {
         ),
         SizedBox(height: gap),
         GridView.builder(
-          padding: EdgeInsets.zero,
+          padding: AppInsets.none,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: gridItems.length,
@@ -6233,7 +6263,7 @@ class _MessageImageCollage extends StatelessWidget {
         ),
         SizedBox(height: gap),
         GridView.builder(
-          padding: EdgeInsets.zero,
+          padding: AppInsets.none,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: gridItems.length,
@@ -7533,7 +7563,7 @@ class _PendingVoiceAttachmentChipState
                             height: _scale(context, 17),
                             child: CircularProgressIndicator(
                               strokeWidth: 2.1,
-                              color: context.chatColors.white,
+                              color: context.chatColors.onPrimary,
                             ),
                           )
                         : Icon(
@@ -7541,7 +7571,7 @@ class _PendingVoiceAttachmentChipState
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: _scale(context, 27),
-                            color: context.chatColors.white,
+                            color: context.chatColors.onPrimary,
                           ),
                   ),
                 ),
@@ -7920,12 +7950,12 @@ class _VoiceRecordingBar extends StatelessWidget {
                       height: _scale(context, 20),
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: context.chatColors.white,
+                        color: context.chatColors.onPrimary,
                       ),
                     )
                   : Icon(
                       Icons.stop_rounded,
-                      color: context.chatColors.white,
+                      color: context.chatColors.onPrimary,
                       size: _scale(context, 24),
                     ),
             ),
@@ -8234,6 +8264,7 @@ class _VoiceLockHint extends StatelessWidget {
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
     required this.controller,
+    required this.textScrollController,
     required this.focusNode,
     required this.pendingAttachments,
     required this.replyToMessage,
@@ -8270,9 +8301,11 @@ class _ChatComposer extends StatelessWidget {
     required this.voiceStopping,
     required this.voiceDuration,
     required this.messagingClosed,
+    required this.attachmentsEnabled,
   });
 
   final TextEditingController controller;
+  final ScrollController textScrollController;
   final FocusNode focusNode;
   final List<_PickedChatAttachment> pendingAttachments;
   final MessageVm? replyToMessage;
@@ -8309,6 +8342,7 @@ class _ChatComposer extends StatelessWidget {
   final bool voiceStopping;
   final Duration voiceDuration;
   final bool messagingClosed;
+  final bool attachmentsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -8317,6 +8351,13 @@ class _ChatComposer extends StatelessWidget {
     final btnSize = _scale(context, 42).clamp(40.0, 44.0).toDouble();
     final itemGap = _scale(context, 6);
     final l10n = AppLocalizations.of(context)!;
+    final composerTextStyle = appEmojiCompatibleTextStyle(
+      AppTextStyle(
+        fontSize: 15,
+        color: context.chatColors.textPrimary,
+        letterSpacing: 0,
+      ),
+    );
 
     return Container(
       padding: AppEdgeInsets.fromLTRB(
@@ -8370,21 +8411,21 @@ class _ChatComposer extends StatelessWidget {
           ] else
             Row(
               children: [
-                _ComposerCircleButton(
-                  size: btnSize,
-                  // Show the upload spinner on the paperclip — that is the
-                  // button users associate with file/gallery uploads.
-                  loading: attachmentUploading,
-                  icon: Icons.attach_file_rounded,
-                  semanticLabel: l10n.chatComposerAttachButtonLabel,
-                  onTap: attachmentUploading || messagingClosed
-                      ? null
-                      : () {
-                          onPanelChanged(_ComposerPanel.none);
-                          _showAttachSheet(context, l10n);
-                        },
-                ),
-                SizedBox(width: itemGap),
+                if (attachmentsEnabled) ...[
+                  _ComposerCircleButton(
+                    size: btnSize,
+                    loading: attachmentUploading,
+                    icon: Icons.attach_file_rounded,
+                    semanticLabel: l10n.chatComposerAttachButtonLabel,
+                    onTap: attachmentUploading || messagingClosed
+                        ? null
+                        : () {
+                            onPanelChanged(_ComposerPanel.none);
+                            _showAttachSheet(context, l10n);
+                          },
+                  ),
+                  SizedBox(width: itemGap),
+                ],
                 Expanded(
                   child: Container(
                     height: btnSize,
@@ -8401,76 +8442,90 @@ class _ChatComposer extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            onTap: () => onPanelChanged(_ComposerPanel.none),
-                            onChanged: (_) => onTyping(),
-                            onSubmitted: (_) => onSend(),
-                            contextMenuBuilder: (context, editableTextState) {
-                              final items = editableTextState
-                                  .contextMenuButtonItems
-                                  .where(
-                                    (item) =>
-                                        item.type !=
-                                        ContextMenuButtonType.paste,
-                                  )
-                                  .toList(growable: true);
-                              items.insert(
-                                0,
-                                ContextMenuButtonItem(
-                                  label: l10n.chatComposerPaste,
-                                  onPressed: () {
-                                    ContextMenuController.removeAny();
-                                    onPasteRequested();
-                                  },
+                          child: Stack(
+                            alignment: Alignment.centerLeft,
+                            children: [
+                              Positioned.fill(
+                                child: AppEmojiEditingOverlay(
+                                  controller: controller,
+                                  scrollController: textScrollController,
+                                  style: composerTextStyle,
                                 ),
-                              );
-                              items.add(
-                                ContextMenuButtonItem(
-                                  label: l10n.chatComposerPasteImage,
-                                  onPressed: () {
-                                    ContextMenuController.removeAny();
-                                    onPasteImageRequested();
-                                  },
-                                ),
-                              );
-                              return AdaptiveTextSelectionToolbar.buttonItems(
-                                anchors: editableTextState.contextMenuAnchors,
-                                buttonItems: items,
-                              );
-                            },
-                            textInputAction: TextInputAction.send,
-                            maxLines: 1,
-                            textAlignVertical: TextAlignVertical.center,
-                            enabled: !attachmentUploading && !messagingClosed,
-                            style: AppTextStyle(
-                              fontSize: 15,
-                              color: context.chatColors.textPrimary,
-                              letterSpacing: 0,
-                            ),
-                            decoration: AppInputDecoration(
-                              filled: false,
-                              fillColor: context.chatColors.transparent,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              isDense: true,
-                              contentPadding: AppEdgeInsets.zero,
-                              hintText: messagingClosed
-                                  ? l10n.chatComposerClosedHint
-                                  : attachmentUploading
-                                  ? l10n.chatAttachmentUploading
-                                  : l10n.chatComposerHint,
-                              hintStyle: AppTextStyle(
-                                fontSize: 15,
-                                color: context.chatColors.composerHintText,
-                                letterSpacing: 0,
                               ),
-                            ),
+                              TextField(
+                                controller: controller,
+                                scrollController: textScrollController,
+                                focusNode: focusNode,
+                                onTap: () =>
+                                    onPanelChanged(_ComposerPanel.none),
+                                onChanged: (_) => onTyping(),
+                                onSubmitted: (_) => onSend(),
+                                contextMenuBuilder: (context, editableTextState) {
+                                  final items = editableTextState
+                                      .contextMenuButtonItems
+                                      .where(
+                                        (item) =>
+                                            item.type !=
+                                            ContextMenuButtonType.paste,
+                                      )
+                                      .toList(growable: true);
+                                  items.insert(
+                                    0,
+                                    ContextMenuButtonItem(
+                                      label: l10n.chatComposerPaste,
+                                      onPressed: () {
+                                        ContextMenuController.removeAny();
+                                        onPasteRequested();
+                                      },
+                                    ),
+                                  );
+                                  if (attachmentsEnabled) {
+                                    items.add(
+                                      ContextMenuButtonItem(
+                                        label: l10n.chatComposerPasteImage,
+                                        onPressed: () {
+                                          ContextMenuController.removeAny();
+                                          onPasteImageRequested();
+                                        },
+                                      ),
+                                    );
+                                  }
+                                  return AdaptiveTextSelectionToolbar.buttonItems(
+                                    anchors:
+                                        editableTextState.contextMenuAnchors,
+                                    buttonItems: items,
+                                  );
+                                },
+                                textInputAction: TextInputAction.send,
+                                maxLines: 1,
+                                textAlignVertical: TextAlignVertical.center,
+                                enabled:
+                                    !attachmentUploading && !messagingClosed,
+                                style: composerTextStyle,
+                                decoration: AppInputDecoration(
+                                  filled: false,
+                                  fillColor: context.chatColors.transparent,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: AppEdgeInsets.zero,
+                                  hintText: messagingClosed
+                                      ? l10n.chatComposerClosedHint
+                                      : attachmentUploading
+                                      ? l10n.chatAttachmentUploading
+                                      : l10n.chatComposerHint,
+                                  hintStyle: AppTextStyle(
+                                    fontSize: 15,
+                                    color: context.chatColors.composerHintText,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         Semantics(
@@ -8510,7 +8565,9 @@ class _ChatComposer extends StatelessWidget {
                     final hasDraft =
                         value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
-                    if (hasDraft) return const SizedBox.shrink();
+                    if (hasDraft || !attachmentsEnabled) {
+                      return const SizedBox.shrink();
+                    }
                     return Padding(
                       padding: AppEdgeInsets.only(left: itemGap),
                       child: _ComposerCircleButton(
@@ -8834,13 +8891,7 @@ class _EmojiGrid extends StatelessWidget {
                 borderRadius: AppBorderRadius.circular(999),
                 onTap: () => onSelected(value),
                 child: Center(
-                  child: Text(
-                    value,
-                    style: AppTextStyle(
-                      fontSize: _scale(context, 26),
-                      height: 1,
-                    ),
-                  ),
+                  child: AppEmoji(value: value, size: _scale(context, 26)),
                 ),
               ),
             );

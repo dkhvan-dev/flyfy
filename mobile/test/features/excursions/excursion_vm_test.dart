@@ -223,6 +223,52 @@ void main() {
     );
   });
 
+  test('removes deprecated included items and keeps translations aligned', () {
+    final excursion = ExcursionVm.fromJson(const {
+      'id': 'product-legacy-included-items',
+      'title': 'Legacy offer',
+      'summary': 'Legacy included item payload',
+      'includedItems': [
+        'transport',
+        'guide',
+        'accommodation',
+        'photo',
+        'permits_fees',
+      ],
+      'includedItemTranslations': {
+        'ru': ['Транспорт', 'Гид', 'Проживание', 'Фото', 'Разрешения и сборы'],
+      },
+      'offers': [
+        {
+          'id': 'offer-legacy-included-items',
+          'productId': 'product-legacy-included-items',
+          'guideProfileId': 'guide-profile-1',
+          'guideUserId': 'guide-user-1',
+          'includedItems': ['food', 'guide', 'permits_fees', 'photo'],
+          'includedItemTranslations': {
+            'ru': ['Питание', 'Гид', 'Разрешения и сборы', 'Фото'],
+          },
+        },
+      ],
+    });
+
+    expect(excursion.includedItems, [
+      'transport',
+      'accommodation',
+      'permits_fees',
+    ]);
+    expect(excursion.includedItemTranslations['ru'], [
+      'Транспорт',
+      'Проживание',
+      'Разрешения и сборы',
+    ]);
+    expect(excursion.offers.single.includedItems, ['food', 'permits_fees']);
+    expect(excursion.offers.single.localizedIncludedItems('ru'), [
+      'Питание',
+      'Разрешения и сборы',
+    ]);
+  });
+
   test('keeps product copy neutral and applies selected offer copy', () {
     final excursion = ExcursionVm.fromJson(
       const {

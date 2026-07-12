@@ -82,7 +82,9 @@ void main() {
       );
       expect(searchSource, contains('AppListSearchField('));
       expect(searchSource, contains('activeFilterCount: activeFilterCount'));
-      expect(searchSource, contains('_loadPlaces(page: 1);'));
+      expect(searchSource, contains('onSubmitted: _submitPlaceSearch'));
+      expect(source, contains('void _submitPlaceSearch(String value)'));
+      expect(source, contains('unawaited(_loadPlaces(page: 1))'));
       expect(searchSource, isNot(contains('size: a.scale(28)')));
       expect(searchSource, isNot(contains('fontSize: a.scale(21')));
     },

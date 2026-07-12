@@ -61,6 +61,10 @@ void main() {
     final directTopBarStart = source.indexOf('class _DirectTopBarContent');
     final groupTopBarStart = source.indexOf('class _GroupTopBarContent');
     final badgeStart = source.indexOf('class _AttachmentDownloadBadge');
+    final progressLabelStart = source.indexOf(
+      'class _AttachmentDownloadProgressLabel',
+      badgeStart,
+    );
     final attachmentDataStart = source.indexOf('class _ChatAttachmentViewData');
     final avatarStart = source.indexOf('class _ChatAvatar');
     final composerStart = source.indexOf('class _ChatComposer');
@@ -73,6 +77,7 @@ void main() {
     expect(directTopBarStart, isNonNegative);
     expect(groupTopBarStart, greaterThan(directTopBarStart));
     expect(badgeStart, isNonNegative);
+    expect(progressLabelStart, greaterThan(badgeStart));
     expect(attachmentDataStart, greaterThan(badgeStart));
     expect(avatarStart, isNonNegative);
     expect(composerStart, isNonNegative);
@@ -83,7 +88,7 @@ void main() {
       directTopBarStart,
       groupTopBarStart,
     );
-    final badgeSource = source.substring(badgeStart, attachmentDataStart);
+    final badgeSource = source.substring(badgeStart, progressLabelStart);
     final avatarSource = source.substring(avatarStart, composerStart);
     final composerSource = source.substring(
       composerStart,

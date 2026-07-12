@@ -1606,36 +1606,6 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get profileTitle;
 
-  /// No description provided for @drawerStatusVerifiedGuide.
-  ///
-  /// In en, this message translates to:
-  /// **'Verified guide'**
-  String get drawerStatusVerifiedGuide;
-
-  /// No description provided for @drawerStatusGuide.
-  ///
-  /// In en, this message translates to:
-  /// **'Guide'**
-  String get drawerStatusGuide;
-
-  /// No description provided for @drawerStatusGuideRevoked.
-  ///
-  /// In en, this message translates to:
-  /// **'Guide status revoked'**
-  String get drawerStatusGuideRevoked;
-
-  /// No description provided for @drawerStatusTraveler.
-  ///
-  /// In en, this message translates to:
-  /// **'Traveler'**
-  String get drawerStatusTraveler;
-
-  /// No description provided for @drawerStatusCompleteProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete profile'**
-  String get drawerStatusCompleteProfile;
-
   /// No description provided for @profileNotAvailable.
   ///
   /// In en, this message translates to:
@@ -4786,12 +4756,6 @@ abstract class AppLocalizations {
   /// **'Services'**
   String get servicesSectionTitle;
 
-  /// No description provided for @servicesAllButton.
-  ///
-  /// In en, this message translates to:
-  /// **'See all'**
-  String get servicesAllButton;
-
   /// No description provided for @homeExcursionsTitle.
   ///
   /// In en, this message translates to:
@@ -5083,8 +5047,14 @@ abstract class AppLocalizations {
   /// No description provided for @homeSeeAll.
   ///
   /// In en, this message translates to:
-  /// **'See All'**
+  /// **'All'**
   String get homeSeeAll;
+
+  /// No description provided for @homeShowAllCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get homeShowAllCard;
 
   /// No description provided for @homeTopStories.
   ///
@@ -5157,6 +5127,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exchange Rates'**
   String get homeServiceCurrencyConverter;
+
+  /// No description provided for @homeServiceAllServices.
+  ///
+  /// In en, this message translates to:
+  /// **'All services'**
+  String get homeServiceAllServices;
 
   /// No description provided for @homeServiceStays.
   ///
@@ -6471,6 +6447,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow travelers and communities to shape your feed.'**
   String get feedEmptyMessage;
+
+  /// No description provided for @feedFollowingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No subscriptions yet'**
+  String get feedFollowingEmptyTitle;
+
+  /// No description provided for @feedFollowingEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow travelers or communities to see their posts here.'**
+  String get feedFollowingEmptyMessage;
 
   /// No description provided for @feedLoadFailedTitle.
   ///
@@ -9340,6 +9328,54 @@ abstract class AppLocalizations {
   /// **'Kazakh'**
   String get excursionTranslationSourceLanguageKazakh;
 
+  /// No description provided for @activityDetailsTranslatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity details were automatically translated from {sourceLanguage}'**
+  String activityDetailsTranslatedNotice(Object sourceLanguage);
+
+  /// No description provided for @activityDetailsShowOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show original'**
+  String get activityDetailsShowOriginal;
+
+  /// No description provided for @activityDetailsShowTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show translation'**
+  String get activityDetailsShowTranslation;
+
+  /// No description provided for @activityDetailsTranslationPendingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the original activity details · Translation is being prepared'**
+  String get activityDetailsTranslationPendingNotice;
+
+  /// No description provided for @activityDetailsTranslationUnavailableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the original activity details · Auto-translation is temporarily unavailable'**
+  String get activityDetailsTranslationUnavailableNotice;
+
+  /// No description provided for @activityTranslationSourceLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get activityTranslationSourceLanguageEnglish;
+
+  /// No description provided for @activityTranslationSourceLanguageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get activityTranslationSourceLanguageRussian;
+
+  /// No description provided for @activityTranslationSourceLanguageKazakh.
+  ///
+  /// In en, this message translates to:
+  /// **'Kazakh'**
+  String get activityTranslationSourceLanguageKazakh;
+
   /// No description provided for @excursionLanguageEnglish.
   ///
   /// In en, this message translates to:
@@ -10570,17 +10606,17 @@ abstract class AppLocalizations {
   /// **'Equipment'**
   String get createExcursionIncludedTypeEquipment;
 
-  /// No description provided for @createExcursionIncludedTypeGuide.
+  /// No description provided for @createExcursionIncludedTypeAccommodation.
   ///
   /// In en, this message translates to:
-  /// **'Guide'**
-  String get createExcursionIncludedTypeGuide;
+  /// **'Accommodation'**
+  String get createExcursionIncludedTypeAccommodation;
 
-  /// No description provided for @createExcursionIncludedTypePhoto.
+  /// No description provided for @createExcursionIncludedTypePermitsFees.
   ///
   /// In en, this message translates to:
-  /// **'Photo'**
-  String get createExcursionIncludedTypePhoto;
+  /// **'Permits & fees'**
+  String get createExcursionIncludedTypePermitsFees;
 
   /// No description provided for @createExcursionIncludedTypeOther.
   ///
@@ -15257,8 +15293,8 @@ abstract class AppLocalizations {
   /// No description provided for @postCreateRateLimitMessage.
   ///
   /// In en, this message translates to:
-  /// **'You have created the maximum number of posts in the last hour. You can create another post in about {minutes} min.'**
-  String postCreateRateLimitMessage(int minutes);
+  /// **'You can publish another post in {time}.'**
+  String postCreateRateLimitMessage(String time);
 
   /// No description provided for @postCreateRateLimitAction.
   ///
@@ -17479,6 +17515,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get contextualHelpTryAgain;
+
+  /// No description provided for @trustRestrictionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access restricted'**
+  String get trustRestrictionTitle;
+
+  /// No description provided for @trustCreationRestrictionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creation is restricted by an administrator. Contact support if you believe this is a mistake.'**
+  String get trustCreationRestrictionMessage;
+
+  /// No description provided for @trustFeatureRestrictionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is restricted by an administrator. Contact support if you believe this is a mistake.'**
+  String get trustFeatureRestrictionMessage;
+
+  /// No description provided for @trustRestrictionSupportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get trustRestrictionSupportAction;
 }
 
 class _AppLocalizationsDelegate

@@ -158,7 +158,7 @@ void main() {
     );
     expect(
       colorsSource,
-      contains('Color get actionOnPrimary => colors.textPrimary'),
+      contains('Color get actionOnPrimary => colors.onPrimary'),
     );
     expect(source, contains('List<BoxShadow>? _chatDarkThemeShadow('));
     expect(
@@ -221,6 +221,47 @@ void main() {
       expect(tabSource, isNot(contains('context.chatColors.white')));
     },
   );
+
+  test('chat emoji glyphs use the shared asset renderer', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+    final emojiSource = await File('lib/core/ui/app_emoji.dart').readAsString();
+    final designSystemSource = await File(
+      'lib/core/ui/app_design_system.dart',
+    ).readAsString();
+    final gridStart = source.indexOf('class _EmojiGrid');
+    final gridEnd = source.indexOf('class _StickerGrid', gridStart);
+
+    expect(gridStart, isNonNegative);
+    expect(gridEnd, greaterThan(gridStart));
+    expect(source.substring(gridStart, gridEnd), contains('AppEmoji('));
+    expect(source, contains('appEmojiCompatibleTextStyle(widget.style)'));
+    expect(source, contains('return AppEmojiText(widget.text'));
+    expect(source, contains('appEmojiInlineSpans('));
+    expect(source, contains('AppEmojiEditingController()'));
+    expect(source, contains('AppEmojiEditingOverlay('));
+    expect(source, contains('scrollController: textScrollController'));
+    expect(
+      source,
+      contains('final _composerTextScrollController = ScrollController();'),
+    );
+    expect(source, contains('_composerTextScrollController.dispose();'));
+    expect(
+      source.indexOf('AppEmojiEditingOverlay('),
+      lessThan(
+        source.indexOf('TextField(', source.indexOf('class _ChatComposer')),
+      ),
+    );
+    expect(emojiSource, contains('emoji_u1f600.png'));
+    expect(emojiSource, contains('class AppEmoji extends StatelessWidget'));
+    expect(emojiSource, contains('Image.asset('));
+    expect(designSystemSource, contains('static const emojiFontFallback'));
+    expect(
+      designSystemSource,
+      contains("static const bundledEmojiFontFamily = 'InflapEmoji'"),
+    );
+  });
 
   test(
     'chat camera and voice composer buttons share the same size token',

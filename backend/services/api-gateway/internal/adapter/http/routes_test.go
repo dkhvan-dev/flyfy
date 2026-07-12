@@ -317,8 +317,15 @@ func TestStoryActionRoutesUseMethodAwarePolicies(t *testing.T) {
 		"list post comments": {
 			method:    "GET",
 			path:      "/api/v1/posts/post-1/comments?limit=20&offset=0",
-			name:      "posts-comments",
+			name:      "posts-comments-read",
 			authMode:  RouteAuthPublic,
+			rateLimit: 120,
+		},
+		"create post comment": {
+			method:    "POST",
+			path:      "/api/v1/posts/post-1/comments",
+			name:      "posts-comments-write",
+			authMode:  RouteAuthAuthenticated,
 			rateLimit: 20,
 		},
 		"mark story seen": {

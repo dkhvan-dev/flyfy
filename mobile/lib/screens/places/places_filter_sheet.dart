@@ -845,7 +845,7 @@ class _PillChip extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyle(
-                  color: selected ? colors.textPrimary : colors.textSecondary,
+                  color: selected ? colors.onPrimary : colors.textSecondary,
                   fontSize: adaptive.scale(14),
                   fontWeight: FontWeight.w800,
                 ),
@@ -891,7 +891,7 @@ class _RatingPill extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyle(
-            color: selected ? colors.textPrimary : colors.textSecondary,
+            color: selected ? colors.onPrimary : colors.textSecondary,
             fontSize: adaptive.scale(14),
             fontWeight: FontWeight.w900,
           ),

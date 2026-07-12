@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
+import '../../../core/network/post_api.dart';
 import '../../../core/ui/app_inline_sort_row.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/reference/app_location_label_resolver.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/models/story_vm.dart';
 import '../models/feed_block_vm.dart';
+import 'feed_post_content_card.dart';
 import 'feed_post_card.dart';
 import 'feed_system_posts_block.dart';
 import 'my_subscriptions_block.dart';
+import 'quick_post_thread_card.dart';
 import 'story_tray_block.dart';
 import 'suggested_communities_block.dart';
 
@@ -19,6 +22,7 @@ class FeedBlockList extends StatelessWidget {
   const FeedBlockList({
     super.key,
     required this.blocks,
+    required this.postApi,
     required this.onCommunityToggle,
     this.postSortMode = FeedPostSortMode.recommended,
     this.onPostSortModeChanged,
@@ -28,6 +32,7 @@ class FeedBlockList extends StatelessWidget {
     this.onPostShare,
     this.onPostHide,
     this.onPostNotInterested,
+    this.onQuickPostEngagement,
     this.onStoryTrayOpen,
     this.onCreateStory,
     this.viewerAvatarUrl,
@@ -49,6 +54,7 @@ class FeedBlockList extends StatelessWidget {
   });
 
   final List<FeedBlockVm> blocks;
+  final PostApi postApi;
   final ValueChanged<FeedCommunityVm> onCommunityToggle;
   final FeedPostSortMode postSortMode;
   final ValueChanged<FeedPostSortMode>? onPostSortModeChanged;
@@ -58,6 +64,7 @@ class FeedBlockList extends StatelessWidget {
   final FeedPostActionCallback? onPostShare;
   final FeedPostActionCallback? onPostHide;
   final FeedPostActionCallback? onPostNotInterested;
+  final QuickPostEngagementCallback? onQuickPostEngagement;
   final StoryTrayOpenCallback? onStoryTrayOpen;
   final VoidCallback? onCreateStory;
   final String? viewerAvatarUrl;
@@ -169,22 +176,27 @@ class FeedBlockList extends StatelessWidget {
         onOpenAll: onSystemPostsOpen,
       ),
       FeedBlockType.postCard =>
-        block.post == null
-            ? const SizedBox.shrink()
-            : FeedPostCard(
-                post: block.post!,
-                onOpen: onPostOpen,
-                onLike: onPostLike,
-                onShare: onPostShare,
-                onHide: onPostHide,
-                onNotInterested: onPostNotInterested,
-              ),
+        block.post == null ? const SizedBox.shrink() : _postCard(block.post!),
       FeedBlockType.profileCard ||
       FeedBlockType.officialNewsCard => const SizedBox.shrink(),
       FeedBlockType.tourCard ||
       FeedBlockType.guideCard => const SizedBox.shrink(),
       FeedBlockType.unknown => const SizedBox.shrink(),
     };
+  }
+
+  Widget _postCard(PostVm post) {
+    return FeedPostContentCard(
+      post: post,
+      postApi: postApi,
+      canInteract: onPostLike != null,
+      onOpen: onPostOpen,
+      onLike: onPostLike,
+      onShare: onPostShare,
+      onHide: onPostHide,
+      onNotInterested: onPostNotInterested,
+      onQuickPostEngagement: onQuickPostEngagement,
+    );
   }
 }
 

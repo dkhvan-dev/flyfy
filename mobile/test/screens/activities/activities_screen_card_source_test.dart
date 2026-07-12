@@ -51,7 +51,7 @@ void main() {
         'categoryLabel.toUpperCase()',
       );
       final titleStart = cardSource.indexOf(
-        'Text(\n                      item.title',
+        'Text(\n                      localizedCopy.title',
       );
       expect(categoryLabelStart, isNonNegative);
       expect(titleStart, greaterThan(categoryLabelStart));
@@ -83,6 +83,7 @@ void main() {
     );
     expect(cardSource, contains('countryCode: item.countryCode'));
     expect(cardSource, contains('cityId: item.cityId'));
+    expect(cardSource, contains('includeCountry: false'));
     expect(
       cardSource,
       isNot(

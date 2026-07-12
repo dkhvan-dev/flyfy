@@ -194,7 +194,7 @@ class _GuideCalendarHeader extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   minimumSize: const Size(0, 44),
                   visualDensity: compact
                       ? VisualDensity.compact

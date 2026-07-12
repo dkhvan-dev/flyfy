@@ -55,7 +55,7 @@ void main() {
     expect(switchSource, contains('context.appColors.textPrimary'));
     expect(switchSource, isNot(contains('AppPalette.onPrimary')));
     expect(switchSource, isNot(contains('AppPalette.textSecondary')));
-    expect(buttonSource, contains(': context.appColors.textPrimary'));
+    expect(buttonSource, contains(': context.appColors.onPrimary'));
     expect(buttonSource, contains('color: contentColor'));
   });
 

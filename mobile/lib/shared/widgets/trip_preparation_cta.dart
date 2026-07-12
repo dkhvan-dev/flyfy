@@ -109,7 +109,7 @@ class TripPreparationCta extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: colors.textPrimary,
+                  foregroundColor: colors.onPrimary,
                   minimumSize: const Size(0, 44),
                   padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(

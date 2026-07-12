@@ -268,6 +268,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
+      contentHandlesBottomSafeArea: true,
       backgroundColor: context.appColors.transparent,
       builder: (_) => PlacesFilterSheet(
         initial: _filters,

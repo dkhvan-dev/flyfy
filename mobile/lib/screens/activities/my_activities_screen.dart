@@ -27,6 +27,8 @@ import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/home_location_provider.dart';
@@ -761,6 +763,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         final haystack = [
           item.title,
           item.description,
+          for (final copy in item.translations.values) ...[
+            copy.title,
+            copy.description,
+          ],
           item.shortLocation,
           item.tags.join(' '),
         ].join(' ').toLowerCase();
@@ -909,6 +915,9 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final currentUserId = context.select<SessionProvider, String>(
       (session) => session.profile?.userId.trim() ?? '',
     );
+    final activityCreationRestricted = context
+        .watch<TrustAccessProvider>()
+        .isRestricted(TrustCapability.createActivity);
 
     return Theme(
       data: AppDesignSystem.themeFor(context),
@@ -918,7 +927,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
           backgroundStyle: AppBottomNavCreateBackgroundStyle.flat,
           onHomeTap: _goHome,
           onQrTap: _openQrStub,
-          onCreateTap: _openCreateActivity,
+          onCreateTap: activityCreationRestricted ? null : _openCreateActivity,
           onServicesTap: _goActivities,
           onChatsTap: _openChatsStub,
         ),
@@ -986,6 +995,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             horizontalPadding: 0,
                           ),
                           SizedBox(height: layout.topSectionSpacing),
+                          if (activityCreationRestricted) ...[
+                            const TrustRestrictionNotice(creation: true),
+                            SizedBox(height: layout.topSectionSpacing),
+                          ],
                           _MyActivitiesSearchField(
                             controller: _searchController,
                             focusNode: _searchFocusNode,
@@ -1535,6 +1548,7 @@ class _MyActivitiesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final localizedCopy = item.localizedCopy(localeName);
     final dateText = formatEventDateTime(
       item.startAt,
       timezoneId: item.timezone,
@@ -1657,7 +1671,7 @@ class _MyActivitiesCard extends StatelessWidget {
                         ],
                         if (compactCard) ...[
                           Text(
-                            item.title,
+                            localizedCopy.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
@@ -1670,7 +1684,7 @@ class _MyActivitiesCard extends StatelessWidget {
                           ),
                         ] else
                           Text(
-                            item.title,
+                            localizedCopy.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(

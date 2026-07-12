@@ -183,7 +183,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
     super.key,
     required this.onHomeTap,
     required this.onQrTap,
-    required this.onCreateTap,
+    this.onCreateTap,
     required this.onServicesTap,
     required this.onChatsTap,
     this.activeItem,
@@ -193,7 +193,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
 
   final VoidCallback onHomeTap;
   final VoidCallback onQrTap;
-  final VoidCallback onCreateTap;
+  final VoidCallback? onCreateTap;
   final VoidCallback onServicesTap;
   final VoidCallback onChatsTap;
   final AppBottomNavItem? activeItem;
@@ -210,6 +210,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
         backgroundStyle == AppBottomNavCreateBackgroundStyle.flat;
     final style = AppBottomNavigationBarStyle.v2(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final createTap = onCreateTap;
 
     return _BottomNavPaintedSafeArea(
       barHeight: layout.barHeight,
@@ -263,13 +264,15 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                 onTap: onQrTap,
               ),
             ),
-            Expanded(
-              child: _CreateBottomNavFab(
-                layout: layout,
-                semanticsLabel: createSemanticsLabel ?? l10n.createActivityFab,
-                onTap: onCreateTap,
+            if (createTap != null)
+              Expanded(
+                child: _CreateBottomNavFab(
+                  layout: layout,
+                  semanticsLabel:
+                      createSemanticsLabel ?? l10n.createActivityFab,
+                  onTap: createTap,
+                ),
               ),
-            ),
             Expanded(
               child: _BottomNavButton(
                 layout: layout,
@@ -598,7 +601,7 @@ class _CreateBottomNavFab extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.add_rounded,
-                      color: colors.textPrimary,
+                      color: colors.onPrimary,
                       size: layout.fabIconSize,
                     ),
                   ),

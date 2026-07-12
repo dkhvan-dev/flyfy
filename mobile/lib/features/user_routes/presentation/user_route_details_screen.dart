@@ -525,7 +525,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                                     states,
                                   ) {
                                     if (states.contains(WidgetState.selected)) {
-                                      return colors.textPrimary;
+                                      return colors.onPrimary;
                                     }
                                     return colors.textSecondary;
                                   }),
@@ -571,7 +571,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
                       backgroundColor: colors.primary,
-                      foregroundColor: colors.textPrimary,
+                      foregroundColor: colors.onPrimary,
                       padding: const AppEdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                         borderRadius: AppBorderRadius.circular(8),
@@ -766,11 +766,11 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
                     onPressed: _stops.length < 2 ? null : _submit,
                     style: FilledButton.styleFrom(
                       backgroundColor: colors.primary,
-                      foregroundColor: colors.textPrimary,
+                      foregroundColor: colors.onPrimary,
                       disabledBackgroundColor: colors.primary.withValues(
                         alpha: 0.4,
                       ),
-                      disabledForegroundColor: colors.textPrimary.withValues(
+                      disabledForegroundColor: colors.onPrimary.withValues(
                         alpha: 0.56,
                       ),
                       padding: const AppEdgeInsets.symmetric(vertical: 13),
@@ -988,7 +988,7 @@ class _RouteActions extends StatelessWidget {
           onPressed: loading ? null : onOpenMap,
           style: FilledButton.styleFrom(
             backgroundColor: colors.primary,
-            foregroundColor: colors.textPrimary,
+            foregroundColor: colors.onPrimary,
             shape: RoundedRectangleBorder(
               borderRadius: AppBorderRadius.circular(8),
             ),

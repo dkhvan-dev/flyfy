@@ -379,7 +379,7 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
                   onPressed: onLogin,
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
-                    foregroundColor: colors.textPrimary,
+                    foregroundColor: colors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppBorderRadius.circular(8),
                     ),

@@ -64,6 +64,14 @@ func (u *ActivityUseCase) syncActivitySearchDocument(ctx context.Context, item *
 	if u.searchIndexer == nil || item == nil || item.ID == uuid.Nil {
 		return
 	}
+	if latest, err := u.repo.GetActivityByID(ctx, item.ID); err != nil {
+		log.Warn().
+			Err(err).
+			Str("activity_id", item.ID.String()).
+			Msg("failed to refresh activity before search indexing")
+	} else if latest != nil {
+		item = latest
+	}
 	if !isActivitySearchIndexable(item) {
 		u.deleteActivitySearchDocument(ctx, item.ID)
 		return
@@ -85,6 +93,24 @@ func (u *ActivityUseCase) syncActivitySearchDocument(ctx context.Context, item *
 			Str("activity_id", item.ID.String()).
 			Msg("failed to upsert activity search document")
 	}
+}
+
+func (u *ActivityUseCase) SyncActivitySearchDocumentByID(
+	ctx context.Context,
+	activityID uuid.UUID,
+) {
+	if u == nil || u.searchIndexer == nil || activityID == uuid.Nil {
+		return
+	}
+	item, err := u.repo.GetActivityByID(ctx, activityID)
+	if err != nil {
+		log.Warn().
+			Err(err).
+			Str("activity_id", activityID.String()).
+			Msg("failed to load translated activity for search indexing")
+		return
+	}
+	u.syncActivitySearchDocument(ctx, item)
 }
 
 func (u *ActivityUseCase) deleteActivitySearchDocument(ctx context.Context, activityID uuid.UUID) {
@@ -125,9 +151,17 @@ func isActivitySearchModerationVisible(status enum.ActivityModerationStatus) boo
 }
 
 func activitySearchDocument(item *model.Activity, tags []string) SearchIndexDocument {
-	locale := normalizeActivitySearchLocale(item.LanguageCode)
+	locale := normalizeActivitySearchLocale(item.SourceLanguage)
 	title := map[string]string{locale: strings.TrimSpace(item.Title)}
 	description := map[string]string{locale: strings.TrimSpace(item.Description)}
+	for language, copy := range model.NormalizeActivityTranslations(item.Translations) {
+		if strings.TrimSpace(copy.Title) != "" {
+			title[language] = strings.TrimSpace(copy.Title)
+		}
+		if strings.TrimSpace(copy.Description) != "" {
+			description[language] = strings.TrimSpace(copy.Description)
+		}
+	}
 	subtitle := activitySearchSubtitle(item, locale)
 	categoryCodes := activitySearchCategoryCodes(item)
 	normalizedTags := normalizeTags(tags)

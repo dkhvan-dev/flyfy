@@ -98,6 +98,20 @@ CREATE TABLE IF NOT EXISTS posts (
 
 
 --
+-- Name: post_publish_cooldowns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS post_publish_cooldowns (
+    author_user_id uuid PRIMARY KEY,
+    last_post_id uuid NOT NULL,
+    last_published_at timestamp with time zone NOT NULL,
+    next_available_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_post_publish_cooldowns_window CHECK ((next_available_at >= last_published_at))
+);
+
+
+--
 -- Name: story_seen; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1343,10 +1357,10 @@ CREATE INDEX idx_posts_author_status ON posts USING btree (author_user_id, statu
 
 
 --
--- Name: idx_posts_author_created_rate_limit; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_posts_author_published_rate_limit; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_posts_author_created_rate_limit ON posts USING btree (author_user_id, created_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_posts_author_published_rate_limit ON posts USING btree (author_user_id, published_at DESC) WHERE (published_at IS NOT NULL);
 
 
 --

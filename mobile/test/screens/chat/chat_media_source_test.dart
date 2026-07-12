@@ -350,6 +350,7 @@ void main() {
 
     expect(source, contains('class _LastMessagePreviewLine'));
     expect(source, contains('chatLastMessagePreviewText'));
+    expect(source, contains('child: AppEmojiText('));
     expect(formatterSource, contains('chatLastMessagePhoto'));
     expect(formatterSource, contains('chatLastMessageVideo'));
     expect(formatterSource, contains('chatVoiceMessage'));
@@ -1282,7 +1283,7 @@ void main() {
         manyCollageEnd,
       );
       expect(manyCollageSource, contains('SizedBox(height: gap)'));
-      expect(manyCollageSource, contains('padding: EdgeInsets.zero'));
+      expect(manyCollageSource, contains('padding: AppInsets.none'));
       expect(
         collageSource,
         isNot(

@@ -147,6 +147,11 @@ func (g *GuideProfile) Activate() error {
 	if g.ID == uuid.Nil {
 		return ErrInvalidGuideProfileID
 	}
+	if !g.IsPrivateGuideAvailable &&
+		!g.IsActivityHostAvailable &&
+		!g.IsExcursionGuideAvailable {
+		g.IsExcursionGuideAvailable = true
+	}
 	g.Status = enum.GuideStatusActive
 	g.StatusReason = nil
 	g.StatusChangedAt = nil

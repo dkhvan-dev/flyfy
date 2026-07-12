@@ -761,7 +761,7 @@ class _RouteReferenceBlock extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: StoryPalette.textMuted,
+                          color: colors.textMuted,
                         ),
                       ),
                     ],

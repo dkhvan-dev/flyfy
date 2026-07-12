@@ -38,6 +38,7 @@ final class _MapColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
   Color get secondary => colors.secondary;
@@ -2790,10 +2791,10 @@ class _MeetingPointPickerPanel extends StatelessWidget {
                   onPressed: onConfirm,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.mapColors.primary,
-                    foregroundColor: context.mapColors.textPrimary,
+                    foregroundColor: context.mapColors.onPrimary,
                     disabledBackgroundColor: context.mapColors.primary
                         .withValues(alpha: 0.42),
-                    disabledForegroundColor: context.mapColors.textPrimary
+                    disabledForegroundColor: context.mapColors.onPrimary
                         .withValues(alpha: 0.54),
                     padding: AppEdgeInsets.symmetric(
                       horizontal: _mapScaled(context, 14, min: 12, max: 16),
@@ -2967,10 +2968,10 @@ class _RouteBuilderPanel extends StatelessWidget {
                   onPressed: building || savingRoute ? null : onBuildRoute,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.mapColors.primary,
-                    foregroundColor: context.mapColors.textPrimary,
+                    foregroundColor: context.mapColors.onPrimary,
                     disabledBackgroundColor: context.mapColors.primary
                         .withValues(alpha: 0.46),
-                    disabledForegroundColor: context.mapColors.warmInk90
+                    disabledForegroundColor: context.mapColors.onPrimary
                         .withValues(alpha: 0.58),
                     padding: AppEdgeInsets.symmetric(
                       horizontal: _mapScaled(context, 14, min: 12, max: 16),
@@ -2985,7 +2986,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           dimension: _mapScaled(context, 16, min: 14, max: 16),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: context.mapColors.textPrimary,
+                            color: context.mapColors.onPrimary,
                           ),
                         )
                       : Icon(Icons.route_rounded),
@@ -3200,11 +3201,11 @@ class _RoutePreviewPanel extends StatelessWidget {
                     : onSaveRoute,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.mapColors.primary,
-                  foregroundColor: context.mapColors.textPrimary,
+                  foregroundColor: context.mapColors.onPrimary,
                   disabledBackgroundColor: context.mapColors.primary.withValues(
                     alpha: 0.46,
                   ),
-                  disabledForegroundColor: context.mapColors.textPrimary
+                  disabledForegroundColor: context.mapColors.onPrimary
                       .withValues(alpha: 0.58),
                   padding: AppEdgeInsets.symmetric(
                     horizontal: _mapScaled(context, 14, min: 12, max: 16),
@@ -3219,7 +3220,7 @@ class _RoutePreviewPanel extends StatelessWidget {
                         dimension: _mapScaled(context, 16, min: 14, max: 16),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: context.mapColors.textPrimary,
+                          color: context.mapColors.onPrimary,
                         ),
                       )
                     : routeSaved
@@ -4246,7 +4247,7 @@ class _SelectedPlaceCard extends StatelessWidget {
             onPressed: onActionTap,
             style: FilledButton.styleFrom(
               backgroundColor: context.mapColors.primary,
-              foregroundColor: context.mapColors.textPrimary,
+              foregroundColor: context.mapColors.onPrimary,
               minimumSize: Size(0, buttonHeight),
               padding: AppEdgeInsets.symmetric(
                 horizontal: _mapScaled(context, 16, min: 12, max: 16),

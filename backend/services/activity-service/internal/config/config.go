@@ -29,6 +29,7 @@ type Config struct {
 	Trust         TrustServiceConfig
 	TokenService  TokenServiceConfig
 	SearchService SearchServiceConfig
+	Translation   TranslationServiceConfig
 	MTLS          transportauth.EnvConfig
 }
 
@@ -166,6 +167,18 @@ type SearchServiceConfig struct {
 	Enabled bool          `env:"SEARCH_INDEXING_ENABLED, default=false"`
 	HTTPURL string        `env:"SEARCH_SERVICE_HTTP_URL, default=http://search-service:8101"`
 	Timeout time.Duration `env:"SEARCH_SERVICE_TIMEOUT, default=800ms"`
+}
+
+type TranslationServiceConfig struct {
+	BaseURL           string        `env:"TRANSLATION_SERVICE_URL"`
+	AsyncEnabled      bool          `env:"ACTIVITY_ASYNC_TRANSLATION_ENABLED, default=true"`
+	WorkerEnabled     bool          `env:"ACTIVITY_TRANSLATION_WORKER_ENABLED, default=false"`
+	WorkerBatchSize   int           `env:"ACTIVITY_TRANSLATION_WORKER_BATCH_SIZE, default=10"`
+	WorkerInterval    time.Duration `env:"ACTIVITY_TRANSLATION_WORKER_INTERVAL, default=2s"`
+	MaxAttempts       int           `env:"ACTIVITY_TRANSLATION_MAX_ATTEMPTS, default=5"`
+	RetryBaseDelay    time.Duration `env:"ACTIVITY_TRANSLATION_RETRY_BASE_DELAY, default=30s"`
+	RequestTimeout    time.Duration `env:"ACTIVITY_TRANSLATION_REQUEST_TIMEOUT, default=8s"`
+	WorkerLockTimeout time.Duration `env:"ACTIVITY_TRANSLATION_LOCK_TIMEOUT, default=2m"`
 }
 
 type TokenServiceConfig struct {

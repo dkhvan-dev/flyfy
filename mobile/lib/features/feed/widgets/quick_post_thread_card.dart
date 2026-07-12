@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:inflap/core/ui/app_design_system.dart';
 
+import '../../../core/network/dio_error_mapper.dart';
 import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/error_dialog.dart';
@@ -8,6 +10,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../data/feed_api.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
+import 'feed_post_card.dart';
 
 typedef QuickPostEngagementCallback =
     void Function(PostVm post, String eventType);
@@ -19,7 +22,11 @@ class QuickPostThreadCard extends StatefulWidget {
     required this.postApi,
     this.canInteract = true,
     this.previewCommentLimit = 3,
+    this.onOpen,
     this.onEdit,
+    this.onShare,
+    this.onHide,
+    this.onNotInterested,
     this.onEngagement,
   });
 
@@ -27,7 +34,11 @@ class QuickPostThreadCard extends StatefulWidget {
   final PostApi postApi;
   final bool canInteract;
   final int previewCommentLimit;
+  final ValueChanged<PostVm>? onOpen;
   final ValueChanged<PostVm>? onEdit;
+  final FeedPostActionCallback? onShare;
+  final FeedPostActionCallback? onHide;
+  final FeedPostActionCallback? onNotInterested;
   final QuickPostEngagementCallback? onEngagement;
 
   @override
@@ -45,6 +56,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
   bool _isLoadingComments = false;
   bool _isSubmitting = false;
   bool _isTogglingLike = false;
+  bool _isSharing = false;
   Object? _commentsError;
 
   @override
@@ -165,7 +177,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
         _isSubmitting = false;
       });
       widget.onEngagement?.call(widget.post, FeedEventTypes.comment);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
@@ -176,7 +188,9 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
       await showErrorDialog(
         context,
         title: l10n.error,
-        message: l10n.storyReplySendFailed,
+        message: error is DioException
+            ? DioErrorMapper.toMessage(error)
+            : l10n.storyReplySendFailed,
       );
     }
   }
@@ -223,6 +237,57 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
     }
   }
 
+  Future<void> _share() async {
+    final onShare = widget.onShare;
+    if (onShare == null || _isSharing) {
+      return;
+    }
+    setState(() {
+      _isSharing = true;
+    });
+    try {
+      await onShare(widget.post);
+    } catch (_) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        await showErrorDialog(
+          context,
+          title: l10n.error,
+          message: l10n.feedPostActionFailed,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleFeedback(FeedPostFeedbackAction action) async {
+    final callback = switch (action) {
+      FeedPostFeedbackAction.hide => widget.onHide,
+      FeedPostFeedbackAction.notInterested => widget.onNotInterested,
+    };
+    if (callback == null) {
+      return;
+    }
+    try {
+      await callback(widget.post);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedPostActionFailed,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -233,233 +298,308 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
     final body = _quickPostBody(widget.post);
     final canSubmit = _controller.text.trim().isNotEmpty && !_isSubmitting;
     final editedAt = widget.post.editedAt;
+    final canOpen = widget.onOpen != null;
+    final hasFeedActions =
+        widget.onShare != null ||
+        widget.onHide != null ||
+        widget.onNotInterested != null;
 
-    return DecoratedBox(
-      key: ValueKey('quick-post-thread-${widget.post.id}'),
-      decoration: AppBoxDecoration(
+    return Material(
+      color: colors.transparent,
+      borderRadius: AppBorderRadius.circular(8),
+      child: InkWell(
+        key: ValueKey('open-feed-post-${widget.post.id}'),
+        onTap: canOpen ? () => widget.onOpen!(widget.post) : null,
         borderRadius: AppBorderRadius.circular(8),
-        color: colors.surfaceRaised,
-        border: Border.all(color: colors.borderPrimary),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.surfaceRaised, colors.surface, colors.background],
-          stops: const [0, 0.54, 1],
-        ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: colors.black.withValues(alpha: 0.24),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.06),
-                  blurRadius: 26,
-                  offset: const Offset(0, 14),
-                ),
-              ]
-            : const [],
-      ),
-      child: Padding(
-        padding: const AppEdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: DecoratedBox(
+          key: ValueKey('quick-post-thread-${widget.post.id}'),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(8),
+            color: colors.surfaceRaised,
+            border: Border.all(color: colors.borderPrimary),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.surfaceRaised, colors.surface, colors.background],
+              stops: const [0, 0.54, 1],
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.24),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.06),
+                      blurRadius: 26,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Padding(
+            padding: const AppEdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _QuickPostAvatar(author: widget.post.author),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.post.author.preferredName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w900,
-                          height: 1.12,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        formatStoryDate(context, widget.post.sortDate),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          height: 1.12,
-                        ),
-                      ),
-                      if (editedAt != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '${l10n.chatEditedLabel} ${formatStoryDate(context, editedAt)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colors.textMuted,
-                            fontWeight: FontWeight.w700,
-                            height: 1.12,
+                Row(
+                  children: [
+                    _QuickPostAvatar(author: widget.post.author),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.post.author.preferredName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w900,
+                              height: 1.12,
+                            ),
                           ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatStoryDate(context, widget.post.sortDate),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.12,
+                            ),
+                          ),
+                          if (editedAt != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${l10n.chatEditedLabel} ${formatStoryDate(context, editedAt)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colors.textMuted,
+                                fontWeight: FontWeight.w700,
+                                height: 1.12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    if (widget.canInteract &&
+                        widget.post.editable &&
+                        widget.onEdit != null) ...[
+                      _QuickPostActionsMenu(
+                        post: widget.post,
+                        onEdit: widget.onEdit!,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (body.isNotEmpty)
+                  Text(
+                    body,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colors.textPrimary,
+                      height: 1.30,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                if (widget.post.excerpt.trim().isNotEmpty &&
+                    widget.post.excerpt.trim() != body) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.post.excerpt.trim(),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (imageUrls.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _QuickPostImages(imageUrls: imageUrls),
+                ],
+                const SizedBox(height: 12),
+                _QuickPostCommentsPreview(
+                  comments: _comments,
+                  isLoading: _isLoadingComments,
+                  hasError: _commentsError != null,
+                  onRetry: _loadComments,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  key: ValueKey('quick-post-engagement-row-${widget.post.id}'),
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _QuickPostMetric(
+                      key: ValueKey('quick-post-views-${widget.post.id}'),
+                      icon: Icons.visibility_outlined,
+                      label: formatStoryCountCompact(_viewCount),
+                    ),
+                    if (widget.canInteract)
+                      _QuickPostLikeButton(
+                        key: ValueKey('quick-post-like-${widget.post.id}'),
+                        likes: _likeCount,
+                        likedByViewer: _likedByViewer,
+                        isLoading: _isTogglingLike,
+                        onPressed: _toggleLike,
+                      )
+                    else
+                      _QuickPostMetric(
+                        key: ValueKey(
+                          'quick-post-likes-count-${widget.post.id}',
                         ),
-                      ],
+                        icon: Icons.favorite_border_rounded,
+                        label: formatStoryCountCompact(_likeCount),
+                      ),
+                    _QuickPostMetric(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: formatStoryCountCompact(_commentCount),
+                    ),
+                  ],
+                ),
+                if (hasFeedActions) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (widget.onShare != null)
+                        OutlinedButton.icon(
+                          key: ValueKey('feed-post-share-${widget.post.id}'),
+                          onPressed: _isSharing ? null : _share,
+                          icon: _isSharing
+                              ? SizedBox.square(
+                                  dimension: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.primary,
+                                  ),
+                                )
+                              : const Icon(Icons.ios_share_rounded, size: 18),
+                          label: Text(l10n.storyCommentShareAction),
+                        ),
+                      const Spacer(),
+                      if (widget.onHide != null ||
+                          widget.onNotInterested != null)
+                        PopupMenuButton<FeedPostFeedbackAction>(
+                          key: ValueKey('feed-post-more-${widget.post.id}'),
+                          tooltip: l10n.feedPostMoreActions,
+                          position: PopupMenuPosition.under,
+                          color: colors.surfaceRaised,
+                          surfaceTintColor: colors.transparent,
+                          icon: Icon(
+                            Icons.more_horiz_rounded,
+                            color: colors.primary,
+                          ),
+                          onSelected: _handleFeedback,
+                          itemBuilder: (context) => [
+                            if (widget.onHide != null)
+                              PopupMenuItem<FeedPostFeedbackAction>(
+                                key: ValueKey(
+                                  'feed-post-hide-${widget.post.id}',
+                                ),
+                                value: FeedPostFeedbackAction.hide,
+                                child: Text(l10n.feedPostHideAction),
+                              ),
+                            if (widget.onNotInterested != null)
+                              PopupMenuItem<FeedPostFeedbackAction>(
+                                key: ValueKey(
+                                  'feed-post-not-interested-${widget.post.id}',
+                                ),
+                                value: FeedPostFeedbackAction.notInterested,
+                                child: Text(l10n.feedPostNotInterestedAction),
+                              ),
+                          ],
+                        ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 10),
-                if (widget.canInteract &&
-                    widget.post.editable &&
-                    widget.onEdit != null) ...[
-                  _QuickPostActionsMenu(
-                    post: widget.post,
-                    onEdit: widget.onEdit!,
-                  ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (body.isNotEmpty)
-              Text(
-                body,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.textPrimary,
-                  height: 1.30,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            if (widget.post.excerpt.trim().isNotEmpty &&
-                widget.post.excerpt.trim() != body) ...[
-              const SizedBox(height: 8),
-              Text(
-                widget.post.excerpt.trim(),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                  height: 1.35,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-            if (imageUrls.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _QuickPostImages(imageUrls: imageUrls),
-            ],
-            const SizedBox(height: 12),
-            _QuickPostCommentsPreview(
-              comments: _comments,
-              isLoading: _isLoadingComments,
-              hasError: _commentsError != null,
-              onRetry: _loadComments,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              key: ValueKey('quick-post-engagement-row-${widget.post.id}'),
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _QuickPostMetric(
-                  key: ValueKey('quick-post-views-${widget.post.id}'),
-                  icon: Icons.visibility_outlined,
-                  label: formatStoryCountCompact(_viewCount),
-                ),
-                if (widget.canInteract)
-                  _QuickPostLikeButton(
-                    key: ValueKey('quick-post-like-${widget.post.id}'),
-                    likes: _likeCount,
-                    likedByViewer: _likedByViewer,
-                    isLoading: _isTogglingLike,
-                    onPressed: _toggleLike,
-                  )
-                else
-                  _QuickPostMetric(
-                    key: ValueKey('quick-post-likes-count-${widget.post.id}'),
-                    icon: Icons.favorite_border_rounded,
-                    label: formatStoryCountCompact(_likeCount),
-                  ),
-                _QuickPostMetric(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: formatStoryCountCompact(_commentCount),
-                ),
-              ],
-            ),
-            if (widget.canInteract) ...[
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: ValueKey(
-                        'quick-post-comment-field-${widget.post.id}',
-                      ),
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _submitComment(),
-                      style: AppTextStyle(color: colors.textPrimary),
-                      decoration: AppInputDecoration(
-                        hintText: l10n.storyCommentHint,
-                        hintStyle: AppTextStyle(color: colors.textMuted),
-                        isDense: true,
-                        filled: true,
-                        fillColor: colors.surfaceHigh,
-                        contentPadding: const AppEdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: AppBorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.borderSoft),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppBorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.borderPrimary),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppBorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.primary),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    key: ValueKey('quick-post-comment-send-${widget.post.id}'),
-                    onPressed: canSubmit ? _submitComment : null,
-                    style: IconButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      disabledBackgroundColor: colors.primary.withValues(
-                        alpha: 0.20,
-                      ),
-                      foregroundColor: colors.textPrimary,
-                      disabledForegroundColor: colors.textPrimary.withValues(
-                        alpha: 0.42,
-                      ),
-                    ),
-                    tooltip: l10n.storyReplySendAction,
-                    icon: _isSubmitting
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: colors.textPrimary,
+                if (widget.canInteract) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: ValueKey(
+                            'quick-post-comment-field-${widget.post.id}',
+                          ),
+                          controller: _controller,
+                          minLines: 1,
+                          maxLines: 4,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _submitComment(),
+                          style: AppTextStyle(color: colors.textPrimary),
+                          decoration: AppInputDecoration(
+                            hintText: l10n.storyCommentHint,
+                            hintStyle: AppTextStyle(color: colors.textMuted),
+                            isDense: true,
+                            filled: true,
+                            fillColor: colors.surfaceHigh,
+                            contentPadding: const AppEdgeInsets.symmetric(
+                              horizontal: 13,
+                              vertical: 12,
                             ),
-                          )
-                        : const Icon(Icons.arrow_upward_rounded),
+                            border: OutlineInputBorder(
+                              borderRadius: AppBorderRadius.circular(8),
+                              borderSide: BorderSide(color: colors.borderSoft),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppBorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: colors.borderPrimary,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppBorderRadius.circular(8),
+                              borderSide: BorderSide(color: colors.primary),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        key: ValueKey(
+                          'quick-post-comment-send-${widget.post.id}',
+                        ),
+                        onPressed: canSubmit ? _submitComment : null,
+                        style: IconButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          disabledBackgroundColor: colors.primary.withValues(
+                            alpha: 0.20,
+                          ),
+                          foregroundColor: colors.onPrimary,
+                          disabledForegroundColor: colors.onPrimary.withValues(
+                            alpha: 0.42,
+                          ),
+                        ),
+                        tooltip: l10n.storyReplySendAction,
+                        icon: _isSubmitting
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colors.onPrimary,
+                                ),
+                              )
+                            : const Icon(Icons.arrow_upward_rounded),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

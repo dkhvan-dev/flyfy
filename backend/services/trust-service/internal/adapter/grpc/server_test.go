@@ -84,6 +84,17 @@ func TestGetTrustProfileMapsProfile(t *testing.T) {
 		Band:   model.TrustBandTrusted,
 		Status: model.TrustStatusActive,
 	}
+	expiresAt := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)
+	restrictionID := uuid.New()
+	repo.restrictions[userID] = []model.RuntimeRestriction{{
+		ID:              restrictionID,
+		UserID:          userID,
+		RestrictionCode: model.RestrictionCodeActivityCreation,
+		Status:          model.RuntimeRestrictionActive,
+		ReasonCode:      "staff_restriction",
+		ExpiresAt:       &expiresAt,
+		CreatedAt:       time.Date(2026, 7, 11, 12, 0, 0, 0, time.UTC),
+	}}
 	server := NewServer(app.NewPolicyUseCase(repo))
 
 	resp, err := server.GetTrustProfile(ctx, &trustv1.GetTrustProfileRequest{
@@ -101,6 +112,18 @@ func TestGetTrustProfileMapsProfile(t *testing.T) {
 	}
 	if resp.GetProfile().GetBand() != trustv1.TrustBand_TRUST_BAND_TRUSTED {
 		t.Fatalf("expected TRUSTED band, got %s", resp.GetProfile().GetBand())
+	}
+	if len(resp.GetActiveRestrictions()) != 1 {
+		t.Fatalf("active restrictions = %d, want 1", len(resp.GetActiveRestrictions()))
+	}
+	gotRestriction := resp.GetActiveRestrictions()[0]
+	if gotRestriction.GetRestrictionId() != restrictionID.String() ||
+		gotRestriction.GetRestrictionCode() != model.RestrictionCodeActivityCreation ||
+		gotRestriction.GetReasonCode() != "staff_restriction" {
+		t.Fatalf("active restriction = %+v, want sanitized activity restriction", gotRestriction)
+	}
+	if gotRestriction.GetExpiresAt() == nil || !gotRestriction.GetExpiresAt().AsTime().Equal(expiresAt) {
+		t.Fatalf("restriction expiry = %v, want %s", gotRestriction.GetExpiresAt(), expiresAt)
 	}
 }
 

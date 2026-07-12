@@ -7,6 +7,7 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
+import '../../../core/ui/app_emoji.dart';
 import '../../../features/chat/models/sticker_pack_vm.dart';
 import '../../../features/chat/utils/sticker_asset_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -608,10 +609,10 @@ class _StickerFallback extends StatelessWidget {
     }
 
     return Center(
-      child: Text(
-        emoji.isEmpty ? '✦' : emoji,
-        textAlign: TextAlign.center,
-        style: const AppTextStyle(fontSize: 30, height: 1, letterSpacing: 0),
+      child: AppEmoji(
+        value: emoji.isEmpty ? '✦' : emoji,
+        size: 30,
+        semanticLabel: emoji.isEmpty ? null : emoji,
       ),
     );
   }

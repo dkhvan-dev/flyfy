@@ -34,7 +34,7 @@ void main() {
     expect(source, contains('RefreshIndicator'));
     expect(source, contains('CustomScrollView'));
     expect(source, contains('backgroundColor: colors.primary'));
-    expect(source, contains('foregroundColor: colors.textPrimary'));
+    expect(source, contains('foregroundColor: colors.onPrimary'));
     expect(source, contains('const GuideCalendarScreen({'));
     expect(source, contains('this.guideUserId'));
     expect(source, contains('this.readOnly = false'));
@@ -66,7 +66,7 @@ void main() {
       );
       expect(headerSource, contains('Wrap('));
       expect(headerSource, contains('FittedBox('));
-      expect(headerSource, contains('foregroundColor: colors.textPrimary'));
+      expect(headerSource, contains('foregroundColor: colors.onPrimary'));
     },
   );
 
@@ -168,14 +168,20 @@ void main() {
     },
   );
 
-  test('guide calendar selected day keeps primary text color', () async {
+  test('guide calendar selected day keeps on-primary text color', () async {
     final source = await File(
       'lib/screens/excursions/widgets/guide_calendar_day_strip.dart',
     ).readAsString();
 
     expect(
       RegExp(
-        r'selected\s*\?\s*colors\.textPrimary\s*:\s*colors\.textMuted',
+        r'selected\s*\?\s*colors\.onPrimary\s*:\s*colors\.textMuted',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'selected\s*\?\s*colors\.onPrimary\s*:\s*colors\.textPrimary',
       ).hasMatch(source),
       isTrue,
     );

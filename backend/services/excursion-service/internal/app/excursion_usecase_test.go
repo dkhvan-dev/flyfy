@@ -1739,6 +1739,29 @@ func TestCreateExcursionRejectsFreeTextIncludedItem(t *testing.T) {
 	}
 }
 
+func TestNormalizeIncludedItemsUsesCurrentDictionaryAndDropsDeprecatedKeys(t *testing.T) {
+	items, err := normalizeIncludedItems([]ExcursionIncludedItemInput{
+		{Text: "guide"},
+		{Text: "ACCOMMODATION"},
+		{Text: "photo"},
+		{Text: "permits_fees"},
+		{Text: "transport"},
+		{Text: "accommodation"},
+	})
+	if err != nil {
+		t.Fatalf("normalizeIncludedItems() error = %v", err)
+	}
+
+	got := make([]string, 0, len(items))
+	for _, item := range items {
+		got = append(got, item.Text)
+	}
+	want := []string{"accommodation", "permits_fees", "transport"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("included items = %#v, want %#v", got, want)
+	}
+}
+
 func TestCreateExcursionPersistsGuideSearchSnapshot(t *testing.T) {
 	repo := &excursionRepoStub{}
 	guideProfileID := uuid.New()

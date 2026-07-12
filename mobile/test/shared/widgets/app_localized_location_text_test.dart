@@ -106,6 +106,44 @@ void main() {
       expect(find.text('Алматы, Казахстан, Bayzakova 127'), findsOneWidget);
     },
   );
+
+  testWidgets('shows only the city when country is excluded', (tester) async {
+    final completer = Completer<String>();
+    final resolver = _FakeLocationLabelResolver(
+      (_) => Future.value('Алматы, Казахстан'),
+      resolveAddress: (_) => completer.future,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppLocalizedLocationText(
+            countryCode: 'KZ',
+            cityId: 'almaty',
+            cityName: 'Almaty',
+            fallbackText: 'Bayzakova 127',
+            addressText: 'Almaty, Kazakhstan, Bayzakova 127',
+            includeCountry: false,
+            resolver: resolver,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Almaty'), findsOneWidget);
+    expect(find.textContaining('Kazakhstan'), findsNothing);
+
+    completer.complete('Алматы');
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Алматы'), findsOneWidget);
+    expect(find.textContaining('Казахстан'), findsNothing);
+    expect(find.textContaining('Bayzakova'), findsNothing);
+  });
 }
 
 class _FakeLocationLabelResolver extends AppLocationLabelResolver {

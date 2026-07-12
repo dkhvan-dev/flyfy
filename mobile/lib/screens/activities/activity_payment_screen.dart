@@ -318,11 +318,11 @@ class _PaymentFooter extends StatelessWidget {
                     onPressed: isSubmitting ? null : onConfirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.primary,
-                      foregroundColor: colors.textPrimary,
+                      foregroundColor: colors.onPrimary,
                       disabledBackgroundColor: colors.primary.withValues(
                         alpha: 0.78,
                       ),
-                      disabledForegroundColor: colors.textPrimary,
+                      disabledForegroundColor: colors.onPrimary,
                       elevation: 0,
                       padding: const AppEdgeInsets.symmetric(horizontal: 24),
                       shape: RoundedRectangleBorder(
@@ -335,7 +335,7 @@ class _PaymentFooter extends StatelessWidget {
                             height: 28,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.8,
-                              color: colors.textPrimary,
+                              color: colors.onPrimary,
                             ),
                           )
                         : Row(

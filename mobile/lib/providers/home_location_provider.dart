@@ -107,6 +107,8 @@ class HomeLocationProvider extends ChangeNotifier {
            deviceContextService ?? const DeviceContextService();
 
   static const storageKey = 'inflap_home_location_preference';
+  static const initialPermissionRequestStorageKey =
+      'inflap_initial_location_permission_requested';
 
   final ReferenceApi _referenceApi;
   final DeviceContextService _deviceContextService;
@@ -117,6 +119,7 @@ class HomeLocationProvider extends ChangeNotifier {
   bool _isLoaded = false;
   bool _isLoading = false;
   bool _isDetecting = false;
+  bool _isInitialPermissionRequestInFlight = false;
   String? _errorMessage;
 
   HomeLocationPreference? get selectedLocation => _selectedLocation;
@@ -223,6 +226,55 @@ class HomeLocationProvider extends ChangeNotifier {
     } finally {
       _isDetecting = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> requestInitialLocationPermission({
+    required String languageCode,
+  }) async {
+    if (_isInitialPermissionRequestInFlight) return;
+
+    _isInitialPermissionRequestInFlight = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wasRequested =
+          prefs.getBool(initialPermissionRequestStorageKey) ?? false;
+      if (wasRequested) return;
+
+      final permissionGranted = await _deviceContextService
+          .requestLocationPermission();
+      await prefs.setBool(initialPermissionRequestStorageKey, true);
+      if (!permissionGranted) return;
+
+      if (!_isLoaded) {
+        await load(languageCode: languageCode);
+      }
+      if (_selectedLocation != null) return;
+
+      if (_effectiveLocation.source == HomeLocationSource.detected &&
+          _effectiveLocation.latitude != null &&
+          _effectiveLocation.longitude != null) {
+        return;
+      }
+
+      final detectedLocation = await _detectDeviceLocationPreference(
+        languageCode: languageCode,
+        requestPermission: false,
+      );
+      if (detectedLocation == null) return;
+
+      final resolvedLocation = await _resolveCityReference(
+        detectedLocation,
+        languageCode: languageCode,
+      );
+      if (_sameLocation(_effectiveLocation, resolvedLocation)) return;
+
+      _effectiveLocation = resolvedLocation;
+      notifyListeners();
+    } catch (_) {
+      // Initial permission setup is best effort and must not block startup.
+    } finally {
+      _isInitialPermissionRequestInFlight = false;
     }
   }
 

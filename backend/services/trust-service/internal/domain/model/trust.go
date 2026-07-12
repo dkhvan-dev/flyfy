@@ -110,6 +110,11 @@ type RuntimeRestriction struct {
 	LiftedByStaffID  *uuid.UUID
 }
 
+type TrustContext struct {
+	Profile            TrustProfile
+	ActiveRestrictions []RuntimeRestriction
+}
+
 type PolicyCheckInput struct {
 	UserID         uuid.UUID
 	Action         PolicyAction

@@ -29,6 +29,14 @@ type trustProfilePayload struct {
 	UpdatedAt    string `json:"updatedAt,omitempty"`
 }
 
+type activeRestrictionPayload struct {
+	RestrictionID   string `json:"restrictionId"`
+	RestrictionCode string `json:"restrictionCode"`
+	ReasonCode      string `json:"reasonCode,omitempty"`
+	ExpiresAt       string `json:"expiresAt,omitempty"`
+	CreatedAt       string `json:"createdAt,omitempty"`
+}
+
 type restrictionAppealPayload struct {
 	AppealID           string `json:"appealId"`
 	RestrictionID      string `json:"restrictionId"`
@@ -72,7 +80,8 @@ func (h *ProxyHandler) getTrustProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"profile": trustProfileFromProto(resp.GetProfile()),
+		"profile":            trustProfileFromProto(resp.GetProfile()),
+		"activeRestrictions": activeRestrictionsFromProto(resp.GetActiveRestrictions()),
 	})
 }
 
@@ -233,6 +242,23 @@ func trustProfileFromProto(profile *trustv1.TrustProfile) trustProfilePayload {
 		CalculatedAt: timestampProtoString(profile.GetCalculatedAt()),
 		UpdatedAt:    timestampProtoString(profile.GetUpdatedAt()),
 	}
+}
+
+func activeRestrictionsFromProto(items []*trustv1.ActiveRestriction) []activeRestrictionPayload {
+	result := make([]activeRestrictionPayload, 0, len(items))
+	for _, item := range items {
+		if item == nil || strings.TrimSpace(item.GetRestrictionId()) == "" || strings.TrimSpace(item.GetRestrictionCode()) == "" {
+			continue
+		}
+		result = append(result, activeRestrictionPayload{
+			RestrictionID:   item.GetRestrictionId(),
+			RestrictionCode: item.GetRestrictionCode(),
+			ReasonCode:      item.GetReasonCode(),
+			ExpiresAt:       timestampProtoString(item.GetExpiresAt()),
+			CreatedAt:       timestampProtoString(item.GetCreatedAt()),
+		})
+	}
+	return result
 }
 
 func restrictionAppealFromProto(appeal *trustv1.RestrictionAppeal) restrictionAppealPayload {

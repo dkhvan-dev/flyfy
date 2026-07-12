@@ -25,6 +25,7 @@ class ProfileActivityCard extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
+    final localizedCopy = item.localizedCopy(localeName);
     final date = item.completedAt ?? item.endAt;
     final dateText = formatEventDateTime(
       date,
@@ -86,7 +87,7 @@ class ProfileActivityCard extends StatelessWidget {
                     ),
                     SizedBox(height: profileScaled(context, 12, min: 10)),
                     Text(
-                      item.title,
+                      localizedCopy.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle(
@@ -131,6 +132,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
+    final localizedCopy = item.localizedCopy(localeName);
     final metaText = _compactActivityMetaText(item, l10n, localeName);
     final priceText = item.isFree
         ? l10n.createPriceFree
@@ -197,7 +199,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
                           ),
                           SizedBox(height: profileScaled(context, 7, min: 6)),
                           Text(
-                            item.title,
+                            localizedCopy.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(

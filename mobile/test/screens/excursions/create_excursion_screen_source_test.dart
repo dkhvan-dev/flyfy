@@ -243,7 +243,7 @@ void main() {
       );
       expect(
         RegExp(
-          r'selected\s+\?\s+context\.createExcursionColors\.white\s+:\s+context\.createExcursionColors\.primary',
+          r'selected\s+\?\s+context\.createExcursionColors\.onPrimary\s+:\s+context\.createExcursionColors\.primary',
         ).hasMatch(source),
         isTrue,
       );
@@ -262,7 +262,7 @@ void main() {
         source,
         contains('floatingLabelBehavior: FloatingLabelBehavior.never'),
       );
-      expect(source, contains('Text(label,'));
+      expect(RegExp(r'Text\(\s*label,').hasMatch(source), isTrue);
       expect(
         source,
         contains('fillColor: context.createExcursionColors.surfaceWarm'),
@@ -532,6 +532,7 @@ void main() {
       ).readAsString();
 
       expect(source, contains('AppCurrencyPickerField('));
+      expect(source, isNot(contains('extendSheetToBottom')));
       expect(source, isNot(contains('class _CurrencyOption')));
       expect(source, isNot(contains('class _CurrencyPickerField')));
       expect(pickerSource, contains('createCurrencyKzt'));
@@ -638,7 +639,12 @@ void main() {
         contains('showAppModalBottomSheet<List<_ExcursionIncludedItemDraft>>'),
       );
       expect(source, contains('includedItems: _includedItems'));
-      expect(source, contains('String toPayload() => type.name'));
+      expect(source, contains('String toPayload() => type.payloadKey'));
+      expect(source, contains('_ExcursionIncludedItemType.accommodation'));
+      expect(source, contains('_ExcursionIncludedItemType.permitsFees'));
+      expect(source, contains('ExcursionIncludedItemKey.isDeprecated(value)'));
+      expect(source, isNot(contains('_ExcursionIncludedItemType.guide')));
+      expect(source, isNot(contains('_ExcursionIncludedItemType.photo')));
       expect(source, contains('selectedTypes'));
       expect(source, isNot(contains('_includedItemsCtrl')));
       expect(source, isNot(contains('createExcursionIncludedItemsValueLabel')));
@@ -796,10 +802,17 @@ void main() {
       expect(sheetEnd, greaterThan(sheetStart));
 
       final sheetSource = source.substring(sheetStart, sheetEnd);
-      expect(source, contains('extendToBottom: true'));
+      expect(source, isNot(contains('extendToBottom')));
       expect(sheetSource, contains('width: double.infinity'));
-      expect(sheetSource, contains('MediaQuery.viewPaddingOf(context).bottom'));
-      expect(sheetSource, contains('34 + systemBottomPadding'));
+      expect(
+        sheetSource,
+        isNot(contains('MediaQuery.viewPaddingOf(context).bottom')),
+      );
+      expect(sheetSource, isNot(contains('systemBottomPadding')));
+      expect(
+        sheetSource,
+        contains('const AppEdgeInsets.fromLTRB(18, 18, 18, 34)'),
+      );
       expect(sheetSource, contains('AppBorderRadius.vertical('));
       expect(sheetSource, contains("'excursion-itinerary-slot-confirm'"));
       expect(
@@ -1092,8 +1105,32 @@ void main() {
         contains('context.createExcursionColors.textPrimary'),
       );
       expect(sheetSource, contains('context.createExcursionColors.textMuted'));
+      expect(
+        sheetSource,
+        isNot(contains('MediaQuery.viewPaddingOf(context).bottom')),
+      );
+      expect(sheetSource, isNot(contains('systemBottomPadding')));
+      expect(
+        sheetSource,
+        contains('const AppEdgeInsets.fromLTRB(16, 0, 16, 16)'),
+      );
       expect(sheetSource, isNot(contains('left: 16')));
       expect(sheetSource, isNot(contains('right: 16')));
+
+      final openEditorStart = source.indexOf(
+        'Future<void> _openIncludedItemsEditor()',
+      );
+      final uniqueItemsStart = source.indexOf(
+        'List<_ExcursionIncludedItemDraft> _uniqueIncludedItemDrafts',
+        openEditorStart,
+      );
+      expect(openEditorStart, isNonNegative);
+      expect(uniqueItemsStart, greaterThan(openEditorStart));
+      final openEditorSource = source.substring(
+        openEditorStart,
+        uniqueItemsStart,
+      );
+      expect(openEditorSource, isNot(contains('extendToBottom')));
     },
   );
 
@@ -1381,6 +1418,36 @@ void main() {
       expect(enSource, contains('"createExcursionDiscardTitle"'));
       expect(ruSource, contains('"createExcursionDiscardTitle"'));
       expect(kkSource, contains('"createExcursionDiscardTitle"'));
+    },
+  );
+
+  test(
+    'next-step arrow is rendered after the excursion button label',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+      final actionStart = source.indexOf('class _ExcursionBottomActionBar');
+      final actionEnd = source.indexOf(
+        'class _AddItinerarySlotSheet',
+        actionStart,
+      );
+
+      expect(actionStart, isNonNegative);
+      expect(actionEnd, greaterThan(actionStart));
+
+      final actionSource = source.substring(actionStart, actionEnd);
+      final labelIndex = actionSource.indexOf(
+        'Text(\n                            label,',
+      );
+      final arrowIndex = actionSource.indexOf(
+        'const Icon(Icons.arrow_forward_rounded)',
+      );
+
+      expect(actionSource, contains('child: FilledButton('));
+      expect(actionSource, isNot(contains('child: FilledButton.icon(')));
+      expect(labelIndex, isNonNegative);
+      expect(arrowIndex, greaterThan(labelIndex));
     },
   );
 }

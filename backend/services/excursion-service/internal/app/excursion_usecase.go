@@ -3896,12 +3896,17 @@ func weeklyOccurrences(startDate time.Time, weekdays []int, startClock string, d
 }
 
 var allowedExcursionIncludedItemKeys = map[string]struct{}{
-	"transport": {},
-	"food":      {},
-	"tickets":   {},
-	"equipment": {},
-	"guide":     {},
-	"photo":     {},
+	"transport":     {},
+	"food":          {},
+	"tickets":       {},
+	"equipment":     {},
+	"accommodation": {},
+	"permits_fees":  {},
+}
+
+var deprecatedExcursionIncludedItemKeys = map[string]struct{}{
+	"guide": {},
+	"photo": {},
 }
 
 func normalizeIncludedItems(values []ExcursionIncludedItemInput) ([]model.ExcursionIncludedItem, error) {
@@ -3910,6 +3915,9 @@ func normalizeIncludedItems(values []ExcursionIncludedItemInput) ([]model.Excurs
 	for _, value := range values {
 		key := strings.ToLower(strings.TrimSpace(value.Text))
 		if key == "" {
+			continue
+		}
+		if _, deprecated := deprecatedExcursionIncludedItemKeys[key]; deprecated {
 			continue
 		}
 		if _, ok := allowedExcursionIncludedItemKeys[key]; !ok {

@@ -14,6 +14,13 @@ import (
 	"kz/inflap/backend/services/feed-service/internal/domain/model"
 )
 
+const (
+	coldStartRandomRankWindowSeconds       = 14 * 24 * 60 * 60
+	meaningfulCommunityVisitDwellMS        = 10_000
+	communityVisitDeduplicationWindowSecs  = 5 * 60
+	communityVisitAggregationWindowSeconds = 30 * 24 * 60 * 60
+)
+
 func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostListFilter) ([]*model.Post, error) {
 	limit := filter.Limit
 	if limit <= 0 {
@@ -32,6 +39,7 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 		clauses = append(clauses, "s.expires_at IS NULL")
 	}
 	policy := feedRankingPolicyWithOverride(r.feedRankingPolicy, filter.FeedRankingPolicyOverride)
+	candidateSource := strings.TrimSpace(filter.CandidateSource)
 	viewerUserIDPos := 0
 	effectiveCommunityIDExpression := "COALESCE(fi.community_id, s.community_id, ci.community_id)"
 	if len(filter.CommunityIDs) > 0 {
@@ -58,7 +66,12 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 				  AND muted_community.status = 'MUTED'
 			)
 		`, viewerUserIDPos, effectiveCommunityIDExpression, viewerUserIDPos))
-		feedRankJoins = policy.feedRankJoinsExpression(viewerUserIDPos)
+		if candidateSource != "" && candidateSource != model.PostCandidateSourceFollowing {
+			clauses = append(clauses, fmt.Sprintf("s.author_user_id <> $%d", viewerUserIDPos))
+		}
+		if !filter.DisablePersonalizedRanking {
+			feedRankJoins = policy.feedRankJoinsExpression(viewerUserIDPos)
+		}
 	}
 	currentCityIDPos := 0
 	if currentCityID := strings.TrimSpace(filter.CurrentCityID); currentCityID != "" {
@@ -70,9 +83,13 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 		args = append(args, currentCountryCode)
 		currentCountryCodePos = len(args)
 	}
+	rankingViewerUserIDPos := viewerUserIDPos
+	if filter.DisablePersonalizedRanking {
+		rankingViewerUserIDPos = 0
+	}
 	feedRankedAtExpression := "fi.rank_published_at"
-	if viewerUserIDPos > 0 || currentCityIDPos > 0 || currentCountryCodePos > 0 {
-		feedRankedAtExpression = policy.viewerRankedAtExpression(viewerUserIDPos, currentCityIDPos, currentCountryCodePos)
+	if rankingViewerUserIDPos > 0 || currentCityIDPos > 0 || currentCountryCodePos > 0 || filter.DisablePersonalizedRanking {
+		feedRankedAtExpression = policy.viewerRankedAtExpression(rankingViewerUserIDPos, currentCityIDPos, currentCountryCodePos)
 	}
 	if filter.FollowedByUserID != nil && *filter.FollowedByUserID != uuid.Nil {
 		args = append(args, *filter.FollowedByUserID)
@@ -100,7 +117,7 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 			)
 		`, effectiveCommunityIDExpression, userIDPos))
 	}
-	switch strings.TrimSpace(filter.CandidateSource) {
+	switch candidateSource {
 	case model.PostCandidateSourceSocial:
 		if viewerUserIDPos == 0 {
 			clauses = append(clauses, "FALSE")
@@ -144,11 +161,19 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 			break
 		}
 		clauses = append(clauses, fmt.Sprintf(`
+			(
 			EXISTS (
 				SELECT 1
 				FROM post_feed_user_interests source_interest
 				WHERE source_interest.viewer_user_id = $%d
-				  AND source_interest.score > 0
+				  AND (
+					(source_interest.entity_type <> 'community' AND source_interest.score > 0)
+					OR (
+						source_interest.entity_type = 'community'
+						AND source_interest.score >= %s
+						AND source_interest.last_event_at >= NOW() - %s
+					)
+				  )
 				  AND source_interest.updated_at < NOW() - %s
 				  AND (
 					(source_interest.entity_type = 'post' AND source_interest.entity_id = fi.post_id::text)
@@ -166,6 +191,16 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 						)
 					)
 				  )
+			)
+			OR EXISTS (
+				SELECT 1
+				FROM post_feed_user_community_affinities frequent_source_community
+				WHERE frequent_source_community.viewer_user_id = $%d
+				  AND frequent_source_community.community_id = %s
+				  AND frequent_source_community.meaningful_visit_count >= %d
+				  AND frequent_source_community.distinct_visit_day_count >= %d
+				  AND frequent_source_community.last_visit_at >= NOW() - %s
+			)
 			)
 			AND NOT EXISTS (
 				SELECT 1
@@ -190,7 +225,21 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 					)
 				  )
 			)
-		`, viewerUserIDPos, policy.durationSQL(policy.InterestFreshnessDelay), effectiveCommunityIDExpression, viewerUserIDPos, policy.durationSQL(policy.DirectNegativeFeedbackDecayWindow), effectiveCommunityIDExpression))
+		`,
+			viewerUserIDPos,
+			policy.weightSQL(policy.CommunityInterestMinScore),
+			policy.durationSQL(policy.FrequentCommunityFreshnessWindow),
+			policy.durationSQL(policy.InterestFreshnessDelay),
+			effectiveCommunityIDExpression,
+			viewerUserIDPos,
+			effectiveCommunityIDExpression,
+			policy.FrequentCommunityMinVisits,
+			policy.FrequentCommunityMinVisitDays,
+			policy.durationSQL(policy.FrequentCommunityFreshnessWindow),
+			viewerUserIDPos,
+			policy.durationSQL(policy.DirectNegativeFeedbackDecayWindow),
+			effectiveCommunityIDExpression,
+		))
 	case model.PostCandidateSourceColdStart:
 		geoClauses := make([]string, 0, 2)
 		if currentCityIDPos > 0 {
@@ -212,6 +261,18 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 		}
 		if len(geoClauses) > 0 {
 			clauses = append(clauses, "("+strings.Join(geoClauses, " OR ")+")")
+		}
+		if filter.ColdStartRandomSeed > 0 {
+			args = append(args, filter.ColdStartRandomSeed)
+			randomSeedPos := len(args)
+			feedRankedAtExpression = fmt.Sprintf(`(
+				%s + (
+					MOD(
+						(hashtextextended(fi.post_id::text, $%d::bigint) & 9223372036854775807::bigint),
+						%d
+					)::double precision * INTERVAL '1 second'
+				)
+			)`, feedRankedAtExpression, randomSeedPos, coldStartRandomRankWindowSeconds)
 		}
 	}
 	if filter.FeedCursorPublishedAt != nil && filter.FeedCursorPostID != nil {
@@ -241,11 +302,7 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 				s.created_at, s.updated_at, s.deleted_at,
 				s.format, s.content_schema_version, s.content_blocks, s.content_plain_text,
 				s.revision, s.last_autosaved_at, s.archived_at, s.moderation_status, s.media_status,
-				%s AS feed_ranked_at,
-				ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC, fi.post_id DESC) AS community_row_number,
-				ROW_NUMBER() OVER (PARTITION BY s.category ORDER BY %s DESC, fi.post_id DESC) AS category_row_number,
-				ROW_NUMBER() OVER (PARTITION BY s.author_user_id ORDER BY %s DESC, fi.post_id DESC) AS author_row_number,
-				ROW_NUMBER() OVER (PARTITION BY s.post_profile_key ORDER BY %s DESC, fi.post_id DESC) AS profile_row_number
+				%s AS feed_ranked_at
 			FROM post_feed_items fi
 			JOIN posts s ON s.id = fi.post_id
 			LEFT JOIN community_instances ci ON ci.id = s.community_instance_id
@@ -263,13 +320,9 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 			revision, last_autosaved_at, archived_at, moderation_status, media_status,
 			feed_ranked_at
 		FROM ranked_feed_candidates
-		WHERE (community_id IS NULL OR community_row_number <= %d)
-		  AND category_row_number <= %d
-		  AND author_row_number <= %d
-		  AND profile_row_number <= %d
 		ORDER BY feed_ranked_at DESC, id DESC
 		LIMIT $%d OFFSET $%d
-	`, effectiveCommunityIDExpression, feedRankedAtExpression, effectiveCommunityIDExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankJoins, strings.Join(clauses, " AND "), policy.MaxPostsPerCommunityPerPage, policy.MaxPostsPerCategoryPerPage, policy.MaxPostsPerAuthorPerPage, policy.MaxPostsPerProfilePerPage, limitPos, offsetPos)
+	`, effectiveCommunityIDExpression, feedRankedAtExpression, feedRankJoins, strings.Join(clauses, " AND "), limitPos, offsetPos)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -321,7 +374,71 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				$12, $13, $14, $15
 			)
 			ON CONFLICT (event_id) DO NOTHING
-			RETURNING viewer_user_id, event_type, post_id, occurred_at, received_at, metadata
+			RETURNING viewer_user_id, event_type, post_id, occurred_at, received_at, metadata, event_id, community_id
+		),
+		community_visit_signal AS (
+			SELECT
+				viewer_user_id,
+				community_id,
+				COALESCE(occurred_at, received_at) AS visited_at,
+				COALESCE(occurred_at, received_at)::date AS visit_day
+			FROM inserted_feed_event
+			WHERE viewer_user_id IS NOT NULL
+			  AND community_id IS NOT NULL
+			  AND event_type = 'dwell'
+			  AND metadata->>'source' = 'community_profile_visit'
+			  AND metadata->>'entityType' = 'community'
+			  AND NULLIF(metadata->>'entityId', '') = community_id::text
+			  AND metadata->>'dwellMs' ~ '^[0-9]+$'
+			  AND length(metadata->>'dwellMs') <= 18
+			  AND (metadata->>'dwellMs')::bigint >= $17::bigint
+		),
+		upserted_community_affinity AS (
+			INSERT INTO post_feed_user_community_affinities (
+				viewer_user_id,
+				community_id,
+				meaningful_visit_count,
+				distinct_visit_day_count,
+				first_visit_at,
+				last_visit_at,
+				last_visit_day,
+				created_at,
+				updated_at
+			)
+			SELECT
+				viewer_user_id,
+				community_id,
+				1,
+				1,
+				visited_at,
+				visited_at,
+				visit_day,
+				NOW(),
+				NOW()
+			FROM community_visit_signal
+			ON CONFLICT (viewer_user_id, community_id) DO UPDATE
+			SET meaningful_visit_count = CASE
+					WHEN EXCLUDED.last_visit_at >= post_feed_user_community_affinities.first_visit_at + make_interval(secs => $19::int)
+						THEN 1
+					ELSE post_feed_user_community_affinities.meaningful_visit_count + 1
+				END,
+				distinct_visit_day_count = CASE
+					WHEN EXCLUDED.last_visit_at >= post_feed_user_community_affinities.first_visit_at + make_interval(secs => $19::int)
+						THEN 1
+					WHEN post_feed_user_community_affinities.last_visit_day IS DISTINCT FROM EXCLUDED.last_visit_day
+						THEN post_feed_user_community_affinities.distinct_visit_day_count + 1
+					ELSE post_feed_user_community_affinities.distinct_visit_day_count
+				END,
+				first_visit_at = CASE
+					WHEN EXCLUDED.last_visit_at >= post_feed_user_community_affinities.first_visit_at + make_interval(secs => $19::int)
+						THEN EXCLUDED.first_visit_at
+					ELSE post_feed_user_community_affinities.first_visit_at
+				END,
+				last_visit_at = EXCLUDED.last_visit_at,
+				last_visit_day = EXCLUDED.last_visit_day,
+				updated_at = NOW()
+			WHERE EXCLUDED.last_visit_at >= post_feed_user_community_affinities.last_visit_at + make_interval(secs => $18::int)
+			RETURNING viewer_user_id, community_id
 		),
 		interest_signal AS (
 			SELECT
@@ -337,7 +454,22 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				CASE
 					WHEN event_type = 'impression' THEN 0.0500
 					WHEN event_type = 'click' AND metadata->>'action' = 'conversion' THEN 3.0000
+					WHEN event_type = 'click' AND metadata->>'entityType' = 'community' THEN 0.0000
 					WHEN event_type = 'click' THEN 1.0000
+					WHEN event_type = 'dwell'
+						 AND metadata->>'source' = 'community_profile_visit'
+						 AND metadata->>'entityType' = 'community'
+						 AND metadata->>'dwellMs' ~ '^[0-9]+$'
+						 AND length(metadata->>'dwellMs') <= 18
+						 AND (metadata->>'dwellMs')::bigint >= $17::bigint
+						 AND EXISTS (
+							SELECT 1
+							FROM upserted_community_affinity accepted_community_visit
+							WHERE accepted_community_visit.viewer_user_id = inserted_feed_event.viewer_user_id
+							  AND accepted_community_visit.community_id = inserted_feed_event.community_id
+						 )
+						THEN 0.7000
+					WHEN event_type = 'dwell' AND metadata->>'source' = 'community_profile_visit' THEN 0.0000
 					WHEN event_type = 'dwell' THEN 0.7000
 					WHEN event_type = 'like' THEN 1.6000
 					WHEN event_type = 'comment' THEN 2.2000
@@ -358,6 +490,16 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				metadata
 			FROM inserted_feed_event
 			WHERE viewer_user_id IS NOT NULL
+			  AND (
+				event_type <> 'dwell'
+				OR metadata->>'source' IS DISTINCT FROM 'community_profile_visit'
+				OR EXISTS (
+					SELECT 1
+					FROM upserted_community_affinity accepted_community_visit
+					WHERE accepted_community_visit.viewer_user_id = inserted_feed_event.viewer_user_id
+					  AND accepted_community_visit.community_id = inserted_feed_event.community_id
+				)
+			  )
 		),
 		derived_interest_signal AS (
 			SELECT
@@ -787,6 +929,9 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 			event.RequestID,
 			metadata,
 			rankingExperiment,
+			meaningfulCommunityVisitDwellMS,
+			communityVisitDeduplicationWindowSecs,
+			communityVisitAggregationWindowSeconds,
 		)
 	}
 

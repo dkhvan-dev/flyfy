@@ -15,7 +15,7 @@ void main() {
     expect(theme.scaffoldBackgroundColor, AppPalette.background);
     expect(theme.colorScheme.primary, AppPalette.primary);
     expect(theme.colorScheme.secondary, AppPalette.secondary);
-    expect(theme.colorScheme.onPrimary, AppPalette.textPrimary);
+    expect(theme.colorScheme.onPrimary, AppPalette.onPrimary);
   });
 
   test('light v2 theme uses Amber primary and Teal secondary', () {
@@ -25,12 +25,12 @@ void main() {
     expect(theme.scaffoldBackgroundColor, AppColorSchemes.light.background);
     expect(theme.colorScheme.primary, AppColorSchemes.light.primary);
     expect(theme.colorScheme.secondary, AppColorSchemes.light.secondary);
-    expect(theme.colorScheme.onPrimary, AppColorSchemes.light.textPrimary);
+    expect(theme.colorScheme.onPrimary, AppColorSchemes.light.onPrimary);
     expect(
       AppButtonStyles.primary(
         AppColorSchemes.light,
       ).foregroundColor?.resolve(<WidgetState>{}),
-      AppColorSchemes.light.textPrimary,
+      AppColorSchemes.light.onPrimary,
     );
   });
 
@@ -128,20 +128,20 @@ void main() {
     expect(observedBrightness, [Brightness.light, Brightness.dark]);
   });
 
-  test('primary button backgrounds use textPrimary foreground colors', () {
+  test('primary button backgrounds use invariant onPrimary foreground', () {
     final legacyTheme = AppDesignSystem.darkTheme();
     final v2Theme = AppDesignSystem.darkTheme();
 
     expect(
       AppButtonStyles.primary().foregroundColor?.resolve(<WidgetState>{}),
-      AppPalette.textPrimary,
+      AppPalette.onPrimary,
     );
     expect(
       AppButtonStyles.primary().foregroundColor?.resolve(<WidgetState>{}),
-      AppPalette.textPrimary,
+      AppPalette.onPrimary,
     );
-    expect(legacyTheme.colorScheme.onPrimary, AppPalette.textPrimary);
-    expect(v2Theme.colorScheme.onPrimary, AppPalette.textPrimary);
+    expect(legacyTheme.colorScheme.onPrimary, AppPalette.onPrimary);
+    expect(v2Theme.colorScheme.onPrimary, AppPalette.onPrimary);
   });
 }
 

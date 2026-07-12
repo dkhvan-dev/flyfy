@@ -161,11 +161,15 @@ void main() {
   );
 
   test('places filter sheet uses full-width mobile chrome', () async {
+    final screenSource = await File(
+      'lib/screens/places/places_screen.dart',
+    ).readAsString();
     final sheetSource = await File(
       'lib/screens/places/places_filter_sheet.dart',
     ).readAsString();
 
     expect(sheetSource, contains('AppModalSheetFrame('));
+    expect(screenSource, contains('contentHandlesBottomSafeArea: true'));
     expect(sheetSource, contains('BoxConstraints(maxWidth: 520)'));
     expect(sheetSource, isNot(contains('BoxConstraints(maxWidth: 393)')));
     expect(sheetSource, isNot(contains('horizontal: sideInset')));

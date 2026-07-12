@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
@@ -18,14 +20,16 @@ type RestrictionOutboxWorkerConfig struct {
 }
 
 type RestrictionOutboxWorker struct {
-	repo   port.UserRestrictionOutboxRepository
-	client port.TrustRestrictionEventClient
-	cfg    RestrictionOutboxWorkerConfig
+	repo     port.UserRestrictionOutboxRepository
+	client   port.TrustRestrictionEventClient
+	notifier port.UserNotificationGateway
+	cfg      RestrictionOutboxWorkerConfig
 }
 
 func NewRestrictionOutboxWorker(
 	repo port.UserRestrictionOutboxRepository,
 	client port.TrustRestrictionEventClient,
+	notifier port.UserNotificationGateway,
 	cfg RestrictionOutboxWorkerConfig,
 ) *RestrictionOutboxWorker {
 	if cfg.PollInterval <= 0 {
@@ -41,9 +45,10 @@ func NewRestrictionOutboxWorker(
 		cfg.BaseBackoff = time.Second
 	}
 	return &RestrictionOutboxWorker{
-		repo:   repo,
-		client: client,
-		cfg:    cfg,
+		repo:     repo,
+		client:   client,
+		notifier: notifier,
+		cfg:      cfg,
 	}
 }
 
@@ -82,17 +87,23 @@ func (w *RestrictionOutboxWorker) ProcessOnce(ctx context.Context, now time.Time
 	for _, event := range events {
 		applied, err := w.client.ApplyUserRestrictionEvent(ctx, event)
 		if err != nil {
-			nextAttemptAt := now.Add(w.backoff(event.AttemptCount + 1))
-			if markErr := w.repo.MarkUserRestrictionEventFailed(ctx, event.ID, safeOutboxError(err), nextAttemptAt); markErr != nil {
+			if markErr := w.markFailed(ctx, event, now, "trust", err); markErr != nil {
 				return markErr
 			}
-			log.Warn().
-				Err(err).
-				Str("event_id", event.ID.String()).
-				Str("event_type", event.EventType).
-				Int("attempt_count", event.AttemptCount+1).
-				Time("next_attempt_at", nextAttemptAt).
-				Msg("trust restriction outbox delivery failed")
+			continue
+		}
+
+		input, err := userRestrictionNotificationInput(event)
+		if err == nil && w.notifier == nil {
+			err = fmt.Errorf("notification gateway is not configured")
+		}
+		if err == nil {
+			err = w.notifier.SendUserNotification(ctx, input)
+		}
+		if err != nil {
+			if markErr := w.markFailed(ctx, event, now, "notification", err); markErr != nil {
+				return markErr
+			}
 			continue
 		}
 
@@ -105,6 +116,34 @@ func (w *RestrictionOutboxWorker) ProcessOnce(ctx context.Context, now time.Time
 			Bool("applied", applied).
 			Msg("trust restriction outbox delivered")
 	}
+	return nil
+}
+
+func (w *RestrictionOutboxWorker) markFailed(
+	ctx context.Context,
+	event model.UserRestrictionOutboxEvent,
+	now time.Time,
+	stage string,
+	cause error,
+) error {
+	nextAttemptAt := now.Add(w.backoff(event.AttemptCount + 1))
+	if err := w.repo.MarkUserRestrictionEventFailed(
+		ctx,
+		event.ID,
+		safeOutboxError(cause),
+		nextAttemptAt,
+		w.cfg.MaxAttempts,
+	); err != nil {
+		return err
+	}
+	log.Warn().
+		Err(cause).
+		Str("stage", stage).
+		Str("event_id", event.ID.String()).
+		Str("event_type", event.EventType).
+		Int("attempt_count", event.AttemptCount+1).
+		Time("next_attempt_at", nextAttemptAt).
+		Msg("restriction outbox delivery failed")
 	return nil
 }
 

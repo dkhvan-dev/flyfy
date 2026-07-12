@@ -90,7 +90,7 @@ type UserModerationRepository interface {
 type UserRestrictionOutboxRepository interface {
 	ListDueUserRestrictionEvents(ctx context.Context, limit int, now time.Time) ([]model.UserRestrictionOutboxEvent, error)
 	MarkUserRestrictionEventDelivered(ctx context.Context, eventID uuid.UUID, deliveredAt time.Time) error
-	MarkUserRestrictionEventFailed(ctx context.Context, eventID uuid.UUID, reason string, nextAttemptAt time.Time) error
+	MarkUserRestrictionEventFailed(ctx context.Context, eventID uuid.UUID, reason string, nextAttemptAt time.Time, maxAttempts int) error
 }
 
 type TrustRestrictionEventClient interface {

@@ -87,6 +87,9 @@ class StoryEditorApiException implements Exception {
   StoryEditorApiException({
     required this.message,
     required this.statusCode,
+    this.code,
+    this.retryAfter = Duration.zero,
+    this.nextAvailableAt,
     this.fieldErrors = const [],
   });
 
@@ -102,14 +105,37 @@ class StoryEditorApiException implements Exception {
     return StoryEditorApiException(
       message: message,
       statusCode: error.response?.statusCode,
+      code: payload['code']?.toString(),
+      retryAfter: Duration(
+        seconds:
+            _parseNonNegativeInt(payload['retryAfterSeconds']) ??
+            _parseNonNegativeInt(
+              error.response?.headers.value('retry-after'),
+            ) ??
+            0,
+      ),
+      nextAvailableAt: DateTime.tryParse(
+        payload['nextAvailableAt']?.toString() ?? '',
+      ),
       fieldErrors: parseStoryEditorFieldErrors(payload),
     );
   }
 
   final String message;
   final int? statusCode;
+  final String? code;
+  final Duration retryAfter;
+  final DateTime? nextAvailableAt;
   final List<StoryEditorFieldError> fieldErrors;
 
   @override
   String toString() => 'StoryEditorApiException($statusCode): $message';
+}
+
+int? _parseNonNegativeInt(Object? value) {
+  final parsed = value is int ? value : int.tryParse(value?.toString() ?? '');
+  if (parsed == null || parsed < 0) {
+    return null;
+  }
+  return parsed;
 }

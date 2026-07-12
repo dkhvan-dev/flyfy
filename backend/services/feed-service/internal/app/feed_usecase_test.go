@@ -24,7 +24,7 @@ func TestBuildFeedReturnsBlockBasedHomePage(t *testing.T) {
 	post := &model.Post{
 		ID:               uuid.New(),
 		Slug:             "almaty-weekend",
-		AuthorUserID:     authorID,
+		AuthorUserID:     uuid.New(),
 		Title:            "Almaty weekend",
 		Excerpt:          "Short guide",
 		Category:         enum.PostCategoryGuide,
@@ -691,14 +691,14 @@ func TestApplyFeedSocialEventDeletesEdgeWithTombstoneSemantics(t *testing.T) {
 }
 
 func TestBuildFeedDoesNotAddDeprecatedContentConversionBlocks(t *testing.T) {
-	authorID := uuid.New()
+	viewerID := uuid.New()
 	now := time.Now().UTC()
 	repo := &feedPostRepositoryStub{
-		posts: []*model.Post{newFeedTestPost(authorID, "ranked", now)},
+		posts: []*model.Post{newFeedTestPost(uuid.New(), "ranked", now)},
 	}
-	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
 
-	page, err := useCase.BuildFeed(context.Background(), authorID.String(), BuildFeedInput{
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
 		Surface: "content",
 		Tab:     "for_you",
 		Limit:   1,
@@ -796,7 +796,7 @@ func TestBuildFeedRejectsCursorFromDifferentContext(t *testing.T) {
 		},
 		userCommunityIDs: []uuid.UUID{uuid.New()},
 	}
-	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
 
 	firstPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
 		Surface: "content",
@@ -896,6 +896,28 @@ func TestDecodeFeedCursorRejectsStaleCandidateMixerPolicy(t *testing.T) {
 
 	if !errors.Is(err, ErrInvalidFeedCursor) {
 		t.Fatalf("decodeFeedCursor error = %v, want %v for stale candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestFeedCursorRoundTripPreservesColdStartRandomSeed(t *testing.T) {
+	wantSeed := int64(987654321)
+	wantPostID := uuid.New()
+	wantPublishedAt := time.Date(2026, 7, 11, 12, 30, 0, 0, time.UTC)
+	encoded := encodeFeedCursor(&feedCursor{
+		PublishedAt:         wantPublishedAt,
+		PostID:              wantPostID,
+		ColdStartRandomSeed: wantSeed,
+	}, "content", "for_you", "control")
+
+	decoded, err := decodeFeedCursor(encoded, "content", "for_you", "control")
+	if err != nil {
+		t.Fatalf("decodeFeedCursor returned error: %v", err)
+	}
+	if decoded.ColdStartRandomSeed != wantSeed {
+		t.Fatalf("decoded random seed = %d, want %d", decoded.ColdStartRandomSeed, wantSeed)
+	}
+	if decoded.PostID != wantPostID || !decoded.PublishedAt.Equal(wantPublishedAt) {
+		t.Fatalf("decoded cursor = %+v, want post %s at %s", decoded, wantPostID, wantPublishedAt)
 	}
 }
 
@@ -1088,7 +1110,7 @@ func TestBuildFeedSeparatesStoriesTrayFromPersistentPostCards(t *testing.T) {
 	authorID := uuid.New()
 	now := time.Now().UTC()
 	story := newFeedTestStory(authorID, "your-post", now.Add(-time.Minute))
-	persistentPost := newFeedTestPost(authorID, "travel-post", now)
+	persistentPost := newFeedTestPost(uuid.New(), "travel-post", now)
 
 	repo := &feedPostRepositoryStub{
 		posts:   []*model.Post{persistentPost},
@@ -1354,6 +1376,9 @@ func TestBuildForYouFeedPartitionsFollowedAndPersonalizedCandidateSources(t *tes
 	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
 	for _, filter := range repo.listFeedPostCalls {
 		gotSources = append(gotSources, filter.CandidateSource)
+		if filter.CandidateSource == model.PostCandidateSourceColdStart && filter.ColdStartRandomSeed <= 0 {
+			t.Fatalf("cold-start filter random seed = %d, want positive seed", filter.ColdStartRandomSeed)
+		}
 	}
 	wantSources := []string{
 		model.PostCandidateSourceFollowed,
@@ -1426,6 +1451,43 @@ func TestBuildForYouFeedIncludesColdStartCandidateSourceForNewViewer(t *testing.
 	}
 	if postCards := postCardFeedData(page.Items); len(postCards) == 0 {
 		t.Fatal("post cards are empty, want cold-start fallback content")
+	}
+}
+
+func TestBuildForYouFeedIncludesEveryPostProfileOnHomeAndContentSurfaces(t *testing.T) {
+	profiles := []enum.PostProfileKey{
+		enum.PostProfileArticleV1,
+		enum.PostProfileQuickPostV1,
+		enum.PostProfileListingV1,
+		enum.PostProfileEventAnnouncementV1,
+		enum.PostProfileQuestionAnswerV1,
+		enum.PostProfileTripPlanV1,
+	}
+
+	for _, surface := range []string{"home", "content"} {
+		for _, profile := range profiles {
+			t.Run(surface+"/"+string(profile), func(t *testing.T) {
+				viewerID := uuid.New()
+				post := newFeedTestPost(uuid.New(), surface+"-"+string(profile), time.Now().UTC())
+				post.PostProfileKey = profile
+				repo := &feedPostRepositoryStub{posts: []*model.Post{post}}
+				useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+				page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+					Surface: surface,
+					Tab:     "for_you",
+					Limit:   10,
+				})
+				if err != nil {
+					t.Fatalf("BuildFeed returned error: %v", err)
+				}
+
+				cards := postCardFeedData(page.Items)
+				if len(cards) != 1 || cards[0].Post.Post.PostProfileKey != profile {
+					t.Fatalf("post cards = %+v, want profile %q", cards, profile)
+				}
+			})
+		}
 	}
 }
 
@@ -1754,6 +1816,33 @@ func TestMixFeedPostCandidateSourcesDoesNotLetSystemPostsStarveDiscoverySources(
 	}
 }
 
+func TestMixFeedPostCandidateSourcesKeepsColdStartSeedInNextCursor(t *testing.T) {
+	now := time.Date(2026, 7, 11, 12, 0, 0, 0, time.UTC)
+	first := newFeedTestPost(uuid.New(), "random-first", now)
+	second := newFeedTestPost(uuid.New(), "random-second", now.Add(-time.Minute))
+	const randomSeed int64 = 987654321
+
+	page := mixFeedPostCandidateSources(
+		1,
+		nil,
+		[]feedPostCandidateSource{{
+			Name:       model.PostCandidateSourceColdStart,
+			RandomSeed: randomSeed,
+		}},
+		[]string{model.PostCandidateSourceColdStart},
+		map[string][]*PostView{
+			model.PostCandidateSourceColdStart: {{Post: first}, {Post: second}},
+		},
+	)
+
+	if page.NextCursor == nil {
+		t.Fatal("next cursor is nil, want a cursor for the remaining candidate")
+	}
+	if page.NextCursor.ColdStartRandomSeed != randomSeed {
+		t.Fatalf("next cursor random seed = %d, want %d", page.NextCursor.ColdStartRandomSeed, randomSeed)
+	}
+}
+
 func TestMixFeedPostCandidateSourcesDrainsUnselectableSourceCandidates(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	popularPost := newFeedTestPost(uuid.New(), "popular", now)
@@ -1844,6 +1933,67 @@ func TestMixFeedPostCandidateSourcesAppliesDiversityCapsBeforeFallback(t *testin
 	}
 }
 
+func TestMixFeedPostCandidateSourcesPaginatesAllQuickPostsFromOneCommunity(t *testing.T) {
+	now := time.Date(2026, 7, 11, 12, 0, 0, 0, time.UTC)
+	authorID := uuid.New()
+	communityID := uuid.New()
+	allPosts := make([]*PostView, 0, 7)
+	for index := range 7 {
+		post := newFeedTestPost(
+			authorID,
+			fmt.Sprintf("quick-%d", index),
+			now.Add(-time.Duration(index)*time.Minute),
+		)
+		post.CommunityID = &communityID
+		post.PostProfileKey = enum.PostProfileQuickPostV1
+		post.Category = enum.PostCategoryGuide
+		allPosts = append(allPosts, &PostView{Post: post})
+	}
+
+	source := feedPostCandidateSource{Name: model.PostCandidateSourcePopular}
+	first := mixFeedPostCandidateSources(
+		3,
+		nil,
+		[]feedPostCandidateSource{source},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{model.PostCandidateSourcePopular: allPosts},
+	)
+	if got := postIDsFromPostViews(first.Posts); !sameUUIDsInOrder(got, postIDsFromPostViews(allPosts[:3])) {
+		t.Fatalf("first quick-post page = %v, want first three posts", got)
+	}
+	if first.NextCursor == nil {
+		t.Fatal("first quick-post page cursor is nil")
+	}
+
+	second := mixFeedPostCandidateSources(
+		3,
+		first.NextCursor,
+		[]feedPostCandidateSource{source},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{model.PostCandidateSourcePopular: allPosts[3:]},
+	)
+	if got := postIDsFromPostViews(second.Posts); !sameUUIDsInOrder(got, postIDsFromPostViews(allPosts[3:6])) {
+		t.Fatalf("second quick-post page = %v, want next three posts", got)
+	}
+	if second.NextCursor == nil {
+		t.Fatal("second quick-post page cursor is nil")
+	}
+
+	third := mixFeedPostCandidateSources(
+		3,
+		second.NextCursor,
+		[]feedPostCandidateSource{source},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{model.PostCandidateSourcePopular: allPosts[6:]},
+	)
+	if got := postIDsFromPostViews(third.Posts); !sameUUIDsInOrder(got, postIDsFromPostViews(allPosts[6:])) {
+		t.Fatalf("third quick-post page = %v, want final post", got)
+	}
+	if third.NextCursor != nil {
+		t.Fatalf("third quick-post page cursor = %+v, want nil", third.NextCursor)
+	}
+}
+
 func TestMixFeedPostCandidateSourcesAppliesCategoryDiversityBeforeFallback(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	firstGuide := newFeedTestPost(uuid.New(), "first-guide", now)
@@ -1881,15 +2031,17 @@ func TestMixFeedPostCandidateSourcesAppliesCategoryDiversityBeforeFallback(t *te
 				{Post: culinary},
 			},
 		},
+		FeedDiversityPolicy{MaxPostsPerCategoryPerPage: 2},
 	)
 
-	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+	want := []uuid.UUID{
 		firstGuide.ID,
 		secondGuide.ID,
 		journal.ID,
 		culinary.ID,
-	}) {
-		t.Fatalf("mixed post IDs = %v, want category-capped feed before fallback", got)
+	}
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, want) {
+		t.Fatalf("mixed post IDs = %v, want %v category-capped feed before fallback", got, want)
 	}
 }
 
@@ -1947,7 +2099,7 @@ func TestMixFeedPostCandidateSourcesAppliesTagDiversityBeforeFallback(t *testing
 	}
 }
 
-func TestMixFeedPostCandidateSourcesUsesDeliveredTagFatigue(t *testing.T) {
+func TestMixFeedPostCandidateSourcesResetsTagDiversityOnEachPage(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	visa := newFeedTestPost(uuid.New(), "visa-again", now)
 	visa.CommunityID = uuidPtr(uuid.New())
@@ -1981,14 +2133,14 @@ func TestMixFeedPostCandidateSourcesUsesDeliveredTagFatigue(t *testing.T) {
 	)
 
 	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		visa.ID,
 		housing.ID,
-		transport.ID,
 	}) {
-		t.Fatalf("mixed post IDs = %v, want delivered-tag fatigue before fallback", got)
+		t.Fatalf("mixed post IDs = %v, want current-page tag diversity", got)
 	}
 }
 
-func TestMixFeedPostCandidateSourcesUsesDeliveredAuthorFatigue(t *testing.T) {
+func TestMixFeedPostCandidateSourcesResetsAuthorDiversityOnEachPage(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	dominantAuthorID := uuid.New()
 	dominant := newFeedTestPost(dominantAuthorID, "same-author-again", now)
@@ -2018,14 +2170,14 @@ func TestMixFeedPostCandidateSourcesUsesDeliveredAuthorFatigue(t *testing.T) {
 	)
 
 	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		dominant.ID,
 		alternativeFirst.ID,
-		alternativeSecond.ID,
 	}) {
-		t.Fatalf("mixed post IDs = %v, want delivered-author fatigue before fallback", got)
+		t.Fatalf("mixed post IDs = %v, want current-page author diversity", got)
 	}
 }
 
-func TestMixFeedPostCandidateSourcesUsesDeliveredEntityFatigue(t *testing.T) {
+func TestMixFeedPostCandidateSourcesResetsEntityDiversityOnEachPage(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 
 	tests := map[string]struct {
@@ -2093,10 +2245,10 @@ func TestMixFeedPostCandidateSourcesUsesDeliveredEntityFatigue(t *testing.T) {
 			)
 
 			if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+				dominant.ID,
 				alternativeFirst.ID,
-				alternativeSecond.ID,
 			}) {
-				t.Fatalf("mixed post IDs = %v, want delivered-%s fatigue before fallback", got, name)
+				t.Fatalf("mixed post IDs = %v, want current-page %s diversity", got, name)
 			}
 		})
 	}
@@ -2290,6 +2442,53 @@ func TestPostFeedPostListCacheKeyIncludesCandidateMixerPolicy(t *testing.T) {
 	}
 }
 
+func TestPostFeedPostListCacheKeySeparatesColdStartRandomSeeds(t *testing.T) {
+	cache := &postFeedCacheFake{
+		version: 7,
+		posts:   make(map[string][]*model.Post),
+	}
+	useCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: uuid.New()},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second)
+
+	keyOne, _, cacheableOne := useCase.postFeedPostListCacheKey(
+		context.Background(),
+		nil,
+		20,
+		0,
+		nil,
+		feedPostCandidateSource{Name: model.PostCandidateSourceColdStart, RandomSeed: 41},
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+	keyTwo, _, cacheableTwo := useCase.postFeedPostListCacheKey(
+		context.Background(),
+		nil,
+		20,
+		0,
+		nil,
+		feedPostCandidateSource{Name: model.PostCandidateSourceColdStart, RandomSeed: 42},
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+
+	if !cacheableOne || !cacheableTwo {
+		t.Fatalf("cacheable flags = %v/%v, want both cacheable", cacheableOne, cacheableTwo)
+	}
+	if keyOne == keyTwo {
+		t.Fatalf("cold-start cache keys are equal for different random seeds: %q", keyOne)
+	}
+	if !strings.Contains(keyOne, "random:41") || !strings.Contains(keyTwo, "random:42") {
+		t.Fatalf("cold-start cache keys = %q/%q, want explicit random seed segments", keyOne, keyTwo)
+	}
+}
+
 func TestPostFeedPostListCacheKeySeparatesRankingExperiments(t *testing.T) {
 	viewerID := uuid.New()
 	cache := &postFeedCacheFake{
@@ -2434,11 +2633,11 @@ func TestBuildFeedUsesAnonymousFirstPagePostCache(t *testing.T) {
 			t.Fatalf("call %d post cards = %d, want 2", i+1, len(postCards))
 		}
 	}
-	if len(repo.listFeedPostCalls) != 3 {
+	if len(repo.listFeedPostCalls) != 4 {
 		t.Fatalf("ListFeedPosts calls = %d, want one miss per anonymous candidate source", len(repo.listFeedPostCalls))
 	}
-	if cache.gets != 6 || cache.sets != 3 || cache.versionReads != 6 {
-		t.Fatalf("cache gets/sets/versionReads = %d/%d/%d, want 6/3/6", cache.gets, cache.sets, cache.versionReads)
+	if cache.gets != 8 || cache.sets != 4 || cache.versionReads != 8 {
+		t.Fatalf("cache gets/sets/versionReads = %d/%d/%d, want 8/4/8", cache.gets, cache.sets, cache.versionReads)
 	}
 }
 
@@ -2612,6 +2811,143 @@ func TestFeedPostCandidateSourcesUsesGeoColdStartForAnonymousUsers(t *testing.T)
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("anonymous geo candidate sources = %v, want %v", got, want)
+	}
+}
+
+func TestFeedPostCandidateSourcesUsesColdStartForAnonymousUsersWithoutGeo(t *testing.T) {
+	sources := feedPostCandidateSources("for_you", nil, "", "")
+
+	got := make([]string, 0, len(sources))
+	for _, source := range sources {
+		got = append(got, source.Name)
+	}
+	want := []string{
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+		model.PostCandidateSourceGlobal,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("anonymous candidate sources = %v, want %v", got, want)
+	}
+}
+
+func TestFeedPostCandidateSourcesUsesNonPersonalizedTrendingSources(t *testing.T) {
+	viewerID := uuid.New()
+	sources := feedPostCandidateSources("trending", &viewerID, " KZ ", " almaty ")
+
+	got := make([]string, 0, len(sources))
+	for _, source := range sources {
+		got = append(got, source.Name)
+		if !source.DisablePersonalizedRanking {
+			t.Fatalf("trending source %+v must disable personalized ranking", source)
+		}
+		if source.FollowedByUserID != nil || source.ExcludeFollowedByUserID != nil {
+			t.Fatalf("trending source %+v must not carry follow filters", source)
+		}
+	}
+
+	want := []string{
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceGeo,
+		model.PostCandidateSourcePopular,
+		model.PostCandidateSourceGlobal,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("trending candidate sources = %v, want %v", got, want)
+	}
+}
+
+func TestBuildTrendingFeedKeepsViewerVisibilityWithoutPersonalizedRanking(t *testing.T) {
+	viewerID := uuid.New()
+	authorID := uuid.New()
+	post := newFeedTestPost(authorID, "trending-post", time.Now().UTC().Add(-time.Hour))
+	repo := &feedPostRepositoryStub{
+		posts:             []*model.Post{post},
+		stories:           []*model.Story{{ID: uuid.New()}},
+		communities:       []*model.Community{{ID: uuid.New()}},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), "subject", BuildFeedInput{
+		Surface: "home",
+		Tab:     "trending",
+		Limit:   3,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	if len(repo.listFeedPostCalls) != 3 {
+		t.Fatalf("ListFeedPosts calls = %d, want system, popular, and global", len(repo.listFeedPostCalls))
+	}
+	for _, filter := range repo.listFeedPostCalls {
+		if filter.ViewerUserID == nil || *filter.ViewerUserID != viewerID {
+			t.Fatalf("trending viewer filter = %v, want %s", filter.ViewerUserID, viewerID)
+		}
+		if !filter.DisablePersonalizedRanking {
+			t.Fatalf("trending filter %+v must disable personalized ranking", filter)
+		}
+	}
+	for _, block := range page.Items {
+		if block.Type == model.FeedBlockTypeStoriesTray || block.Type == model.FeedBlockTypeSuggestedCommunities {
+			t.Fatalf("trending first page contains curated block %q", block.Type)
+		}
+	}
+	if cards := postCardFeedData(page.Items); len(cards) != 1 || cards[0].Post.Post.ID != post.ID {
+		t.Fatalf("trending post cards = %+v, want post %s", cards, post.ID)
+	}
+}
+
+func TestNormalizeFeedTabSupportsTrending(t *testing.T) {
+	if got := normalizeFeedTab(" TRENDING "); got != "trending" {
+		t.Fatalf("normalizeFeedTab = %q, want trending", got)
+	}
+}
+
+func TestFeedColdStartRandomSeedIsStableWithinDayAndScopedToViewer(t *testing.T) {
+	viewerID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	now := time.Date(2026, 7, 11, 23, 59, 0, 0, time.FixedZone("UTC+5", 5*60*60))
+
+	first := feedColdStartRandomSeed(&viewerID, " kz ", " Almaty ", " HOME ", now)
+	second := feedColdStartRandomSeed(&viewerID, "KZ", "almaty", "home", now.Add(30*time.Second))
+	if first <= 0 || first != second {
+		t.Fatalf("same-day seed = %d/%d, want stable positive value", first, second)
+	}
+
+	nextDay := feedColdStartRandomSeed(&viewerID, "KZ", "almaty", "home", now.Add(24*time.Hour))
+	if nextDay == first {
+		t.Fatalf("next-day seed = %d, want value different from %d", nextDay, first)
+	}
+
+	otherViewerID := uuid.MustParse("22222222-2222-4222-8222-222222222222")
+	otherViewer := feedColdStartRandomSeed(&otherViewerID, "KZ", "almaty", "home", now)
+	if otherViewer == first {
+		t.Fatalf("other-viewer seed = %d, want value different from %d", otherViewer, first)
+	}
+}
+
+func TestWithColdStartRandomSeedOnlySeedsColdStartSource(t *testing.T) {
+	sources := []feedPostCandidateSource{
+		{Name: model.PostCandidateSourceSystem},
+		{Name: model.PostCandidateSourceColdStart},
+		{Name: model.PostCandidateSourcePopular},
+	}
+
+	seeded := withColdStartRandomSeed(sources, 42)
+	if sources[1].RandomSeed != 0 {
+		t.Fatal("withColdStartRandomSeed mutated the input slice")
+	}
+	for _, source := range seeded {
+		if source.Name == model.PostCandidateSourceColdStart {
+			if source.RandomSeed != 42 {
+				t.Fatalf("cold-start random seed = %d, want 42", source.RandomSeed)
+			}
+			continue
+		}
+		if source.RandomSeed != 0 {
+			t.Fatalf("source %q random seed = %d, want 0", source.Name, source.RandomSeed)
+		}
 	}
 }
 
@@ -3443,6 +3779,11 @@ func (r *feedPostRepositoryStub) listPosts(filter model.PostListFilter) ([]*mode
 		if filter.ViewerUserID != nil {
 			hiddenPostIDs := r.hiddenPostIDsByViewer[*filter.ViewerUserID]
 			if hiddenPostIDs[post.ID] {
+				continue
+			}
+			if filter.CandidateSource != "" &&
+				filter.CandidateSource != model.PostCandidateSourceFollowing &&
+				post.AuthorUserID == *filter.ViewerUserID {
 				continue
 			}
 		}

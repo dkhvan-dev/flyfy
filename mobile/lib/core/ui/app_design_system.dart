@@ -1354,6 +1354,14 @@ abstract final class AppMotion {
 
 abstract final class AppTypography {
   static const fontFamily = 'Inter';
+  static const bundledEmojiFontFamily = 'InflapEmoji';
+  static const emojiFontFallback = <String>[
+    'Apple Color Emoji',
+    'Noto Color Emoji',
+    'Segoe UI Emoji',
+    'Noto Emoji',
+    'Segoe UI Symbol',
+  ];
 
   static const display = 32.0;
   static const headline = 24.0;
@@ -1364,6 +1372,13 @@ abstract final class AppTypography {
   static const bodySmall = 13.0;
   static const caption = 12.0;
   static const micro = 11.0;
+
+  static const TextStyle emojiStyle = TextStyle(
+    fontFamily: bundledEmojiFontFamily,
+    fontFamilyFallback: emojiFontFallback,
+    height: 1,
+    letterSpacing: 0,
+  );
 
   static const TextStyle displayStyle = TextStyle(
     fontFamily: fontFamily,
@@ -1545,7 +1560,7 @@ abstract final class AppButtonStyles {
       minimumSize: const Size(0, AppSizes.minTapTarget),
       padding: AppInsets.button,
       backgroundColor: colors.primary,
-      foregroundColor: colors.textPrimary,
+      foregroundColor: colors.onPrimary,
       disabledBackgroundColor: colors.surfaceHigh,
       disabledForegroundColor: colors.textDisabled,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
@@ -1662,7 +1677,7 @@ abstract final class AppTheme {
           brightness: brightness,
         ).copyWith(
           primary: colors.primary,
-          onPrimary: colors.textPrimary,
+          onPrimary: colors.onPrimary,
           secondary: colors.secondary,
           onSecondary: colors.onSecondary,
           tertiary: colors.secondarySoft,

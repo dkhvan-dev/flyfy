@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/generated/app_localizations.dart';
+
 class LocaleProvider extends ChangeNotifier {
-  LocaleProvider();
+  LocaleProvider({List<Locale>? systemLocales})
+    : _locale = _resolveSystemLocale(
+        systemLocales ?? WidgetsBinding.instance.platformDispatcher.locales,
+      );
 
-  static const _storageKey = 'inflap_locale_code';
+  static const storageKey = 'inflap_locale_code';
 
-  Locale _locale = const Locale('ru');
+  Locale _locale;
   bool _isLoaded = false;
 
   Locale get locale => _locale;
@@ -14,10 +19,10 @@ class LocaleProvider extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedCode = prefs.getString(_storageKey);
+    final savedLocale = _supportedLocaleForCode(prefs.getString(storageKey));
 
-    if (savedCode != null && savedCode.trim().isNotEmpty) {
-      _locale = Locale(savedCode.trim());
+    if (savedLocale != null) {
+      _locale = savedLocale;
     }
 
     _isLoaded = true;
@@ -25,16 +30,36 @@ class LocaleProvider extends ChangeNotifier {
   }
 
   Future<void> setLocale(String code) async {
-    final normalized = code.trim();
-    if (normalized.isEmpty) return;
+    final nextLocale = _supportedLocaleForCode(code);
+    if (nextLocale == null) return;
 
-    if (_locale.languageCode == normalized) return;
-
-    _locale = Locale(normalized);
+    final localeChanged = _locale.languageCode != nextLocale.languageCode;
+    if (localeChanged) {
+      _locale = nextLocale;
+    }
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey, normalized);
+    await prefs.setString(storageKey, nextLocale.languageCode);
 
-    notifyListeners();
+    if (localeChanged) {
+      notifyListeners();
+    }
+  }
+
+  static Locale _resolveSystemLocale(List<Locale> systemLocales) {
+    return basicLocaleListResolution(
+      systemLocales,
+      AppLocalizations.supportedLocales,
+    );
+  }
+
+  static Locale? _supportedLocaleForCode(String? code) {
+    final languageCode = code?.trim().toLowerCase().split(RegExp('[-_]')).first;
+    if (languageCode == null || languageCode.isEmpty) return null;
+
+    for (final locale in AppLocalizations.supportedLocales) {
+      if (locale.languageCode == languageCode) return locale;
+    }
+    return null;
   }
 }

@@ -66,19 +66,6 @@ class StoryAdaptive {
   double radius(double value) => scale(value, minFactor: 0.84, maxFactor: 1.04);
 }
 
-abstract final class StoryPalette {
-  static const backgroundTop = Color(0xFF111B21);
-  static const background = Color(0xFF111B21);
-  static const backgroundDeep = Color(0xFF070B0E);
-  static const surface = Color(0xFF151B20);
-  static const surfaceRaised = Color(0xFF1A2127);
-  static const surfaceCard = Color(0xFF222A31);
-  static const text = Color(0xFFF4F7FA);
-  static const textSoft = Color(0xFFB7C0CA);
-  static const textMuted = Color(0xFF8A949F);
-  static const line = Color(0x332B343C);
-}
-
 String formatStoryCategory(AppLocalizations l10n, String rawCategory) {
   switch (rawCategory.trim().toUpperCase()) {
     case 'GUIDE':

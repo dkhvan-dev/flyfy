@@ -12,7 +12,8 @@ void main() {
     expect(source, contains('AppDesignSystem.colorsFor(context)'));
     expect(source, contains('final isDark'));
     expect(source, contains('color: colors.textPrimary'));
-    expect(source, contains('foregroundColor: colors.textPrimary'));
+    expect(source, contains('foregroundColor: colors.onPrimary'));
+    expect(source, contains('DioErrorMapper.toMessage(error)'));
     expect(source, isNot(contains('AppPalette.')));
   });
 }

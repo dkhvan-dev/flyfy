@@ -34,6 +34,7 @@ final class _ChecklistAmber {
   Color get itemSurface => colors.surfaceRaised;
   Color get border => colors.border;
   Color get amber => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get amberSoft => colors.primarySoft;
   Color get textPrimary => colors.textPrimary;
   Color get textSecondary => colors.textSecondary;
@@ -144,7 +145,7 @@ class _TravelChecklistListScreenState extends State<TravelChecklistListScreen> {
           onPressed: _createPreparation,
           tooltip: l10n.travelChecklistQuickPrepSubmit,
           backgroundColor: palette.amber,
-          foregroundColor: palette.textPrimary,
+          foregroundColor: palette.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(16),
           ),
@@ -1797,7 +1798,7 @@ class _MissingChecklistContextViewState
                                     ).amber,
                                     foregroundColor: _ChecklistAmber.of(
                                       context,
-                                    ).textPrimary,
+                                    ).onPrimary,
                                     minimumSize: const Size.fromHeight(48),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: AppBorderRadius.circular(8),
@@ -2011,7 +2012,7 @@ class _ChecklistListEmptyPanel extends StatelessWidget {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: _ChecklistAmber.of(context).amber,
-              foregroundColor: _ChecklistAmber.of(context).textPrimary,
+              foregroundColor: _ChecklistAmber.of(context).onPrimary,
               minimumSize: const Size(0, 46),
               shape: RoundedRectangleBorder(
                 borderRadius: AppBorderRadius.circular(8),
@@ -3162,7 +3163,7 @@ class _OptimizedItineraryCard extends StatelessWidget {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: _ChecklistAmber.of(context).textPrimary,
+                          color: _ChecklistAmber.of(context).onPrimary,
                         ),
                       )
                     : Icon(Icons.auto_awesome_motion_rounded),
@@ -3175,7 +3176,7 @@ class _OptimizedItineraryCard extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _ChecklistAmber.of(context).amber,
-                  foregroundColor: _ChecklistAmber.of(context).backgroundBottom,
+                  foregroundColor: _ChecklistAmber.of(context).onPrimary,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(8),
@@ -3886,20 +3887,20 @@ class _CarrySearchPanel extends StatelessWidget {
                     ? SizedBox.square(
                         dimension: 18,
                         child: CircularProgressIndicator(
-                          color: _ChecklistAmber.of(context).textPrimary,
+                          color: _ChecklistAmber.of(context).onPrimary,
                           strokeWidth: 2,
                         ),
                       )
                     : Icon(Icons.search_rounded),
                 style: IconButton.styleFrom(
                   backgroundColor: _ChecklistAmber.of(context).amber,
-                  foregroundColor: _ChecklistAmber.of(context).textPrimary,
+                  foregroundColor: _ChecklistAmber.of(context).onPrimary,
                   disabledBackgroundColor: _ChecklistAmber.of(
                     context,
                   ).amber.withValues(alpha: 0.28),
                   disabledForegroundColor: _ChecklistAmber.of(
                     context,
-                  ).textMuted,
+                  ).onPrimary.withValues(alpha: 0.54),
                 ),
               ),
             ],
@@ -4128,7 +4129,7 @@ class _ChecklistItemsPanel extends StatelessWidget {
                     ? SizedBox.square(
                         dimension: 16,
                         child: CircularProgressIndicator(
-                          color: _ChecklistAmber.of(context).textPrimary,
+                          color: _ChecklistAmber.of(context).onPrimary,
                           strokeWidth: 2,
                         ),
                       )
@@ -4140,7 +4141,7 @@ class _ChecklistItemsPanel extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _ChecklistAmber.of(context).amber,
-                  foregroundColor: _ChecklistAmber.of(context).textPrimary,
+                  foregroundColor: _ChecklistAmber.of(context).onPrimary,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppBorderRadius.circular(8),
@@ -4650,7 +4651,7 @@ class _CustomItemPriorityChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: AppTextStyle(
           color: selected
-              ? _ChecklistAmber.of(context).textPrimary
+              ? _ChecklistAmber.of(context).onPrimary
               : _ChecklistAmber.of(context).textSecondary,
           fontSize: 13,
           fontWeight: FontWeight.w900,
@@ -4661,7 +4662,7 @@ class _CustomItemPriorityChip extends StatelessWidget {
         Icons.check_rounded,
         size: 16,
         color: selected
-            ? _ChecklistAmber.of(context).textPrimary
+            ? _ChecklistAmber.of(context).onPrimary
             : _ChecklistAmber.of(context).transparent,
       ),
       backgroundColor: _ChecklistAmber.of(context).surfacePressed,
@@ -4897,9 +4898,7 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                       label: Text(l10n.travelChecklistCustomItemSave),
                       style: FilledButton.styleFrom(
                         backgroundColor: _ChecklistAmber.of(context).amber,
-                        foregroundColor: _ChecklistAmber.of(
-                          context,
-                        ).textPrimary,
+                        foregroundColor: _ChecklistAmber.of(context).onPrimary,
                         minimumSize: const Size(0, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppBorderRadius.circular(8),

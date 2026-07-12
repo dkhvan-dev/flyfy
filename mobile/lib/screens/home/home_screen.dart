@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
+import '../../core/network/post_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_notification_header_button.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -20,7 +21,9 @@ import '../../features/places/models/place_vm.dart';
 import '../../features/feed/data/feed_api.dart';
 import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
+import '../../features/feed/widgets/feed_post_content_card.dart';
 import '../../features/feed/widgets/feed_post_card.dart';
+import '../../features/feed/widgets/quick_post_thread_card.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/services/service_catalog.dart';
@@ -43,6 +46,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     this.feedApi,
+    this.postApi,
     this.placeApi,
     this.guideApi,
     this.initialDataLoadDelay = _initialHomeDataDelay,
@@ -54,6 +58,7 @@ class HomeScreen extends StatefulWidget {
   static const _initialHomeDataStagger = Duration(milliseconds: 160);
 
   final FeedApi? feedApi;
+  final PostApi? postApi;
   final PlaceApi? placeApi;
   final GuideApi? guideApi;
   final Duration initialDataLoadDelay;
@@ -66,6 +71,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _homeTrendingPostLimit = 3;
+  static const _homeForYouPostLimit = 10;
   static const _homeFeedPageLimit = 20;
   static const _homeLocationStartupTimeout = Duration(seconds: 2);
 
@@ -74,25 +80,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   late final PlaceApi _placeApi = widget.placeApi ?? PlaceApi();
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
+  late final PostApi _postApi = widget.postApi ?? PostApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
   String? _requestedTopPlacesRequestKey;
   List<PlaceVm> _topPlaces = const [];
+  int _topPlacesTotal = 0;
   List<StoryVm> _homeStoryTrayStories = const [];
-  List<PostVm> _topPosts = const [];
+  List<_HomePostFeedItem> _homeTrendingFeedItems = const [];
   List<_HomePostFeedItem> _homePostFeedItems = const [];
   Map<String, _HomePostFeedEventTarget> _topPostFeedTargets = const {};
   String? _homePostFeedNextCursor;
   String? _requestedHomeFeedCountryCode;
   String? _requestedHomeFeedCityId;
+  bool? _requestedHomeFeedAuthenticated;
   bool _topPlacesLoading = true;
   bool _topPlacesLoadFailed = false;
   bool _topPostsLoading = true;
   bool _topPostsLoadFailed = false;
+  bool _homePostFeedLoading = true;
+  bool _homePostFeedLoadFailed = false;
+  bool _homeTrendingHasMore = false;
   bool _homePostFeedLoadingMore = false;
   bool _homePostFeedLoadMoreFailed = false;
   bool _topPostsRequestStarted = false;
   bool _initialHomeDataLoadScheduled = false;
+  int _homeFeedRequestGeneration = 0;
 
   static const _promoYachtImageUrl =
       'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
@@ -109,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleHomeScroll() {
     if (!_scrollController.hasClients ||
         _homePostFeedNextCursor == null ||
-        _topPostsLoading ||
+        _homePostFeedLoading ||
         _homePostFeedLoadingMore) {
       return;
     }
@@ -213,7 +226,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openProfile() {
-    context.push('/profile');
+    final isAuthenticated =
+        context.read<AuthProvider>().state == AuthState.authenticated;
+    context.push(isAuthenticated ? '/profile' : '/app-settings');
   }
 
   void _openActivities() {
@@ -230,6 +245,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openTopPost(PostVm post) {
     _trackTopPostClick(post);
+    if (post.isQuickPost) {
+      final communityId = (post.communityId ?? '').trim();
+      final postId = post.id.trim();
+      if (communityId.isEmpty || postId.isEmpty) {
+        return;
+      }
+      final uri = Uri(
+        path: '/communities/${Uri.encodeComponent(communityId)}',
+        queryParameters: {'postId': postId},
+      );
+      context.push(uri.toString());
+      return;
+    }
+
     final slug = post.slug.trim();
     if (slug.isEmpty) {
       return;
@@ -238,6 +267,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _trackTopPostClick(PostVm post) {
+    _trackHomePostEvent(post, FeedEventTypes.click);
+  }
+
+  void _trackHomeQuickPostEngagement(PostVm post, String eventType) {
+    final normalizedEventType = eventType.trim();
+    if (normalizedEventType != FeedEventTypes.like &&
+        normalizedEventType != FeedEventTypes.comment) {
+      return;
+    }
+    _trackHomePostEvent(
+      post,
+      normalizedEventType,
+      metadata: {'engagementType': normalizedEventType},
+    );
+  }
+
+  void _trackHomePostEvent(
+    PostVm post,
+    String eventType, {
+    Map<String, Object?> metadata = const {},
+  }) {
     final postKey = _homePostKey(post);
     final postId = post.id.trim();
     if (postKey.isEmpty || postId.isEmpty) {
@@ -252,15 +302,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _trackHomeFeedEvents([
       FeedEventRequest(
         eventId: _homeFeedUuidV4(),
-        eventType: 'click',
+        eventType: eventType,
         surface: 'home',
-        tab: 'for_you',
+        tab: target.tab,
         blockId: target.blockId,
         blockType: target.blockType,
         postId: postId,
         rank: target.rank,
         occurredAt: DateTime.now().toUtc(),
-        metadata: {'entityType': 'post', 'entityId': postId},
+        metadata: {'entityType': 'post', 'entityId': postId, ...metadata},
       ),
     ]);
   }
@@ -398,6 +448,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openRecommendedActivityDetails(ActivityListItemVm activity, int rank) {
     final activityId = activity.id.trim();
+    final localizedCopy = activity.localizedCopy(
+      Localizations.localeOf(context).languageCode,
+    );
     _trackHomeEntityConversionClick(
       blockId: 'home:recommended_activities',
       blockType: 'activity_card',
@@ -406,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
       source: 'home_recommended_activities',
       rank: rank,
       metadata: {
-        'title': activity.title,
+        'title': localizedCopy.title,
         'categorySlug': activity.categorySlug,
         'format': activity.format,
         'countryCode': activity.countryCode,
@@ -521,8 +574,10 @@ class _HomeScreenState extends State<HomeScreen> {
         limit: 10,
       );
       if (!mounted || _requestedTopPlacesRequestKey != requestKey) return;
+      final topPlaces = result.items.take(10).toList(growable: false);
       setState(() {
-        _topPlaces = result.items.take(10).toList(growable: false);
+        _topPlaces = topPlaces;
+        _topPlacesTotal = max(result.total, topPlaces.length);
         _topPlacesLoading = false;
       });
     } catch (_) {
@@ -538,6 +593,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     final location = context.read<HomeLocationProvider>().effectiveLocation;
+    final isAuthenticated =
+        context.read<AuthProvider>().state == AuthState.authenticated;
     final currentCountryCode = _trimmedHomeStringOrNull(location.countryCode);
     final currentCityId = _trimmedHomeStringOrNull(location.cityId);
     final requestCountryCode = append
@@ -546,83 +603,184 @@ class _HomeScreenState extends State<HomeScreen> {
     final requestCityId = append
         ? (_requestedHomeFeedCityId ?? currentCityId)
         : currentCityId;
-    final locationChanged =
+    final feedContextChanged =
         !append &&
         (_requestedHomeFeedCountryCode != requestCountryCode ||
-            _requestedHomeFeedCityId != requestCityId);
-    final shouldForce = force || locationChanged;
+            _requestedHomeFeedCityId != requestCityId ||
+            _requestedHomeFeedAuthenticated != isAuthenticated);
+    final shouldForce = force || feedContextChanged;
     final cursor = append ? _homePostFeedNextCursor : null;
-    if (append && (cursor == null || _homePostFeedLoadingMore)) {
+    if (append &&
+        (!isAuthenticated ||
+            cursor == null ||
+            _homePostFeedLoadingMore ||
+            _homePostFeedItems.length >= _homeForYouPostLimit)) {
       return;
     }
     if (!append &&
         !shouldForce &&
         _topPostsRequestStarted &&
-        (_topPosts.isNotEmpty || _topPostsLoading)) {
+        (_homeTrendingFeedItems.isNotEmpty ||
+            _homePostFeedItems.isNotEmpty ||
+            _topPostsLoading ||
+            _homePostFeedLoading)) {
       return;
     }
 
     _topPostsRequestStarted = true;
-    setState(() {
-      if (append) {
+    if (append) {
+      final generation = _homeFeedRequestGeneration;
+      setState(() {
         _homePostFeedLoadingMore = true;
         _homePostFeedLoadMoreFailed = false;
-      } else {
-        _topPostsLoading = _topPosts.isEmpty || shouldForce;
-        _topPostsLoadFailed = false;
-        _homePostFeedLoadMoreFailed = false;
-        _requestedHomeFeedCountryCode = requestCountryCode;
-        _requestedHomeFeedCityId = requestCityId;
-        if (shouldForce) {
-          _homePostFeedNextCursor = null;
-        }
-      }
-    });
-
-    try {
-      final page = await _feedApi.getFeed(
-        surface: 'home',
+      });
+      final result = await _requestHomeFeedPage(
         tab: 'for_you',
         cursor: cursor,
         countryCode: requestCountryCode,
         cityId: requestCityId,
         limit: _homeFeedPageLimit,
       );
-      final storyTrayStories = _homeStoryTrayStoriesFromFeedBlocks(page.items);
-      final feedItems = _homePostFeedItemsFromFeedBlocks(page.items);
-      final mergedItems = append
-          ? _mergeHomePostFeedItems(_homePostFeedItems, feedItems)
-          : feedItems;
-      final topItems = mergedItems
-          .take(_homeTrendingPostLimit)
-          .toList(growable: false);
-      if (!mounted) return;
+      if (!mounted || generation != _homeFeedRequestGeneration) return;
       setState(() {
-        if (!append) {
-          _homeStoryTrayStories = storyTrayStories;
-        }
-        _homePostFeedItems = mergedItems;
-        _homePostFeedNextCursor = _trimmedHomeStringOrNull(page.nextCursor);
-        _topPosts = topItems.map((item) => item.post).toList(growable: false);
-        _topPostFeedTargets =
-            Map<String, _HomePostFeedEventTarget>.unmodifiable({
-              for (final item in mergedItems)
-                _homePostKey(item.post): item.eventTarget,
-            });
-        _topPostsLoading = false;
         _homePostFeedLoadingMore = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        if (append) {
-          _homePostFeedLoadingMore = false;
+        if (result.page == null) {
           _homePostFeedLoadMoreFailed = true;
-        } else {
-          _topPostsLoading = false;
-          _topPostsLoadFailed = true;
+          return;
         }
+        final incoming = _homePostFeedItemsFromFeedBlocks(
+          result.page!.items,
+          tab: 'for_you',
+        );
+        final deduplicated = _excludeHomePostKeys(
+          incoming,
+          _homeTrendingFeedItems.map((item) => _homePostKey(item.post)),
+        );
+        _homePostFeedItems = _mergeHomePostFeedItems(
+          _homePostFeedItems,
+          deduplicated,
+        ).take(_homeForYouPostLimit).toList(growable: false);
+        _homePostFeedNextCursor =
+            _homePostFeedItems.length >= _homeForYouPostLimit
+            ? null
+            : _trimmedHomeStringOrNull(result.page!.nextCursor);
+        _homePostFeedLoadMoreFailed = false;
+        _topPostFeedTargets = _homePostEventTargets(
+          _homeTrendingFeedItems,
+          _homePostFeedItems,
+        );
       });
+      return;
+    }
+
+    final generation = ++_homeFeedRequestGeneration;
+    setState(() {
+      _topPostsLoading = _homeTrendingFeedItems.isEmpty || shouldForce;
+      _topPostsLoadFailed = false;
+      _homePostFeedLoading =
+          isAuthenticated && (_homePostFeedItems.isEmpty || shouldForce);
+      _homePostFeedLoadFailed = false;
+      _homePostFeedLoadingMore = false;
+      _homePostFeedLoadMoreFailed = false;
+      _requestedHomeFeedCountryCode = requestCountryCode;
+      _requestedHomeFeedCityId = requestCityId;
+      _requestedHomeFeedAuthenticated = isAuthenticated;
+      if (shouldForce) {
+        _homePostFeedNextCursor = null;
+      }
+      if (!isAuthenticated) {
+        _homePostFeedItems = const [];
+        _homePostFeedNextCursor = null;
+      }
+    });
+
+    final requests = <Future<_HomeFeedPageResult>>[
+      _requestHomeFeedPage(
+        tab: 'trending',
+        countryCode: requestCountryCode,
+        cityId: requestCityId,
+        limit: _homeTrendingPostLimit + 1,
+      ),
+      if (isAuthenticated)
+        _requestHomeFeedPage(
+          tab: 'for_you',
+          countryCode: requestCountryCode,
+          cityId: requestCityId,
+          limit: _homeFeedPageLimit,
+        ),
+    ];
+    final results = await Future.wait(requests);
+    if (!mounted || generation != _homeFeedRequestGeneration) return;
+
+    final trendingResult = results.first;
+    final forYouResult = isAuthenticated ? results[1] : null;
+    setState(() {
+      if (trendingResult.page != null) {
+        final trendingItems = _homePostFeedItemsFromFeedBlocks(
+          trendingResult.page!.items,
+          tab: 'trending',
+        );
+        _homeTrendingHasMore =
+            trendingItems.length > _homeTrendingPostLimit ||
+            _trimmedHomeStringOrNull(trendingResult.page!.nextCursor) != null;
+        _homeTrendingFeedItems = trendingItems
+            .take(_homeTrendingPostLimit)
+            .toList(growable: false);
+        _topPostsLoadFailed = false;
+      } else {
+        _topPostsLoadFailed = true;
+      }
+      _topPostsLoading = false;
+
+      if (isAuthenticated) {
+        if (forYouResult?.page != null) {
+          _homeStoryTrayStories = _homeStoryTrayStoriesFromFeedBlocks(
+            forYouResult!.page!.items,
+          );
+          final forYouItems = _homePostFeedItemsFromFeedBlocks(
+            forYouResult.page!.items,
+            tab: 'for_you',
+          );
+          _homePostFeedItems = _excludeHomePostKeys(
+            forYouItems,
+            _homeTrendingFeedItems.map((item) => _homePostKey(item.post)),
+          ).take(_homeForYouPostLimit).toList(growable: false);
+          _homePostFeedNextCursor =
+              _homePostFeedItems.length >= _homeForYouPostLimit
+              ? null
+              : _trimmedHomeStringOrNull(forYouResult.page!.nextCursor);
+          _homePostFeedLoadFailed = false;
+        } else {
+          _homePostFeedLoadFailed = true;
+        }
+      }
+      _homePostFeedLoading = false;
+      _topPostFeedTargets = _homePostEventTargets(
+        _homeTrendingFeedItems,
+        _homePostFeedItems,
+      );
+    });
+  }
+
+  Future<_HomeFeedPageResult> _requestHomeFeedPage({
+    required String tab,
+    String? cursor,
+    String? countryCode,
+    String? cityId,
+    required int limit,
+  }) async {
+    try {
+      final page = await _feedApi.getFeed(
+        surface: 'home',
+        tab: tab,
+        cursor: cursor,
+        countryCode: countryCode,
+        cityId: cityId,
+        limit: limit,
+      );
+      return _HomeFeedPageResult.success(page);
+    } catch (_) {
+      return const _HomeFeedPageResult.failure();
     }
   }
 
@@ -648,17 +806,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final homeLocation = homeLocationProvider.effectiveLocation;
     final promos = _buildPromoCards(l10n);
     final servicesPreview = _homeServicesPreview(l10n);
-    final homePostStreamItems = _homePostFeedItems
-        .skip(_homeTrendingPostLimit)
+    final recommendedActivities = _filterHomeRecommendedItems(
+      publicItems: activityProvider.items,
+      location: homeLocation,
+    );
+    final topPosts = _homeTrendingFeedItems
+        .map((item) => item.post)
         .toList(growable: false);
+    final homePostStreamItems = _homePostFeedItems;
+    final hasMoreTopPlaces = _topPlacesTotal > _topPlaces.length;
+    final hasMoreTopPosts = _homeTrendingHasMore;
     final feedCountryCode = _trimmedHomeStringOrNull(homeLocation.countryCode);
     final feedCityId = _trimmedHomeStringOrNull(homeLocation.cityId);
     final homeFeedLocationChanged =
         _topPostsRequestStarted &&
         !_topPostsLoading &&
+        !_homePostFeedLoading &&
         !_homePostFeedLoadingMore &&
         (_requestedHomeFeedCountryCode != feedCountryCode ||
-            _requestedHomeFeedCityId != feedCityId);
+            _requestedHomeFeedCityId != feedCityId ||
+            _requestedHomeFeedAuthenticated != isLoggedIn);
     if (homeFeedLocationChanged) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -820,8 +987,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                           _SectionHeader(
                                             title: l10n.servicesSectionTitle,
-                                            actionLabel: l10n.servicesAllButton,
-                                            onActionTap: _openServices,
                                           ),
                                           const SizedBox(height: 14),
                                           ServiceGrid(
@@ -834,8 +999,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                           SizedBox(height: isCompact ? 20 : 24),
                                           _SectionHeader(
                                             title: l10n.homeTopDestinations,
-                                            actionLabel: l10n.homeSeeAll,
-                                            onActionTap: _openPlaces,
+                                            actionLabel: _topPlaces.isNotEmpty
+                                                ? l10n.homeSeeAll
+                                                : null,
+                                            onActionTap: _topPlaces.isNotEmpty
+                                                ? _openPlaces
+                                                : null,
                                           ),
                                           const SizedBox(height: 14),
                                           _TopDestinationsRow(
@@ -845,42 +1014,55 @@ class _HomeScreenState extends State<HomeScreen> {
                                             onPlaceTap: _openPlaceDetails,
                                             onRetry: () =>
                                                 _loadTopPlaces(force: true),
+                                            showAllAction: hasMoreTopPlaces,
+                                            onShowAllTap: _openPlaces,
                                           ),
                                           SizedBox(height: isCompact ? 30 : 34),
                                           _SectionHeader(
                                             title: l10n.homeTopStories,
-                                            actionLabel: l10n.homeSeeAll,
-                                            onActionTap: _openFeed,
+                                            actionLabel: topPosts.isNotEmpty
+                                                ? l10n.homeSeeAll
+                                                : null,
+                                            onActionTap: topPosts.isNotEmpty
+                                                ? _openFeed
+                                                : null,
                                           ),
                                           const SizedBox(height: 14),
                                           _TopPostsCarousel(
-                                            posts: _topPosts,
+                                            posts: topPosts,
                                             isLoading: _topPostsLoading,
                                             hasError: _topPostsLoadFailed,
                                             onPostTap: _openTopPost,
                                             onRetry: () =>
                                                 _loadHomeFeed(force: true),
-                                            onEmptyTap: _openFeed,
+                                            showAllAction: hasMoreTopPosts,
+                                            onShowAllTap: _openFeed,
                                           ),
                                           SizedBox(height: isCompact ? 30 : 34),
                                           _SectionHeader(
                                             title:
                                                 l10n.homeRecommendedActivities,
-                                            actionLabel: l10n.homeSeeAll,
-                                            onActionTap: _openActivities,
+                                            actionLabel:
+                                                recommendedActivities.isNotEmpty
+                                                ? l10n.homeSeeAll
+                                                : null,
+                                            onActionTap:
+                                                recommendedActivities.isNotEmpty
+                                                ? _openActivities
+                                                : null,
                                           ),
                                           const SizedBox(height: 16),
                                           _RecommendedActivitiesSection(
                                             provider: activityProvider,
+                                            recommendedItems:
+                                                recommendedActivities,
                                             l10n: l10n,
                                             currentUserId: currentUserId,
                                             onRetry: () {
                                               _refreshActivities();
                                             },
-                                            onEmptyTap: _openActivities,
                                             onActivityTap:
                                                 _openRecommendedActivityDetails,
-                                            location: homeLocation,
                                           ),
                                           if (isLoggedIn) ...[
                                             SizedBox(
@@ -888,28 +1070,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                             _SectionHeader(
                                               title: l10n.homeSmartPostsTitle,
-                                              actionLabel: l10n.homeSeeAll,
-                                              onActionTap: _openFeed,
+                                              actionLabel:
+                                                  homePostStreamItems.isNotEmpty
+                                                  ? l10n.homeSeeAll
+                                                  : null,
+                                              onActionTap:
+                                                  homePostStreamItems.isNotEmpty
+                                                  ? _openFeed
+                                                  : null,
                                             ),
                                             const SizedBox(height: 16),
                                             _HomeSmartPostsSection(
                                               items: homePostStreamItems,
+                                              postApi: _postApi,
+                                              canInteract: isLoggedIn,
                                               isLoading:
-                                                  _topPostsLoading &&
+                                                  _homePostFeedLoading &&
                                                   _homePostFeedItems.isEmpty,
                                               hasError:
-                                                  _topPostsLoadFailed &&
+                                                  _homePostFeedLoadFailed &&
                                                   _homePostFeedItems.isEmpty,
                                               isLoadingMore:
                                                   _homePostFeedLoadingMore,
                                               hasLoadMoreError:
                                                   _homePostFeedLoadMoreFailed,
                                               onPostTap: _openTopPost,
+                                              onQuickPostEngagement:
+                                                  _trackHomeQuickPostEngagement,
                                               onRetry: () =>
                                                   _loadHomeFeed(force: true),
                                               onLoadMoreRetry: () =>
                                                   _loadHomeFeed(append: true),
-                                              onEmptyTap: _openFeed,
                                             ),
                                           ],
                                         ],
@@ -1121,9 +1312,12 @@ class _HeaderAvatarButton extends StatelessWidget {
         : _HeaderAvatarInitials(initials: initials);
 
     return Semantics(
+      key: const ValueKey('home-profile-button'),
       button: true,
       enabled: true,
-      label: l10n.myProfileTitle,
+      label: profile == null
+          ? l10n.profileSettingsPageTitle
+          : l10n.myProfileTitle,
       child: Material(
         color: AppPalette.transparent,
         child: InkWell(
@@ -1528,6 +1722,8 @@ class _TopDestinationsRow extends StatelessWidget {
     required this.hasError,
     required this.onPlaceTap,
     required this.onRetry,
+    required this.showAllAction,
+    required this.onShowAllTap,
   });
 
   final List<PlaceVm> places;
@@ -1535,6 +1731,8 @@ class _TopDestinationsRow extends StatelessWidget {
   final bool hasError;
   final ValueChanged<PlaceVm> onPlaceTap;
   final VoidCallback onRetry;
+  final bool showAllAction;
+  final VoidCallback onShowAllTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1590,8 +1788,6 @@ class _TopDestinationsRow extends StatelessWidget {
           return _TopDestinationMessage(
             icon: Icons.landscape_rounded,
             message: l10n.placesNoResults,
-            actionLabel: l10n.homeSeeAll,
-            onActionTap: onRetry,
           );
         }
 
@@ -1606,9 +1802,16 @@ class _TopDestinationsRow extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               clipBehavior: Clip.none,
-              itemCount: items.length,
+              itemCount: items.length + (showAllAction ? 1 : 0),
               separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
+                if (index == items.length) {
+                  return _HomeShowAllCarouselCard(
+                    width: cardWidth,
+                    height: cardHeight,
+                    onTap: onShowAllTap,
+                  );
+                }
                 final place = items[index];
                 return SizedBox(
                   width: cardWidth,
@@ -1915,18 +2118,19 @@ class _TopDestinationMessage extends StatelessWidget {
   const _TopDestinationMessage({
     required this.icon,
     required this.message,
-    required this.actionLabel,
-    required this.onActionTap,
+    this.actionLabel,
+    this.onActionTap,
   });
 
   final IconData icon;
   final String message;
-  final String actionLabel;
-  final VoidCallback onActionTap;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
     final textScale = _homeTextScaleFactor(context);
+    final hasAction = actionLabel != null && onActionTap != null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1956,14 +2160,16 @@ class _TopDestinationMessage extends StatelessWidget {
                           Expanded(child: _TopDestinationMessageText(message)),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: _TopDestinationMessageAction(
-                          label: actionLabel,
-                          onTap: onActionTap,
+                      if (hasAction) ...[
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _TopDestinationMessageAction(
+                            label: actionLabel!,
+                            onTap: onActionTap!,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   )
                 : Row(
@@ -1971,16 +2177,18 @@ class _TopDestinationMessage extends StatelessWidget {
                       Icon(icon, color: context.appColors.textMuted, size: 28),
                       const SizedBox(width: 14),
                       Expanded(child: _TopDestinationMessageText(message)),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _TopDestinationMessageAction(
-                            label: actionLabel,
-                            onTap: onActionTap,
+                      if (hasAction) ...[
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: _TopDestinationMessageAction(
+                              label: actionLabel!,
+                              onTap: onActionTap!,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
           ),
@@ -2034,6 +2242,83 @@ class _TopDestinationMessageAction extends StatelessWidget {
   }
 }
 
+class _HomeShowAllCarouselCard extends StatelessWidget {
+  const _HomeShowAllCarouselCard({
+    required this.width,
+    required this.height,
+    required this.onTap,
+  });
+
+  final double width;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final radius = AppBorderRadius.circular(18);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Semantics(
+        button: true,
+        label: l10n.homeShowAllCard,
+        child: Material(
+          color: AppPalette.transparent,
+          borderRadius: radius,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: radius,
+            child: Ink(
+              decoration: AppBoxDecoration(
+                color: context.appColors.surfaceRaised,
+                borderRadius: radius,
+                border: Border.all(color: context.appColors.borderPrimary),
+              ),
+              child: Padding(
+                padding: const AppEdgeInsets.all(18),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    DecoratedBox(
+                      decoration: AppBoxDecoration(
+                        color: context.appColors.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: SizedBox.square(
+                        dimension: 48,
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          color: context.appColors.primary,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      l10n.homeShowAllCard,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyle(
+                        color: context.appColors.textPrimary,
+                        fontSize: 15,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TopPostsCarousel extends StatelessWidget {
   const _TopPostsCarousel({
     required this.posts,
@@ -2041,7 +2326,8 @@ class _TopPostsCarousel extends StatelessWidget {
     required this.hasError,
     required this.onPostTap,
     required this.onRetry,
-    required this.onEmptyTap,
+    required this.showAllAction,
+    required this.onShowAllTap,
   });
 
   final List<PostVm> posts;
@@ -2049,7 +2335,8 @@ class _TopPostsCarousel extends StatelessWidget {
   final bool hasError;
   final ValueChanged<PostVm> onPostTap;
   final VoidCallback onRetry;
-  final VoidCallback onEmptyTap;
+  final bool showAllAction;
+  final VoidCallback onShowAllTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2102,8 +2389,6 @@ class _TopPostsCarousel extends StatelessWidget {
           return _TopDestinationMessage(
             icon: Icons.auto_stories_rounded,
             message: l10n.storyEmptyTitle,
-            actionLabel: l10n.homeSeeAll,
-            onActionTap: onEmptyTap,
           );
         }
 
@@ -2127,9 +2412,16 @@ class _TopPostsCarousel extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               clipBehavior: Clip.none,
-              itemCount: items.length,
+              itemCount: items.length + (showAllAction ? 1 : 0),
               separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
+                if (index == items.length) {
+                  return _HomeShowAllCarouselCard(
+                    width: cardWidth,
+                    height: cardHeight,
+                    onTap: onShowAllTap,
+                  );
+                }
                 final post = items[index];
                 return SizedBox(
                   width: cardWidth,
@@ -2447,28 +2739,97 @@ class _TopPostLoadingCard extends StatelessWidget {
   }
 }
 
+class _HomeEmptyStateCard extends StatelessWidget {
+  const _HomeEmptyStateCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = AppBorderRadius.circular(24);
+    return DecoratedBox(
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: borderRadius,
+        border: Border.all(color: context.appColors.borderSoft),
+      ),
+      child: Padding(
+        padding: const AppEdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary.withValues(alpha: 0.16),
+                borderRadius: AppBorderRadius.circular(18),
+              ),
+              child: Icon(icon, color: AppPalette.primary),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyle(
+                      color: context.appColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTextStyle(
+                      color: context.appColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HomeSmartPostsSection extends StatelessWidget {
   const _HomeSmartPostsSection({
     required this.items,
+    required this.postApi,
+    required this.canInteract,
     required this.isLoading,
     required this.hasError,
     required this.isLoadingMore,
     required this.hasLoadMoreError,
     required this.onPostTap,
+    required this.onQuickPostEngagement,
     required this.onRetry,
     required this.onLoadMoreRetry,
-    required this.onEmptyTap,
   });
 
   final List<_HomePostFeedItem> items;
+  final PostApi postApi;
+  final bool canInteract;
   final bool isLoading;
   final bool hasError;
   final bool isLoadingMore;
   final bool hasLoadMoreError;
   final ValueChanged<PostVm> onPostTap;
+  final QuickPostEngagementCallback onQuickPostEngagement;
   final VoidCallback onRetry;
   final VoidCallback onLoadMoreRetry;
-  final VoidCallback onEmptyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2496,21 +2857,23 @@ class _HomeSmartPostsSection extends StatelessWidget {
     }
 
     if (items.isEmpty) {
-      return _TopDestinationMessage(
+      return _HomeEmptyStateCard(
         icon: Icons.dynamic_feed_rounded,
-        message: l10n.homeSmartPostsEmpty,
-        actionLabel: l10n.homeSeeAll,
-        onActionTap: onEmptyTap,
+        title: l10n.storyEmptyTitle,
+        subtitle: l10n.homeSmartPostsEmpty,
       );
     }
 
     return Column(
       children: [
         for (var index = 0; index < items.length; index++) ...[
-          FeedPostCard(
+          FeedPostContentCard(
             post: items[index].post,
+            postApi: postApi,
+            canInteract: canInteract,
             style: FeedPostCardStyle.v2(context),
             onOpen: onPostTap,
+            onQuickPostEngagement: onQuickPostEngagement,
           ),
           if (index != items.length - 1) const SizedBox(height: 16),
         ],
@@ -2616,29 +2979,23 @@ class _HomeFeedPaginationRetry extends StatelessWidget {
 class _RecommendedActivitiesSection extends StatelessWidget {
   const _RecommendedActivitiesSection({
     required this.provider,
+    required this.recommendedItems,
     required this.l10n,
     required this.currentUserId,
-    required this.location,
     required this.onRetry,
-    required this.onEmptyTap,
     required this.onActivityTap,
   });
 
   final ActivityProvider provider;
+  final List<ActivityListItemVm> recommendedItems;
   final AppLocalizations l10n;
   final String currentUserId;
-  final HomeLocationPreference location;
   final VoidCallback onRetry;
-  final VoidCallback onEmptyTap;
   final void Function(ActivityListItemVm activity, int rank) onActivityTap;
 
   @override
   Widget build(BuildContext context) {
     final languageCode = Localizations.localeOf(context).languageCode;
-    final recommendedItems = _filterHomeRecommendedItems(
-      publicItems: provider.items,
-      location: location,
-    );
     final isLoadingPublic =
         provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
@@ -2692,66 +3049,10 @@ class _RecommendedActivitiesSection extends StatelessWidget {
     }
 
     if (recommendedItems.isEmpty) {
-      return Material(
-        color: AppPalette.transparent,
-        child: InkWell(
-          onTap: onEmptyTap,
-          borderRadius: AppBorderRadius.circular(24),
-          child: Ink(
-            padding: const AppEdgeInsets.all(20),
-            decoration: AppBoxDecoration(
-              color: AppPalette.white.withValues(alpha: 0.05),
-              borderRadius: AppBorderRadius.circular(24),
-              border: Border.all(color: context.appColors.borderSoft),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: AppBoxDecoration(
-                    color: AppPalette.primary.withValues(alpha: 0.16),
-                    borderRadius: AppBorderRadius.circular(18),
-                  ),
-                  child: const Icon(
-                    Icons.explore_rounded,
-                    color: AppPalette.primary,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.noActivitiesYet,
-                        style: AppTextStyle(
-                          color: context.appColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.activitiesWillAppearHere,
-                        style: AppTextStyle(
-                          color: context.appColors.textSecondary,
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: context.appColors.textMuted,
-                ),
-              ],
-            ),
-          ),
-        ),
+      return _HomeEmptyStateCard(
+        icon: Icons.explore_rounded,
+        title: l10n.noActivitiesYet,
+        subtitle: l10n.activitiesWillAppearHere,
       );
     }
 
@@ -2822,6 +3123,7 @@ class _RecommendedActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final localizedCopy = item.localizedCopy(languageCode);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 360;
     final buttonLabel = isJoined
@@ -2856,7 +3158,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.title,
+                          localizedCopy.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyle(
@@ -2955,7 +3257,7 @@ class _ActivityJoinButton extends StatelessWidget {
                     label,
                     maxLines: 1,
                     style: AppTextStyle(
-                      color: context.appColors.textPrimary,
+                      color: context.appColors.onPrimary,
                       fontSize: isCompact ? 12 : 13,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -3514,16 +3816,25 @@ class _HomePostFeedItem {
   final _HomePostFeedEventTarget eventTarget;
 }
 
+class _HomeFeedPageResult {
+  const _HomeFeedPageResult.success(this.page);
+  const _HomeFeedPageResult.failure() : page = null;
+
+  final FeedPageVm? page;
+}
+
 class _HomePostFeedEventTarget {
   const _HomePostFeedEventTarget({
     required this.blockId,
     required this.blockType,
     required this.rank,
+    required this.tab,
   });
 
   final String blockId;
   final String blockType;
   final int rank;
+  final String tab;
 }
 
 List<StoryVm> _homeStoryTrayStoriesFromFeedBlocks(List<FeedBlockVm> blocks) {
@@ -3536,8 +3847,9 @@ List<StoryVm> _homeStoryTrayStoriesFromFeedBlocks(List<FeedBlockVm> blocks) {
 }
 
 List<_HomePostFeedItem> _homePostFeedItemsFromFeedBlocks(
-  List<FeedBlockVm> blocks,
-) {
+  List<FeedBlockVm> blocks, {
+  required String tab,
+}) {
   final items = <_HomePostFeedItem>[];
   final seenKeys = <String>{};
 
@@ -3562,6 +3874,7 @@ List<_HomePostFeedItem> _homePostFeedItemsFromFeedBlocks(
           blockId: blockId,
           blockType: blockType,
           rank: rank,
+          tab: tab,
         ),
       ),
     );
@@ -3609,6 +3922,28 @@ List<_HomePostFeedItem> _homePostFeedItemsFromFeedBlocks(
   return List<_HomePostFeedItem>.unmodifiable(items);
 }
 
+List<_HomePostFeedItem> _excludeHomePostKeys(
+  Iterable<_HomePostFeedItem> items,
+  Iterable<String> excludedKeys,
+) {
+  final excluded = excludedKeys.where((key) => key.isNotEmpty).toSet();
+  return List<_HomePostFeedItem>.unmodifiable(
+    items.where((item) => !excluded.contains(_homePostKey(item.post))),
+  );
+}
+
+Map<String, _HomePostFeedEventTarget> _homePostEventTargets(
+  Iterable<_HomePostFeedItem> trending,
+  Iterable<_HomePostFeedItem> forYou,
+) {
+  return Map<String, _HomePostFeedEventTarget>.unmodifiable(
+    {
+      for (final item in [...trending, ...forYou])
+        _homePostKey(item.post): item.eventTarget,
+    }..remove(''),
+  );
+}
+
 List<_HomePostFeedItem> _mergeHomePostFeedItems(
   List<_HomePostFeedItem> existing,
   List<_HomePostFeedItem> incoming,
@@ -3653,13 +3988,24 @@ bool _isHomePostViewable(PostVm post) {
 }
 
 List<TravelServiceEntry> _homeServicesPreview(AppLocalizations l10n) {
-  return buildTravelServiceCatalog(l10n)
+  final primaryServices = buildTravelServiceCatalog(l10n)
       .where(
         (service) =>
-            service.route != '/travel-checklist' && service.route != '/help',
+            service.route != '/travel-checklist' &&
+            service.route != '/currency-converter' &&
+            service.route != '/help',
       )
-      .take(6)
+      .take(5)
       .toList(growable: false);
+
+  return List.unmodifiable([
+    ...primaryServices,
+    TravelServiceEntry(
+      title: l10n.homeServiceAllServices,
+      icon: Icons.apps_rounded,
+      route: '/services',
+    ),
+  ]);
 }
 
 String? _homeFeedBlockTypeWire(FeedBlockType type) {

@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
+import '../../core/ui/app_emoji.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/app_modal_templates.dart';
 import '../../features/chat/models/conversation_vm.dart';
@@ -801,7 +802,7 @@ class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
           const SizedBox(width: 7),
         ],
         Expanded(
-          child: Text(
+          child: AppEmojiText(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

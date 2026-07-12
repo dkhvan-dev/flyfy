@@ -17,6 +17,8 @@ import '../../features/profile/models/guide_application_vm.dart';
 import '../../features/profile/models/update_profile_request.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/profile/models/submit_guide_application_request.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import 'profile_style.dart';
@@ -36,6 +38,7 @@ final class _GuideVerificationColors {
   }
 
   Color get primary => colors.primary;
+  Color get onPrimary => colors.onPrimary;
   Color get primaryPressed => colors.primaryPressed;
   Color get primarySoft => colors.primarySoft;
   Color get primaryContainer => colors.primaryContainer;
@@ -555,6 +558,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
       final application = await _guideApi.submitMyGuideApplication(
         SubmitGuideApplicationRequest(
           type: _defaultGuideType,
+          isExcursionGuideAvailable: true,
           identityDocumentFileId: _identityDocument.fileId!,
           identityDocumentType: _identityDocumentType,
           professionalDocumentFileId: _professionalDocument.fileId!,
@@ -632,6 +636,14 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     final isPending = application?.verificationRequest?.isPending == true;
     final isVerified = application?.profile.isVerified == true;
     final isRevoked = application?.profile.isRevoked == true;
+    final trustAccess = context.watch<TrustAccessProvider>();
+    final guideApplicationRestricted =
+        trustAccess.isRestricted(TrustCapability.submitGuideApplication) ||
+        trustAccess.isRestricted(TrustCapability.uploadFile);
+
+    if (guideApplicationRestricted && !isPending && !isVerified && !isRevoked) {
+      return const TrustRestrictedScaffold();
+    }
 
     return Scaffold(
       backgroundColor: context.guideColors.transparent,
@@ -2709,7 +2721,7 @@ class _UploadCard extends StatelessWidget {
                     onPressed: isUploading ? null : onTap,
                     style: FilledButton.styleFrom(
                       backgroundColor: context.guideColors.primary,
-                      foregroundColor: context.guideColors.textPrimary,
+                      foregroundColor: context.guideColors.onPrimary,
                       padding: AppEdgeInsets.symmetric(
                         horizontal: profileScaled(
                           context,
@@ -3252,7 +3264,7 @@ class _GuideSolidActionButton extends StatelessWidget {
       onPressed: busy ? null : onPressed,
       style: FilledButton.styleFrom(
         backgroundColor: context.guideColors.primary,
-        foregroundColor: context.guideColors.textPrimary,
+        foregroundColor: context.guideColors.onPrimary,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
@@ -3269,7 +3281,7 @@ class _GuideSolidActionButton extends StatelessWidget {
               height: profileScaled(context, 18, min: 16, max: 18),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: context.guideColors.textPrimary,
+                color: context.guideColors.onPrimary,
               ),
             )
           : Text(

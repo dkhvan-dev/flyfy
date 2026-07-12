@@ -194,7 +194,7 @@ class _CreateStoryTrayItem extends StatelessWidget {
                           child: Icon(
                             Icons.add_rounded,
                             size: 18,
-                            color: colors.textPrimary,
+                            color: colors.onPrimary,
                           ),
                         ),
                       ),
@@ -449,7 +449,7 @@ double _createStoryItemWidth(
       Theme.of(
         context,
       ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600) ??
-      const TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
+      const AppTextStyle(fontSize: 12, fontWeight: FontWeight.w600);
   final painter = TextPainter(
     text: TextSpan(text: label, style: textStyle),
     maxLines: 1,

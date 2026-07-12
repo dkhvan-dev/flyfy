@@ -17,11 +17,15 @@ import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/currency/data/currency_catalog_repository.dart';
 import '../../features/excursions/excursion_cover_url.dart';
+import '../../features/excursions/excursion_included_items.dart';
 import '../../features/excursions/guide_offer_status.dart';
 import '../../features/excursions/models/create_excursion_request.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_localization.dart';
+import '../../features/trust/providers/trust_access_provider.dart';
+import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/home_location_provider.dart';
@@ -94,10 +98,12 @@ class CreateExcursionScreen extends StatefulWidget {
     super.key,
     this.excursionId,
     this.initialExcursion,
+    this.currencyCatalogRepository,
   });
 
   final String? excursionId;
   final ExcursionVm? initialExcursion;
+  final CurrencyCatalogRepository? currencyCatalogRepository;
 
   @override
   State<CreateExcursionScreen> createState() => _CreateExcursionScreenState();
@@ -527,9 +533,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _includedItems
         ..clear()
         ..addAll(
-          _stringListFromDraft(
-            draft['includedItems'],
-          ).map(_ExcursionIncludedItemDraft.fromPayload),
+          _uniqueIncludedItemDrafts(
+            _stringListFromDraft(draft['includedItems']),
+          ),
         );
       _itinerary
         ..clear()
@@ -1451,7 +1457,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final seen = <_ExcursionIncludedItemType>{};
     final items = <_ExcursionIncludedItemDraft>[];
     for (final value in values) {
+      if (ExcursionIncludedItemKey.isDeprecated(value)) continue;
       final item = _ExcursionIncludedItemDraft.fromPayload(value);
+      if (!_selectableIncludedItemTypes.contains(item.type)) continue;
       if (!seen.add(item.type)) continue;
       items.add(item);
     }
@@ -2232,7 +2240,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: context.createExcursionColors.transparent,
-      extendToBottom: true,
       builder: (context) => _AddItinerarySlotSheet(
         l10n: l10n,
         initialItem: item,
@@ -2380,6 +2387,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tourPublishingRestricted =
+        !_isEditMode &&
+        context.watch<TrustAccessProvider>().isRestricted(
+          TrustCapability.publishTour,
+        );
+    if (tourPublishingRestricted) {
+      return const TrustRestrictedScaffold(creation: true);
+    }
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final stepBackSwipeEdgeWidth = _stepBackSwipeEdgeWidth(context);
@@ -2515,6 +2530,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   List<Widget> _buildOfferCoverSection(AppLocalizations l10n) {
+    final fileUploadRestricted = context
+        .watch<TrustAccessProvider>()
+        .isRestricted(TrustCapability.uploadFile);
+    if (fileUploadRestricted) {
+      return [
+        _SectionHeader(title: l10n.createExcursionCoverSection),
+        const SizedBox(height: 12),
+        const TrustRestrictionNotice(),
+      ];
+    }
     return [
       _SectionHeader(title: l10n.createExcursionCoverSection),
       const SizedBox(height: 12),
@@ -2763,6 +2788,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createCurrencyLabel,
           selectedCode: _selectedCurrencyCode,
           errorText: _currencyErrorText,
+          currencyCatalogRepository: widget.currencyCatalogRepository,
           onChanged: (value) {
             setState(() {
               _selectedCurrencyCode = value;
@@ -3059,8 +3085,8 @@ enum _ExcursionIncludedItemType {
   food,
   tickets,
   equipment,
-  guide,
-  photo,
+  accommodation,
+  permitsFees,
   other,
 }
 
@@ -3069,8 +3095,8 @@ const _selectableIncludedItemTypes = [
   _ExcursionIncludedItemType.food,
   _ExcursionIncludedItemType.tickets,
   _ExcursionIncludedItemType.equipment,
-  _ExcursionIncludedItemType.guide,
-  _ExcursionIncludedItemType.photo,
+  _ExcursionIncludedItemType.accommodation,
+  _ExcursionIncludedItemType.permitsFees,
 ];
 
 extension _ExcursionIncludedItemTypeUi on _ExcursionIncludedItemType {
@@ -3081,9 +3107,25 @@ extension _ExcursionIncludedItemTypeUi on _ExcursionIncludedItemType {
       _ExcursionIncludedItemType.food => Icons.restaurant_rounded,
       _ExcursionIncludedItemType.tickets => Icons.confirmation_number_rounded,
       _ExcursionIncludedItemType.equipment => Icons.backpack_rounded,
-      _ExcursionIncludedItemType.guide => Icons.person_pin_circle_rounded,
-      _ExcursionIncludedItemType.photo => Icons.photo_camera_rounded,
+      _ExcursionIncludedItemType.accommodation => Icons.hotel_rounded,
+      _ExcursionIncludedItemType.permitsFees => Icons.receipt_long_rounded,
       _ExcursionIncludedItemType.other => Icons.check_circle_rounded,
+    };
+  }
+
+  String get payloadKey {
+    return switch (this) {
+      _ExcursionIncludedItemType.transport =>
+        ExcursionIncludedItemKey.transport,
+      _ExcursionIncludedItemType.food => ExcursionIncludedItemKey.food,
+      _ExcursionIncludedItemType.tickets => ExcursionIncludedItemKey.tickets,
+      _ExcursionIncludedItemType.equipment =>
+        ExcursionIncludedItemKey.equipment,
+      _ExcursionIncludedItemType.accommodation =>
+        ExcursionIncludedItemKey.accommodation,
+      _ExcursionIncludedItemType.permitsFees =>
+        ExcursionIncludedItemKey.permitsFees,
+      _ExcursionIncludedItemType.other => 'other',
     };
   }
 
@@ -3096,8 +3138,10 @@ extension _ExcursionIncludedItemTypeUi on _ExcursionIncludedItemType {
         l10n.createExcursionIncludedTypeTickets,
       _ExcursionIncludedItemType.equipment =>
         l10n.createExcursionIncludedTypeEquipment,
-      _ExcursionIncludedItemType.guide => l10n.createExcursionIncludedTypeGuide,
-      _ExcursionIncludedItemType.photo => l10n.createExcursionIncludedTypePhoto,
+      _ExcursionIncludedItemType.accommodation =>
+        l10n.createExcursionIncludedTypeAccommodation,
+      _ExcursionIncludedItemType.permitsFees =>
+        l10n.createExcursionIncludedTypePermitsFees,
       _ExcursionIncludedItemType.other => l10n.createExcursionIncludedTypeOther,
     };
   }
@@ -3125,15 +3169,15 @@ extension _ExcursionIncludedItemTypeUi on _ExcursionIncludedItemType {
         'ru': 'Снаряжение',
         'kk': 'Жабдық',
       },
-      _ExcursionIncludedItemType.guide => const {
-        'en': 'Guide',
-        'ru': 'Гид',
-        'kk': 'Гид',
+      _ExcursionIncludedItemType.accommodation => const {
+        'en': 'Accommodation',
+        'ru': 'Проживание',
+        'kk': 'Тұру',
       },
-      _ExcursionIncludedItemType.photo => const {
-        'en': 'Photo',
-        'ru': 'Фото',
-        'kk': 'Фото',
+      _ExcursionIncludedItemType.permitsFees => const {
+        'en': 'Permits & fees',
+        'ru': 'Разрешения и сборы',
+        'kk': 'Рұқсаттар мен алымдар',
       },
       _ExcursionIncludedItemType.other => const {
         'en': 'Other',
@@ -3164,7 +3208,7 @@ class _ExcursionIncludedItemDraft {
 
   final _ExcursionIncludedItemType type;
 
-  String toPayload() => type.name;
+  String toPayload() => type.payloadKey;
 
   String localizedPayload(String languageCode) =>
       type.localizedLabel(languageCode);
@@ -3177,7 +3221,9 @@ _ExcursionIncludedItemType _excursionIncludedItemTypeFromName(String rawValue) {
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
   for (final type in _ExcursionIncludedItemType.values) {
-    if (type.name == normalized || type.name == normalizedWords) {
+    if (type.payloadKey == normalized ||
+        type.name.toLowerCase() == normalized ||
+        type.payloadKey.replaceAll('_', ' ') == normalizedWords) {
       return type;
     }
   }
@@ -3200,8 +3246,16 @@ _ExcursionIncludedItemType _excursionIncludedItemTypeFromName(String rawValue) {
     'gear' ||
     'снаряжение' ||
     'жабдық' => _ExcursionIncludedItemType.equipment,
-    'guide' || 'гид' => _ExcursionIncludedItemType.guide,
-    'photo' || 'photos' || 'фото' => _ExcursionIncludedItemType.photo,
+    'accommodation' ||
+    'lodging' ||
+    'stay' ||
+    'проживание' ||
+    'тұру' => _ExcursionIncludedItemType.accommodation,
+    'permits fees' ||
+    'permits & fees' ||
+    'permits and fees' ||
+    'разрешения и сборы' ||
+    'рұқсаттар мен алымдар' => _ExcursionIncludedItemType.permitsFees,
     _ => _ExcursionIncludedItemType.other,
   };
 }
@@ -3586,7 +3640,7 @@ class _ExcursionLanguageChip extends StatelessWidget {
     final foreground = disabled
         ? context.createExcursionColors.textMuted
         : selected
-        ? context.createExcursionColors.white
+        ? context.createExcursionColors.onPrimary
         : context.createExcursionColors.primary;
 
     return Material(
@@ -3605,7 +3659,7 @@ class _ExcursionLanguageChip extends StatelessWidget {
               if (selected) ...[
                 Icon(
                   Icons.check_rounded,
-                  color: context.createExcursionColors.white,
+                  color: context.createExcursionColors.onPrimary,
                   size: 15,
                 ),
                 const SizedBox(width: 5),
@@ -3801,6 +3855,7 @@ class _ExcursionIncludedItemsEditorSheetState
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 child: DecoratedBox(
+                  key: const ValueKey('excursion-included-items-sheet-surface'),
                   decoration: AppBoxDecoration(
                     color: context.createExcursionColors.surface,
                     borderRadius: AppRadius.sheetTop,
@@ -3861,12 +3916,13 @@ class _ExcursionIncludedItemsEditorSheetState
                       Padding(
                         padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16),
                         child: FilledButton(
+                          key: const ValueKey('excursion-included-items-save'),
                           onPressed: _submit,
                           style: FilledButton.styleFrom(
                             backgroundColor:
                                 context.createExcursionColors.primary,
                             foregroundColor:
-                                context.createExcursionColors.textPrimary,
+                                context.createExcursionColors.onPrimary,
                             minimumSize: const Size.fromHeight(50),
                             shape: RoundedRectangleBorder(
                               borderRadius: AppBorderRadius.circular(16),
@@ -4105,7 +4161,7 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                             backgroundColor:
                                 context.createExcursionColors.primary,
                             foregroundColor:
-                                context.createExcursionColors.textPrimary,
+                                context.createExcursionColors.onPrimary,
                             padding: const AppEdgeInsets.symmetric(
                               vertical: 15,
                             ),
@@ -4311,7 +4367,7 @@ class _ExcursionStepIndicator extends StatelessWidget {
                           '${step + 1}',
                           style: AppTextStyle(
                             color: isActive
-                                ? context.createExcursionColors.white
+                                ? context.createExcursionColors.onPrimary
                                 : context.createExcursionColors.orangeLight37,
                             fontSize: isActive ? 20 : 15,
                             fontWeight: FontWeight.w900,
@@ -4478,7 +4534,7 @@ class _CreationModeChip extends StatelessWidget {
               Icon(
                 selected ? Icons.check_circle_rounded : icon,
                 color: selected
-                    ? context.createExcursionColors.white
+                    ? context.createExcursionColors.onPrimary
                     : context.createExcursionColors.primary,
                 size: 18,
               ),
@@ -4490,7 +4546,7 @@ class _CreationModeChip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle(
                     color: selected
-                        ? context.createExcursionColors.white
+                        ? context.createExcursionColors.onPrimary
                         : context.createExcursionColors.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -4639,8 +4695,7 @@ class _LandmarkSelectionCard extends StatelessWidget {
                     onPressed: onSelectLocation,
                     style: FilledButton.styleFrom(
                       backgroundColor: context.createExcursionColors.primary,
-                      foregroundColor:
-                          context.createExcursionColors.textPrimary,
+                      foregroundColor: context.createExcursionColors.onPrimary,
                       disabledBackgroundColor: context
                           .createExcursionColors
                           .white
@@ -5617,7 +5672,7 @@ class _VisibilityCard extends StatelessWidget {
                 decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
-                      ? context.createExcursionColors.white.withValues(
+                      ? context.createExcursionColors.onPrimary.withValues(
                           alpha: 0.16,
                         )
                       : context.createExcursionColors.white.withValues(
@@ -5627,7 +5682,7 @@ class _VisibilityCard extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: selected
-                      ? context.createExcursionColors.white
+                      ? context.createExcursionColors.onPrimary
                       : context.createExcursionColors.primary,
                 ),
               ),
@@ -5640,7 +5695,7 @@ class _VisibilityCard extends StatelessWidget {
                       title,
                       style: AppTextStyle(
                         color: selected
-                            ? context.createExcursionColors.white
+                            ? context.createExcursionColors.onPrimary
                             : context.createExcursionColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -5651,9 +5706,8 @@ class _VisibilityCard extends StatelessWidget {
                       description,
                       style: AppTextStyle(
                         color: selected
-                            ? context.createExcursionColors.white.withValues(
-                                alpha: 0.82,
-                              )
+                            ? context.createExcursionColors.onPrimary
+                                  .withValues(alpha: 0.82)
                             : context.createExcursionColors.primary,
                         fontSize: 13,
                         height: 1.3,
@@ -5665,7 +5719,7 @@ class _VisibilityCard extends StatelessWidget {
               if (selected)
                 Icon(
                   Icons.check_circle_rounded,
-                  color: context.createExcursionColors.white,
+                  color: context.createExcursionColors.onPrimary,
                 ),
             ],
           ),
@@ -5703,24 +5757,15 @@ class _ExcursionBottomActionBar extends StatelessWidget {
         children: [
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
+            child: FilledButton(
               onPressed: isSubmitting ? null : onPressed,
-              icon: isSubmitting
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.createExcursionColors.textPrimary,
-                      ),
-                    )
-                  : Icon(Icons.arrow_forward_rounded),
-              label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
               style: FilledButton.styleFrom(
                 backgroundColor: context.createExcursionColors.primary,
-                foregroundColor: context.createExcursionColors.textPrimary,
+                foregroundColor: context.createExcursionColors.onPrimary,
                 disabledBackgroundColor: context.createExcursionColors.primary
                     .withValues(alpha: 0.55),
+                disabledForegroundColor: context.createExcursionColors.onPrimary
+                    .withValues(alpha: 0.72),
                 padding: const AppEdgeInsets.symmetric(
                   vertical: 17,
                   horizontal: 20,
@@ -5733,6 +5778,30 @@ class _ExcursionBottomActionBar extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
+              child: isSubmitting
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: context.createExcursionColors.onPrimary,
+                      ),
+                    )
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(Icons.arrow_forward_rounded),
+                        ],
+                      ),
+                    ),
             ),
           ),
           if (secondaryLabel != null && onSecondaryPressed != null) ...[
@@ -5940,8 +6009,6 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final systemBottomPadding = MediaQuery.viewPaddingOf(context).bottom;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         var maxHeight = _modalMaxHeightAboveKeyboard(context);
@@ -5962,12 +6029,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                 ),
               ),
               child: Padding(
-                padding: AppEdgeInsets.fromLTRB(
-                  18,
-                  18,
-                  18,
-                  34 + systemBottomPadding,
-                ),
+                padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 34),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -6077,7 +6139,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                             backgroundColor:
                                 context.createExcursionColors.primary,
                             foregroundColor:
-                                context.createExcursionColors.textPrimary,
+                                context.createExcursionColors.onPrimary,
                             padding: const AppEdgeInsets.symmetric(
                               vertical: 15,
                             ),

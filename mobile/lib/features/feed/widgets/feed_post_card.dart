@@ -293,7 +293,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
     return Opacity(
       opacity: isBlocked ? 0.54 : (isSeen ? 0.88 : 1),
       child: Material(
-        color: Colors.transparent,
+        color: context.appColors.transparent,
         borderRadius: AppBorderRadius.circular(8),
         child: InkWell(
           key: ValueKey('open-feed-post-${post.id}'),
@@ -474,10 +474,6 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                 ],
                               ),
                             ),
-                            if (isInteractive) ...[
-                              const SizedBox(width: 10),
-                              _OpenPostAffordance(style: style),
-                            ],
                           ],
                         ),
                         if (hasActions) ...[
@@ -545,31 +541,6 @@ class _FeedPostCardState extends State<FeedPostCard> {
   }
 }
 
-class _OpenPostAffordance extends StatelessWidget {
-  const _OpenPostAffordance({required this.style});
-
-  final FeedPostCardStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: AppBoxDecoration(
-        color: style.chipBackgroundColor,
-        borderRadius: AppBorderRadius.circular(999),
-        border: Border.all(color: style.chipBorderColor),
-      ),
-      child: SizedBox.square(
-        dimension: 34,
-        child: Icon(
-          Icons.arrow_forward_rounded,
-          color: style.actionForegroundColor,
-          size: 20,
-        ),
-      ),
-    );
-  }
-}
-
 class _PostActionButton extends StatelessWidget {
   const _PostActionButton({
     super.key,
@@ -615,7 +586,9 @@ class _PostActionButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: AppBorderRadius.circular(999),
             side: BorderSide(
-              color: isSelected ? Colors.transparent : style.chipBorderColor,
+              color: isSelected
+                  ? context.appColors.transparent
+                  : style.chipBorderColor,
             ),
           ),
         ),
@@ -667,7 +640,7 @@ class _PostFeedbackMenu extends StatelessWidget {
       tooltip: tooltip,
       position: PopupMenuPosition.under,
       color: style.menuBackgroundColor,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: context.appColors.transparent,
       icon: Icon(Icons.more_horiz_rounded, color: style.actionForegroundColor),
       onSelected: onSelected,
       itemBuilder: (context) => [

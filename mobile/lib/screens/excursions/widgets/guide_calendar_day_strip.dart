@@ -78,7 +78,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle(
                               color: selected
-                                  ? colors.textPrimary
+                                  ? colors.onPrimary
                                   : colors.textMuted,
                               fontSize: _guideCalendarWeekdayFontSize(context),
                               fontWeight: FontWeight.w800,
@@ -88,7 +88,9 @@ class GuideCalendarDayStrip extends StatelessWidget {
                           Text(
                             DateFormat.d(locale).format(day),
                             style: AppTextStyle(
-                              color: colors.textPrimary,
+                              color: selected
+                                  ? colors.onPrimary
+                                  : colors.textPrimary,
                               fontSize: _guideCalendarDayFontSize(context),
                               fontWeight: FontWeight.w900,
                             ),

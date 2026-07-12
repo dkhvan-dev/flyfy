@@ -661,29 +661,32 @@ class _LocationTopBar extends StatelessWidget {
           color: colors.surface.withValues(alpha: 0.96),
           border: Border(bottom: BorderSide(color: colors.borderPrimary)),
         ),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
-              color: colors.textPrimary,
-              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            ),
-            Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyle(
-                  color: colors.textPrimary,
-                  fontSize: _locationTopBarTitleFontSize(context),
-                  fontWeight: FontWeight.w900,
+        child: Padding(
+          padding: const AppEdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back_rounded),
+                color: colors.textPrimary,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              ),
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle(
+                    color: colors.textPrimary,
+                    fontSize: _locationTopBarTitleFontSize(context),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: _locationTopBarSideReserve(context)),
-          ],
+              SizedBox(width: _locationTopBarSideReserve(context)),
+            ],
+          ),
         ),
       ),
     );
@@ -1168,14 +1171,22 @@ class _PageCircle extends StatelessWidget {
             ? Text(
                 label ?? '',
                 style: AppTextStyle(
-                  color: enabled ? colors.textPrimary : colors.textDisabled,
+                  color: selected
+                      ? colors.onPrimary
+                      : enabled
+                      ? colors.textPrimary
+                      : colors.textDisabled,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               )
             : Icon(
                 icon,
-                color: enabled ? colors.textPrimary : colors.textDisabled,
+                color: selected
+                    ? colors.onPrimary
+                    : enabled
+                    ? colors.textPrimary
+                    : colors.textDisabled,
               ),
       ),
     );
@@ -1223,17 +1234,7 @@ class _LocationConfirmBar extends StatelessWidget {
     final colors = AppDesignSystem.colorsFor(context);
 
     return DecoratedBox(
-      decoration: AppBoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            colors.transparent,
-            colors.background.withValues(alpha: 0.92),
-            colors.background,
-          ],
-        ),
-      ),
+      decoration: AppBoxDecoration(color: colors.background),
       child: Padding(
         padding: AppEdgeInsets.fromLTRB(24, 18, 24, 24 + bottomInset),
         child: SizedBox(
@@ -1248,11 +1249,11 @@ class _LocationConfirmBar extends StatelessWidget {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
               disabledBackgroundColor: colors.primary.withValues(alpha: 0.36),
-              disabledForegroundColor: colors.textSecondary.withValues(
-                alpha: 0.58,
-              ),
+              disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.58),
+              elevation: 0,
+              shadowColor: colors.transparent,
               padding: const AppEdgeInsets.symmetric(
                 vertical: 19,
                 horizontal: 22,

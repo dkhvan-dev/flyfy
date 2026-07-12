@@ -126,6 +126,15 @@ message TrustProfile {
 
 message GetTrustProfileResponse {
   TrustProfile profile = 1;
+  repeated ActiveRestriction active_restrictions = 2;
+}
+
+message ActiveRestriction {
+  string restriction_id = 1;
+  string restriction_code = 2;
+  string reason_code = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  google.protobuf.Timestamp created_at = 5;
 }
 
 message RestrictionAppeal {

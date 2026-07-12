@@ -92,118 +92,75 @@ void main() {
   });
 
   test(
-    'profile settings opens app language sheet below edit profile action',
+    'profile settings reuses public app preferences below edit profile action',
     () async {
       final source = await File(
         'lib/screens/profile/profile_settings_screen.dart',
       ).readAsString();
+      final preferencesSource = await File(
+        'lib/features/settings/widgets/app_preferences_section.dart',
+      ).readAsString();
 
       expect(
         source,
-        contains("import '../../core/ui/app_language_sheet.dart';"),
+        contains(
+          "import '../../features/settings/widgets/app_preferences_section.dart';",
+        ),
       );
-      expect(source, contains('Future<void> _openAppLanguageSettings()'));
-      expect(source, contains('showAppLanguageSheet(context)'));
 
       final editAction = source.indexOf('title: l10n.editProfileButton');
-      final languageIcon = source.indexOf(
-        'icon: Icons.language_rounded',
+      final preferences = source.indexOf(
+        'const AppPreferencesSection()',
         editAction,
       );
-      final languageAction = source.indexOf('title: l10n.appLanguageTitle');
       final notificationsAction = source.indexOf(
         'title: l10n.profileNotificationsRowTitle',
       );
 
       expect(editAction, isNonNegative);
-      expect(languageIcon, greaterThan(editAction));
-      expect(languageAction, greaterThan(editAction));
-      expect(languageAction, greaterThan(languageIcon));
-      expect(notificationsAction, greaterThan(languageAction));
-
-      final languageTileSource = source.substring(
-        languageIcon,
-        notificationsAction,
-      );
-      expect(languageTileSource, contains('Icons.language_rounded'));
-      expect(languageTileSource, contains('l10n.profileLocale'));
-      expect(languageTileSource, contains('onTap: _openAppLanguageSettings'));
+      expect(preferences, greaterThan(editAction));
+      expect(notificationsAction, greaterThan(preferences));
+      expect(preferencesSource, contains('showAppLanguageSheet(context)'));
+      expect(preferencesSource, contains("'app-language-preference'"));
     },
   );
 
   test(
-    'profile settings opens app theme sheet below app language action',
+    'shared app preferences use a direct three-mode theme control',
     () async {
       final source = await File(
-        'lib/screens/profile/profile_settings_screen.dart',
+        'lib/features/settings/widgets/app_preferences_section.dart',
       ).readAsString();
 
-      expect(
-        source,
-        contains("import '../../providers/theme_mode_provider.dart';"),
-      );
-      expect(source, contains('Future<void> _openAppThemeSettings()'));
-      expect(source, contains('context.read<ThemeModeProvider>()'));
       expect(source, contains('AppThemeModePreference.values'));
-      expect(source, contains('RadioListTile<AppThemeModePreference>'));
-
-      final languageAction = source.indexOf('title: l10n.appLanguageTitle');
-      final themeIcon = source.indexOf(
-        'icon: Icons.contrast_rounded',
-        languageAction,
-      );
-      final themeAction = source.indexOf(
-        'title: l10n.appThemeTitle',
-        themeIcon,
-      );
-      final notificationsAction = source.indexOf(
-        'title: l10n.profileNotificationsRowTitle',
-      );
-
-      expect(languageAction, isNonNegative);
-      expect(themeIcon, greaterThan(languageAction));
-      expect(themeAction, greaterThan(languageAction));
-      expect(themeAction, greaterThan(themeIcon));
-      expect(notificationsAction, greaterThan(themeAction));
-
-      final themeTileSource = source.substring(themeIcon, notificationsAction);
-      expect(themeTileSource, contains('Icons.contrast_rounded'));
-      expect(themeTileSource, contains('_themeModeLabel(l10n'));
-      expect(themeTileSource, contains('onTap: _openAppThemeSettings'));
+      expect(source, contains('SegmentedButton<AppThemeModePreference>'));
+      expect(source, contains('expandedInsets: AppEdgeInsets.zero'));
+      expect(source, contains('showSelectedIcon: false'));
+      expect(source, contains("'app-theme-mode-\${mode.name}'"));
+      expect(source, contains('setThemeMode(mode)'));
+      expect(source, isNot(contains('RadioListTile')));
     },
   );
 
   test(
-    'profile settings theme sheet starts tall enough for Android navigation',
+    'shared preference controls remain adaptive and navigation-safe',
     () async {
       final source = await File(
-        'lib/screens/profile/profile_settings_screen.dart',
+        'lib/features/settings/presentation/app_settings_screen.dart',
       ).readAsString();
-      final modalSource = await File(
-        'lib/core/ui/app_modal_templates.dart',
+      final preferencesSource = await File(
+        'lib/features/settings/widgets/app_preferences_section.dart',
       ).readAsString();
-      final methodStart = source.indexOf(
-        'Future<void> _openAppThemeSettings()',
-      );
-      final labelStart = source.indexOf('String _themeModeLabel', methodStart);
 
-      expect(methodStart, isNonNegative);
-      expect(labelStart, greaterThan(methodStart));
-
-      final methodSource = source.substring(methodStart, labelStart);
-
-      expect(methodSource, contains('initialChildSize: 0.64'));
-      expect(methodSource, contains('minChildSize: 0.52'));
-      expect(methodSource, contains('maxChildSize: 0.88'));
+      expect(source, contains('SafeArea('));
+      expect(source, contains('LayoutBuilder('));
+      expect(source, contains('constraints.maxWidth < 430'));
+      expect(source, contains('textScale > 1.1'));
+      expect(source, contains('ConstrainedBox('));
+      expect(preferencesSource, contains('ConstrainedBox('));
       expect(
-        modalSource,
-        contains('final effectiveBottomInset = keyboardInset > 0'),
-      );
-      expect(modalSource, contains('? keyboardInset'));
-      expect(modalSource, contains(': systemBottomPadding'));
-      expect(
-        modalSource,
-        contains('padding: AppEdgeInsets.only(bottom: effectiveBottomInset)'),
+        preferencesSource,
+        contains('minimumSize: WidgetStateProperty.all'),
       );
     },
   );

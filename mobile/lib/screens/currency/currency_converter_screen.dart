@@ -720,7 +720,7 @@ class _SwapFloatingButton extends StatelessWidget {
             height: 58,
             child: Icon(
               Icons.swap_vert_rounded,
-              color: colors.textPrimary,
+              color: colors.onPrimary,
               size: 30,
             ),
           ),

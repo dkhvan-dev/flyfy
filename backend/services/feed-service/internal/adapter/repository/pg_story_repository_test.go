@@ -29,6 +29,63 @@ func readRepositorySources(t *testing.T, paths ...string) string {
 	return builder.String()
 }
 
+func TestPostPublishCooldownSchemaAndRepositoryAreAtomic(t *testing.T) {
+	baselineBytes, err := os.ReadFile("../../../migrations/001_init.up.sql")
+	if err != nil {
+		t.Fatalf("read baseline migration: %v", err)
+	}
+	indexBytes, err := os.ReadFile("../../../migrations/003_post_publish_rate_limit_index.up.sql")
+	if err != nil {
+		t.Fatalf("read publish rate index migration: %v", err)
+	}
+	cooldownBytes, err := os.ReadFile("../../../migrations/004_post_publish_cooldowns.up.sql")
+	if err != nil {
+		t.Fatalf("read publish cooldown migration: %v", err)
+	}
+	repositoryBytes, err := os.ReadFile("pg_post_repository.go")
+	if err != nil {
+		t.Fatalf("read post repository: %v", err)
+	}
+
+	baseline := string(baselineBytes)
+	indexMigration := string(indexBytes)
+	cooldownMigration := string(cooldownBytes)
+	repository := string(repositoryBytes)
+	for _, needle := range []string{
+		"CREATE TABLE IF NOT EXISTS post_publish_cooldowns",
+		"author_user_id uuid PRIMARY KEY",
+		"next_available_at timestamp with time zone NOT NULL",
+		"idx_posts_author_published_rate_limit",
+	} {
+		if !strings.Contains(baseline, needle) {
+			t.Fatalf("baseline migration must contain %q", needle)
+		}
+	}
+	if !strings.Contains(indexMigration, "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_posts_author_published_rate_limit") {
+		t.Fatal("publish rate index must be created concurrently")
+	}
+	for _, needle := range []string{
+		"published_at + INTERVAL '5 minutes'",
+		"published_at > NOW() - INTERVAL '5 minutes'",
+		"ON CONFLICT (author_user_id) DO NOTHING",
+	} {
+		if !strings.Contains(cooldownMigration, needle) {
+			t.Fatalf("cooldown migration must contain %q", needle)
+		}
+	}
+	for _, needle := range []string{
+		"reservePostPublishCooldownTx(ctx, tx",
+		"ON CONFLICT (author_user_id) DO NOTHING",
+		"UPDATE post_publish_cooldowns",
+		"AND next_available_at <= clock_timestamp()",
+		"return &port.PostPublishCooldownError",
+	} {
+		if !strings.Contains(repository, needle) {
+			t.Fatalf("repository must contain %q", needle)
+		}
+	}
+}
+
 func TestPostListOrderBySupportsSortDirections(t *testing.T) {
 	tests := map[string]string{
 		"latest":         "COALESCE(published_at, created_at) DESC, id DESC",
@@ -901,6 +958,41 @@ func TestFeedUserInterestsMigrationCreatesViewerInterestReadModel(t *testing.T) 
 	}
 }
 
+func TestCommunityAffinityMigrationCreatesViewerScopedVisitAggregate(t *testing.T) {
+	up, err := os.ReadFile("../../../migrations/005_post_feed_community_affinities.up.sql")
+	if err != nil {
+		t.Fatalf("read community affinity migration: %v", err)
+	}
+	migration := string(up)
+	for _, needle := range []string{
+		"CREATE TABLE IF NOT EXISTS post_feed_user_community_affinities",
+		"PRIMARY KEY (viewer_user_id, community_id)",
+		"meaningful_visit_count integer DEFAULT 0 NOT NULL",
+		"distinct_visit_day_count integer DEFAULT 0 NOT NULL",
+		"first_visit_at timestamp with time zone NOT NULL",
+		"last_visit_at timestamp with time zone NOT NULL",
+		"last_visit_day date NOT NULL",
+		"FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
+		"idx_post_feed_user_community_affinities_recent",
+		"DROP CONSTRAINT IF EXISTS post_feed_events_block_type_check",
+		"'community_card'::text",
+		"'attraction_card'::text",
+		"VALIDATE CONSTRAINT post_feed_events_block_type_check",
+	} {
+		if !strings.Contains(migration, needle) {
+			t.Fatalf("community affinity migration must contain %q", needle)
+		}
+	}
+
+	down, err := os.ReadFile("../../../migrations/005_post_feed_community_affinities.down.sql")
+	if err != nil {
+		t.Fatalf("read community affinity rollback migration: %v", err)
+	}
+	if !strings.Contains(string(down), "DROP TABLE IF EXISTS post_feed_user_community_affinities") {
+		t.Fatalf("community affinity rollback must drop aggregate table")
+	}
+}
+
 func TestFeedSocialEdgesMigrationCreatesViewerScopedReadModel(t *testing.T) {
 	up, err := os.ReadFile("../../../migrations/001_init.up.sql")
 	if err != nil {
@@ -1011,6 +1103,31 @@ func TestRepositoryCreateFeedEventsProjectsInterestSignalsOnlyForInsertedEvents(
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("CreateFeedEvents interest projection source must contain %q", needle)
+		}
+	}
+}
+
+func TestRepositoryCreateFeedEventsAggregatesOnlyMeaningfulCommunityVisits(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"community_visit_signal AS",
+		"metadata->>'source' = 'community_profile_visit'",
+		"metadata->>'entityType' = 'community'",
+		"(metadata->>'dwellMs')::bigint >= $17::bigint",
+		"INSERT INTO post_feed_user_community_affinities",
+		"meaningful_visit_count",
+		"distinct_visit_day_count",
+		"post_feed_user_community_affinities.first_visit_at + make_interval(secs => $19::int)",
+		"post_feed_user_community_affinities.last_visit_at + make_interval(secs => $18::int)",
+		"FROM upserted_community_affinity accepted_community_visit",
+		"WHEN event_type = 'click' AND metadata->>'entityType' = 'community' THEN 0.0000",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("CreateFeedEvents meaningful community visit projection must contain %q", needle)
 		}
 	}
 }
@@ -1308,6 +1425,23 @@ func TestRepositoryListFeedPostsUsesReadModelJoin(t *testing.T) {
 	}
 }
 
+func TestRepositoryListFeedPostsCanDisablePersonalizedRanking(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"if !filter.DisablePersonalizedRanking",
+		"rankingViewerUserIDPos = 0",
+		"policy.viewerRankedAtExpression(rankingViewerUserIDPos",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("non-personalized feed ranking source must contain %q", needle)
+		}
+	}
+}
+
 func TestRepositoryListFeedPostsMatchesFollowingByCommunityInstance(t *testing.T) {
 	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
 	if err != nil {
@@ -1319,7 +1453,6 @@ func TestRepositoryListFeedPostsMatchesFollowingByCommunityInstance(t *testing.T
 		`effectiveCommunityIDExpression := "COALESCE(fi.community_id, s.community_id, ci.community_id)"`,
 		"m.community_id = %s",
 		"%s AS community_id",
-		"PARTITION BY %s ORDER BY %s DESC",
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("ListFeedPosts following source must contain %q", needle)
@@ -1327,7 +1460,7 @@ func TestRepositoryListFeedPostsMatchesFollowingByCommunityInstance(t *testing.T
 	}
 }
 
-func TestRepositoryListFeedPostsAppliesPageLevelDiversityBeforeLimit(t *testing.T) {
+func TestRepositoryListFeedPostsLeavesDiversityToCursorAwareMixer(t *testing.T) {
 	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
 	if err != nil {
 		t.Fatalf("read feed repository source: %v", err)
@@ -1335,24 +1468,40 @@ func TestRepositoryListFeedPostsAppliesPageLevelDiversityBeforeLimit(t *testing.
 	source := string(sourceBytes)
 	for _, needle := range []string{
 		"WITH ranked_feed_candidates AS",
-		"ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC",
-		"effectiveCommunityIDExpression, feedRankedAtExpression",
-		"ROW_NUMBER() OVER (PARTITION BY s.category",
-		"ROW_NUMBER() OVER (PARTITION BY s.author_user_id",
-		"ROW_NUMBER() OVER (PARTITION BY s.post_profile_key",
-		"community_row_number <= %d",
-		"category_row_number <= %d",
-		"author_row_number <= %d",
-		"profile_row_number <= %d",
-		"policy.MaxPostsPerCommunityPerPage",
-		"policy.MaxPostsPerCategoryPerPage",
-		"policy.MaxPostsPerAuthorPerPage",
-		"policy.MaxPostsPerProfilePerPage",
 		"FROM ranked_feed_candidates",
 		"ORDER BY feed_ranked_at DESC, id DESC",
+		"LIMIT $%d OFFSET $%d",
 	} {
 		if !strings.Contains(source, needle) {
-			t.Fatalf("ListFeedPosts diversity source must contain %q", needle)
+			t.Fatalf("ListFeedPosts cursor source must contain %q", needle)
+		}
+	}
+	for _, forbidden := range []string{
+		"ROW_NUMBER() OVER (PARTITION BY",
+		"community_row_number <=",
+		"category_row_number <=",
+		"author_row_number <=",
+		"profile_row_number <=",
+	} {
+		if strings.Contains(source, forbidden) {
+			t.Fatalf("ListFeedPosts must not pre-filter candidates with %q", forbidden)
+		}
+	}
+}
+
+func TestRepositoryListFeedPostsExcludesViewerOwnedForYouCandidatesBeforePagination(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		`candidateSource := strings.TrimSpace(filter.CandidateSource)`,
+		`candidateSource != model.PostCandidateSourceFollowing`,
+		`s.author_user_id <> $%d`,
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("ListFeedPosts viewer-owned filter must contain %q", needle)
 		}
 	}
 }
@@ -1424,7 +1573,8 @@ func TestRepositoryListFeedPostsAppliesBoundedViewerInterestRanking(t *testing.T
 		"post_interest.entity_id = fi.post_id::text",
 		"LEFT JOIN post_feed_user_interests community_interest",
 		"community_interest.entity_type = 'community'",
-		"community_interest.entity_id = fi.community_id::text",
+		"community_interest.entity_id = COALESCE(fi.community_id, s.community_id, ci.community_id)::text",
+		"LEFT JOIN post_feed_user_community_affinities frequent_community_affinity",
 		"LEFT JOIN post_feed_user_interests profile_interest",
 		"profile_interest.entity_type = 'post_profile'",
 		"profile_interest.entity_id = lower(s.post_profile_key)",
@@ -1432,7 +1582,8 @@ func TestRepositoryListFeedPostsAppliesBoundedViewerInterestRanking(t *testing.T
 		"author_interest.entity_type = 'author'",
 		"author_interest.entity_id = s.author_user_id::text",
 		`p.interestScoreExpression("post_interest")`,
-		`p.interestScoreExpression("community_interest")`,
+		`p.communityInterestScoreExpression("community_interest")`,
+		"p.frequentCommunityAffinityScoreExpression()",
 		`p.interestScoreExpression("profile_interest")`,
 		`p.interestScoreExpression("author_interest")`,
 		`p.interestScoreExpression("city_interest")`,
@@ -1460,7 +1611,6 @@ func TestRepositoryListFeedPostsKeepsPersonalizedCursorOnRankExpression(t *testi
 		"feedRankJoins",
 		"feedRankedAtExpression",
 		"FeedCursorPublishedAt",
-		"ORDER BY %s DESC, fi.post_id DESC",
 		"%s < $%d",
 		"(%s = $%d AND fi.post_id < $%d)",
 		"feed_ranked_at",
@@ -1537,12 +1687,19 @@ func TestRepositoryListFeedPostsAppliesExplicitCandidateSourceFilters(t *testing
 		"case model.PostCandidateSourceInterest",
 		"FROM post_feed_user_interests source_interest",
 		"source_interest.score > 0",
+		"source_interest.score >= %s",
 		"source_interest.entity_type = 'post_profile'",
 		"source_interest.entity_type = 'tag'",
+		"FROM post_feed_user_community_affinities frequent_source_community",
+		"frequent_source_community.meaningful_visit_count >= %d",
+		"frequent_source_community.distinct_visit_day_count >= %d",
 		"case model.PostCandidateSourceColdStart",
 		"FROM post_feed_user_interests cold_start_source_interest",
 		"NOT EXISTS",
 		"cold_start_source_interest.score > 0",
+		"filter.ColdStartRandomSeed > 0",
+		"hashtextextended(fi.post_id::text",
+		"coldStartRandomRankWindowSeconds",
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("ListFeedPosts candidate source filter must contain %q", needle)

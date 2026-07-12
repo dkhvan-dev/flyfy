@@ -1,6 +1,9 @@
 package app
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 var (
 	ErrPostNotFound                 = errors.New("post not found")
@@ -44,7 +47,7 @@ var (
 	ErrPostValidationFailed         = errors.New("post validation failed")
 	ErrPostRevisionConflict         = errors.New("post revision conflict")
 	ErrInvalidCommentBody           = errors.New("comment body is required and must be 800 characters or fewer")
-	ErrPostRateLimited              = errors.New("you can create only 10 posts per hour")
+	ErrPostRateLimited              = errors.New("post publishing rate limit exceeded")
 	ErrPostCommentRateLimited       = errors.New("you can leave only one comment every 3 hours")
 	ErrUnauthenticatedWriter        = errors.New("missing authenticated subject")
 	ErrCannotLikeOwnPost            = errors.New("you cannot like your own post")
@@ -56,6 +59,19 @@ var (
 	ErrPostReportAlreadyResolved    = errors.New("post report already resolved")
 	ErrUserNotFound                 = errors.New("user not found")
 )
+
+type PostRateLimitError struct {
+	RetryAfter      time.Duration
+	NextAvailableAt time.Time
+}
+
+func (e *PostRateLimitError) Error() string {
+	return ErrPostRateLimited.Error()
+}
+
+func (e *PostRateLimitError) Unwrap() error {
+	return ErrPostRateLimited
+}
 
 type PostValidationError struct {
 	Fields map[string]string

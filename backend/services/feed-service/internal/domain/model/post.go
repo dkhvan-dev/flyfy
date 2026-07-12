@@ -99,49 +99,57 @@ func (s *Post) IsOwnedBy(userID uuid.UUID) bool {
 }
 
 type PostListFilter struct {
-	Search                    string
-	Formats                   []enum.PostFormat
-	Categories                []enum.PostCategory
-	AuthorUserID              *uuid.UUID
-	ViewerUserID              *uuid.UUID
-	CurrentCountryCode        string
-	CurrentCityID             string
-	IncludeDrafts             bool
-	IncludeDeleted            bool
-	OnlyPublished             bool
-	Status                    *enum.PostStatus
-	ModerationStatuses        []enum.ModerationStatus
-	ArchivedOnly              bool
-	ExcludeArchived           bool
-	PlaceQuery                string
-	PlaceCountryCode          string
-	PlaceCityID               string
-	Sort                      string
-	Limit                     int
-	Offset                    int
-	ExcludePostID             *uuid.UUID
-	RelatedToAuthor           *uuid.UUID
-	RelatedToFormat           *enum.PostFormat
-	RelatedToCategory         *enum.PostCategory
-	RelatedToCountry          string
-	RelatedToCityID           string
-	RelatedToTags             []string
-	CommunityIDs              []uuid.UUID
-	OnlyCommunityPosts        bool
-	CandidateSource           string
-	FollowedByUserID          *uuid.UUID
-	ExcludeFollowedByUserID   *uuid.UUID
-	FeedCursorPublishedAt     *time.Time
-	FeedCursorPostID          *uuid.UUID
-	OnlyExpiring              bool
-	ExcludeExpiring           bool
-	FeedRankingPolicyOverride *FeedRankingPolicyOverride
+	Search                     string
+	Formats                    []enum.PostFormat
+	Categories                 []enum.PostCategory
+	AuthorUserID               *uuid.UUID
+	ViewerUserID               *uuid.UUID
+	CurrentCountryCode         string
+	CurrentCityID              string
+	IncludeDrafts              bool
+	IncludeDeleted             bool
+	OnlyPublished              bool
+	Status                     *enum.PostStatus
+	ModerationStatuses         []enum.ModerationStatus
+	ArchivedOnly               bool
+	ExcludeArchived            bool
+	PlaceQuery                 string
+	PlaceCountryCode           string
+	PlaceCityID                string
+	Sort                       string
+	Limit                      int
+	Offset                     int
+	ExcludePostID              *uuid.UUID
+	RelatedToAuthor            *uuid.UUID
+	RelatedToFormat            *enum.PostFormat
+	RelatedToCategory          *enum.PostCategory
+	RelatedToCountry           string
+	RelatedToCityID            string
+	RelatedToTags              []string
+	CommunityIDs               []uuid.UUID
+	OnlyCommunityPosts         bool
+	CandidateSource            string
+	ColdStartRandomSeed        int64
+	FollowedByUserID           *uuid.UUID
+	ExcludeFollowedByUserID    *uuid.UUID
+	FeedCursorPublishedAt      *time.Time
+	FeedCursorPostID           *uuid.UUID
+	OnlyExpiring               bool
+	ExcludeExpiring            bool
+	DisablePersonalizedRanking bool
+	FeedRankingPolicyOverride  *FeedRankingPolicyOverride
 }
 
 type FeedRankingPolicyOverride struct {
 	ExperimentKey                     string
 	PostInterestWeight                *float64
 	CommunityInterestWeight           *float64
+	CommunityInterestMinScore         *float64
+	FrequentCommunityMinVisits        *int
+	FrequentCommunityMinVisitDays     *int
+	FrequentCommunityFreshnessWindow  *time.Duration
+	FrequentCommunityHalfLife         *time.Duration
+	FrequentCommunityBoostHours       *int
 	PostProfileAffinityWeight         *float64
 	CityAffinityWeight                *float64
 	CountryAffinityWeight             *float64

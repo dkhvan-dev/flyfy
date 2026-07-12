@@ -33,6 +33,34 @@ void main() {
     expect(label, 'Алматы, Казахстан');
   });
 
+  test('resolveCity localizes only city without loading country', () async {
+    var countryLookups = 0;
+    final resolver = AppLocationLabelResolver(
+      countryLookup: (_, {required lang}) async {
+        countryLookups += 1;
+        return const ReferenceCountry(code: 'KZ', name: 'Казахстан');
+      },
+      cityLookup: (id, {required lang}) async {
+        expect(id, 'almaty');
+        expect(lang, 'en');
+        return const ReferenceCity(
+          id: 'almaty',
+          countryCode: 'KZ',
+          name: 'Almaty',
+        );
+      },
+    );
+
+    final label = await resolver.resolveCity(
+      countryCode: 'KZ',
+      cityId: 'almaty',
+      localeName: 'en',
+    );
+
+    expect(label, 'Almaty');
+    expect(countryLookups, 0);
+  });
+
   test('does not fall back to country code as a display label', () async {
     final resolver = AppLocationLabelResolver(
       countryLookup: (_, {required lang}) async => null,
@@ -48,7 +76,8 @@ void main() {
       localeName: 'ru',
     );
 
-    expect(label, 'Almaty');
+    expect(label, 'Almaty, Казахстан');
+    expect(label, isNot(contains('KZ')));
   });
 
   test('localizes legacy city name when city id is missing', () async {

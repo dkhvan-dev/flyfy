@@ -817,21 +817,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
-  String get drawerStatusVerifiedGuide => 'Подтвержденный гид';
-
-  @override
-  String get drawerStatusGuide => 'Гид';
-
-  @override
-  String get drawerStatusGuideRevoked => 'Статус гида отозван';
-
-  @override
-  String get drawerStatusTraveler => 'Путешественник';
-
-  @override
-  String get drawerStatusCompleteProfile => 'Заполните профиль';
-
-  @override
   String get profileNotAvailable => 'Профиль недоступен';
 
   @override
@@ -2593,9 +2578,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get servicesSectionTitle => 'Сервисы';
 
   @override
-  String get servicesAllButton => 'Смотреть все';
-
-  @override
   String get homeExcursionsTitle => 'Экскурсии';
 
   @override
@@ -2749,7 +2731,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeTopDestinations => 'Топ направления';
 
   @override
-  String get homeSeeAll => 'Смотреть все';
+  String get homeSeeAll => 'Всё';
+
+  @override
+  String get homeShowAllCard => 'Показать все';
 
   @override
   String get homeTopStories => 'Сейчас обсуждают';
@@ -2786,6 +2771,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeServiceCurrencyConverter => 'Курсы валют';
+
+  @override
+  String get homeServiceAllServices => 'Все сервисы';
 
   @override
   String get homeServiceStays => 'Жилье';
@@ -3523,6 +3511,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get feedEmptyMessage =>
       'Подпишитесь на путешественников и сообщества, чтобы собрать свою ленту.';
+
+  @override
+  String get feedFollowingEmptyTitle => 'Подписок пока нет';
+
+  @override
+  String get feedFollowingEmptyMessage =>
+      'Подпишитесь на путешественников или сообщества, и их публикации появятся здесь.';
 
   @override
   String get feedLoadFailedTitle => 'Не удалось загрузить ленту';
@@ -5120,6 +5115,34 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionTranslationSourceLanguageKazakh => 'казахского';
 
   @override
+  String activityDetailsTranslatedNotice(Object sourceLanguage) {
+    return 'Детали активности переведены автоматически с $sourceLanguage';
+  }
+
+  @override
+  String get activityDetailsShowOriginal => 'Показать оригинал';
+
+  @override
+  String get activityDetailsShowTranslation => 'Показать перевод';
+
+  @override
+  String get activityDetailsTranslationPendingNotice =>
+      'Показываем оригинал активности · Перевод готовится';
+
+  @override
+  String get activityDetailsTranslationUnavailableNotice =>
+      'Показываем оригинал активности · Автоперевод временно недоступен';
+
+  @override
+  String get activityTranslationSourceLanguageEnglish => 'английского';
+
+  @override
+  String get activityTranslationSourceLanguageRussian => 'русского';
+
+  @override
+  String get activityTranslationSourceLanguageKazakh => 'казахского';
+
+  @override
   String get excursionLanguageEnglish => 'Английский';
 
   @override
@@ -5819,10 +5842,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createExcursionIncludedTypeEquipment => 'Снаряжение';
 
   @override
-  String get createExcursionIncludedTypeGuide => 'Гид';
+  String get createExcursionIncludedTypeAccommodation => 'Проживание';
 
   @override
-  String get createExcursionIncludedTypePhoto => 'Фото';
+  String get createExcursionIncludedTypePermitsFees => 'Разрешения и сборы';
 
   @override
   String get createExcursionIncludedTypeOther => 'Другое';
@@ -8417,8 +8440,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get postCreateRateLimitTitle => 'Лимит постов';
 
   @override
-  String postCreateRateLimitMessage(int minutes) {
-    return 'Вы уже создали максимум постов за последний час. Новый пост можно будет создать примерно через $minutes мин.';
+  String postCreateRateLimitMessage(String time) {
+    return 'Следующий пост можно будет опубликовать через $time.';
   }
 
   @override
@@ -9722,4 +9745,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get contextualHelpTryAgain => 'Повторить';
+
+  @override
+  String get trustRestrictionTitle => 'Доступ ограничен';
+
+  @override
+  String get trustCreationRestrictionMessage =>
+      'Создание ограничено администратором. Обратитесь в поддержку, если считаете это ошибкой.';
+
+  @override
+  String get trustFeatureRestrictionMessage =>
+      'Доступ к этой функции ограничен администратором. Обратитесь в поддержку, если считаете это ошибкой.';
+
+  @override
+  String get trustRestrictionSupportAction => 'Обратиться в поддержку';
 }

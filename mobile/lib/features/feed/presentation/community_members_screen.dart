@@ -491,7 +491,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
             onPressed: () => _loadMembers(),
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: colors.textPrimary,
+              foregroundColor: colors.onPrimary,
             ),
             child: Text(l10n.feedRetryAction),
           ),
