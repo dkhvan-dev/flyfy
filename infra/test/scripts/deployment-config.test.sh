@@ -47,4 +47,13 @@ do
   }
 done
 
+grep -Fq 'go-version-file: proto/go.mod' "${workflow_file}" || {
+  echo "deploy workflow must resolve Go from the tracked proto/go.mod file" >&2
+  exit 1
+}
+if grep -Fq 'go-version-file: go.work' "${workflow_file}"; then
+  echo "deploy workflow must not depend on the gitignored local go.work file" >&2
+  exit 1
+fi
+
 echo "deployment config contract test passed"

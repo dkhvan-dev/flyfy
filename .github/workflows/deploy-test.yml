@@ -159,7 +159,7 @@ jobs:
         if: ${{ steps.detect.outputs.services != '[]' && (github.event_name == 'push' || inputs.run_tests || inputs.deploy) }}
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.work
+          go-version-file: proto/go.mod
           cache-dependency-path: |
             proto/go.sum
             backend/pkg/**/go.sum
