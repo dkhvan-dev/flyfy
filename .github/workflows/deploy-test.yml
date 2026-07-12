@@ -241,10 +241,30 @@ jobs:
           bash infra/test/scripts/deploy.test.sh
           bash infra/test/scripts/migrate-postgres.test.sh
           bash infra/test/scripts/smoke-check.test.sh
-          docker compose \
-            --env-file infra/test/env/.env.test.example \
-            -f infra/test/docker-compose.test.yml \
-            config --quiet
+          compose_validation_env=(
+            ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            API_GATEWAY_TOKEN_SERVICE_SECRET=compose-validation
+            ATTENDANCE_QR_SIGNING_SECRET=compose-validation
+            AUTH_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            EXCURSION_ATTENDANCE_QR_SIGNING_SECRET=compose-validation
+            EXCURSION_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            FEED_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            GUIDE_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            INTERNAL_SERVICE_TOKEN=compose-validation
+            MINIO_ROOT_PASSWORD=compose-validation
+            MTLS_MODE=disabled
+            MTLS_SECRETS_DIR=/opt/inflap/secrets/mtls
+            NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64=compose-validation
+            NOTIFICATION_TOKEN_HASH_KEY_BASE64=compose-validation
+            PLACE_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            POSTGRES_PASSWORD=compose-validation
+            SUPPORT_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+            USER_SERVICE_TOKEN_SERVICE_SECRET=compose-validation
+          )
+          env "${compose_validation_env[@]}" \
+            docker compose \
+              -f infra/test/docker-compose.test.yml \
+              config --quiet
 
       - name: Validate required secrets
         shell: bash

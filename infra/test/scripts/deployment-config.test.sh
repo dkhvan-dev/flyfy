@@ -55,10 +55,24 @@ if grep -Fq 'go-version-file: go.work' "${workflow_file}"; then
   echo "deploy workflow must not depend on the gitignored local go.work file" >&2
   exit 1
 fi
-grep -Fq -- '--env-file infra/test/env/.env.test.example' "${workflow_file}" || {
-  echo "deploy workflow must render Compose with the tracked test env template" >&2
+grep -Fq 'compose_validation_env=(' "${workflow_file}" || {
+  echo "deploy workflow must define an inline Compose validation environment" >&2
   exit 1
 }
+while IFS= read -r required_name; do
+  grep -Fq "${required_name}=compose-validation" "${workflow_file}" || {
+    echo "deploy workflow Compose validation is missing ${required_name}" >&2
+    exit 1
+  }
+done < <(
+  grep -oE '\$\{[A-Z0-9_]+:\?[^}]+\}' "${compose_file}" \
+    | sed -E 's/^\$\{([A-Z0-9_]+):.*/\1/' \
+    | sort -u
+)
+if grep -Fq 'infra/test/env/.env.test.example' "${workflow_file}"; then
+  echo "deploy workflow must not depend on the gitignored local test env file" >&2
+  exit 1
+fi
 if grep -Fq -- '--no-interpolate' "${workflow_file}"; then
   echo "deploy workflow must not validate short volume syntax with unresolved interpolation" >&2
   exit 1
