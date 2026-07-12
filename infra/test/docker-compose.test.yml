@@ -289,8 +289,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/token-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/token-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/token-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/search-service,spiffe://inflap/test/support-service,spiffe://inflap/test/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/search-service,spiffe://inflap/test/support-service,spiffe://inflap/test/translation-service,spiffe://inflap/test/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,translation-service,user-service}
       PG_DBNAME: token_service_db
       REDIS_ADDR: redis:6379
       REDIS_DB: 0
@@ -1349,6 +1349,7 @@ services:
       - "${MTLS_CERT_GROUP_ID:-1001}"
     networks:
       - internal
+      - egress
     depends_on:
       postgres:
         condition: service_healthy
@@ -1378,6 +1379,8 @@ services:
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/ca.crt
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/client.key
       MTLS_ALLOWED_SPIFFE_IDS: ${TRANSLATION_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/excursion-service}
       MTLS_ALLOWED_DNS_NAMES: ${TRANSLATION_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,excursion-service}
     volumes: *mtls-translation-service-volumes

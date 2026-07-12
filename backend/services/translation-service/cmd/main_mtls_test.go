@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -126,4 +127,70 @@ func TestNewServiceAuthJWKSHTTPClientFailsFastWhenMTLSEnabledWithoutCA(t *testin
 	if err == nil {
 		t.Fatal("newServiceAuthJWKSHTTPClient() error = nil, want missing CA error")
 	}
+}
+
+func TestTranslationServiceClientCertificateIsWiredInTestDeployment(t *testing.T) {
+	t.Parallel()
+
+	compose := readTestDeploymentFile(t, "../../../../infra/test/docker-compose.test.yml")
+	translationService := textSection(t, compose, "\n  translation-service:\n", "\nnetworks:\n")
+	for _, expected := range []string{
+		"MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/client.crt",
+		"MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/translation-service/client.key",
+		"\n      - egress\n",
+	} {
+		if !strings.Contains(translationService, expected) {
+			t.Fatalf("translation-service test Compose config must contain %q", expected)
+		}
+	}
+	tokenService := textSection(t, compose, "\n  token-service:\n", "\n  auth-service:\n")
+	for _, expected := range []string{
+		"spiffe://inflap/test/translation-service",
+		"support-service,translation-service,user-service",
+	} {
+		if !strings.Contains(tokenService, expected) {
+			t.Fatalf("token-service test mTLS allowlist must contain %q", expected)
+		}
+	}
+
+	preflight := readTestDeploymentFile(t, "../../../../infra/test/scripts/preflight-mtls-certs.sh")
+	clientServices := textSection(t, preflight, "client_services=(\n", ")\n\nseconds=")
+	if !strings.Contains(clientServices, "\n  translation-service\n") {
+		t.Fatal("mTLS preflight must validate the translation-service client certificate")
+	}
+
+	workflow := readTestDeploymentFile(t, "../../../../.github/workflows/deploy-test.yml")
+	for _, expected := range []string{
+		`"${MTLS_SECRETS_DIR}/translation-service/client.crt"`,
+		`"${MTLS_SECRETS_DIR}/translation-service/client.key"`,
+	} {
+		if !strings.Contains(workflow, expected) {
+			t.Fatalf("deploy workflow must require %q", expected)
+		}
+	}
+}
+
+func readTestDeploymentFile(t *testing.T, path string) string {
+	t.Helper()
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read deployment file %s: %v", path, err)
+	}
+	return string(content)
+}
+
+func textSection(t *testing.T, content string, startMarker string, endMarker string) string {
+	t.Helper()
+
+	start := strings.Index(content, startMarker)
+	if start < 0 {
+		t.Fatalf("deployment section start %q was not found", startMarker)
+	}
+	start += len(startMarker)
+	end := strings.Index(content[start:], endMarker)
+	if end < 0 {
+		t.Fatalf("deployment section end %q was not found", endMarker)
+	}
+	return content[start : start+end]
 }

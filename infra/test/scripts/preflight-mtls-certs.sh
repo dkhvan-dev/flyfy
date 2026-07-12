@@ -128,6 +128,7 @@ client_services=(
   sticker-service
   support-service
   token-service
+  translation-service
   user-service
 )
 
