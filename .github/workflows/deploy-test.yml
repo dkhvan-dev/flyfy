@@ -241,7 +241,10 @@ jobs:
           bash infra/test/scripts/deploy.test.sh
           bash infra/test/scripts/migrate-postgres.test.sh
           bash infra/test/scripts/smoke-check.test.sh
-          docker compose -f infra/test/docker-compose.test.yml config --quiet --no-interpolate
+          docker compose \
+            --env-file infra/test/env/.env.test.example \
+            -f infra/test/docker-compose.test.yml \
+            config --quiet
 
       - name: Validate required secrets
         shell: bash

@@ -55,5 +55,13 @@ if grep -Fq 'go-version-file: go.work' "${workflow_file}"; then
   echo "deploy workflow must not depend on the gitignored local go.work file" >&2
   exit 1
 fi
+grep -Fq -- '--env-file infra/test/env/.env.test.example' "${workflow_file}" || {
+  echo "deploy workflow must render Compose with the tracked test env template" >&2
+  exit 1
+}
+if grep -Fq -- '--no-interpolate' "${workflow_file}"; then
+  echo "deploy workflow must not validate short volume syntax with unresolved interpolation" >&2
+  exit 1
+fi
 
 echo "deployment config contract test passed"
