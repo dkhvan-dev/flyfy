@@ -6,6 +6,14 @@ compose_file="${repo_root}/infra/test/docker-compose.test.yml"
 preflight_file="${repo_root}/infra/test/scripts/preflight-mtls-certs.sh"
 workflow_file="${repo_root}/.github/workflows/deploy-test.yml"
 
+for service in minio-mc sticker-default-stickers-seeder; do
+  service_section="$(sed -n "/^  ${service}:/,/^  [a-zA-Z0-9_-]*:/p" "${compose_file}")"
+  grep -Fq 'com.inflap.smoke.allow-exited: "true"' <<<"${service_section}" || {
+    echo "one-shot service ${service} must be marked as allowed to exit successfully" >&2
+    exit 1
+  }
+done
+
 translation_service="$(sed -n '/^  translation-service:/,/^networks:/p' "${compose_file}")"
 for expected in \
   'MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/translation-service/client.crt' \

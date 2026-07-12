@@ -202,6 +202,8 @@ services:
 
   minio-mc:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    labels:
+      com.inflap.smoke.allow-exited: "true"
     depends_on:
       minio:
         condition: service_healthy
@@ -1055,6 +1057,8 @@ services:
 
   sticker-default-stickers-seeder:
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-dkhvan-dev}/${IMAGE_PREFIX:-inflap-}sticker-service:${IMAGE_TAG:-test-latest}
+    labels:
+      com.inflap.smoke.allow-exited: "true"
     restart: "no"
     group_add:
       - "${MTLS_CERT_GROUP_ID:-1001}"

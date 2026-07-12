@@ -40,8 +40,9 @@ if [[ "$*" == *"ps --all --format json"* ]]; then
   else
     printf '%s\n' '{"Service":"translation-service","State":"running","Health":"healthy","Status":"Up (healthy)"}'
   fi
+  printf '%s\n' '{"Service":"sticker-default-stickers-seeder","State":"exited","Health":"","ExitCode":0,"Status":"Exited (0)"}'
 elif [[ "$*" == *"config --format json"* ]]; then
-  printf '%s\n' '{"services":{"translation-service":{}}}'
+  printf '%s\n' '{"services":{"translation-service":{},"sticker-default-stickers-seeder":{"restart":"no","labels":{"com.inflap.smoke.allow-exited":"true"}}}}'
 fi
 EOF
 chmod +x "${tmp_dir}/bin/docker"
@@ -81,6 +82,7 @@ SMOKE_BASE_URL=https://test-api.inflap.app \
 SMOKE_RETRIES=3 \
 SMOKE_RETRY_DELAY_SECONDS=1 \
 SMOKE_REQUIRED_CONSECUTIVE_PASSES=2 \
+SMOKE_ALLOW_EXITED_SERVICES=legacy-one-shot \
 "${script}" >"${tmp_dir}/smoke.out"
 
 grep -Fq -- "--env-file ${tmp_dir}/runtime.env" "${fake_docker_log}"
@@ -114,3 +116,31 @@ if PATH="${tmp_dir}/bin:${PATH}" \
   exit 1
 fi
 grep -Fq 'token-service: container is missing' "${tmp_dir}/missing-service.out"
+
+cat >"${tmp_dir}/bin/docker" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$*" == *"config --format json"* ]]; then
+  printf '%s\n' '{"services":{"sticker-default-stickers-seeder":{"restart":"no","labels":{"com.inflap.smoke.allow-exited":"true"}}}}'
+elif [[ "$*" == *"ps --all --format json"* ]]; then
+  printf '%s\n' '{"Service":"sticker-default-stickers-seeder","State":"exited","Health":"","ExitCode":1,"Status":"Exited (1)"}'
+fi
+EOF
+chmod +x "${tmp_dir}/bin/docker"
+
+if PATH="${tmp_dir}/bin:${PATH}" \
+  APP_DIR="${tmp_dir}" \
+  ENV_FILE="${tmp_dir}/test.env" \
+  RUNTIME_ENV_FILE="${tmp_dir}/runtime.env" \
+  DEPLOY_ENV_FILE="${tmp_dir}/deploy.env" \
+  COMPOSE_FILE="${tmp_dir}/compose.yml" \
+  SMOKE_BASE_URL=https://test-api.inflap.app \
+  SMOKE_RETRIES=1 \
+  SMOKE_RETRY_DELAY_SECONDS=1 \
+  SMOKE_REQUIRED_CONSECUTIVE_PASSES=1 \
+  "${script}" >"${tmp_dir}/failed-one-shot.out" 2>&1; then
+  echo "smoke test expected a failed one-shot service to fail" >&2
+  exit 1
+fi
+grep -Fq 'sticker-default-stickers-seeder: state=exited' "${tmp_dir}/failed-one-shot.out"
+grep -Fq 'exit_code=1' "${tmp_dir}/failed-one-shot.out"

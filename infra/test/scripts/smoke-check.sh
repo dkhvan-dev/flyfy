@@ -14,7 +14,7 @@ SMOKE_RETRIES="${SMOKE_RETRIES:-12}"
 SMOKE_RETRY_DELAY_SECONDS="${SMOKE_RETRY_DELAY_SECONDS:-5}"
 SMOKE_REQUIRED_CONSECUTIVE_PASSES="${SMOKE_REQUIRED_CONSECUTIVE_PASSES:-3}"
 SMOKE_ENDPOINTS="${SMOKE_ENDPOINTS:-/health}"
-SMOKE_ALLOW_EXITED_SERVICES="${SMOKE_ALLOW_EXITED_SERVICES:-minio-mc}"
+SMOKE_ALLOW_EXITED_SERVICES="${SMOKE_ALLOW_EXITED_SERVICES:-minio-mc,sticker-default-stickers-seeder}"
 
 for name in \
   SMOKE_TIMEOUT_SECONDS \
@@ -90,6 +90,26 @@ if [[ "${SMOKE_SKIP_DOCKER}" != "true" ]]; then
     echo "Compose config contains no active services." >&2
     exit 1
   fi
+  allowed_exited_services_json="$(
+    jq -c --arg configured "${SMOKE_ALLOW_EXITED_SERVICES}" '
+      (
+        [
+          .services
+          | to_entries[]
+          | select(((.value.profiles // []) | length) == 0)
+          | select((.value.labels["com.inflap.smoke.allow-exited"] // "false") == "true")
+          | .key
+        ]
+        + (
+          $configured
+          | split(",")
+          | map(gsub("^ +| +$"; ""))
+          | map(select(length > 0))
+        )
+      )
+      | unique
+    ' <<<"${compose_config_json}"
+  )"
 
   compose_ready="false"
   unhealthy="compose state was not checked"
@@ -103,7 +123,7 @@ if [[ "${SMOKE_SKIP_DOCKER}" != "true" ]]; then
     )"
     unhealthy="$(
       jq -rs \
-        --arg allowed ",${SMOKE_ALLOW_EXITED_SERVICES}," \
+        --argjson allowed_exited "${allowed_exited_services_json}" \
         --argjson expected "${expected_services_json}" '
         (
           if length == 1 and (.[0] | type) == "array" then .[0] else . end
@@ -133,7 +153,7 @@ if [[ "${SMOKE_SKIP_DOCKER}" != "true" ]]; then
                   $state != "running"
                   and (
                     $state != "exited"
-                    or (($allowed | contains("," + $service + ",")) | not)
+                    or (($allowed_exited | index($service)) == null)
                     or $exit_code != "0"
                   )
                 )
