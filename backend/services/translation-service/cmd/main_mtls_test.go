@@ -161,8 +161,10 @@ func TestTranslationServiceClientCertificateIsWiredInTestDeployment(t *testing.T
 
 	workflow := readTestDeploymentFile(t, "../../../../.github/workflows/deploy-test.yml")
 	for _, expected := range []string{
-		`"${MTLS_SECRETS_DIR}/translation-service/client.crt"`,
-		`"${MTLS_SECRETS_DIR}/translation-service/client.key"`,
+		"MTLS_MODE='${MTLS_MODE}'",
+		"MTLS_CERT_GROUP_ID='${MTLS_CERT_GROUP_ID}'",
+		"MTLS_SECRETS_DIR='${MTLS_SECRETS_DIR}'",
+		"MTLS_CA_CERT_PATH='${MTLS_CA_CERT_PATH}'",
 	} {
 		if !strings.Contains(workflow, expected) {
 			t.Fatalf("deploy workflow must require %q", expected)
