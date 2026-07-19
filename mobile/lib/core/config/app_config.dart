@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 final class AppConfig {
   AppConfig._();
 
-  static const String _defaultApiBaseUrl = 'https://api-dev.inflap.app/api/v1';
+  static const String _defaultApiBaseUrl = 'https://test-api.inflap.app/api/v1';
   static const String _baseUrlFromDefine = String.fromEnvironment(
     'INFLAP_API_BASE_URL',
     defaultValue: _defaultApiBaseUrl,

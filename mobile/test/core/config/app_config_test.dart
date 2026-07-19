@@ -6,7 +6,7 @@ void main() {
     test('uses default absolute API URL when dart define is blank', () {
       final value = AppConfig.normalizeApiBaseUrl('');
 
-      expect(value, 'https://api-dev.inflap.app/api/v1');
+      expect(value, 'https://test-api.inflap.app/api/v1');
       expect(Uri.parse(value).hasAuthority, isTrue);
     });
 
