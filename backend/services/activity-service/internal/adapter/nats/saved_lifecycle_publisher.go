@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -72,7 +73,7 @@ func (publisher *ActivitySavedLifecyclePublisher) ensureStream(ctx context.Conte
 	if publisher.streamReady {
 		return nil
 	}
-	if _, err := publisher.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+	config := jetstream.StreamConfig{
 		Name:       activitySavedLifecycleStream,
 		Subjects:   []string{activitySavedLifecycleSubjectPattern},
 		Storage:    jetstream.FileStorage,
@@ -81,7 +82,12 @@ func (publisher *ActivitySavedLifecyclePublisher) ensureStream(ctx context.Conte
 		MaxBytes:   activitySavedLifecycleStreamMaxBytes,
 		Discard:    jetstream.DiscardOld,
 		Duplicates: 10 * time.Minute,
-	}); err != nil {
+	}
+	_, err := publisher.js.CreateOrUpdateStream(ctx, config)
+	if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+		_, err = publisher.js.CreateOrUpdateStream(ctx, config)
+	}
+	if err != nil {
 		return fmt.Errorf("ensure activity Saved lifecycle stream: %w", err)
 	}
 	publisher.streamReady = true

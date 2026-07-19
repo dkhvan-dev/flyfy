@@ -87,6 +87,16 @@ func newSavedBackgroundRuntime(
 			connection.Close()
 		}
 	}()
+	provisionCtx, cancelProvision := context.WithTimeout(ctx, 5*time.Second)
+	err = natsadapter.EnsureSavedSourceStream(
+		provisionCtx,
+		connection,
+		cfg.NATS.StreamReplicas,
+	)
+	cancelProvision()
+	if err != nil {
+		return nil, fmt.Errorf("provision Saved source stream: %w", err)
+	}
 
 	lifecycleRepository, err := repositoryadapter.NewPGSavedLifecycleRepository(pool)
 	if err != nil {
@@ -114,7 +124,7 @@ func newSavedBackgroundRuntime(
 	if err != nil {
 		return nil, fmt.Errorf("initialize Saved outbox publisher: %w", err)
 	}
-	provisionCtx, cancelProvision := context.WithTimeout(ctx, 5*time.Second)
+	provisionCtx, cancelProvision = context.WithTimeout(ctx, 5*time.Second)
 	err = outboxPublisher.EnsureStream(provisionCtx)
 	cancelProvision()
 	if err != nil {

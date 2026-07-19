@@ -83,13 +83,18 @@ RUN_PRE_DEPLOY_BACKUP="${RUN_PRE_DEPLOY_BACKUP:-true}"
 ROLLBACK_ON_FAILURE="${ROLLBACK_ON_FAILURE:-true}"
 DEPLOY_SMOKE_RETRIES="${DEPLOY_SMOKE_RETRIES:-36}"
 DEPLOY_SMOKE_RETRY_DELAY_SECONDS="${DEPLOY_SMOKE_RETRY_DELAY_SECONDS:-5}"
+DEPLOY_DIAGNOSTIC_LOG_LINES="${DEPLOY_DIAGNOSTIC_LOG_LINES:-200}"
 
-for name in DEPLOY_SMOKE_RETRIES DEPLOY_SMOKE_RETRY_DELAY_SECONDS; do
+for name in DEPLOY_SMOKE_RETRIES DEPLOY_SMOKE_RETRY_DELAY_SECONDS DEPLOY_DIAGNOSTIC_LOG_LINES; do
   if [[ ! "${!name}" =~ ^[1-9][0-9]*$ ]]; then
     echo "${name} must be a positive integer." >&2
     exit 1
   fi
 done
+if (( DEPLOY_DIAGNOSTIC_LOG_LINES > 2000 )); then
+  echo "DEPLOY_DIAGNOSTIC_LOG_LINES must not exceed 2000." >&2
+  exit 1
+fi
 for name in RUN_PRE_DEPLOY_BACKUP ROLLBACK_ON_FAILURE MTLS_AUTO_PROVISION_CERTS; do
   if [[ "${!name}" != "true" && "${!name}" != "false" ]]; then
     echo "${name} must be true or false." >&2
@@ -118,6 +123,72 @@ rollback_compose() {
     -f "${COMPOSE_FILE}" \
     -f "${ROLLBACK_COMPOSE_OVERRIDE_FILE}" \
     "$@"
+}
+
+capture_failed_deploy_diagnostics() {
+  local ps_json
+  local failed_services
+  local service
+  local container_ids
+  local container_id
+
+  echo "Capturing failed deployment diagnostics before rollback."
+  if ! ps_json="$(compose ps --all --format json)"; then
+    echo "Unable to read Compose service state."
+    return 0
+  fi
+
+  if ! jq -rs -r '
+    if length == 1 and (.[0] | type) == "array" then .[0] else . end
+    | .[]
+    | "service=\(.Service // "unknown") state=\(.State // "unknown") health=\(.Health // "none") exit_code=\(.ExitCode // "unknown") status=\(.Status // "unknown")"
+  ' <<<"${ps_json}"; then
+    echo "Unable to parse Compose service state. Raw state follows:"
+    printf '%s\n' "${ps_json}"
+    return 0
+  fi
+
+  failed_services="$(
+    jq -rs -r '
+      if length == 1 and (.[0] | type) == "array" then .[0] else . end
+      | .[]
+      | ((.State // "") | ascii_downcase) as $state
+      | ((.Health // "") | ascii_downcase) as $health
+      | ((.ExitCode // 0) | tonumber? // 0) as $exit_code
+      | select(
+          ($health != "" and $health != "healthy") or
+          $state == "restarting" or
+          $state == "dead" or
+          ($state == "exited" and $exit_code != 0)
+        )
+      | .Service // empty
+    ' <<<"${ps_json}" | sort -u
+  )"
+  if [[ -z "${failed_services}" ]]; then
+    echo "No unhealthy, restarting, dead, or failed Compose service was identified."
+    return 0
+  fi
+
+  while IFS= read -r service; do
+    if [[ -z "${service}" || ! "${service}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
+      continue
+    fi
+    echo "--- ${service}: recent logs (last ${DEPLOY_DIAGNOSTIC_LOG_LINES} lines) ---"
+    compose logs --no-color --tail "${DEPLOY_DIAGNOSTIC_LOG_LINES}" "${service}" || true
+
+    container_ids="$(compose ps --all -q "${service}" 2>/dev/null || true)"
+    while IFS= read -r container_id; do
+      if [[ -z "${container_id}" ]]; then
+        continue
+      fi
+      docker inspect --format \
+        'container={{.Name}} status={{.State.Status}} exit_code={{.State.ExitCode}} restarting={{.State.Restarting}} oom_killed={{.State.OOMKilled}} error={{json .State.Error}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' \
+        "${container_id}" || true
+      docker inspect --format \
+        '{{if .State.Health}}{{range .State.Health.Log}}health end={{.End}} exit_code={{.ExitCode}} output={{json .Output}}{{println}}{{end}}{{end}}' \
+        "${container_id}" || true
+    done <<<"${container_ids}"
+  done <<<"${failed_services}"
 }
 
 snapshot_rollback_images() {
@@ -181,8 +252,11 @@ rollback_on_failure() {
     exit "${exit_code}"
   fi
 
-  echo "Deploy failed; restoring the previous deployment configuration." >&2
   set +e
+  if [[ "${deployment_started}" == "true" ]]; then
+    capture_failed_deploy_diagnostics >&2
+  fi
+  echo "Deploy failed; restoring the previous deployment configuration." >&2
 
   local restore_ready="true"
   for previous in \

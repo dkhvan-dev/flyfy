@@ -2,6 +2,7 @@ package cursor
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"strings"
 	"testing"
@@ -70,7 +71,12 @@ func TestCursorRejectsAllInvalidBindingsWithOneError(t *testing.T) {
 		t.Fatalf("Encode() error = %v", err)
 	}
 	otherScope, _ := fingerprinter.Fingerprint(Scope{Search: "other", Locale: LocaleEN})
-	tampered := token[:len(token)-1] + differentBase64Rune(token[len(token)-1])
+	tamperedBytes, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil {
+		t.Fatalf("decode test token: %v", err)
+	}
+	tamperedBytes[len(tamperedBytes)-1] ^= 1
+	tampered := base64.RawURLEncoding.EncodeToString(tamperedBytes)
 
 	tests := []struct {
 		name     string
@@ -163,11 +169,4 @@ func testFingerprinter(t *testing.T) *Fingerprinter {
 		t.Fatalf("NewFingerprinter() error = %v", err)
 	}
 	return fingerprinter
-}
-
-func differentBase64Rune(current byte) string {
-	if current == 'A' {
-		return "B"
-	}
-	return "A"
 }

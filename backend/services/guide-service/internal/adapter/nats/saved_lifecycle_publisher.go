@@ -2,6 +2,7 @@ package natsadapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -75,7 +76,7 @@ func (p *SavedLifecyclePublisher) ensureStream(ctx context.Context) error {
 	}
 	streamCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if _, err := p.jetStream.CreateOrUpdateStream(streamCtx, jetstream.StreamConfig{
+	config := jetstream.StreamConfig{
 		Name:       SavedSourceStreamName,
 		Subjects:   []string{"saved.source.>"},
 		Storage:    jetstream.FileStorage,
@@ -84,7 +85,12 @@ func (p *SavedLifecyclePublisher) ensureStream(ctx context.Context) error {
 		MaxBytes:   savedSourceStreamMaxBytes,
 		Discard:    jetstream.DiscardOld,
 		Duplicates: 10 * time.Minute,
-	}); err != nil {
+	}
+	_, err := p.jetStream.CreateOrUpdateStream(streamCtx, config)
+	if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+		_, err = p.jetStream.CreateOrUpdateStream(streamCtx, config)
+	}
+	if err != nil {
 		return fmt.Errorf("create/update Saved lifecycle stream: %w", err)
 	}
 	p.streamReady = true

@@ -101,7 +101,11 @@ func (publisher *SavedLifecyclePublisher) ensureStream(ctx context.Context) erro
 	if publisher.streamReady {
 		return nil
 	}
-	if _, err := publisher.jetStream.CreateOrUpdateStream(ctx, savedSourceStreamConfig()); err != nil {
+	_, err := publisher.jetStream.CreateOrUpdateStream(ctx, savedSourceStreamConfig())
+	if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+		_, err = publisher.jetStream.CreateOrUpdateStream(ctx, savedSourceStreamConfig())
+	}
+	if err != nil {
 		return fmt.Errorf("create or update Saved lifecycle stream: %w", err)
 	}
 	publisher.streamReady = true

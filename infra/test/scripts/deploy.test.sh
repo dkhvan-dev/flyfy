@@ -20,6 +20,9 @@ set -euo pipefail
 printf '%s\n' "$*" >>"${FAKE_DOCKER_LOG}"
 if [[ "$*" == *"ps --all --format json"* ]]; then
   printf '%s\n' '{"Service":"api-gateway","ID":"old-api-gateway"}'
+  printf '%s\n' '{"Service":"saved-service","ID":"failed-saved-service","State":"running","Health":"unhealthy","ExitCode":0,"Status":"Up (unhealthy)"}'
+elif [[ "$*" == *"logs --no-color"*"saved-service"* ]]; then
+  echo "saved-service simulated fatal startup error"
 elif [[ "${1:-}" == "inspect" ]]; then
   printf '%s\n' 'sha256:old-api-gateway-image'
 fi
@@ -69,6 +72,9 @@ grep -Fq 'release: old' "${tmp_dir}/docker-compose.test.yml"
 grep -Fq 'RELEASE=old' "${tmp_dir}/env/runtime.env"
 grep -Fq 'IMAGE_TAG=old' "${tmp_dir}/env/deploy.env"
 grep -Fq 'Automatic container rollback completed successfully.' "${output_file}"
+grep -Fq 'Capturing failed deployment diagnostics before rollback.' "${output_file}"
+grep -Fq 'service=saved-service state=running health=unhealthy' "${output_file}"
+grep -Fq 'saved-service simulated fatal startup error' "${output_file}"
 grep -Fq 'image: inflap-rollback/api-gateway:previous' "${tmp_dir}/docker-compose.rollback.yml"
 grep -Fq 'image tag sha256:old-api-gateway-image inflap-rollback/api-gateway:previous' "${fake_docker_log}"
 
