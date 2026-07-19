@@ -436,7 +436,7 @@ func activityViewerRequest(target string) *nethttp.Request {
 }
 
 func activityVisibilityTestActivity() *model.Activity {
-	now := time.Date(2026, time.July, 16, 4, 0, 0, 0, time.UTC)
+	now := time.Now().UTC()
 	publishedAt := now.Add(-time.Hour)
 	return &model.Activity{
 		ID:                      uuid.New(),
