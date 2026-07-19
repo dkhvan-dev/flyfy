@@ -53,7 +53,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Prepare image metadata
         id: meta
@@ -67,94 +67,35 @@ jobs:
           echo "image_prefix=${image_prefix}" >>"${GITHUB_OUTPUT}"
           echo "image_tag=${image_tag}" >>"${GITHUB_OUTPUT}"
 
-      - name: Detect services to build
-        id: detect
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          all_services=(
-            activity-service
-            admin-panel
-            anti-fraud-service
-            api-gateway
-            auth-service
-            chat-service
-            checklist-service
-            currency-service
-            excursion-service
-            feed-service
-            file-manager-service
-            guide-service
-            notification-service
-            payment-service
-            place-service
-            reference-service
-            routing-service
-            saved-service
-            search-service
-            sticker-service
-            support-service
-            switches-service
-            token-service
-            translation-service
-            trust-service
-            user-route-service
-            user-service
-          )
-
-          requested="${{ github.event.inputs.services || 'auto' }}"
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${requested}" != "auto" ]]; then
-            if [[ "${requested}" == "all" ]]; then
-              selected=("${all_services[@]}")
-            else
-              IFS=',' read -ra selected <<<"${requested}"
-              for i in "${!selected[@]}"; do
-                selected[$i]="$(echo "${selected[$i]}" | xargs)"
-              done
-            fi
-          else
-            base_sha="${{ github.event.before }}"
-            if [[ -z "${base_sha}" || "${base_sha}" =~ ^0+$ ]]; then
-              base_sha="$(git rev-parse HEAD^)"
-            fi
-            changed_files="$(git diff --name-only "${base_sha}" "${GITHUB_SHA}" || true)"
-
-            selected=()
-            if grep -Eq '^(proto/|backend/pkg/)' <<<"${changed_files}"; then
-              selected=("${all_services[@]}")
-            else
-              for service in "${all_services[@]}"; do
-                if grep -q "^backend/services/${service}/" <<<"${changed_files}"; then
-                  selected+=("${service}")
-                fi
-              done
-            fi
-          fi
-
-          if [[ ${#selected[@]} -eq 0 ]]; then
-            echo "No service images need rebuild."
-            echo 'services=[]' >>"${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          printf 'Selected services:\n'
-          printf ' - %s\n' "${selected[@]}"
-
-          json="$(printf '%s\n' "${selected[@]}" | jq -R . | jq -cs .)"
-          echo "services=${json}" >>"${GITHUB_OUTPUT}"
-
-      - name: Set up Docker Buildx
-        if: ${{ steps.detect.outputs.services != '[]' }}
-        uses: docker/setup-buildx-action@v3
-
       - name: Log in to GHCR
-        if: ${{ steps.detect.outputs.services != '[]' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+
+      - name: Detect services to build
+        id: detect
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          DEPLOY_REQUESTED: ${{ github.event_name == 'push' || github.event.inputs.deploy == 'true' }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          IMAGE_NAMESPACE: ${{ steps.meta.outputs.image_namespace }}
+          IMAGE_PREFIX: ${{ steps.meta.outputs.image_prefix }}
+          REQUESTED_SERVICES: ${{ github.event.inputs.services || 'auto' }}
+        run: |
+          set -euo pipefail
+          services="$(bash infra/test/scripts/detect-build-services.sh)"
+          if [[ "${services}" == "[]" ]]; then
+            echo "No service images need rebuild."
+          fi
+          echo "services=${services}" >>"${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.detect.outputs.services != '[]' }}
+        uses: docker/setup-buildx-action@v3
 
       - name: Set up Go
         if: ${{ steps.detect.outputs.services != '[]' && (github.event_name == 'push' || inputs.run_tests || inputs.deploy) }}
@@ -234,11 +175,14 @@ jobs:
           bash -n \
             infra/test/scripts/deploy.sh \
             infra/test/scripts/backup-postgres.sh \
+            infra/test/scripts/detect-build-services.sh \
+            infra/test/scripts/detect-build-services.test.sh \
             infra/test/scripts/generate-mtls-certs.sh \
             infra/test/scripts/migrate-postgres.sh \
             infra/test/scripts/preflight-mtls-certs.sh \
             infra/test/scripts/smoke-check.sh
           bash infra/test/scripts/backup-postgres.test.sh
+          bash infra/test/scripts/detect-build-services.test.sh
           bash infra/test/scripts/deployment-config.test.sh
           bash infra/test/scripts/deploy.test.sh
           bash infra/test/scripts/migrate-postgres.test.sh

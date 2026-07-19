@@ -6,6 +6,7 @@ compose_file="${repo_root}/infra/test/docker-compose.test.yml"
 preflight_file="${repo_root}/infra/test/scripts/preflight-mtls-certs.sh"
 workflow_file="${repo_root}/.github/workflows/deploy-test.yml"
 deploy_script_file="${repo_root}/infra/test/scripts/deploy.sh"
+build_detector_file="${repo_root}/infra/test/scripts/detect-build-services.sh"
 saved_migrator_file="${repo_root}/deploy/init-scripts/025_saved_service_migrate.sh"
 saved_entity_scope_dir="${repo_root}/backend/services/saved-service/migrations"
 place_migrator_file="${repo_root}/deploy/init-scripts/009_place_service_migrations.sh"
@@ -208,6 +209,46 @@ grep -Fq '  saved-service' <<<"${generator_services}" || {
   exit 1
 }
 
+detector_services="$(sed -n '/^all_services=(/,/^)/p' "${build_detector_file}")"
+detector_service_names="$(
+  sed '1d;$d' <<<"${detector_services}" \
+    | sed -E 's/^[[:space:]]+//' \
+    | sort
+)"
+compose_image_service_names="$(
+  grep -oE '\$\{IMAGE_PREFIX:-inflap-\}[a-z0-9-]+:' "${compose_file}" \
+    | sed -E 's/.*\}([^:]+):/\1/' \
+    | sort -u
+)"
+if [[ "${detector_service_names}" != "${compose_image_service_names}" ]]; then
+  echo "build service detector and test Compose image inventories do not match" >&2
+  diff \
+    <(printf '%s\n' "${detector_service_names}") \
+    <(printf '%s\n' "${compose_image_service_names}") >&2 || true
+  exit 1
+fi
+while IFS= read -r service; do
+  test -f "${repo_root}/backend/services/${service}/Dockerfile" || {
+    echo "deployable service is missing its Dockerfile: ${service}" >&2
+    exit 1
+  }
+done <<<"${detector_service_names}"
+grep -Fq '  saved-service' <<<"${detector_services}" || {
+  echo "build service detector does not include saved-service" >&2
+  exit 1
+}
+for expected in \
+  'docker manifest inspect' \
+  ':test-latest' \
+  'required deployment image is missing from the registry' \
+  'selected+=("${service}")'
+do
+  grep -Fq -- "${expected}" "${build_detector_file}" || {
+    echo "build service detector is missing deployment image recovery: ${expected}" >&2
+    exit 1
+  }
+done
+
 for expected in \
   'MTLS_AUTO_PROVISION_CERTS' \
   'generate-mtls-certs.sh' \
@@ -245,8 +286,19 @@ grep -Fq 'compose_validation_env=(' "${workflow_file}" || {
   echo "deploy workflow must define an inline Compose validation environment" >&2
   exit 1
 }
+grep -Fq 'fetch-depth: 0' "${workflow_file}" || {
+  echo "deploy workflow must fetch enough history for complete push change detection" >&2
+  exit 1
+}
+login_line="$(grep -n -m1 -- '- name: Log in to GHCR' "${workflow_file}" | cut -d: -f1)"
+detect_line="$(grep -n -m1 -- '- name: Detect services to build' "${workflow_file}" | cut -d: -f1)"
+if [[ -z "${login_line}" || -z "${detect_line}" || "${login_line}" -ge "${detect_line}" ]]; then
+  echo "deploy workflow must authenticate to GHCR before checking required image manifests" >&2
+  exit 1
+fi
 for expected in \
-  '            saved-service' \
+  'bash infra/test/scripts/detect-build-services.sh' \
+  'bash infra/test/scripts/detect-build-services.test.sh' \
   'SAVED_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.SAVED_SERVICE_TOKEN_SERVICE_SECRET }}' \
   'SAVED_OPERATION_HMAC_CURRENT_KEY_BASE64: ${{ secrets.SAVED_OPERATION_HMAC_CURRENT_KEY_BASE64 }}' \
   'SAVED_CURSOR_ACTIVE_KEY_BASE64: ${{ secrets.SAVED_CURSOR_ACTIVE_KEY_BASE64 }}' \
