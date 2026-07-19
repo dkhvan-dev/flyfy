@@ -1393,8 +1393,8 @@ services:
       CACHE_INVALIDATION_LISTENER_ENABLED: "true"
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/switches-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/switches-service/server.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/currency-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/place-service,spiffe://inflap/test/saved-service,spiffe://inflap/test/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,saved-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service,spiffe://inflap/test/chat-service,spiffe://inflap/test/currency-service,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/file-manager-service,spiffe://inflap/test/place-service,spiffe://inflap/test/saved-service,spiffe://inflap/test/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,saved-service,user-service}
 
   trust-service:
     <<: *service-defaults

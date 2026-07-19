@@ -72,6 +72,17 @@ do
   }
 done
 
+switches_service="$(sed -n '/^  switches-service:/,/^  trust-service:/p' "${compose_file}")"
+for expected in \
+  'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service' \
+  'activity-service,admin-panel,api-gateway,auth-service'
+do
+  grep -Fq -- "${expected}" <<<"${switches_service}" || {
+    echo "switches-service mTLS allowlist must grant api-gateway platform-policy access: ${expected}" >&2
+    exit 1
+  }
+done
+
 saved_service="$(sed -n '/^  saved-service:/,/^  token-service:/p' "${compose_file}")"
 if grep -Fq 'EXCURSION_SOURCE_ENABLED' <<<"${saved_service}"; then
   echo "saved-service deployment must not expose a retired Excursion source flag" >&2
@@ -309,6 +320,16 @@ do
     echo "deploy workflow Saved wiring is missing: ${expected}" >&2
     exit 1
   }
+done
+for expected in \
+  'spiffe://inflap/test/admin-panel,spiffe://inflap/test/api-gateway,spiffe://inflap/test/auth-service' \
+  'activity-service,admin-panel,api-gateway,auth-service'
+do
+  occurrence_count="$(grep -Fc -- "${expected}" "${workflow_file}" || true)"
+  if ((occurrence_count < 2)); then
+    echo "deploy workflow must grant api-gateway platform-policy access in every switches-service allowlist default: ${expected}" >&2
+    exit 1
+  fi
 done
 while IFS= read -r required_name; do
   grep -Fq "${required_name}=compose-validation" "${workflow_file}" || {
