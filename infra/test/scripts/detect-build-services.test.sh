@@ -70,6 +70,18 @@ result="$(run_detector)"
 unset DEPLOY_REQUESTED
 [[ "${result}" == "[]" ]]
 
+result="$(
+  cd "${repo_root}"
+  EVENT_NAME=push \
+    REQUESTED_SERVICES=auto \
+    DEPLOY_REQUESTED=false \
+    BASE_SHA=0000000000000000000000000000000000000000 \
+    HEAD_SHA=HEAD \
+    bash "${script}"
+)"
+[[ "$(jq -r 'length' <<<"${result}")" == "27" ]]
+[[ "$(jq -r 'index("switches-service") != null' <<<"${result}")" == "true" ]]
+
 EVENT_NAME=workflow_dispatch
 REQUESTED_SERVICES='saved-service,unknown-service'
 DEPLOY_REQUESTED=false

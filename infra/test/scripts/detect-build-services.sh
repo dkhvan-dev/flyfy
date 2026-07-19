@@ -90,8 +90,18 @@ changed_files_for_build() {
   require_command git
   local head_sha="${HEAD_SHA:-HEAD}"
   local base_sha="${BASE_SHA:-}"
-  if [[ -z "${base_sha}" || "${base_sha}" =~ ^0+$ ]] || \
+  if [[ -n "${base_sha}" && "${base_sha}" =~ ^0+$ ]]; then
+    # No successful deployment baseline exists. A full rebuild is the only
+    # safe choice because mutable test-latest tags may represent old code.
+    printf 'proto/\n'
+    return
+  fi
+  if [[ -n "${base_sha}" ]] && \
     ! git cat-file -e "${base_sha}^{commit}" >/dev/null 2>&1; then
+    printf 'proto/\n'
+    return
+  fi
+  if [[ -z "${base_sha}" ]]; then
     if base_sha="$(git rev-parse "${head_sha}^" 2>/dev/null)"; then
       :
     else

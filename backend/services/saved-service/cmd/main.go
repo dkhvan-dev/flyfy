@@ -473,7 +473,11 @@ func (p readinessPinger) Ping(ctx context.Context) error {
 	if p.checker == nil {
 		return errors.New("saved-service readiness is unavailable")
 	}
-	return p.checker.Check(ctx)
+	err := p.checker.Check(ctx)
+	if err != nil {
+		log.Warn().Err(err).Msg("Saved readiness check failed")
+	}
+	return err
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
