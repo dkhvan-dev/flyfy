@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -259,8 +258,7 @@ func hasSavedAttractionCover(media []model.PlaceMedia) bool {
 		if item.FileID != uuid.Nil {
 			return true
 		}
-		parsed, err := url.Parse(strings.TrimSpace(item.ExternalURL))
-		if err == nil && parsed.Scheme == "https" && parsed.Host != "" {
+		if _, err := validatePublicSavedCoverExternalURL(item.ExternalURL); err == nil {
 			return true
 		}
 	}

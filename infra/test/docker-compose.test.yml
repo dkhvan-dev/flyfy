@@ -698,8 +698,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/file-manager-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/file-manager-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/file-manager-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,sticker-service,user-service}
       SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN is required}
     depends_on:
@@ -1109,6 +1109,7 @@ services:
       POSTGRES_DB: place_service_db
       REDIS_ADDR: redis:6379
       USER_SERVICE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}
       PLACE_MEDIA_BACKFILL_FILE_MANAGER_URL: ${FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL:-http://file-manager-service:8083}
       SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN is required}

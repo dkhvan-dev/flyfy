@@ -173,6 +173,63 @@ func TestSavedSourceMediaReferenceIsOpaqueAndRevisionBound(t *testing.T) {
 	}
 }
 
+func TestSavedSourceAdvertisesOnlyDeliverableAttractionCovers(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		media model.PlaceMedia
+		want  bool
+	}{
+		{
+			name: "stored photo",
+			media: model.PlaceMedia{
+				FileID:    uuid.New(),
+				MediaType: enum.MediaPhoto,
+			},
+			want: true,
+		},
+		{
+			name: "canonical HTTPS photo",
+			media: model.PlaceMedia{
+				ExternalURL: "https://images.example.test/cover.jpg?width=800",
+				MediaType:   enum.MediaPhoto,
+			},
+			want: true,
+		},
+		{
+			name: "insecure external photo",
+			media: model.PlaceMedia{
+				ExternalURL: "http://images.example.test/cover.jpg",
+				MediaType:   enum.MediaPhoto,
+			},
+		},
+		{
+			name: "non-canonical external photo",
+			media: model.PlaceMedia{
+				ExternalURL: " https://images.example.test/cover.jpg ",
+				MediaType:   enum.MediaPhoto,
+			},
+		},
+		{
+			name: "external video",
+			media: model.PlaceMedia{
+				ExternalURL: "https://images.example.test/cover.jpg",
+				MediaType:   enum.MediaVideo,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := hasSavedAttractionCover([]model.PlaceMedia{test.media}); got != test.want {
+				t.Fatalf("hasSavedAttractionCover() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 func TestSavedSourceResolveAttractionFailsClosedWithoutDefaultTranslation(t *testing.T) {
 	t.Parallel()
 

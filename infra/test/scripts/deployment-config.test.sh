@@ -83,6 +83,17 @@ do
   }
 done
 
+file_manager_service="$(sed -n '/^  file-manager-service:/,/^  activity-service:/p' "${compose_file}")"
+for expected in \
+  'spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/sticker-service' \
+  'feed-service,guide-service,place-service,sticker-service'
+do
+  grep -Fq -- "${expected}" <<<"${file_manager_service}" || {
+    echo "file-manager-service mTLS allowlist must grant place-service Saved cover access: ${expected}" >&2
+    exit 1
+  }
+done
+
 saved_service="$(sed -n '/^  saved-service:/,/^  token-service:/p' "${compose_file}")"
 if grep -Fq 'EXCURSION_SOURCE_ENABLED' <<<"${saved_service}"; then
   echo "saved-service deployment must not expose a retired Excursion source flag" >&2
@@ -189,6 +200,13 @@ for service in activity-service guide-service place-service; do
     }
   done
 done
+
+place_service="$(sed -n '/^  place-service:/,/^  place-search-backfill:/p' "${compose_file}")"
+grep -Fq 'FILE_MANAGER_GRPC_TARGET: ${FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///file-manager-service:9093}' \
+  <<<"${place_service}" || {
+  echo "place-service Saved cover delivery must use the environment-aware file-manager gRPC target" >&2
+  exit 1
+}
 
 for service in user-service chat-service; do
   service_section="$(sed -n "/^  ${service}:/,/^  [a-zA-Z0-9_-]*:/p" "${compose_file}")"
@@ -328,6 +346,16 @@ do
   occurrence_count="$(grep -Fc -- "${expected}" "${workflow_file}" || true)"
   if ((occurrence_count < 2)); then
     echo "deploy workflow must grant api-gateway platform-policy access in every switches-service allowlist default: ${expected}" >&2
+    exit 1
+  fi
+done
+for expected in \
+  'spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/sticker-service' \
+  'feed-service,guide-service,place-service,sticker-service'
+do
+  occurrence_count="$(grep -Fc -- "${expected}" "${workflow_file}" || true)"
+  if ((occurrence_count < 2)); then
+    echo "deploy workflow must grant place-service Saved cover access in every file-manager allowlist default: ${expected}" >&2
     exit 1
   fi
 done

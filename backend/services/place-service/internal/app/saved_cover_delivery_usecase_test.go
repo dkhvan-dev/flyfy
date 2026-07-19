@@ -39,6 +39,30 @@ func TestSavedAttractionCoverDeliveryReturnsValidatedURLForCurrentPublicCover(t 
 	}
 }
 
+func TestSavedAttractionCoverDeliveryReturnsCurrentPublicExternalCoverWithoutFileManager(t *testing.T) {
+	attractionID := uuid.New()
+	externalURL := "https://images.example.test/cover.jpg?width=800"
+	repo := &savedCoverRepositoryStub{snapshot: &model.SavedAttractionCoverSnapshot{
+		ID:                 attractionID,
+		Status:             enum.StatusPublished,
+		ProjectionRevision: 42,
+		ExternalURL:        externalURL,
+	}}
+	useCase := NewSavedAttractionCoverDeliveryUseCase(repo, nil)
+
+	got, err := useCase.CreatePublicSavedAttractionCoverDownloadURL(
+		context.Background(),
+		attractionID,
+		42,
+	)
+	if err != nil || got != externalURL {
+		t.Fatalf("CreatePublicSavedAttractionCoverDownloadURL() = %q, %v", got, err)
+	}
+	if repo.calls != 1 {
+		t.Fatalf("repository calls = %d, want 1", repo.calls)
+	}
+}
+
 func TestSavedAttractionCoverDeliveryRejectsDeniedOrStaleStateBeforeFileManager(t *testing.T) {
 	attractionID := uuid.New()
 	now := time.Now()
@@ -59,11 +83,16 @@ func TestSavedAttractionCoverDeliveryRejectsDeniedOrStaleStateBeforeFileManager(
 			return snapshot
 		}()},
 		{name: "different target", snapshot: savedCoverSnapshot(uuid.New(), 42, uuid.New())},
-		{name: "external only", snapshot: &model.SavedAttractionCoverSnapshot{
+		{name: "missing cover", snapshot: &model.SavedAttractionCoverSnapshot{
 			ID:                 attractionID,
 			Status:             enum.StatusPublished,
 			ProjectionRevision: 42,
-			ExternalURL:        "https://external.example.test/cover.jpg",
+		}},
+		{name: "insecure external cover", snapshot: &model.SavedAttractionCoverSnapshot{
+			ID:                 attractionID,
+			Status:             enum.StatusPublished,
+			ProjectionRevision: 42,
+			ExternalURL:        "http://external.example.test/cover.jpg",
 		}},
 	}
 

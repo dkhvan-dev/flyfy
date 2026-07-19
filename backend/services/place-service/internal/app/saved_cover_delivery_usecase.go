@@ -58,7 +58,7 @@ func (u *SavedAttractionCoverDeliveryUseCase) CreatePublicSavedAttractionCoverDo
 	if attractionID == uuid.Nil || savedRevision == 0 {
 		return "", ErrPublicSavedAttractionCoverNotFound
 	}
-	if u == nil || u.repo == nil || u.fileManager == nil {
+	if u == nil || u.repo == nil {
 		return "", ErrPublicSavedAttractionCoverUnavailable
 	}
 
@@ -68,6 +68,16 @@ func (u *SavedAttractionCoverDeliveryUseCase) CreatePublicSavedAttractionCoverDo
 	}
 	if !isCurrentPublicSavedAttractionCover(snapshot, attractionID, savedRevision) {
 		return "", ErrPublicSavedAttractionCoverNotFound
+	}
+	if snapshot.FileID == uuid.Nil {
+		externalURL, validateErr := validatePublicSavedCoverExternalURL(snapshot.ExternalURL)
+		if validateErr != nil {
+			return "", ErrPublicSavedAttractionCoverNotFound
+		}
+		return externalURL, nil
+	}
+	if u.fileManager == nil {
+		return "", ErrPublicSavedAttractionCoverUnavailable
 	}
 
 	downloadURL, err := u.fileManager.CreateDownloadURL(ctx, snapshot.FileID)
@@ -99,7 +109,21 @@ func isCurrentPublicSavedAttractionCover(
 		snapshot.DeletedAt == nil &&
 		snapshot.ProjectionRevision == savedRevision &&
 		snapshot.ProjectionRevision > 0 &&
-		snapshot.FileID != uuid.Nil
+		(snapshot.FileID != uuid.Nil || snapshot.ExternalURL != "")
+}
+
+// validatePublicSavedCoverExternalURL keeps imported covers on HTTPS while the
+// source-owned endpoint still enforces current visibility and revision state.
+func validatePublicSavedCoverExternalURL(value string) (string, error) {
+	validated, err := ValidateSavedCoverDownloadURL(value)
+	if err != nil {
+		return "", err
+	}
+	parsed, err := url.ParseRequestURI(validated)
+	if err != nil || parsed.Scheme != "https" || parsed.Fragment != "" {
+		return "", ErrSavedCoverDownloadURLInvalid
+	}
+	return validated, nil
 }
 
 func ValidateSavedCoverDownloadURL(value string) (string, error) {

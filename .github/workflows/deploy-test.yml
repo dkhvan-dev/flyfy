@@ -440,8 +440,8 @@ jobs:
           FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL || 'https://file-manager-service:9483' }}
           FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9443' }}
           FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///file-manager-service:9443' }}
-          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
-          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,sticker-service,user-service' }}
           USER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9484' }}
           USER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_SERVICE_INTERNAL_HTTP_URL || 'https://user-service:9484' }}
           USER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9444' }}
@@ -922,8 +922,8 @@ jobs:
           FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_HTTP_URL || 'https://file-manager-service:9483' }}
           FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9443' }}
           FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET: ${{ vars.FILE_MANAGER_SERVICE_INTERNAL_GRPC_TARGET || 'dns:///file-manager-service:9443' }}
-          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
-          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,sticker-service,user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS || 'spiffe://inflap/test/activity-service,spiffe://inflap/test/api-gateway,spiffe://inflap/test/excursion-service,spiffe://inflap/test/feed-service,spiffe://inflap/test/guide-service,spiffe://inflap/test/place-service,spiffe://inflap/test/sticker-service,spiffe://inflap/test/user-service' }}
+          FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES: ${{ vars.FILE_MANAGER_SERVICE_MTLS_ALLOWED_DNS_NAMES || 'activity-service,api-gateway,excursion-service,feed-service,guide-service,place-service,sticker-service,user-service' }}
           USER_SERVICE_INTERNAL_HTTP_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_HTTP_TLS_PORT || '9484' }}
           USER_SERVICE_INTERNAL_HTTP_URL: ${{ vars.USER_SERVICE_INTERNAL_HTTP_URL || 'https://user-service:9484' }}
           USER_SERVICE_INTERNAL_GRPC_TLS_PORT: ${{ vars.USER_SERVICE_INTERNAL_GRPC_TLS_PORT || '9444' }}
