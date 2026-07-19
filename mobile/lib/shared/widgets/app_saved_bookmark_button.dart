@@ -37,6 +37,11 @@ class AppSavedBookmarkButton extends StatelessWidget {
     final sessionStatus = context.select<SessionProvider, SessionStatus>(
       (session) => session.status,
     );
+    if (sourceSurface == SavedSourceSurface.card &&
+        sessionStatus != SessionStatus.authenticated) {
+      return const SizedBox.shrink();
+    }
+
     final isAuthResolved =
         sessionStatus == SessionStatus.authenticated ||
         sessionStatus == SessionStatus.unauthenticated;

@@ -40,95 +40,33 @@ void main() {
   for (final status in const <SessionStatus>[
     SessionStatus.initial,
     SessionStatus.loading,
+    SessionStatus.unauthenticated,
   ]) {
-    testWidgets(
-      '${status.name} auth is checking, inert, and isolated from parent taps',
-      (tester) async {
-        final repository = FakeSavedFeatureRepository();
-        final target = _target('unresolved-${status.name}');
-        final controller = SavedScreenController(repository: repository);
-        addTearDown(controller.dispose);
-        var parentTaps = 0;
-
-        await _pumpAppBookmark(
-          tester,
-          controller: controller,
-          target: target,
-          sessionStatus: status,
-          onParentTap: () => parentTaps++,
-        );
-        await tester.pump();
-
-        expect(find.bySemanticsLabel('Checking Saved status'), findsOneWidget);
-        expect(
-          tester.widget<Tooltip>(find.byType(Tooltip)).message,
-          'Checking Saved status',
-        );
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(
-          tester.widget<IconButton>(find.byType(IconButton)).onPressed,
-          isNull,
-        );
-
-        final tapConsumer = find.descendant(
-          of: find.byType(AppSavedBookmarkButton),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is GestureDetector &&
-                widget.behavior == HitTestBehavior.opaque &&
-                widget.excludeFromSemantics &&
-                widget.onTap != null,
-          ),
-        );
-        expect(tapConsumer, findsOneWidget);
-        expect(
-          tester.widget<GestureDetector>(tapConsumer).behavior,
-          HitTestBehavior.opaque,
-        );
-        expect(
-          tester.widget<GestureDetector>(tapConsumer).excludeFromSemantics,
-          isTrue,
-        );
-        expect(tester.getSize(tapConsumer), const Size.square(48));
-
-        await tester.tap(_bookmarkFinder(target));
-        await tester.pump();
-
-        expect(parentTaps, 0);
-        expect(repository.bootstrapCalls, isEmpty);
-        expect(repository.saveCalls, isEmpty);
-        expect(repository.unsaveCalls, isEmpty);
-        expect(find.byKey(const ValueKey('login-route')), findsNothing);
-      },
-    );
-  }
-
-  testWidgets(
-    'unauthenticated tap opens login without mutating or parent tap',
-    (tester) async {
+    testWidgets('${status.name} session does not render a Saved action', (
+      tester,
+    ) async {
       final repository = FakeSavedFeatureRepository();
-      final target = _target('unauthenticated');
+      final target = _target('unresolved-${status.name}');
       final controller = SavedScreenController(repository: repository);
       addTearDown(controller.dispose);
-      var parentTaps = 0;
 
       await _pumpAppBookmark(
         tester,
         controller: controller,
         target: target,
-        sessionStatus: SessionStatus.unauthenticated,
-        onParentTap: () => parentTaps++,
+        sessionStatus: status,
       );
-      await tester.tap(_bookmarkFinder(target));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      expect(find.byKey(const ValueKey('login-route')), findsOneWidget);
-      expect(parentTaps, 0);
+      expect(_bookmarkFinder(target), findsNothing);
+      expect(find.byType(IconButton), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(repository.bootstrapCalls, isEmpty);
       expect(repository.saveCalls, isEmpty);
       expect(repository.unsaveCalls, isEmpty);
-    },
-  );
+      expect(find.byKey(const ValueKey('login-route')), findsNothing);
+    });
+  }
 
   testWidgets(
     'authenticated bookmark saves before opening its collection picker',
@@ -227,6 +165,31 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'unauthenticated detail action still opens login without mutation',
+    (tester) async {
+      final repository = FakeSavedFeatureRepository();
+      final target = _target('unauthenticated-detail');
+      final controller = SavedScreenController(repository: repository);
+      addTearDown(controller.dispose);
+
+      await _pumpAppBookmark(
+        tester,
+        controller: controller,
+        target: target,
+        sessionStatus: SessionStatus.unauthenticated,
+        sourceSurface: SavedSourceSurface.detail,
+      );
+      await tester.tap(_bookmarkFinder(target));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('login-route')), findsOneWidget);
+      expect(repository.bootstrapCalls, isEmpty);
+      expect(repository.saveCalls, isEmpty);
+      expect(repository.unsaveCalls, isEmpty);
+    },
+  );
 }
 
 Future<void> _pumpModalTransition(WidgetTester tester) async {
@@ -240,6 +203,7 @@ Future<void> _pumpAppBookmark(
   required SavedScreenController controller,
   required SavedTarget target,
   required SessionStatus sessionStatus,
+  SavedSourceSurface sourceSurface = SavedSourceSurface.card,
   VoidCallback? onParentTap,
 }) async {
   final session = _TestSessionProvider(sessionStatus);
@@ -255,7 +219,7 @@ Future<void> _pumpAppBookmark(
               onTap: onParentTap,
               child: AppSavedBookmarkButton(
                 target: target,
-                sourceSurface: SavedSourceSurface.card,
+                sourceSurface: sourceSurface,
               ),
             ),
           ),
