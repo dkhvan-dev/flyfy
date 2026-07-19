@@ -6,6 +6,7 @@ ARG TARGETARCH=amd64
 WORKDIR /app
 
 COPY ./proto /app/proto
+COPY ./backend/pkg/natstransport /app/backend/pkg/natstransport
 COPY ./backend/pkg/serviceauth /app/backend/pkg/serviceauth
 COPY ./backend/pkg/transportauth /app/backend/pkg/transportauth
 COPY ./backend/services/guide-service /app/backend/services/guide-service

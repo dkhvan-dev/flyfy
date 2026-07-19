@@ -1554,7 +1554,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSavedItemsSubtitle =>
-      'Сақталған белсенділіктер, орындар мен жинақтар кейінірек осында пайда болады.';
+      'Белсенділіктер, пайдаланушылар, орындар және жеке коллекцияларыңыз';
 
   @override
   String get profileBookingsTitle => 'Менің броньдарым';
@@ -9744,4 +9744,281 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get trustRestrictionSupportAction => 'Қолдау қызметіне жазу';
+
+  @override
+  String get savedScreenTitle => 'Сақталғандар';
+
+  @override
+  String get savedAllItems => 'Барлық сақталғандар';
+
+  @override
+  String get savedCollectionsTitle => 'Коллекциялар';
+
+  @override
+  String get savedCollectionsLoadError =>
+      'Коллекцияларды жүктеу мүмкін болмады';
+
+  @override
+  String get savedCollectionsSeeAll => 'Барлығын көру';
+
+  @override
+  String get savedCollectionsEmptyTitle => 'Әзірге коллекциялар жоқ';
+
+  @override
+  String get savedCollectionsEmptyMessage =>
+      'Сақталған карточкаларды сапарлар мен идеялар бойынша реттеу үшін коллекция жасаңыз.';
+
+  @override
+  String get savedCollectionsUnavailableTitle => 'Коллекциялар қолжетімсіз';
+
+  @override
+  String get savedCollectionsUnavailableMessage =>
+      'Карточкаларыңыз «Барлық сақталғандар» бөлімінде әлі де қолжетімді.';
+
+  @override
+  String get savedCreateCollection => 'Коллекция жасау';
+
+  @override
+  String get savedSearchHint => 'Атауы, қала немесе ел';
+
+  @override
+  String savedSearchMatchedTitle(String value) {
+    return 'Атауы бойынша сәйкестік: $value';
+  }
+
+  @override
+  String savedSearchMatchedCity(String value) {
+    return 'Қала бойынша сәйкестік: $value';
+  }
+
+  @override
+  String savedSearchMatchedCountry(String value) {
+    return 'Ел бойынша сәйкестік: $value';
+  }
+
+  @override
+  String get savedCategoryAll => 'Барлығы';
+
+  @override
+  String get savedCategoryActivities => 'Белсенділіктер';
+
+  @override
+  String get savedCategoryUsers => 'Пайдаланушылар';
+
+  @override
+  String get savedCategoryAttractions => 'Орындар';
+
+  @override
+  String get savedCategoryPosts => 'Жазбалар';
+
+  @override
+  String get savedDisabledTitle => 'Сақталғандар уақытша қолжетімсіз';
+
+  @override
+  String get savedDisabledMessage =>
+      'Сақталғандарыңыз өзгерген жоқ. Кейінірек қайталап көріңіз.';
+
+  @override
+  String get savedEmptyAllTitle => 'Әзірге ештеңе сақталмаған';
+
+  @override
+  String get savedEmptyAllMessage =>
+      'Белсенділіктерді, пайдаланушы профильдерін және орындарды осында жинау үшін бетбелгіні басыңыз.';
+
+  @override
+  String get savedEmptyCategoryTitle => 'Бұл санатта сақталғандар жоқ';
+
+  @override
+  String get savedEmptyCategoryMessage =>
+      'Осы санаттың сақталған карточкалары осында көрсетіледі.';
+
+  @override
+  String get savedEmptyCollectionTitle => 'Коллекция әзірге бос';
+
+  @override
+  String get savedEmptyCollectionMessage =>
+      'Сақталған карточкаларды коллекция таңдау арқылы қосыңыз.';
+
+  @override
+  String get savedEmptySearchTitle => 'Ештеңе табылмады';
+
+  @override
+  String get savedEmptySearchMessage =>
+      'Басқа сөзді қолданып көріңіз немесе іздеуді тазалаңыз.';
+
+  @override
+  String get savedNetworkStale =>
+      'Байланыс жоқ. Осы құрылғыда жүктелген карточкалар көрсетіліп тұр.';
+
+  @override
+  String get savedUnavailableTitle => 'Карточка қолжетімсіз';
+
+  @override
+  String get savedUnavailableMessage =>
+      'Оны енді ашу мүмкін емес, бірақ Сақталғандардан өшіруге болады.';
+
+  @override
+  String get savedBookmarkSaveTooltip => 'Сақтау';
+
+  @override
+  String get savedBookmarkManageTooltip => 'Сақтауды басқару';
+
+  @override
+  String get savedBookmarkAuthTooltip =>
+      'Сақталғандарды пайдалану үшін кіріңіз';
+
+  @override
+  String get savedBookmarkCheckingTooltip =>
+      'Сақталғандар күйін тексеріп жатырмыз';
+
+  @override
+  String get savedBookmarkUpdatingTooltip => 'Сақталғандарды жаңартып жатырмыз';
+
+  @override
+  String get savedBookmarkPendingUnknownTooltip =>
+      'Өзгеріс расталмады. Қайталау үшін басыңыз.';
+
+  @override
+  String get savedBookmarkRetryTooltip =>
+      'Күйді жүктеу мүмкін болмады. Қайталау үшін басыңыз.';
+
+  @override
+  String get savedBookmarkUnavailableTooltip =>
+      'Бұл карточканы қазір сақтау мүмкін емес';
+
+  @override
+  String get savedBookmarkOfflineMessage =>
+      'Байланыс жоқ. Сақталғандар өзгерген жоқ.';
+
+  @override
+  String get savedRemoveEverywhereTooltip => 'Сақталғандардан өшіру';
+
+  @override
+  String get savedManageCollectionsTooltip => 'Коллекцияларды басқару';
+
+  @override
+  String get savedRemoveEverywhereTitle => 'Сақталғандардан өшіру керек пе?';
+
+  @override
+  String savedRemoveEverywhereMessage(int count) {
+    return 'Бұл карточка қазір $count коллекцияда. Ол барлық жердегі Сақталғандардан өшіріледі.';
+  }
+
+  @override
+  String get savedRemoveEverywhereAction => 'Барлық жерден өшіру';
+
+  @override
+  String get savedRemoveFromCollection => 'Осы коллекциядан алып тастау';
+
+  @override
+  String get savedCollectionPickerTitle => 'Коллекцияларға сақтау';
+
+  @override
+  String get savedCollectionPickerSearchHint => 'Коллекция атауы';
+
+  @override
+  String get savedCollectionPickerDone => 'Дайын';
+
+  @override
+  String get savedCancelSaveAction => 'Сақталғандардан өшіру';
+
+  @override
+  String get savedCollectionPickerEmpty => 'Әзірге коллекция жоқ';
+
+  @override
+  String get savedCollectionPickerNoMatches => 'Сәйкес коллекциялар табылмады';
+
+  @override
+  String get savedCollectionCreateInline => 'Жаңа коллекция';
+
+  @override
+  String get savedCollectionCreateTitle => 'Коллекция жасау';
+
+  @override
+  String get savedCollectionRenameTitle => 'Коллекция атауын өзгерту';
+
+  @override
+  String get savedCollectionTitleLabel => 'Коллекция атауы';
+
+  @override
+  String get savedCollectionTitleHint => 'Мысалы, Алматыдағы демалыс';
+
+  @override
+  String get savedCollectionDeleteTitle => 'Коллекцияны өшіру керек пе?';
+
+  @override
+  String get savedCollectionDeleteMessage =>
+      'Тек коллекция өшіріледі. Оның карточкалары «Барлық сақталғандар» бөлімінде қалады.';
+
+  @override
+  String get savedCollectionDeleteAction => 'Коллекцияны өшіру';
+
+  @override
+  String get savedCollectionGoAll => 'Барлығына өту';
+
+  @override
+  String get savedCollectionMenuTooltip => 'Коллекция әрекеттері';
+
+  @override
+  String get savedCollectionRenameAction => 'Атауын өзгерту';
+
+  @override
+  String savedCollectionItemCount(int count) {
+    return '$count сақталған';
+  }
+
+  @override
+  String savedCardCollectionsCount(int count) {
+    return '$count коллекцияда';
+  }
+
+  @override
+  String get savedCollectionCreated => 'Коллекция жасалды';
+
+  @override
+  String get savedCollectionRenamed => 'Коллекция атауы өзгертілді';
+
+  @override
+  String get savedCollectionDeleted =>
+      'Коллекция өшірілді. Сақталған карточкалар қалды.';
+
+  @override
+  String get savedAssignmentsUpdated => 'Коллекциялар жаңартылды';
+
+  @override
+  String get savedActionPending =>
+      'Сервер растауын күтіп отырмыз. Әрекет уақытша бұғатталған.';
+
+  @override
+  String get savedActionRejected =>
+      'Өзгеріс қолданылмады. Жаңартып, қайта көріңіз.';
+
+  @override
+  String get savedActionExpired =>
+      'Сұрау уақыты аяқталды. Сақталғандар серверден жаңартылды.';
+
+  @override
+  String get savedErrorNetwork =>
+      'Қосылу мүмкін болмады. Байланысты тексеріп, қайталаңыз.';
+
+  @override
+  String get savedErrorGeneric =>
+      'Сақталғандарды жүктеу мүмкін болмады. Қайталап көріңіз.';
+
+  @override
+  String get savedErrorDuplicateCollection =>
+      'Мұндай атауы бар коллекция бұрыннан бар.';
+
+  @override
+  String get savedErrorQuota => 'Сақталғандар лимитіне жеттіңіз.';
+
+  @override
+  String get savedErrorConflict =>
+      'Сақталғандар басқа экранда өзгерді. Жаңартып, қайталаңыз.';
+
+  @override
+  String get savedErrorPolicyLocked => 'Сақталғандар уақытша қолжетімсіз.';
+
+  @override
+  String get savedPaginationRetry => 'Тағы жүктеу мүмкін болмады';
 }

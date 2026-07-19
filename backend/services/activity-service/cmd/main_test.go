@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	grpcadapter "kz/inflap/backend/services/activity-service/internal/adapter/grpc"
 	"kz/inflap/backend/services/activity-service/internal/config"
 )
 
@@ -91,5 +92,37 @@ func TestNewInternalActivityHTTPMTLSServer(t *testing.T) {
 	}
 	if server.ReadTimeout != time.Second || server.WriteTimeout != 2*time.Second || server.IdleTimeout != 3*time.Second {
 		t.Fatalf("timeouts = %s/%s/%s", server.ReadTimeout, server.WriteTimeout, server.IdleTimeout)
+	}
+}
+
+func TestNewActivityGRPCServerRegistersSavedSourceService(t *testing.T) {
+	t.Parallel()
+
+	server := newActivityGRPCServer(grpcadapter.NewServer(nil, nil, nil, nil))
+	defer server.Stop()
+
+	services := server.GetServiceInfo()
+	if _, exists := services["activity.v1.ActivityService"]; !exists {
+		t.Fatal("activity.v1.ActivityService is not registered")
+	}
+	if _, exists := services["content.v1.SavedSourceService"]; !exists {
+		t.Fatal("content.v1.SavedSourceService is not registered")
+	}
+}
+
+func TestNewSavedSourceAuthorizerFailsClosedInProduction(t *testing.T) {
+	t.Parallel()
+
+	authorizer, err := newSavedSourceAuthorizer(&config.Config{
+		App: config.AppConfig{Env: "production"},
+		Security: config.SecurityConfig{
+			InternalServiceToken: "legacy-token-must-not-be-used",
+		},
+	})
+	if err == nil {
+		t.Fatal("newSavedSourceAuthorizer() error = nil, want missing JWT verifier configuration error")
+	}
+	if authorizer != nil {
+		t.Fatal("newSavedSourceAuthorizer() returned a production static-token fallback")
 	}
 }

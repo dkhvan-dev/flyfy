@@ -1,0 +1,3 @@
+-- PostgreSQL has no operation that marks a validated CHECK constraint as
+-- NOT VALID. The surrounding expand/contract down migrations remain safe with
+-- either validation state.

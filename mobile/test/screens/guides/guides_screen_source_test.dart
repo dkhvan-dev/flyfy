@@ -270,6 +270,42 @@ void main() {
     expect(cardSource, contains('l10n.guidesViewProfile'));
   });
 
+  test(
+    'verified guide cards save the canonical user id from the CARD surface',
+    () async {
+      final source = await File(
+        'lib/screens/guides/guides_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class _GuideCard');
+      final fallbackStart = source.indexOf('class _GuideFallbackArt');
+
+      expect(cardStart, isNonNegative);
+      expect(fallbackStart, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, fallbackStart);
+
+      expect(source, contains("saved_operation.dart';"));
+      expect(source, contains("saved_target.dart';"));
+      expect(source, contains("session_provider.dart';"));
+      expect(source, contains('app_saved_bookmark_button.dart'));
+      expect(source, contains('context.select<SessionProvider, String?>'));
+      expect(cardSource, contains('_isVerifiedPublicGuide(guide)'));
+      expect(cardSource, contains('guide.userId != currentUserId'));
+      expect(cardSource, contains('required this.currentUserId'));
+      expect(source, contains("return status == 'ACTIVE';"));
+      expect(source, isNot(contains("status == 'APPROVED'")));
+      expect(cardSource, contains('SavedTarget.tryCreate('));
+      expect(cardSource, contains('AppSavedBookmarkButton('));
+      expect(cardSource, contains('entityType: SavedEntityType.user'));
+      expect(cardSource, contains('entityId: guide.userId'));
+      expect(cardSource, isNot(contains('entityId: guide.id')));
+      expect(cardSource, contains('sourceSurface: SavedSourceSurface.card'));
+      expect(cardSource, contains('dimension: AppSizes.minTapTarget'));
+      expect(cardSource, contains('behavior: HitTestBehavior.opaque'));
+      expect(cardSource, contains('onTap: _consumeGuideCardBookmarkTap'));
+    },
+  );
+
   test('guide filter segments grow for accessibility text scale', () async {
     final source = await File(
       'lib/screens/guides/guides_screen.dart',

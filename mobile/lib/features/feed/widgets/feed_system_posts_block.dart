@@ -3,6 +3,7 @@ import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
+import 'post_saved_bookmark_button.dart';
 
 class FeedSystemPostsBlock extends StatelessWidget {
   const FeedSystemPostsBlock({
@@ -157,6 +158,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                   ],
                 ),
               ),
+              PostSavedBookmarkButton(post: post),
             ],
           ),
         ),

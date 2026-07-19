@@ -34,6 +34,51 @@ func TestLoadSearchServiceDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadSavedLifecycleDefaultsDisabled(t *testing.T) {
+	setRequiredConfigEnv(t)
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.SavedLifecycle.Enabled {
+		t.Fatal("Saved lifecycle enabled by default, want explicit rollout")
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		t.Fatalf("NATSConfig returned error: %v", err)
+	}
+	if cfg.SavedLifecycle.Subject != "saved.source.guide.lifecycle.v1" ||
+		natsConfig.URLs != "nats://nats:4222" ||
+		cfg.SavedLifecycle.DeliveredRetention != 14*24*time.Hour ||
+		cfg.SavedLifecycle.DeadRetention != 90*24*time.Hour ||
+		cfg.SavedLifecycle.ReconcileInterval != time.Minute {
+		t.Fatalf("Saved lifecycle defaults = %+v", cfg.SavedLifecycle)
+	}
+}
+
+func TestLoadSavedLifecycleRejectsUnsafeLease(t *testing.T) {
+	setRequiredConfigEnv(t)
+	t.Setenv("SAVED_LIFECYCLE_ENABLED", "true")
+	t.Setenv("SAVED_LIFECYCLE_LEASE_DURATION", "2s")
+	t.Setenv("SAVED_LIFECYCLE_PUBLISH_TIMEOUT", "3s")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load accepted a Saved lifecycle lease shorter than publish timeout")
+	}
+}
+
+func TestLoadRejectsPlaintextSavedLifecycleNATSInStaging(t *testing.T) {
+	setRequiredConfigEnv(t)
+	t.Setenv("APP_ENV", "staging")
+	t.Setenv("SAVED_LIFECYCLE_ENABLED", "true")
+	t.Setenv("NATS_URL", "nats://nats.internal:4222")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for plaintext staging NATS")
+	}
+}
+
 func TestLoadSearchServiceConfigFromEnvironment(t *testing.T) {
 	setRequiredConfigEnv(t)
 	t.Setenv("SEARCH_INDEXING_ENABLED", "true")

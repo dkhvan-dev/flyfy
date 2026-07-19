@@ -978,7 +978,7 @@ func (r *PGPostRepository) SoftDeletePost(ctx context.Context, postID uuid.UUID,
 
 	const query = `
 		UPDATE posts
-		SET deleted_at = NOW(), updated_at = NOW()
+		SET deleted_at = NOW(), updated_at = NOW(), revision = revision + 1
 		WHERE id = $1 AND author_user_id = $2 AND deleted_at IS NULL
 	`
 
@@ -994,13 +994,14 @@ func (r *PGPostRepository) SoftDeletePost(ctx context.Context, postID uuid.UUID,
 	deletedAt := time.Now().UTC()
 	deletedPost.DeletedAt = &deletedAt
 	deletedPost.UpdatedAt = deletedAt
+	deletedPost.Revision = previousPost.Revision + 1
 	if err = applyCommunityPostCountDeltas(ctx, tx, postCommunityPostCountDeltas(previousPost, &deletedPost)); err != nil {
 		return err
 	}
 	if err = deletePostFeedItemTx(ctx, tx, postID); err != nil {
 		return err
 	}
-	if err = enqueuePostFeedProjectionDeleteTx(ctx, tx, postID, previousPost.Revision, deletedAt); err != nil {
+	if err = enqueuePostFeedProjectionDeleteTx(ctx, tx, postID, deletedPost.Revision, deletedAt); err != nil {
 		return err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -1011,7 +1012,7 @@ func (r *PGPostRepository) SoftDeletePost(ctx context.Context, postID uuid.UUID,
 
 func lockPostForCommunityPostCount(ctx context.Context, tx communityTx, postID uuid.UUID, revision int64) (*model.Post, error) {
 	const query = `
-		SELECT community_id, status, archived_at, deleted_at, moderation_status, expires_at
+		SELECT community_id, status, archived_at, deleted_at, moderation_status, expires_at, revision
 		FROM posts
 		WHERE id = $1 AND revision = $2 AND deleted_at IS NULL
 		FOR UPDATE
@@ -1028,7 +1029,7 @@ func lockPostForCommunityPostCount(ctx context.Context, tx communityTx, postID u
 
 func lockOwnedPostForCommunityPostCount(ctx context.Context, tx communityTx, postID uuid.UUID, authorUserID uuid.UUID) (*model.Post, error) {
 	const query = `
-		SELECT community_id, status, archived_at, deleted_at, moderation_status, expires_at
+		SELECT community_id, status, archived_at, deleted_at, moderation_status, expires_at, revision
 		FROM posts
 		WHERE id = $1 AND author_user_id = $2 AND deleted_at IS NULL
 		FOR UPDATE
@@ -1059,6 +1060,7 @@ func scanPostPostCountState(scanner interface{ Scan(dest ...any) error }) (*mode
 		&deletedAtValue,
 		&moderationRaw,
 		&expiresAtValue,
+		&post.Revision,
 	); err != nil {
 		return nil, err
 	}

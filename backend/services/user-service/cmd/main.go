@@ -28,6 +28,7 @@ import (
 	"kz/inflap/backend/services/user-service/internal/config"
 
 	filemanageradapter "kz/inflap/backend/services/user-service/internal/adapter/filemanager"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
@@ -179,15 +180,23 @@ func main() {
 		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg)),
 	}
 
-	userGRPCServer := grpcadapter.NewServer(userUseCase)
-	grpcServer := newUserGRPCServer(userGRPCServer, grpcOptions...)
+	savedUserSourceUseCase := app.NewSavedUserSourceUseCase(userRepo)
+	userGRPCServer := grpcadapter.NewServer(
+		userUseCase,
+		grpcadapter.WithSavedUserSource(savedUserSourceUseCase),
+	)
+	grpcServer := newUserGRPCServer(userGRPCServer, userGRPCServer, grpcOptions...)
 	var internalGRPCServer *grpc.Server
 	if mtlsConfig != nil {
 		mtlsGRPCOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to configure user-service internal mTLS gRPC")
 		}
-		internalGRPCServer = newUserGRPCServer(userGRPCServer, append(mtlsGRPCOptions, grpcOptions...)...)
+		internalGRPCServer = newUserGRPCServer(
+			userGRPCServer,
+			userGRPCServer,
+			append(mtlsGRPCOptions, grpcOptions...)...,
+		)
 	}
 
 	go func() {
@@ -257,9 +266,14 @@ func main() {
 	}
 }
 
-func newUserGRPCServer(userServer userv1.UserServiceServer, options ...grpc.ServerOption) *grpc.Server {
+func newUserGRPCServer(
+	userServer userv1.UserServiceServer,
+	savedSourceServer contentv1.SavedSourceServiceServer,
+	options ...grpc.ServerOption,
+) *grpc.Server {
 	grpcServer := grpc.NewServer(options...)
 	userv1.RegisterUserServiceServer(grpcServer, userServer)
+	contentv1.RegisterSavedSourceServiceServer(grpcServer, savedSourceServer)
 	return grpcServer
 }
 

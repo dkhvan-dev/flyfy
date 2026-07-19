@@ -142,6 +142,24 @@ func (srv *TokenServiceServer) RevokeAllUserSessions(ctx context.Context, req *p
 	return &pb.RevokeAllUserSessionsResponse{RevokedCount: count}, nil
 }
 
+func (srv *TokenServiceServer) ValidateUserSessionGeneration(
+	ctx context.Context,
+	req *pb.ValidateUserSessionGenerationRequest,
+) (*pb.ValidateUserSessionGenerationResponse, error) {
+	if req.GetSubject() == "" || req.GetSessionGeneration() == "" {
+		return nil, status.Error(codes.InvalidArgument, "subject and session_generation are required")
+	}
+	valid, err := srv.handler.ValidateUserSessionGeneration(
+		ctx,
+		req.GetSubject(),
+		req.GetSessionGeneration(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ValidateUserSessionGenerationResponse{Valid: valid}, nil
+}
+
 // --- Service Token RPCs ---
 
 func (srv *TokenServiceServer) AuthenticateService(ctx context.Context, req *pb.AuthenticateServiceRequest) (*pb.ServiceTokenResponse, error) {

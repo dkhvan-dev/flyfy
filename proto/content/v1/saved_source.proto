@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+package content.v1;
+
+option go_package = "kz/inflap/proto/gen/go/content/v1;contentv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Field numbers and names in this file are wire-contract identifiers. When a
+// field is removed, both its number and name must be reserved and never reused.
+
+// SavedSourceService is implemented by Saved-compatible content sources.
+// It is an authenticated service-to-service API and MUST NOT be exposed as a
+// client or API Gateway endpoint. Implementations MUST authorize the caller as
+// an allowed platform service before resolving a target.
+service SavedSourceService {
+  rpc ResolveSaveEligibility(ResolveSaveEligibilityRequest) returns (ResolveSaveEligibilityResponse);
+}
+
+// SavedEntityType is deliberately closed. A new source type requires a
+// compatible source contract and a new enum value.
+enum SavedEntityType {
+  reserved 3;
+  reserved "SAVED_ENTITY_TYPE_EXCURSION";
+
+  SAVED_ENTITY_TYPE_UNSPECIFIED = 0;
+  SAVED_ENTITY_TYPE_ATTRACTION = 1;
+  SAVED_ENTITY_TYPE_ACTIVITY = 2;
+  SAVED_ENTITY_TYPE_GUIDE = 4;
+  SAVED_ENTITY_TYPE_USER = 5;
+  SAVED_ENTITY_TYPE_POST = 6;
+}
+
+// SaveEligibility is authoritative only when returned by the authenticated
+// ResolveSaveEligibility RPC. Presentation hints are never authorization
+// proof. A successful response uses ELIGIBLE if and only if visibility is
+// PUBLIC; every other visibility uses INELIGIBLE.
+enum SaveEligibility {
+  SAVE_ELIGIBILITY_UNSPECIFIED = 0;
+  SAVE_ELIGIBILITY_ELIGIBLE = 1;
+  SAVE_ELIGIBILITY_INELIGIBLE = 2;
+}
+
+// SavedTargetVisibility describes the source-owned visibility/lifecycle state.
+// PRIVATE is valid only for ACTIVITY. Sources MUST use UNAVAILABLE for a
+// neutral temporary denial and RESTRICTED when that distinction is safe inside
+// the authenticated service boundary; neither state may expose card payload.
+enum SavedTargetVisibility {
+  SAVED_TARGET_VISIBILITY_UNSPECIFIED = 0;
+  SAVED_TARGET_VISIBILITY_PUBLIC = 1;
+  SAVED_TARGET_VISIBILITY_PRIVATE = 2;
+  SAVED_TARGET_VISIBILITY_UNAVAILABLE = 3;
+  SAVED_TARGET_VISIBILITY_DELETED = 4;
+  SAVED_TARGET_VISIBILITY_RESTRICTED = 5;
+}
+
+// SavedLocale is the complete locale set supported by the Saved projection.
+enum SavedLocale {
+  SAVED_LOCALE_UNSPECIFIED = 0;
+  SAVED_LOCALE_EN = 1;
+  SAVED_LOCALE_RU = 2;
+  SAVED_LOCALE_KK = 3;
+}
+
+// SavedLifecycleEventKind is the closed set of source lifecycle notifications.
+enum SavedLifecycleEventKind {
+  SAVED_LIFECYCLE_EVENT_KIND_UNSPECIFIED = 0;
+  SAVED_LIFECYCLE_EVENT_KIND_PUBLISHED = 1;
+  SAVED_LIFECYCLE_EVENT_KIND_UPDATED = 2;
+  SAVED_LIFECYCLE_EVENT_KIND_UNAVAILABLE = 3;
+  SAVED_LIFECYCLE_EVENT_KIND_DELETED = 4;
+  SAVED_LIFECYCLE_EVENT_KIND_VISIBILITY_CHANGED = 5;
+}
+
+// SavedTarget is the immutable canonical identity owned by a source domain.
+// entity_id is opaque: callers MUST NOT parse it, infer its storage format, or
+// build a route from it. Alias, merge, and replacement identities are outside
+// this generic contract.
+message SavedTarget {
+  // MUST be a supported non-UNSPECIFIED value.
+  SavedEntityType entity_type = 1;
+  // MUST be non-empty and already canonical in the selected source domain.
+  string entity_id = 2;
+}
+
+// SavedSourceRevisions is a vector of independent source-owned monotonic
+// revisions. Values are compared only with the matching component for the same
+// target; they need not be contiguous and no ordering relationship between
+// components may be inferred. Every component MUST be nonzero in successful
+// resolver responses and lifecycle events.
+message SavedSourceRevisions {
+  uint64 source_revision = 1;
+  uint64 projection_revision = 2;
+  uint64 visibility_revision = 3;
+}
+
+message ResolveSaveEligibilityRequest {
+  // The caller supplies the source domain's canonical target. If the source
+  // does not recognize this exact identity, it fails closed; it never returns
+  // an alias, merged identity, or replacement target.
+  SavedTarget target = 1;
+}
+
+message ResolveSaveEligibilityResponse {
+  // MUST contain exactly the same entity_type and entity_id as request.target.
+  // Any changed target is a contract violation and callers MUST fail closed.
+  SavedTarget target = 1;
+  SaveEligibility eligibility = 2;
+  SavedTargetVisibility visibility = 3;
+  SavedSourceRevisions revisions = 4;
+  // Required source time at which eligibility and visibility were validated.
+  google.protobuf.Timestamp validated_at = 5;
+
+  // MUST be present when eligibility is ELIGIBLE and visibility is PUBLIC.
+  // MUST be absent for every non-PUBLIC visibility. A consumer receiving a
+  // non-PUBLIC response with this payload MUST discard it and fail closed.
+  SavedPublicCardProjection public_projection = 6;
+}
+
+// SavedPublicCardProjection is a bounded, source-neutral card projection. It
+// contains no source aggregate, Saved relationship state, owner data, notes,
+// collections, sharing state, or request replay payload.
+message SavedPublicCardProjection {
+  // MUST be EN, RU, or KK, and the corresponding localized payload MUST exist.
+  // Display fallback is: requested locale, source default, EN, then the first
+  // available payload in EN/RU/KK order.
+  SavedLocale source_default_locale = 1;
+  SavedLocalizedCardProjection en = 2;
+  SavedLocalizedCardProjection ru = 3;
+  SavedLocalizedCardProjection kk = 4;
+
+  SavedRatingSummary rating = 5;
+
+  // as_of is required when rating, price_summary, or availability_summary is
+  // present. A time-sensitive summary also requires valid_until. Consumers
+  // MUST NOT present an expired summary as current.
+  google.protobuf.Timestamp as_of = 6;
+  google.protobuf.Timestamp valid_until = 7;
+
+  // Canonical application route validated by the platform router. Clients MUST
+  // use this value directly and never derive a route from SavedTarget.entity_id.
+  string canonical_detail_route = 8;
+
+  // At most one card media reference is carried. Absence means that the client
+  // uses the generic media fallback for the entity type.
+  SavedMediaReference media = 9;
+}
+
+// SavedLocalizedCardProjection contains display-safe PUBLIC text only. title
+// is required for every populated locale; the remaining fields may be empty
+// when the source has no safe value. Dynamic summaries are informational and
+// never assert current bookability.
+message SavedLocalizedCardProjection {
+  string title = 1;
+  string subtitle = 2;
+  string city = 3;
+  string country = 4;
+  string display_location = 5;
+  string price_summary = 6;
+  string availability_summary = 7;
+}
+
+message SavedRatingSummary {
+  // scale_max MUST be positive and value MUST be in [0, scale_max].
+  double value = 1;
+  uint64 review_count = 2;
+  double scale_max = 3;
+}
+
+// SavedMediaReference is opaque to Saved. It is resolved only through the
+// platform media boundary. reference_revision changes when the source rotates
+// the reference. The source MUST revoke prior references on a PUBLIC to
+// non-PUBLIC transition, even if their valid_until has not elapsed.
+message SavedMediaReference {
+  // MUST be non-empty when this message is present.
+  string opaque_reference = 1;
+  // MUST be nonzero and monotonic for the same logical media slot.
+  uint64 reference_revision = 2;
+  google.protobuf.Timestamp valid_until = 3;
+}
+
+// SavedSourceLifecycleEvent is an at-least-once delivery envelope. event_id is
+// a UUID and the stable deduplication key; every redelivery with the same ID
+// MUST have identical semantics. Consumers compare each revision component
+// independently and never let an older visibility revision restore payload.
+message SavedSourceLifecycleEvent {
+  string event_id = 1;
+  SavedLifecycleEventKind kind = 2;
+  SavedTarget target = 3;
+  SavedSourceRevisions revisions = 4;
+  // Required source time at which the represented lifecycle change occurred.
+  google.protobuf.Timestamp occurred_at = 5;
+  SavedTargetVisibility visibility = 6;
+
+  // Optional for PUBLIC events. MUST be absent for every non-PUBLIC event; a
+  // deny/private event atomically purges any previously materialized payload.
+  SavedPublicCardProjection public_projection = 7;
+}

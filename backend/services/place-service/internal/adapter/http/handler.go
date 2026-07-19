@@ -1,10 +1,12 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -21,13 +23,29 @@ type mediaBackfillStarter interface {
 	StartCountry(countryCode string) (string, error)
 }
 
-type Handler struct {
-	useCase       *app.PlaceUseCase
-	mediaBackfill mediaBackfillStarter
+type savedAttractionCoverDelivery interface {
+	CreatePublicSavedAttractionCoverDownloadURL(
+		ctx context.Context,
+		attractionID uuid.UUID,
+		savedRevision uint64,
+	) (string, error)
 }
 
-func NewHandler(useCase *app.PlaceUseCase) *Handler {
-	return &Handler{useCase: useCase}
+type Handler struct {
+	useCase                      *app.PlaceUseCase
+	mediaBackfill                mediaBackfillStarter
+	savedAttractionCoverDelivery savedAttractionCoverDelivery
+}
+
+func NewHandler(
+	useCase *app.PlaceUseCase,
+	savedCoverDelivery ...savedAttractionCoverDelivery,
+) *Handler {
+	handler := &Handler{useCase: useCase}
+	if len(savedCoverDelivery) > 0 {
+		handler.savedAttractionCoverDelivery = savedCoverDelivery[0]
+	}
+	return handler
 }
 
 func (h *Handler) SetMediaBackfillStarter(starter mediaBackfillStarter) {
@@ -40,6 +58,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	// Places.
 	mux.HandleFunc("GET /v1/places", h.ListPlaces)
 	mux.HandleFunc("POST /v1/places", h.CreatePlace)
+	mux.HandleFunc("HEAD /v1/places/{id}/saved-cover", h.RejectPublicSavedAttractionCoverHEAD)
+	mux.HandleFunc("GET /v1/places/{id}/saved-cover", h.GetPublicSavedAttractionCover)
 	mux.HandleFunc("GET /v1/places/{id}", h.GetPlace)
 	mux.HandleFunc("PUT /v1/places/{id}", h.UpdatePlace)
 	mux.HandleFunc("DELETE /v1/places/{id}", h.DeletePlace)
@@ -65,6 +85,89 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) RejectPublicSavedAttractionCoverHEAD(w http.ResponseWriter, _ *http.Request) {
+	setPublicSavedAttractionCoverHeaders(w.Header())
+	w.Header().Set("Allow", http.MethodGet)
+	w.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+func (h *Handler) GetPublicSavedAttractionCover(w http.ResponseWriter, r *http.Request) {
+	setPublicSavedAttractionCoverHeaders(w.Header())
+
+	attractionID, savedRevision, err := parsePublicSavedAttractionCoverRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid Saved attraction cover request")
+		return
+	}
+	if h.savedAttractionCoverDelivery == nil {
+		writeError(w, http.StatusServiceUnavailable, "Saved attraction cover delivery unavailable")
+		return
+	}
+
+	downloadURL, err := h.savedAttractionCoverDelivery.CreatePublicSavedAttractionCoverDownloadURL(
+		r.Context(),
+		attractionID,
+		savedRevision,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrPublicSavedAttractionCoverNotFound):
+			writeError(w, http.StatusNotFound, "Saved attraction cover not found")
+		case errors.Is(err, app.ErrPublicSavedAttractionCoverUnavailable):
+			writeError(w, http.StatusServiceUnavailable, "Saved attraction cover delivery unavailable")
+		default:
+			writeError(w, http.StatusBadGateway, "Saved attraction cover dependency failed")
+		}
+		return
+	}
+
+	w.Header().Set("Location", downloadURL)
+	w.Header().Set("Content-Length", "0")
+	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func parsePublicSavedAttractionCoverRequest(r *http.Request) (uuid.UUID, uint64, error) {
+	if r == nil || r.URL == nil {
+		return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+	}
+
+	rawAttractionID := r.PathValue("id")
+	attractionID, err := uuid.Parse(rawAttractionID)
+	if err != nil || attractionID == uuid.Nil || attractionID.String() != rawAttractionID {
+		return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+	}
+
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(query) != 1 {
+		return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+	}
+	rawRevisions, ok := query["saved_revision"]
+	if !ok || len(rawRevisions) != 1 {
+		return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+	}
+	rawRevision := rawRevisions[0]
+	savedRevision, err := strconv.ParseUint(rawRevision, 10, 64)
+	if err != nil || savedRevision == 0 || strconv.FormatUint(savedRevision, 10) != rawRevision ||
+		r.URL.RawQuery != "saved_revision="+rawRevision {
+		return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+	}
+
+	if r.Body != nil {
+		bodyPrefix, readErr := io.ReadAll(io.LimitReader(r.Body, 1))
+		if readErr != nil || len(bodyPrefix) != 0 {
+			return uuid.Nil, 0, errors.New("invalid Saved attraction cover request")
+		}
+	}
+	return attractionID, savedRevision, nil
+}
+
+func setPublicSavedAttractionCoverHeaders(header http.Header) {
+	header.Set("Cache-Control", "no-store")
+	header.Set("Referrer-Policy", "no-referrer")
+	header.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; sandbox")
+	header.Set("X-Content-Type-Options", "nosniff")
 }
 
 func (h *Handler) ListPlaceVisitReferences(w http.ResponseWriter, r *http.Request) {
@@ -163,13 +266,19 @@ func (h *Handler) GetPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view, err := h.useCase.GetPlace(r.Context(), placeID, localeFromRequest(r))
+	isAdminRead := strings.HasPrefix(r.URL.Path, "/internal/v1/admin/")
+	var view *app.PlaceView
+	if isAdminRead {
+		view, err = h.useCase.GetPlace(r.Context(), placeID, localeFromRequest(r))
+	} else {
+		view, err = h.useCase.GetPublicPlace(r.Context(), placeID, localeFromRequest(r))
+	}
 	if err != nil {
 		h.writeUseCaseError(w, err, "failed to get place")
 		return
 	}
 
-	if strings.HasPrefix(r.URL.Path, "/internal/v1/admin/") {
+	if isAdminRead {
 		writeJSON(w, http.StatusOK, toAdminPlaceResponse(view))
 		return
 	}

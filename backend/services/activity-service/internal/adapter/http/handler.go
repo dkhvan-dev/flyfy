@@ -21,14 +21,17 @@ import (
 	"kz/inflap/backend/services/activity-service/internal/transport/dto"
 )
 
+const activityCoverUpstreamTimeout = 10 * time.Second
+
 type Handler struct {
-	activityUC    *app.ActivityUseCase
-	attendanceUC  *app.AttendanceUseCase
-	joinUC        *app.JoinUseCase
-	repo          port.ActivityRepository
-	fileManager   port.ActivityMediaFileManager
-	actorResolver ActorResolver
-	internalToken string
+	activityUC      *app.ActivityUseCase
+	attendanceUC    *app.AttendanceUseCase
+	joinUC          *app.JoinUseCase
+	repo            port.ActivityRepository
+	fileManager     port.ActivityMediaFileManager
+	actorResolver   ActorResolver
+	internalToken   string
+	coverHTTPClient *http.Client
 }
 
 func NewHandler(
@@ -41,13 +44,14 @@ func NewHandler(
 	internalToken string,
 ) *Handler {
 	return &Handler{
-		activityUC:    activityUC,
-		attendanceUC:  attendanceUC,
-		joinUC:        joinUC,
-		repo:          repo,
-		fileManager:   fileManager,
-		actorResolver: actorResolver,
-		internalToken: strings.TrimSpace(internalToken),
+		activityUC:      activityUC,
+		attendanceUC:    attendanceUC,
+		joinUC:          joinUC,
+		repo:            repo,
+		fileManager:     fileManager,
+		actorResolver:   actorResolver,
+		internalToken:   strings.TrimSpace(internalToken),
+		coverHTTPClient: &http.Client{Timeout: activityCoverUpstreamTimeout},
 	}
 }
 
@@ -513,7 +517,7 @@ func createActivityInputFromRequest(actorUserID uuid.UUID, req dto.CreateActivit
 }
 
 func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	_, err := resolveActorUserID(r.Context(), h.actorResolver)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -527,7 +531,7 @@ func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activi
 		return
 	}
 
-	item, err := h.activityUC.GetActivityByID(r.Context(), activityID)
+	item, err := h.activityUC.GetActivityForViewer(r.Context(), activityID, actorUserID)
 	if err != nil {
 		h.writeAppError(w, err, "failed to get activity")
 		return
@@ -1310,7 +1314,11 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 	if coverMedia != nil {
 		v := coverMedia.FileID.String()
 		coverFileID = &v
-		coverURL := fmt.Sprintf("/api/v1/activities/%s/cover", item.ID.String())
+		coverURL := fmt.Sprintf(
+			"/api/v1/activities/%s/cover?revision=%d",
+			item.ID.String(),
+			item.Revision,
+		)
 		coverImageURL = &coverURL
 	}
 
@@ -1400,13 +1408,30 @@ func (h *Handler) toActivityDetailResponse(ctx context.Context, item *model.Acti
 }
 
 func (h *Handler) GetActivityCover(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	if _, err := h.activityUC.GetActivityByID(r.Context(), activityID); err != nil {
-		switch {
-		case errors.Is(err, app.ErrActivityNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
-		default:
-			writeError(w, http.StatusInternalServerError, "failed to load activity")
+	actorUserID := uuid.Nil
+	if SubjectFromContext(r.Context()) != "" {
+		var err error
+		actorUserID, err = resolveActorUserID(r.Context(), h.actorResolver)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "missing authenticated user")
+			return
 		}
+	}
+
+	item, err := h.activityUC.GetActivityForViewer(r.Context(), activityID, actorUserID)
+	if err != nil {
+		h.writeAppError(w, err, "failed to load activity")
+		return
+	}
+	if savedCoverRevisionRequested(r) {
+		visibility, _ := app.ResolveSavedSourceSnapshot(item, nil, time.Now().UTC())
+		if visibility != app.SavedSourceVisibilityPublic {
+			writeError(w, http.StatusNotFound, "activity cover not found")
+			return
+		}
+	}
+	if !coverRevisionMatches(r, item.Revision, item.SavedProjectionRevision) {
+		writeError(w, http.StatusNotFound, "activity cover not found")
 		return
 	}
 
@@ -1443,7 +1468,11 @@ func (h *Handler) GetActivityCover(w http.ResponseWriter, r *http.Request, activ
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(proxyReq)
+	client := h.coverHTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(proxyReq)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "failed to fetch activity cover")
 		return
@@ -1465,9 +1494,38 @@ func (h *Handler) GetActivityCover(w http.ResponseWriter, r *http.Request, activ
 	if contentLength := strings.TrimSpace(resp.Header.Get("Content-Length")); contentLength != "" {
 		w.Header().Set("Content-Length", contentLength)
 	}
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Header().Set("Cache-Control", "private, no-store")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, resp.Body)
+}
+
+func savedCoverRevisionRequested(r *http.Request) bool {
+	if r == nil || r.URL == nil {
+		return false
+	}
+	_, exists := r.URL.Query()["saved_revision"]
+	return exists
+}
+
+func coverRevisionMatches(r *http.Request, currentRevision int, savedProjectionRevision uint64) bool {
+	query := r.URL.Query()
+	if rawValues, exists := query["saved_revision"]; exists {
+		if len(rawValues) != 1 {
+			return false
+		}
+		rawSaved := strings.TrimSpace(rawValues[0])
+		if rawSaved == "" {
+			return false
+		}
+		revision, err := strconv.ParseUint(rawSaved, 10, 64)
+		return err == nil && savedProjectionRevision > 0 && revision == savedProjectionRevision
+	}
+	raw := strings.TrimSpace(query.Get("revision"))
+	if raw == "" {
+		return true
+	}
+	revision, err := strconv.ParseUint(raw, 10, 64)
+	return err == nil && currentRevision > 0 && revision == uint64(currentRevision)
 }
 
 func toParticipantResponse(item *model.ActivityParticipant) dto.ParticipantResponse {

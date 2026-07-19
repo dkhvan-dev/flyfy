@@ -71,6 +71,13 @@ MTLS_ALLOWED_DNS_NAMES=<caller-service>,...
 MTLS_MIN_VERSION=1.3
 ```
 
+Saved has an explicit bootstrap exception: its current runtime accepts only
+`SAVED_SERVICE_MTLS_MODE=disabled|enforce`. During a global permissive rollout,
+set `SAVED_SERVICE_MTLS_MODE=disabled` explicitly; switch it directly to
+`enforce` only when its complete contour is ready. Its certificate inventory
+and exact targets are documented in
+[`SAVED_SERVICE_COMPOSE.md`](./SAVED_SERVICE_COMPOSE.md).
+
 ## Rollout Gates
 
 1. Keep `MTLS_MODE=disabled`; deploy and verify existing traffic.

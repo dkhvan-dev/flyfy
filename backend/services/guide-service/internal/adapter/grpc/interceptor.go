@@ -12,10 +12,25 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/services/guide-service/internal/config"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 )
 
-func UnaryServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
+const savedSourceResolveRole = "saved:resolve"
+
+type ServiceAuthorizer interface {
+	ValidateBearer(
+		ctx context.Context,
+		authHeader string,
+		requiredRoles []string,
+	) (*serviceauth.Claims, error)
+}
+
+func UnaryServerInterceptor(
+	cfg *config.Config,
+	savedSourceAuthorizer ServiceAuthorizer,
+) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
@@ -30,20 +45,31 @@ func UnaryServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 		}
 		ctx = withRequestID(ctx, requestID)
 
-		internalToken := firstMetadataValue(md, "x-internal-service-token")
-		if internalToken == "" {
-			return nil, status.Error(codes.Unauthenticated, "missing internal service token")
-		}
+		if info.FullMethod == contentv1.SavedSourceService_ResolveSaveEligibility_FullMethodName {
+			var authErr error
+			ctx, authErr = authorizeSavedSourceRequest(ctx, md, cfg, savedSourceAuthorizer)
+			if authErr != nil {
+				return nil, authErr
+			}
+		} else {
+			if cfg == nil {
+				return nil, status.Error(codes.Unavailable, "service authentication is unavailable")
+			}
+			internalToken := firstMetadataValue(md, "x-internal-service-token")
+			if internalToken == "" {
+				return nil, status.Error(codes.Unauthenticated, "missing internal service token")
+			}
 
-		if subtle.ConstantTimeCompare([]byte(internalToken), []byte(cfg.Security.InternalServiceToken)) != 1 {
-			return nil, status.Error(codes.Unauthenticated, "invalid internal service token")
-		}
+			if subtle.ConstantTimeCompare([]byte(internalToken), []byte(cfg.Security.InternalServiceToken)) != 1 {
+				return nil, status.Error(codes.Unauthenticated, "invalid internal service token")
+			}
 
-		if serviceName := firstMetadataValue(md, "x-service-name"); serviceName != "" {
-			ctx = withService(ctx, serviceName)
-		}
-		if subject := firstMetadataValue(md, "x-subject"); subject != "" {
-			ctx = withSubject(ctx, subject)
+			if serviceName := firstMetadataValue(md, "x-service-name"); serviceName != "" {
+				ctx = withService(ctx, serviceName)
+			}
+			if subject := firstMetadataValue(md, "x-subject"); subject != "" {
+				ctx = withSubject(ctx, subject)
+			}
 		}
 
 		resp, err := handler(ctx, req)
@@ -67,6 +93,43 @@ func UnaryServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 		logger.Msg("grpc request completed")
 		return resp, err
 	}
+}
+
+func authorizeSavedSourceRequest(
+	ctx context.Context,
+	md metadata.MD,
+	cfg *config.Config,
+	authorizer ServiceAuthorizer,
+) (context.Context, error) {
+	if cfg == nil || authorizer == nil {
+		return ctx, status.Error(codes.Unavailable, "service authentication is unavailable")
+	}
+	authValues := md.Get("authorization")
+	if len(authValues) != 1 || strings.TrimSpace(authValues[0]) == "" {
+		return ctx, status.Error(codes.Unauthenticated, "missing or invalid service token")
+	}
+	claims, err := authorizer.ValidateBearer(
+		ctx,
+		authValues[0],
+		[]string{savedSourceResolveRole},
+	)
+	if err != nil {
+		switch {
+		case serviceauth.IsForbidden(err):
+			return ctx, status.Error(codes.PermissionDenied, "service is not allowed")
+		case serviceauth.IsUnauthorized(err):
+			return ctx, status.Error(codes.Unauthenticated, "missing or invalid service token")
+		default:
+			return ctx, status.Error(codes.Unavailable, "service authentication is unavailable")
+		}
+	}
+	allowedCaller := strings.TrimSpace(cfg.Security.SavedSourceAllowedCaller)
+	if claims == nil || allowedCaller == "" || claims.Subject != allowedCaller {
+		return ctx, status.Error(codes.PermissionDenied, "service is not allowed")
+	}
+	ctx = withSavedSourceCaller(ctx, claims.Subject)
+	ctx = withService(ctx, claims.Subject)
+	return ctx, nil
 }
 
 func firstMetadataValue(md metadata.MD, key string) string {

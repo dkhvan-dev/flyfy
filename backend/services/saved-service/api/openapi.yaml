@@ -1,0 +1,2048 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: Inflap Saved Service API
+  version: 1.0.0
+  description: |
+    Owner-scoped HTTP contract for Saved items and private collections.
+    The authenticated owner is derived only from the verified session; request
+    paths, query parameters, and bodies never accept an owner identifier.
+    All personal responses are private and non-cacheable.
+x-excluded-features:
+  - mass_mutation
+  - sharing
+  - notes
+  - manual_reorder
+  - generic_aliases
+  - offline_queue_or_reconcile
+  - persistent_marker_endpoints
+security:
+  - bearerAuth: []
+tags:
+  - name: Saved items
+  - name: Saved operations
+  - name: Saved collections
+
+paths:
+  /v1/users/me/saved-items/{entityType}/{entityKey}:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/EntityTypePath'
+      - $ref: '#/components/parameters/EntityKeyPath'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    put:
+      tags: [Saved items]
+      summary: Save one target
+      description: |
+        Creates a new activation when the relationship is absent or removed.
+        An already-active relationship produces a terminal no-op only after
+        current eligibility validation. The authenticated session is the owner.
+      operationId: saveSavedTarget
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+    delete:
+      tags: [Saved items]
+      summary: Globally unsave one target
+      description: |
+        This is the only DELETE meaning for a Saved target. It removes the
+        relationship and every effective collection membership present at
+        commit. It accepts no confirmation flag, relationship version,
+        membership version, or preview token, and changed membership count does
+        not introduce a second confirmation or precondition exchange.
+      operationId: globallyUnsaveSavedTarget
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-items:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Saved items]
+      summary: List saved items
+      description: |
+        Returns an owner-scoped cursor page ordered by server state. A
+        collection_id filter and uncollected=true are mutually exclusive. A
+        foreign or deleted collection has the same neutral not-found response.
+        Exact aggregate and per-category counters are intentionally absent.
+      operationId: listSavedItems
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeQuery'
+        - $ref: '#/components/parameters/CollectionIdQuery'
+        - $ref: '#/components/parameters/UncollectedQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+        - $ref: '#/components/parameters/PageLimitQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/SavedItemsPageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-items/query:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    post:
+      tags: [Saved items]
+      summary: Search saved items
+      description: |
+        Searches only the authenticated owner's Saved projection. Cursor scope
+        includes the normalized effective locale and all filters. Raw search
+        text and cursor plaintext must not be logged.
+      operationId: querySavedItems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedItemsQueryRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SavedItemsSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-items/status:batch:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    post:
+      tags: [Saved items]
+      summary: Resolve saved status for a bounded target batch
+      description: |
+        Returns owner relationship state only, without card projections.
+        UNKNOWN remains distinct from a confirmed unsaved state.
+      operationId: batchGetSavedItemStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchSavedStatusRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchSavedStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-items/capabilities:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Saved items]
+      summary: Get effective Saved capabilities
+      description: |
+        Returns effective product flags even when those flags disable Saved
+        features. The shared platform personal-data emergency policy still has
+        precedence and may fail this endpoint closed.
+      operationId: getSavedCapabilities
+      responses:
+        '200':
+          $ref: '#/components/responses/SavedCapabilitiesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-items/{entityType}/{entityKey}/collections:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/EntityTypePath'
+      - $ref: '#/components/parameters/EntityKeyPath'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Saved collections]
+      summary: Get a target's collection state
+      description: |
+        Returns the current relationship generation/version, dependent
+        membership version, exact effective collection IDs, and all active
+        collection options needed for the owner picker and removal preview.
+      operationId: getSavedTargetCollections
+      responses:
+        '200':
+          $ref: '#/components/responses/TargetCollectionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+    put:
+      tags: [Saved collections]
+      summary: Replace a target's desired collection set
+      description: |
+        Atomically converges the target to one bounded desired set. Expected
+        relationship state is discriminated, versions are typed where they
+        exist, and at most one collection may be created inline. No collection
+        item-count version or lifecycle vector is accepted.
+      operationId: replaceSavedTargetCollections
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesiredCollectionAssignmentRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-operations/{operationId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/OperationIdPath'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Saved operations]
+      summary: Get operation status
+      description: |
+        Reads an operation only for its originating subject and login-session
+        generation. It never starts or replays a mutation. Foreign, expired-out
+        of retention, and unknown identifiers return the same neutral NOT_FOUND.
+      operationId: getSavedOperation
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationStatusResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-collections:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    post:
+      tags: [Saved collections]
+      summary: Create a private collection
+      operationId: createSavedCollection
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCollectionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+    get:
+      tags: [Saved collections]
+      summary: List all active private collections
+      description: |
+        Returns one bounded owner-scoped list of at most 200 active collections,
+        ordered by organized_at descending and then collection ID descending.
+        There is no server pagination or collection-title search contract.
+      operationId: listSavedCollections
+      responses:
+        '200':
+          $ref: '#/components/responses/SavedCollectionsListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /v1/users/me/saved-collections/{collectionId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientPlatformHeader'
+      - $ref: '#/components/parameters/AppBuildHeader'
+      - $ref: '#/components/parameters/CollectionIdPath'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Saved collections]
+      summary: Get private collection metadata
+      description: |
+        Returns metadata only. Collection cards are read through the Saved items
+        list with collection_id in its owner-scoped query.
+      operationId: getSavedCollection
+      responses:
+        '200':
+          $ref: '#/components/responses/SavedCollectionDetailResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+    patch:
+      tags: [Saved collections]
+      summary: Rename a private collection
+      description: Changes only the title and requires the current metadata version.
+      operationId: renameSavedCollection
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameCollectionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+    delete:
+      tags: [Saved collections]
+      summary: Delete a private collection
+      description: |
+        Requires lifecycle and metadata versions, but no item-count version.
+        Deletion hides the collection and its effective memberships atomically;
+        it never unsaves the underlying relationships.
+      operationId: deleteSavedCollection
+      parameters:
+        - $ref: '#/components/parameters/OperationIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/SavedSourceSurfaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteCollectionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MutationTerminalResponse'
+        '202':
+          $ref: '#/components/responses/MutationPendingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Verified user access token with a current login-session generation.
+
+  parameters:
+    ClientPlatformHeader:
+      name: X-Client-Platform
+      in: header
+      required: false
+      description: |
+        Bounded mobile platform input for owner-sticky product rollout. It is
+        not an authentication or authorization claim. Missing or invalid input
+        disables new expansion but never blocks canonical reads or reduction.
+      schema:
+        type: string
+        enum: [android, ios]
+    AppBuildHeader:
+      name: X-App-Build
+      in: header
+      required: false
+      description: |
+        Positive decimal store build used only by product rollout minimum-build
+        rules. It grants no data access. Missing or invalid input disables new
+        expansion but never blocks canonical reads or reduction.
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Requested Saved presentation locale. The service normalizes the value to
+        one effective EN, RU, or KK locale and returns it in Content-Language.
+      schema:
+        $ref: '#/components/schemas/AcceptLanguageValue'
+    EntityTypePath:
+      name: entityType
+      in: path
+      required: true
+      description: Closed Saved target type.
+      schema:
+        $ref: '#/components/schemas/EntityType'
+    EntityKeyPath:
+      name: entityKey
+      in: path
+      required: true
+      allowReserved: false
+      description: |
+        Opaque, canonical source identifier encoded as one URI path segment.
+        Clients must not parse it, derive storage keys from it, or construct a
+        source URL from it. The server enforces the UTF-8 byte bound before DB work.
+      schema:
+        $ref: '#/components/schemas/EntityKey'
+    OperationIdPath:
+      name: operationId
+      in: path
+      required: true
+      description: Client-generated UUIDv4 operation identity.
+      schema:
+        $ref: '#/components/schemas/OperationId'
+    CollectionIdPath:
+      name: collectionId
+      in: path
+      required: true
+      description: Opaque owner-scoped collection UUID; possession grants no access.
+      schema:
+        $ref: '#/components/schemas/CollectionId'
+    OperationIdHeader:
+      name: Operation-Id
+      in: header
+      required: true
+      description: |
+        Cryptographically random client-generated UUIDv4 identifying exactly one
+        mutation attempt within the current login-session generation.
+      schema:
+        $ref: '#/components/schemas/OperationId'
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        Base64url key generated from at least 16 random bytes. It must be
+        cryptographically independent of Operation-Id and must never be reused
+        for a different resource or command.
+      schema:
+        type: string
+        minLength: 22
+        maxLength: 128
+        pattern: '^[A-Za-z0-9_-]{22,128}$'
+        x-min-entropy-bits: 128
+    SavedSourceSurfaceHeader:
+      name: Saved-Source-Surface
+      in: header
+      required: false
+      description: |
+        Bounded first-party UI attribution for the accepted attempt. It is not
+        part of mutation semantics or idempotency matching. Missing values are
+        normalized to UNKNOWN; arbitrary analytics labels are rejected.
+      schema:
+        type: string
+        default: UNKNOWN
+        enum: [UNKNOWN, CARD, DETAIL, SAVED_ALL, SAVED_COLLECTION]
+    EntityTypeQuery:
+      name: type
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/EntityType'
+    CollectionIdQuery:
+      name: collection_id
+      in: query
+      required: false
+      description: Mutually exclusive with uncollected=true.
+      schema:
+        $ref: '#/components/schemas/CollectionId'
+    UncollectedQuery:
+      name: uncollected
+      in: query
+      required: false
+      description: When true, mutually exclusive with collection_id.
+      schema:
+        type: boolean
+        default: false
+    CursorQuery:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque owner-, scope-, filter-, and locale-bound continuation token.
+      schema:
+        $ref: '#/components/schemas/OpaqueCursor'
+    PageLimitQuery:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 30
+
+  headers:
+    PrivateCacheControl:
+      description: Personal responses must never be stored by shared or private caches.
+      required: true
+      schema:
+        type: string
+        const: 'private, no-store'
+    PragmaNoCache:
+      description: Compatibility directive for legacy intermediaries.
+      required: true
+      schema:
+        type: string
+        const: no-cache
+    ContentLanguage:
+      description: Effective normalized Saved presentation locale.
+      required: true
+      schema:
+        $ref: '#/components/schemas/Locale'
+    VaryPersonal:
+      description: Inputs that can change an authenticated localized response.
+      required: true
+      schema:
+        type: string
+        const: 'Authorization, Accept-Language'
+    RequestId:
+      description: Sanitized request correlation identifier.
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    RetryAfter:
+      description: Minimum whole seconds before polling or retrying.
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        maximum: 30
+    WWWAuthenticate:
+      description: Bearer authentication challenge.
+      required: true
+      schema:
+        type: string
+        pattern: '^Bearer(?: .*)?$'
+
+  responses:
+    MutationTerminalResponse:
+      description: The accepted mutation has reached an immutable terminal result.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TerminalOperationResult'
+    MutationPendingResponse:
+      description: The mutation was durably accepted and is pending until its bounded deadline.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PendingOperationResult'
+    SavedItemsPageResponse:
+      description: Owner-scoped Saved page without aggregate counters.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SavedItemsPage'
+    SavedItemsSearchResponse:
+      description: Owner-scoped Saved search page without aggregate counters.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SavedItemsSearchPage'
+    BatchSavedStatusResponse:
+      description: Owner Saved state for the requested bounded target set.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BatchSavedStatusResult'
+    SavedCapabilitiesResponse:
+      description: Effective Saved feature and quota-warning capabilities.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SavedCapabilities'
+    TargetCollectionsResponse:
+      description: Versioned owner collection-assignment snapshot for one target.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TargetCollectionsSnapshot'
+    OperationStatusResponse:
+      description: Current immutable operation status plus an optional separately fresh snapshot.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OperationResult'
+    SavedCollectionsListResponse:
+      description: All active owner collections in one bounded response.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SavedCollectionsList'
+    SavedCollectionDetailResponse:
+      description: Active owner collection metadata.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SavedCollectionDetail'
+    BadRequestError:
+      description: Request syntax, encoding, cursor, filter, or validation failure.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    UnauthorizedError:
+      description: The verified authenticated session is absent or invalid.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        WWW-Authenticate:
+          $ref: '#/components/headers/WWWAuthenticate'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ForbiddenError:
+      description: Personal-data access is blocked by the shared platform policy.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFoundError:
+      description: Neutral not-found response that does not reveal foreign personal resources.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ConflictError:
+      description: Typed stale, replay, lifecycle, or uniqueness conflict before acceptance.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    UnprocessableEntityError:
+      description: Target availability, collection title, or quota rejection before acceptance.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    TooManyRequestsError:
+      description: Subject, IP, operation, or owner-quota rate control rejected the request.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServiceUnavailableError:
+      description: Saved or a required source dependency is temporarily unavailable.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/PrivateCacheControl'
+        Pragma:
+          $ref: '#/components/headers/PragmaNoCache'
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/VaryPersonal'
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+
+  schemas:
+    Locale:
+      type: string
+      description: Effective Saved locale (EN, RU, or KK).
+      enum: [en, ru, kk]
+
+    AcceptLanguageValue:
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Standard Accept-Language value; the service selects one effective en, ru, or kk locale.
+
+    EntityType:
+      type: string
+      enum: [ATTRACTION, ACTIVITY, USER, POST]
+
+    EntityKey:
+      type: string
+      minLength: 1
+      maxLength: 512
+      x-max-utf8-bytes: 512
+      description: Opaque canonical source identifier; semantics are source-owned.
+
+    CollectionId:
+      type: string
+      format: uuid
+
+    OperationId:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+
+    ClientCreationId:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+
+    Version:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9223372036854775807
+      description: Server-issued monotonic version, comparable only within its typed resource scope.
+
+    PositiveVersion:
+      allOf:
+        - $ref: '#/components/schemas/Version'
+        - minimum: 1
+
+    RelationshipGeneration:
+      type: string
+      format: uuid
+      description: Random server-issued identity of one relationship activation generation.
+
+    CollectionTitle:
+      type: string
+      minLength: 1
+      maxLength: 80
+      description: Private collection title, bounded to 80 Unicode code points before normalization.
+
+    SearchText:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: Saved search text, bounded to 200 Unicode code points and a server token limit.
+
+    OpaqueCursor:
+      type: string
+      minLength: 1
+      maxLength: 4096
+      description: |
+        Opaque AEAD-protected continuation token bound to owner, scope, filters,
+        effective locale, key ID, and expiry. Clients must not parse or log it.
+
+    SavedTarget:
+      type: object
+      additionalProperties: false
+      required: [entity_type, entity_id]
+      properties:
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        entity_id:
+          $ref: '#/components/schemas/EntityKey'
+
+    SavedItemsQueryRequest:
+      type: object
+      additionalProperties: false
+      required: [search]
+      properties:
+        type:
+          $ref: '#/components/schemas/EntityType'
+        collection_id:
+          $ref: '#/components/schemas/CollectionId'
+        uncollected:
+          type: boolean
+          default: false
+        search:
+          $ref: '#/components/schemas/SearchText'
+        cursor:
+          $ref: '#/components/schemas/OpaqueCursor'
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          default: 30
+      allOf:
+        - not:
+            required: [collection_id, uncollected]
+            properties:
+              uncollected:
+                const: true
+
+    BatchSavedStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [targets]
+      properties:
+        targets:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/SavedTarget'
+
+    SavedState:
+      type: string
+      description: UNKNOWN is not equivalent to a server-confirmed absence.
+      enum: [UNKNOWN, CONFIRMED_UNSAVED, SAVED]
+
+    EligibilityHint:
+      type: string
+      description: Coarse owner-safe mutation eligibility; it does not expose source internals.
+      enum: [ELIGIBLE, REDUCTION_ONLY, INELIGIBLE, UNKNOWN]
+
+    SavedTargetStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - target
+        - saved_state
+        - effective_collection_count
+        - eligibility_hint
+        - resource_version
+      properties:
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        saved_state:
+          $ref: '#/components/schemas/SavedState'
+        effective_collection_count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+        eligibility_hint:
+          $ref: '#/components/schemas/EligibilityHint'
+        relationship_generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        resource_version:
+          $ref: '#/components/schemas/Version'
+
+    BatchSavedStatusResult:
+      type: object
+      additionalProperties: false
+      required: [statuses]
+      properties:
+        statuses:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/SavedTargetStatus'
+
+    AvailableSavedCardProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projection_version
+        - content_state
+        - display_locale
+        - title
+        - canonical_detail_route
+      properties:
+        projection_version:
+          $ref: '#/components/schemas/Version'
+        content_state:
+          const: AVAILABLE
+        display_locale:
+          $ref: '#/components/schemas/Locale'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        subtitle:
+          type: string
+          maxLength: 500
+        image_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        canonical_detail_route:
+          type: string
+          minLength: 1
+          maxLength: 256
+          pattern: '^/(places|activities)/[^/?#%\\]+$|^/users/[^/?#%\\]+/profile$'
+          description: |
+            Source-validated first-party GoRouter location for this exact
+            immutable target. It is present only for AVAILABLE PUBLIC content;
+            clients must not derive a route from entity type or target ID.
+        source_updated_at:
+          type: string
+          format: date-time
+
+    UnavailableSavedCardProjection:
+      type: object
+      additionalProperties: false
+      required: [projection_version, content_state]
+      properties:
+        projection_version:
+          $ref: '#/components/schemas/Version'
+        content_state:
+          const: UNAVAILABLE
+
+    SavedCardProjection:
+      description: PUBLIC card payload or a payload-free unavailable placeholder.
+      oneOf:
+        - $ref: '#/components/schemas/AvailableSavedCardProjection'
+        - $ref: '#/components/schemas/UnavailableSavedCardProjection'
+      discriminator:
+        propertyName: content_state
+        mapping:
+          AVAILABLE: '#/components/schemas/AvailableSavedCardProjection'
+          UNAVAILABLE: '#/components/schemas/UnavailableSavedCardProjection'
+
+    ActiveRelationship:
+      type: object
+      additionalProperties: false
+      required: [generation, version, saved_at]
+      properties:
+        generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        version:
+          $ref: '#/components/schemas/PositiveVersion'
+        saved_at:
+          type: string
+          format: date-time
+        attribution_id:
+          type: string
+          format: uuid
+          description: Present only when relationship-level analytics consent allows it.
+
+    SavedItem:
+      type: object
+      additionalProperties: false
+      required: [target, relationship, effective_collection_count, projection]
+      properties:
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        relationship:
+          $ref: '#/components/schemas/ActiveRelationship'
+        effective_collection_count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+        projection:
+          $ref: '#/components/schemas/SavedCardProjection'
+
+    SearchMatch:
+      type: object
+      additionalProperties: false
+      required: [match_rank, match_kind, matched_field, matched_locale]
+      properties:
+        match_rank:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+        match_kind:
+          type: string
+          enum: [EXACT, TOKEN, PREFIX]
+        matched_field:
+          type: string
+          enum: [TITLE, CITY, COUNTRY]
+        matched_locale:
+          $ref: '#/components/schemas/Locale'
+        alternate_public_display_value:
+          type: string
+          maxLength: 300
+          description: Present only when the match differs from the current display field.
+
+    SavedSearchItem:
+      type: object
+      additionalProperties: false
+      required: [target, relationship, effective_collection_count, projection, match]
+      properties:
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        relationship:
+          $ref: '#/components/schemas/ActiveRelationship'
+        effective_collection_count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+        projection:
+          $ref: '#/components/schemas/SavedCardProjection'
+        match:
+          $ref: '#/components/schemas/SearchMatch'
+
+    QuotaWarning:
+      type: object
+      additionalProperties: false
+      required: [resource, limit, remaining]
+      properties:
+        resource:
+          type: string
+          enum:
+            - SAVED_ITEMS
+            - SAVED_COLLECTIONS
+            - COLLECTION_MEMBERSHIPS
+            - OWNER_MEMBERSHIPS
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+        remaining:
+          type: integer
+          format: int64
+          minimum: 0
+      description: Returned only near an authoritative quota threshold or after rejection.
+
+    SavedItemsPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/SavedItem'
+        next_cursor:
+          oneOf:
+            - $ref: '#/components/schemas/OpaqueCursor'
+            - type: 'null'
+        has_more:
+          type: boolean
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    SavedItemsSearchPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/SavedSearchItem'
+        next_cursor:
+          oneOf:
+            - $ref: '#/components/schemas/OpaqueCursor'
+            - type: 'null'
+        has_more:
+          type: boolean
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    SavedProductFlags:
+      type: object
+      additionalProperties: false
+      required: [saved_items_enabled, search_enabled, collections_enabled]
+      properties:
+        saved_items_enabled:
+          type: boolean
+        search_enabled:
+          type: boolean
+        collections_enabled:
+          type: boolean
+
+    SavedCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+        - capability_revision
+        - product_flags
+        - has_confirmed_saved_data
+        - supported_entity_types
+        - effective_locale
+      properties:
+        capability_revision:
+          type: string
+          minLength: 1
+          maxLength: 128
+        product_flags:
+          $ref: '#/components/schemas/SavedProductFlags'
+        has_confirmed_saved_data:
+          type: boolean
+        supported_entity_types:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/EntityType'
+        effective_locale:
+          $ref: '#/components/schemas/Locale'
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    AbsentRelationshipStateSnapshot:
+      type: object
+      additionalProperties: false
+      required: [state]
+      properties:
+        state:
+          const: ABSENT
+
+    ExistingRelationshipStateSnapshot:
+      type: object
+      additionalProperties: false
+      required: [state, generation, version]
+      properties:
+        state:
+          type: string
+          enum: [ACTIVE, REMOVED]
+        generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        version:
+          $ref: '#/components/schemas/PositiveVersion'
+
+    RelationshipStateSnapshot:
+      oneOf:
+        - $ref: '#/components/schemas/AbsentRelationshipStateSnapshot'
+        - $ref: '#/components/schemas/ExistingRelationshipStateSnapshot'
+      discriminator:
+        propertyName: state
+        mapping:
+          ABSENT: '#/components/schemas/AbsentRelationshipStateSnapshot'
+          ACTIVE: '#/components/schemas/ExistingRelationshipStateSnapshot'
+          REMOVED: '#/components/schemas/ExistingRelationshipStateSnapshot'
+
+    CollectionOption:
+      type: object
+      additionalProperties: false
+      required:
+        - collection_id
+        - title
+        - metadata_version
+        - lifecycle_version
+      properties:
+        collection_id:
+          $ref: '#/components/schemas/CollectionId'
+        title:
+          $ref: '#/components/schemas/CollectionTitle'
+        metadata_version:
+          $ref: '#/components/schemas/Version'
+        lifecycle_version:
+          $ref: '#/components/schemas/Version'
+
+    TargetCollectionsSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - snapshot_version
+        - target
+        - relationship
+        - dependent_membership_version
+        - effective_collection_ids
+        - collection_options
+      properties:
+        snapshot_version:
+          $ref: '#/components/schemas/Version'
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        relationship:
+          $ref: '#/components/schemas/RelationshipStateSnapshot'
+        dependent_membership_version:
+          $ref: '#/components/schemas/Version'
+        effective_collection_ids:
+          type: array
+          maxItems: 200
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/CollectionId'
+        collection_options:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/CollectionOption'
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    ExpectedAbsentRelationship:
+      type: object
+      additionalProperties: false
+      required: [state]
+      properties:
+        state:
+          const: EXPECTED_ABSENT
+
+    ExpectedActiveRelationship:
+      type: object
+      additionalProperties: false
+      required: [state, generation, version]
+      properties:
+        state:
+          const: EXPECTED_ACTIVE
+        generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        version:
+          $ref: '#/components/schemas/PositiveVersion'
+
+    ExpectedRemovedRelationship:
+      type: object
+      additionalProperties: false
+      required: [state, generation, version]
+      properties:
+        state:
+          const: EXPECTED_REMOVED
+        generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        version:
+          $ref: '#/components/schemas/PositiveVersion'
+
+    ExpectedRelationship:
+      oneOf:
+        - $ref: '#/components/schemas/ExpectedAbsentRelationship'
+        - $ref: '#/components/schemas/ExpectedActiveRelationship'
+        - $ref: '#/components/schemas/ExpectedRemovedRelationship'
+      discriminator:
+        propertyName: state
+        mapping:
+          EXPECTED_ABSENT: '#/components/schemas/ExpectedAbsentRelationship'
+          EXPECTED_ACTIVE: '#/components/schemas/ExpectedActiveRelationship'
+          EXPECTED_REMOVED: '#/components/schemas/ExpectedRemovedRelationship'
+
+    NewCollectionRequest:
+      type: object
+      additionalProperties: false
+      required: [client_creation_id, title]
+      properties:
+        client_creation_id:
+          $ref: '#/components/schemas/ClientCreationId'
+        title:
+          $ref: '#/components/schemas/CollectionTitle'
+
+    DesiredCollectionAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expected_relationship
+        - expected_dependent_membership_version
+        - desired_collection_ids
+      properties:
+        expected_relationship:
+          $ref: '#/components/schemas/ExpectedRelationship'
+        expected_dependent_membership_version:
+          $ref: '#/components/schemas/Version'
+        desired_collection_ids:
+          type: array
+          maxItems: 200
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/CollectionId'
+        new_collection:
+          $ref: '#/components/schemas/NewCollectionRequest'
+
+    CreateCollectionRequest:
+      type: object
+      additionalProperties: false
+      required: [client_creation_id, title]
+      properties:
+        client_creation_id:
+          $ref: '#/components/schemas/ClientCreationId'
+          description: Immutable identity for this logical collection creation.
+        title:
+          $ref: '#/components/schemas/CollectionTitle'
+
+    RenameCollectionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_metadata_version, title]
+      properties:
+        expected_metadata_version:
+          $ref: '#/components/schemas/Version'
+        title:
+          $ref: '#/components/schemas/CollectionTitle'
+
+    DeleteCollectionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_metadata_version, expected_lifecycle_version]
+      properties:
+        expected_metadata_version:
+          $ref: '#/components/schemas/Version'
+        expected_lifecycle_version:
+          $ref: '#/components/schemas/Version'
+
+    CollectionItemCover:
+      type: object
+      additionalProperties: false
+      required: [kind, target, title]
+      properties:
+        kind:
+          const: ITEM
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        image_url:
+          type: string
+          format: uri
+          maxLength: 2048
+
+    GenericCollectionCover:
+      type: object
+      additionalProperties: false
+      required: [kind]
+      properties:
+        kind:
+          const: GENERIC
+
+    CollectionCoverPreview:
+      oneOf:
+        - $ref: '#/components/schemas/CollectionItemCover'
+        - $ref: '#/components/schemas/GenericCollectionCover'
+      discriminator:
+        propertyName: kind
+        mapping:
+          ITEM: '#/components/schemas/CollectionItemCover'
+          GENERIC: '#/components/schemas/GenericCollectionCover'
+
+    SavedCollection:
+      type: object
+      additionalProperties: false
+      required:
+        - collection_id
+        - title
+        - lifecycle_state
+        - metadata_version
+        - lifecycle_version
+        - active_item_count
+        - cover_preview
+        - organized_at
+        - created_at
+        - updated_at
+      properties:
+        collection_id:
+          $ref: '#/components/schemas/CollectionId'
+        title:
+          $ref: '#/components/schemas/CollectionTitle'
+        lifecycle_state:
+          const: ACTIVE
+        metadata_version:
+          $ref: '#/components/schemas/Version'
+        lifecycle_version:
+          $ref: '#/components/schemas/Version'
+        active_item_count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 5000
+        cover_preview:
+          $ref: '#/components/schemas/CollectionCoverPreview'
+        organized_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SavedCollectionsList:
+      type: object
+      additionalProperties: false
+      required: [collections]
+      properties:
+        collections:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/SavedCollection'
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    SavedCollectionDetail:
+      type: object
+      additionalProperties: false
+      required: [collection]
+      properties:
+        collection:
+          $ref: '#/components/schemas/SavedCollection'
+        quota_warning:
+          $ref: '#/components/schemas/QuotaWarning'
+
+    OperationKind:
+      type: string
+      enum:
+        - SAVE_TARGET
+        - UNSAVE_TARGET
+        - SET_TARGET_COLLECTIONS
+        - CREATE_COLLECTION
+        - RENAME_COLLECTION
+        - DELETE_COLLECTION
+
+    OperationStatus:
+      type: string
+      enum: [PENDING, SUCCEEDED, REJECTED, EXPIRED]
+
+    OperationOutcome:
+      type: string
+      enum: [PENDING, APPLIED, NO_OP, REJECTED, EXPIRED]
+
+    RefreshScope:
+      type: string
+      description: Server-issued coarse refresh hint that deliberately contains no resource IDs.
+      enum: [SAVED_ITEMS, COLLECTIONS, BOTH, NONE]
+
+    RelationshipAppliedVersion:
+      type: object
+      additionalProperties: false
+      required: [generation, version]
+      properties:
+        generation:
+          $ref: '#/components/schemas/RelationshipGeneration'
+        version:
+          $ref: '#/components/schemas/PositiveVersion'
+
+    CollectionAppliedVersion:
+      type: object
+      additionalProperties: false
+      required: [collection_id, metadata_version, lifecycle_version]
+      properties:
+        collection_id:
+          $ref: '#/components/schemas/CollectionId'
+        metadata_version:
+          $ref: '#/components/schemas/Version'
+        lifecycle_version:
+          $ref: '#/components/schemas/Version'
+
+    AppliedResourceVersions:
+      type: object
+      additionalProperties: false
+      properties:
+        relationship:
+          $ref: '#/components/schemas/RelationshipAppliedVersion'
+        dependent_membership_version:
+          $ref: '#/components/schemas/Version'
+        collection:
+          $ref: '#/components/schemas/CollectionAppliedVersion'
+
+    SavedItemCurrentSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - resource_kind
+        - snapshot_version
+        - snapshot_recorded_at
+        - target
+        - saved_state
+        - relationship
+        - effective_collection_count
+      properties:
+        resource_kind:
+          const: SAVED_ITEM
+        snapshot_version:
+          $ref: '#/components/schemas/Version'
+        snapshot_recorded_at:
+          type: string
+          format: date-time
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        saved_state:
+          type: string
+          enum: [CONFIRMED_UNSAVED, SAVED]
+        relationship:
+          $ref: '#/components/schemas/RelationshipStateSnapshot'
+        effective_collection_count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+
+    TargetCollectionsCurrentSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - resource_kind
+        - snapshot_version
+        - snapshot_recorded_at
+        - target
+        - relationship
+        - dependent_membership_version
+        - effective_collection_ids
+      properties:
+        resource_kind:
+          const: TARGET_COLLECTIONS
+        snapshot_version:
+          $ref: '#/components/schemas/Version'
+        snapshot_recorded_at:
+          type: string
+          format: date-time
+        target:
+          $ref: '#/components/schemas/SavedTarget'
+        relationship:
+          $ref: '#/components/schemas/RelationshipStateSnapshot'
+        dependent_membership_version:
+          $ref: '#/components/schemas/Version'
+        effective_collection_ids:
+          type: array
+          maxItems: 200
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/CollectionId'
+
+    CollectionCurrentSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - resource_kind
+        - snapshot_version
+        - snapshot_recorded_at
+        - collection_id
+        - lifecycle_state
+        - metadata_version
+        - lifecycle_version
+      properties:
+        resource_kind:
+          const: COLLECTION
+        snapshot_version:
+          $ref: '#/components/schemas/Version'
+        snapshot_recorded_at:
+          type: string
+          format: date-time
+        collection_id:
+          $ref: '#/components/schemas/CollectionId'
+        lifecycle_state:
+          type: string
+          enum: [ACTIVE, DELETED]
+        metadata_version:
+          $ref: '#/components/schemas/Version'
+        lifecycle_version:
+          $ref: '#/components/schemas/Version'
+        collection:
+          $ref: '#/components/schemas/SavedCollection'
+      allOf:
+        - if:
+            properties:
+              lifecycle_state:
+                const: ACTIVE
+            required: [lifecycle_state]
+          then:
+            required: [collection]
+          else:
+            not:
+              required: [collection]
+
+    CurrentResourceSnapshot:
+      description: |
+        Fresh owner-scoped state assembled independently for this response. It is
+        not part of the immutable replayed operation result and carries its own
+        snapshot version and observation timestamp.
+      oneOf:
+        - $ref: '#/components/schemas/SavedItemCurrentSnapshot'
+        - $ref: '#/components/schemas/TargetCollectionsCurrentSnapshot'
+        - $ref: '#/components/schemas/CollectionCurrentSnapshot'
+      discriminator:
+        propertyName: resource_kind
+        mapping:
+          SAVED_ITEM: '#/components/schemas/SavedItemCurrentSnapshot'
+          TARGET_COLLECTIONS: '#/components/schemas/TargetCollectionsCurrentSnapshot'
+          COLLECTION: '#/components/schemas/CollectionCurrentSnapshot'
+
+    ErrorCode:
+      type: string
+      enum:
+        - INVALID_ARGUMENT
+        - UNAUTHENTICATED
+        - NOT_FOUND
+        - SAVED_TARGET_TYPE_UNSUPPORTED
+        - SAVED_TARGET_UNAVAILABLE
+        - SAVED_DEPENDENCY_UNAVAILABLE
+        - SAVED_MUTATION_STALE
+        - SAVED_MUTATION_REPLAY_MISMATCH
+        - SAVED_COLLECTION_NOT_FOUND
+        - SAVED_COLLECTION_DELETED
+        - SAVED_COLLECTION_TITLE_INVALID
+        - SAVED_COLLECTION_TITLE_CONFLICT
+        - SAVED_COLLECTION_LIMIT_REACHED
+        - SAVED_COLLECTION_ITEM_LIMIT_REACHED
+        - SAVED_MEMBERSHIP_LIMIT_REACHED
+        - SAVED_ITEM_LIMIT_REACHED
+        - SAVED_REQUEST_IN_PROGRESS
+        - SAVED_OPERATION_EXPIRED
+        - SAVED_CURSOR_INVALID
+        - SAVED_RATE_LIMITED
+        - SAVED_TEMPORARILY_UNAVAILABLE
+        - PLATFORM_PERSONAL_DATA_LOCKED
+
+    OperationError:
+      type: object
+      additionalProperties: false
+      required: [code, retryable]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        retryable:
+          type: boolean
+        retry_after_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400000
+
+    OperationResult:
+      type: object
+      additionalProperties: false
+      description: |
+        The operation fields are immutable for one accepted attempt. Only
+        current_resource_snapshot is freshly assembled and may change between
+        same-key responses or status reads.
+      required:
+        - operation_id
+        - operation_kind
+        - operation_status
+        - operation_outcome
+        - commit_deadline
+        - refresh_scope
+        - applied_resource_versions
+        - result_recorded_at
+      properties:
+        operation_id:
+          allOf:
+            - $ref: '#/components/schemas/OperationId'
+          readOnly: true
+        operation_kind:
+          allOf:
+            - $ref: '#/components/schemas/OperationKind'
+          readOnly: true
+        operation_status:
+          allOf:
+            - $ref: '#/components/schemas/OperationStatus'
+          readOnly: true
+        operation_outcome:
+          allOf:
+            - $ref: '#/components/schemas/OperationOutcome'
+          readOnly: true
+        commit_deadline:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Server commit deadline, never more than 15 seconds after acceptance.
+        refresh_scope:
+          allOf:
+            - $ref: '#/components/schemas/RefreshScope'
+          readOnly: true
+        applied_resource_versions:
+          allOf:
+            - $ref: '#/components/schemas/AppliedResourceVersions'
+          readOnly: true
+        result_recorded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        operation_error:
+          allOf:
+            - $ref: '#/components/schemas/OperationError'
+          readOnly: true
+        current_resource_snapshot:
+          $ref: '#/components/schemas/CurrentResourceSnapshot'
+      allOf:
+        - if:
+            properties:
+              operation_status:
+                const: PENDING
+            required: [operation_status]
+          then:
+            properties:
+              operation_outcome:
+                const: PENDING
+        - if:
+            properties:
+              operation_status:
+                const: SUCCEEDED
+            required: [operation_status]
+          then:
+            properties:
+              operation_outcome:
+                enum: [APPLIED, NO_OP]
+        - if:
+            properties:
+              operation_status:
+                const: REJECTED
+            required: [operation_status]
+          then:
+            required: [operation_error]
+            properties:
+              operation_outcome:
+                const: REJECTED
+          else:
+            not:
+              required: [operation_error]
+        - if:
+            properties:
+              operation_status:
+                const: EXPIRED
+            required: [operation_status]
+          then:
+            properties:
+              operation_outcome:
+                const: EXPIRED
+
+    PendingOperationResult:
+      allOf:
+        - $ref: '#/components/schemas/OperationResult'
+        - type: object
+          properties:
+            operation_status:
+              const: PENDING
+            operation_outcome:
+              const: PENDING
+
+    TerminalOperationResult:
+      allOf:
+        - $ref: '#/components/schemas/OperationResult'
+        - type: object
+          properties:
+            operation_status:
+              enum: [SUCCEEDED, REJECTED, EXPIRED]
+            operation_outcome:
+              enum: [APPLIED, NO_OP, REJECTED, EXPIRED]
+
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, retryable]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        retryable:
+          type: boolean
+        retry_after_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 86400000
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 128

@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_saved_items_active_owner_search_v1;

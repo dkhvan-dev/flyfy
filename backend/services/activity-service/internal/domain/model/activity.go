@@ -119,9 +119,12 @@ type Activity struct {
 	CompletionReason   *string
 	PublishedAt        *time.Time
 
-	Revision  int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Revision                int
+	SavedSourceRevision     uint64
+	SavedProjectionRevision uint64
+	SavedVisibilityRevision uint64
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
 }
 
 type NewActivityParams struct {

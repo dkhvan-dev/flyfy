@@ -3,27 +3,31 @@ package config
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
 
+	"kz/inflap/backend/pkg/platformpolicy"
 	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
-	App          AppConfig
-	HTTP         HTTPConfig
-	Log          LogConfig
-	Security     SecurityConfig
-	Routes       RoutesConfig
-	Downstreams  DownstreamsConfig
-	TokenService TokenServiceConfig
-	TrustService TrustServiceConfig
-	CORS         CORSConfig
-	RateLimit    RateLimitConfig
-	Redis        RedisConfig
-	MTLS         transportauth.EnvConfig
+	App            AppConfig
+	HTTP           HTTPConfig
+	Log            LogConfig
+	Security       SecurityConfig
+	Routes         RoutesConfig
+	Downstreams    DownstreamsConfig
+	SavedService   SavedServiceConfig
+	PlatformPolicy PlatformPolicyConfig
+	TokenService   TokenServiceConfig
+	TrustService   TrustServiceConfig
+	CORS           CORSConfig
+	RateLimit      RateLimitConfig
+	Redis          RedisConfig
+	MTLS           transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -31,7 +35,16 @@ type AppConfig struct {
 }
 
 func (a AppConfig) IsProduction() bool {
-	return strings.EqualFold(a.Env, "production")
+	return strings.EqualFold(strings.TrimSpace(a.Env), "production")
+}
+
+func (a AppConfig) AllowsInsecureLocalTransport() bool {
+	switch strings.ToLower(strings.TrimSpace(a.Env)) {
+	case "dev", "development", "local", "test":
+		return true
+	default:
+		return false
+	}
 }
 
 type HTTPConfig struct {
@@ -84,6 +97,35 @@ type DownstreamsConfig struct {
 	AdminPanelService   string `env:"ADMIN_PANEL_SERVICE_HTTP_URL, default=http://admin-panel:8095"`
 }
 
+const (
+	defaultSavedServiceRequestTimeout = 10 * time.Second
+	maxSavedServiceRequestTimeout     = 30 * time.Second
+)
+
+type SavedServiceConfig struct {
+	URL            string        `env:"SAVED_SERVICE_URL, default=http://saved-service:8102"`
+	RequestTimeout time.Duration `env:"SAVED_SERVICE_REQUEST_TIMEOUT, default=10s"`
+}
+
+type PlatformPolicyConfig struct {
+	BaseURL              string        `env:"PLATFORM_POLICY_BASE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN, required"`
+	HTTPTimeout          time.Duration `env:"PLATFORM_POLICY_HTTP_TIMEOUT, default=750ms"`
+	RefreshTimeout       time.Duration `env:"PLATFORM_POLICY_REFRESH_TIMEOUT, default=1s"`
+	MaxResponseBytes     int64         `env:"PLATFORM_POLICY_MAX_RESPONSE_BYTES, default=4096"`
+	AllowInsecureHTTP    bool          `env:"PLATFORM_POLICY_ALLOW_INSECURE_HTTP, default=false"`
+}
+
+func (s SavedServiceConfig) EffectiveRequestTimeout() time.Duration {
+	if s.RequestTimeout <= 0 {
+		return defaultSavedServiceRequestTimeout
+	}
+	if s.RequestTimeout > maxSavedServiceRequestTimeout {
+		return maxSavedServiceRequestTimeout
+	}
+	return s.RequestTimeout
+}
+
 type RedisConfig struct {
 	Addr string        `env:"REDIS_ADDR, default=localhost:6379"`
 	DB   int           `env:"REDIS_CACHE_DB, default=3"`
@@ -108,13 +150,103 @@ func Load(ctx context.Context) (*Config, error) {
 	if err := envconfig.Process(ctx, &cfg); err != nil {
 		return nil, fmt.Errorf("process env config: %w", err)
 	}
+	cfg.SavedService.URL = strings.TrimSpace(cfg.SavedService.URL)
+	cfg.PlatformPolicy.BaseURL = strings.TrimSpace(cfg.PlatformPolicy.BaseURL)
+	cfg.PlatformPolicy.InternalServiceToken = strings.TrimSpace(cfg.PlatformPolicy.InternalServiceToken)
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
+}
+
+func (c *Config) Validate() error {
+	if c == nil {
+		return fmt.Errorf("config is required")
+	}
+	if err := validateSavedServiceURL(c.SavedService.URL); err != nil {
+		return fmt.Errorf("validate saved-service config: %w", err)
+	}
+	if c.SavedService.RequestTimeout <= 0 || c.SavedService.RequestTimeout > maxSavedServiceRequestTimeout {
+		return fmt.Errorf(
+			"validate saved-service config: request timeout must be greater than zero and at most %s",
+			maxSavedServiceRequestTimeout,
+		)
+	}
+	if err := validatePlatformPolicyConfig(c.App, c.SavedService, c.PlatformPolicy); err != nil {
+		return fmt.Errorf("validate platform policy config: %w", err)
+	}
+	return nil
+}
+
+func validatePlatformPolicyConfig(app AppConfig, saved SavedServiceConfig, policy PlatformPolicyConfig) error {
+	parsed, err := validateHTTPOrigin(policy.BaseURL)
+	if err != nil {
+		return fmt.Errorf("base URL: %w", err)
+	}
+	if strings.TrimSpace(policy.InternalServiceToken) == "" {
+		return fmt.Errorf("internal service token is required")
+	}
+	if policy.HTTPTimeout <= 0 || policy.HTTPTimeout > platformpolicy.MaximumHTTPTimeout {
+		return fmt.Errorf("HTTP timeout must be within (0, %s]", platformpolicy.MaximumHTTPTimeout)
+	}
+	if policy.RefreshTimeout <= 0 || policy.RefreshTimeout > platformpolicy.MaximumRefreshTimeout {
+		return fmt.Errorf("refresh timeout must be within (0, %s]", platformpolicy.MaximumRefreshTimeout)
+	}
+	if policy.HTTPTimeout >= policy.RefreshTimeout {
+		return fmt.Errorf("HTTP timeout must be shorter than refresh timeout")
+	}
+	if policy.RefreshTimeout >= saved.EffectiveRequestTimeout() {
+		return fmt.Errorf("refresh timeout must be shorter than the Saved request timeout")
+	}
+	if policy.MaxResponseBytes < 1 || policy.MaxResponseBytes > platformpolicy.MaximumResponseBytes {
+		return fmt.Errorf("maximum response bytes must be within [1, %d]", platformpolicy.MaximumResponseBytes)
+	}
+
+	isPlainHTTP := strings.EqualFold(parsed.Scheme, "http")
+	if app.IsProduction() {
+		if isPlainHTTP || policy.AllowInsecureHTTP {
+			return fmt.Errorf("production policy transport requires HTTPS and forbids insecure HTTP opt-in")
+		}
+		return nil
+	}
+	if isPlainHTTP && (!app.AllowsInsecureLocalTransport() || !policy.AllowInsecureHTTP) {
+		return fmt.Errorf("plaintext HTTP is limited to dev/test/local with explicit PLATFORM_POLICY_ALLOW_INSECURE_HTTP opt-in")
+	}
+	return nil
+}
+
+func validateSavedServiceURL(rawURL string) error {
+	_, err := validateHTTPOrigin(rawURL)
+	return err
+}
+
+func validateHTTPOrigin(rawURL string) (*url.URL, error) {
+	parsed, err := url.ParseRequestURI(strings.TrimSpace(rawURL))
+	if err != nil {
+		return nil, fmt.Errorf("URL must be an absolute HTTP(S) origin: %w", err)
+	}
+	if !parsed.IsAbs() || parsed.Host == "" || parsed.Hostname() == "" {
+		return nil, fmt.Errorf("URL must be an absolute HTTP(S) origin")
+	}
+	if !strings.EqualFold(parsed.Scheme, "http") && !strings.EqualFold(parsed.Scheme, "https") {
+		return nil, fmt.Errorf("URL scheme must be http or https")
+	}
+	if parsed.User != nil {
+		return nil, fmt.Errorf("URL must not contain user information")
+	}
+	if parsed.Path != "" && parsed.Path != "/" {
+		return nil, fmt.Errorf("URL must not contain a path")
+	}
+	if parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
+		return nil, fmt.Errorf("URL must not contain a query or fragment")
+	}
+	return parsed, nil
 }
 
 type CORSConfig struct {
 	AllowedOrigins   string `env:"CORS_ALLOWED_ORIGINS, default=*"`
 	AllowedMethods   string `env:"CORS_ALLOWED_METHODS, default=GET,POST,PUT,PATCH,DELETE,OPTIONS"`
-	AllowedHeaders   string `env:"CORS_ALLOWED_HEADERS, default=Authorization,Content-Type,X-Request-Id"`
+	AllowedHeaders   string `env:"CORS_ALLOWED_HEADERS, default=Authorization,Content-Type,X-Request-Id,Operation-Id,Idempotency-Key,Saved-Source-Surface,X-Client-Platform,X-App-Build"`
 	ExposeHeaders    string `env:"CORS_EXPOSE_HEADERS, default=X-Request-Id"`
 	AllowCredentials bool   `env:"CORS_ALLOW_CREDENTIALS, default=false"`
 	MaxAgeSeconds    int    `env:"CORS_MAX_AGE_SECONDS, default=600"`

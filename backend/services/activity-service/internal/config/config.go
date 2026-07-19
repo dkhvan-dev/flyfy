@@ -8,29 +8,31 @@ import (
 
 	"github.com/sethvargo/go-envconfig"
 
+	"kz/inflap/backend/pkg/natstransport"
 	"kz/inflap/backend/pkg/transportauth"
 )
 
 type Config struct {
-	App           AppConfig
-	HTTP          HTTPConfig
-	GRPC          GRPCConfig
-	DB            DBConfig
-	Log           LogConfig
-	Security      SecurityConfig
-	Attendance    AttendanceConfig
-	UserService   UserServiceConfig
-	FileManager   FileManagerConfig
-	ChatService   ChatServiceConfig
-	Notification  NotificationServiceConfig
-	Payment       PaymentServiceConfig
-	Switches      SwitchesServiceConfig
-	AntiFraud     AntiFraudConfig
-	Trust         TrustServiceConfig
-	TokenService  TokenServiceConfig
-	SearchService SearchServiceConfig
-	Translation   TranslationServiceConfig
-	MTLS          transportauth.EnvConfig
+	App            AppConfig
+	HTTP           HTTPConfig
+	GRPC           GRPCConfig
+	DB             DBConfig
+	Log            LogConfig
+	Security       SecurityConfig
+	Attendance     AttendanceConfig
+	UserService    UserServiceConfig
+	FileManager    FileManagerConfig
+	ChatService    ChatServiceConfig
+	Notification   NotificationServiceConfig
+	Payment        PaymentServiceConfig
+	Switches       SwitchesServiceConfig
+	AntiFraud      AntiFraudConfig
+	Trust          TrustServiceConfig
+	TokenService   TokenServiceConfig
+	SearchService  SearchServiceConfig
+	Translation    TranslationServiceConfig
+	SavedLifecycle SavedLifecycleConfig
+	MTLS           transportauth.EnvConfig
 }
 
 type AppConfig struct {
@@ -181,6 +183,23 @@ type TranslationServiceConfig struct {
 	WorkerLockTimeout time.Duration `env:"ACTIVITY_TRANSLATION_LOCK_TIMEOUT, default=2m"`
 }
 
+type SavedLifecycleConfig struct {
+	Enabled          bool `env:"ACTIVITY_SAVED_LIFECYCLE_ENABLED, default=true"`
+	NATS             natstransport.EnvConfig
+	WorkerBatchSize  int           `env:"ACTIVITY_SAVED_LIFECYCLE_BATCH_SIZE, default=50"`
+	PollInterval     time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_POLL_INTERVAL, default=1s"`
+	LeaseDuration    time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_LEASE_DURATION, default=2m"`
+	PublishTimeout   time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_PUBLISH_TIMEOUT, default=2s"`
+	RetryBaseDelay   time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_RETRY_BASE_DELAY, default=1s"`
+	RetryMaxDelay    time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_RETRY_MAX_DELAY, default=5m"`
+	CleanupInterval  time.Duration `env:"ACTIVITY_SAVED_LIFECYCLE_CLEANUP_INTERVAL, default=1m"`
+	CleanupBatchSize int           `env:"ACTIVITY_SAVED_LIFECYCLE_CLEANUP_BATCH_SIZE, default=200"`
+}
+
+func (c SavedLifecycleConfig) NATSConfig(environment string) (natstransport.Config, error) {
+	return c.NATS.Build(environment, "nats://localhost:4222")
+}
+
 type TokenServiceConfig struct {
 	Target        string        `env:"TOKEN_SERVICE_GRPC_TARGET, default=dns:///token-service:50051"`
 	ServiceID     string        `env:"TOKEN_SERVICE_ID, default=activity-service"`
@@ -199,16 +218,52 @@ func Load(ctx context.Context) (*Config, error) {
 	if err := envconfig.Process(ctx, &cfg); err != nil {
 		return nil, fmt.Errorf("process env config: %w", err)
 	}
+	if cfg.SavedLifecycle.Enabled {
+		if _, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env); err != nil {
+			return nil, fmt.Errorf("validate activity Saved lifecycle NATS transport: %w", err)
+		}
+		if cfg.SavedLifecycle.WorkerBatchSize <= 0 || cfg.SavedLifecycle.WorkerBatchSize > 100 ||
+			cfg.SavedLifecycle.PollInterval <= 0 ||
+			cfg.SavedLifecycle.LeaseDuration <= 0 || cfg.SavedLifecycle.LeaseDuration > 10*time.Minute ||
+			cfg.SavedLifecycle.PublishTimeout <= 0 ||
+			cfg.SavedLifecycle.RetryBaseDelay <= 0 ||
+			cfg.SavedLifecycle.RetryMaxDelay < cfg.SavedLifecycle.RetryBaseDelay ||
+			cfg.SavedLifecycle.CleanupInterval <= 0 ||
+			cfg.SavedLifecycle.CleanupBatchSize <= 0 || cfg.SavedLifecycle.CleanupBatchSize > 1000 ||
+			!savedLifecycleLeaseCoversBatch(cfg.SavedLifecycle) {
+			return nil, fmt.Errorf("invalid activity Saved lifecycle worker configuration")
+		}
+	}
 	return &cfg, nil
 }
 
+func savedLifecycleLeaseCoversBatch(cfg SavedLifecycleConfig) bool {
+	if cfg.WorkerBatchSize <= 0 || cfg.LeaseDuration <= 0 || cfg.PublishTimeout <= 0 {
+		return false
+	}
+	safetyMargin := min(10*time.Second, cfg.LeaseDuration/5)
+	processingBudget := cfg.LeaseDuration - safetyMargin
+	if processingBudget <= 0 {
+		return false
+	}
+	return cfg.PublishTimeout <= processingBudget/time.Duration(cfg.WorkerBatchSize)
+}
+
 type SecurityConfig struct {
-	InternalServiceToken       string `env:"INTERNAL_SERVICE_TOKEN, required"`
-	RequireAuthenticatedWrites bool   `env:"REQUIRE_AUTHENTICATED_WRITES, default=true"`
-	TrustedGatewayHeaderUserID string `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
-	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
-	TrustedGatewayHeaderSub    string `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
-	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+	InternalServiceToken       string        `env:"INTERNAL_SERVICE_TOKEN, required"`
+	RequireAuthenticatedWrites bool          `env:"REQUIRE_AUTHENTICATED_WRITES, default=true"`
+	TrustedGatewayHeaderUserID string        `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
+	TrustedGatewayHeaderRoles  string        `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
+	TrustedGatewayHeaderSub    string        `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
+	RequestIDHeader            string        `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+	ServiceAuthIssuer          string        `env:"SERVICE_AUTH_ISSUER, default=tourism-inflap/token-service"`
+	ServiceAuthJWKSURL         string        `env:"SERVICE_AUTH_JWKS_URL, default=http://token-service:8081/.well-known/jwks.json"`
+	ServiceAuthCacheTTL        time.Duration `env:"SERVICE_AUTH_JWKS_CACHE_TTL, default=5m"`
+}
+
+func (s SecurityConfig) ServiceAuthEnabled() bool {
+	return strings.TrimSpace(s.ServiceAuthIssuer) != "" &&
+		strings.TrimSpace(s.ServiceAuthJWKSURL) != ""
 }
 
 type AttendanceConfig struct {

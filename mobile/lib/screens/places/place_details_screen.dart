@@ -18,6 +18,8 @@ import '../../features/places/data/place_api.dart';
 import '../../features/places/models/place_review_vm.dart';
 import '../../features/places/models/place_vm.dart';
 import '../../features/routing/models/routing_models.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/help_center/data/help_center_api.dart';
@@ -30,6 +32,7 @@ import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import '../excursions/excursions_screen.dart';
 import '../excursions/widgets/excursion_review_management_sheet.dart';
 import '../map/map_screen.dart';
@@ -716,8 +719,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildTopBar(PlaceAdaptive a, AppLocalizations l10n) {
+    final place = _place!;
+    final coverMedia = place.coverMedia;
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.attraction,
+      entityId: place.id,
+    );
+
     return Container(
-      height: a.scale(74, minFactor: 0.9),
+      constraints: BoxConstraints(minHeight: a.scale(74, minFactor: 0.9)),
       padding: AppEdgeInsets.fromLTRB(
         a.scale(28, minFactor: 0.78),
         a.scale(14),
@@ -736,7 +746,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             icon: Icons.arrow_back_ios_new_rounded,
             color: context.placeColors.textPrimary,
             background: context.placeColors.transparent,
-            size: a.scale(42),
+            size: 48,
             iconSize: a.scale(20),
             tooltip: l10n.placeBackTooltip,
             onTap: _onBack,
@@ -758,15 +768,18 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               ),
             ),
           ),
-          _circleIconButton(
-            icon: Icons.notifications_outlined,
-            color: context.placeColors.primary,
-            background: context.placeColors.primary.withValues(alpha: 0.12),
-            size: a.scale(42),
-            iconSize: a.scale(20),
-            tooltip: l10n.placeNotificationsTooltip,
-            onTap: () {},
-          ),
+          if (savedTarget != null)
+            AppSavedBookmarkButton(
+              target: savedTarget,
+              sourceSurface: SavedSourceSurface.detail,
+              previewTitle: place.title,
+              previewSubtitle: _resolvedLocationLabel(place),
+              previewImageUrl: coverMedia == null
+                  ? null
+                  : resolvePlaceMediaUrl(coverMedia, targetWidth: 256),
+            )
+          else
+            const SizedBox.square(dimension: 48),
         ],
       ),
     );

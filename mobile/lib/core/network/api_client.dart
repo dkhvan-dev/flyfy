@@ -38,12 +38,49 @@ class _CompactNetworkLogInterceptor extends Interceptor {
   String _safeRoute(RequestOptions options) {
     final uri = options.uri;
     final path = uri.path.isEmpty ? options.path : uri.path;
+    final safePath = _redactSavedPersonalPath(path);
     final queryKeys =
         uri.queryParameters.keys.where((key) => key.trim().isNotEmpty).toList()
           ..sort();
 
-    if (queryKeys.isEmpty) return path;
-    return '$path?${queryKeys.join('&')}';
+    if (queryKeys.isEmpty) return safePath;
+    return '$safePath?${queryKeys.join('&')}';
+  }
+
+  String _redactSavedPersonalPath(String path) {
+    final marker = '/users/me/';
+    final markerIndex = path.indexOf(marker);
+    if (markerIndex < 0) return path;
+
+    final prefix = path.substring(0, markerIndex + marker.length);
+    final relative = path.substring(markerIndex + marker.length);
+    final segments = relative.split('/');
+    if (segments.isEmpty) return path;
+
+    switch (segments.first) {
+      case 'saved-items':
+        if (segments.length == 1) return '${prefix}saved-items';
+        if (segments.length == 2 &&
+            const <String>{
+              'query',
+              'status:batch',
+              'capabilities',
+            }.contains(segments[1])) {
+          return '$prefix${segments.join('/')}';
+        }
+        if (segments.length == 4 && segments.last == 'collections') {
+          return '${prefix}saved-items/{entityType}/{entityKey}/collections';
+        }
+        return '${prefix}saved-items/{redacted}';
+      case 'saved-operations':
+        return '${prefix}saved-operations/{operationId}';
+      case 'saved-collections':
+        return segments.length == 1
+            ? '${prefix}saved-collections'
+            : '${prefix}saved-collections/{collectionId}';
+      default:
+        return path;
+    }
   }
 }
 
@@ -55,8 +92,17 @@ class ApiClient {
     AuthSessionEvents? authSessionEvents,
     bool? enableDebugNetworkInspector,
     DebugNetworkInspectorFactory? debugNetworkInspectorFactory,
+    String? clientPlatform,
+    int appBuild = const int.fromEnvironment(
+      'INFLAP_APP_BUILD',
+      defaultValue: 1,
+    ),
   }) : _secureStorage = secureStorage ?? SecureStorage(),
        _authSessionEvents = authSessionEvents ?? AuthSessionEvents.instance,
+       _clientPlatform = _normalizeClientPlatform(
+         clientPlatform ?? _runtimeClientPlatform(),
+       ),
+       _appBuild = appBuild > 0 ? appBuild : 1,
        _enableDebugNetworkInspector =
            enableDebugNetworkInspector ??
            (dio == null && DebugNetworkInspector.isEnabled),
@@ -79,6 +125,8 @@ class ApiClient {
   final SecureStorage _secureStorage;
   final AuthSessionEvents _authSessionEvents;
   final bool _enableDebugNetworkInspector;
+  final String? _clientPlatform;
+  final int _appBuild;
 
   // SecureStorage is shared app-wide, so refresh must be serialized app-wide too.
   static Future<void>? _sharedRefreshFuture;
@@ -107,6 +155,7 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           _attachLocaleHeaders(options);
+          _attachSavedRolloutHeaders(options);
 
           final requiresAuth = _requiresAuth(options);
 
@@ -203,6 +252,36 @@ class ApiClient {
     final locale = _appLocaleCode;
     options.headers.putIfAbsent('Accept-Language', () => locale);
     options.headers.putIfAbsent('X-Language', () => locale);
+  }
+
+  void _attachSavedRolloutHeaders(RequestOptions options) {
+    final platform = _clientPlatform;
+    if (platform == null || !_isSavedPersonalRoute(options.path)) return;
+    options.headers['X-Client-Platform'] = platform;
+    options.headers['X-App-Build'] = _appBuild.toString();
+  }
+
+  bool _isSavedPersonalRoute(String path) {
+    final normalizedPath = Uri.tryParse(path)?.path ?? path;
+    return normalizedPath.contains('/users/me/saved-items') ||
+        normalizedPath.contains('/users/me/saved-collections') ||
+        normalizedPath.contains('/users/me/saved-operations');
+  }
+
+  static String? _runtimeClientPlatform() {
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => 'android',
+      TargetPlatform.iOS => 'ios',
+      _ => null,
+    };
+  }
+
+  static String? _normalizeClientPlatform(String? value) {
+    return switch (value?.trim().toLowerCase()) {
+      'android' => 'android',
+      'ios' => 'ios',
+      _ => null,
+    };
   }
 
   static String _normalizeLocaleCode(String code) {

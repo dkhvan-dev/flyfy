@@ -7,8 +7,34 @@ import (
 	"testing"
 	"time"
 
+	grpcadapter "kz/inflap/backend/services/guide-service/internal/adapter/grpc"
 	"kz/inflap/backend/services/guide-service/internal/config"
 )
+
+func TestNewGuideGRPCServerRegistersSavedSourceResolver(t *testing.T) {
+	t.Parallel()
+
+	server := newGuideGRPCServer(grpcadapter.NewServer(nil))
+	t.Cleanup(server.Stop)
+	services := server.GetServiceInfo()
+	if _, ok := services["guide.v1.GuideService"]; !ok {
+		t.Fatal("guide service is not registered")
+	}
+	if _, ok := services["content.v1.SavedSourceService"]; !ok {
+		t.Fatal("Saved source service is not registered")
+	}
+}
+
+func TestNewSavedGuideSourceAuthorizerFailsClosedInProduction(t *testing.T) {
+	t.Parallel()
+
+	_, err := newSavedGuideSourceAuthorizer(&config.Config{
+		App: config.AppConfig{Env: "production"},
+	})
+	if err == nil {
+		t.Fatal("newSavedGuideSourceAuthorizer() error = nil, want missing auth configuration error")
+	}
+}
 
 func TestValidateGuideServiceMTLSPortAllowsDisabledMTLS(t *testing.T) {
 	t.Parallel()

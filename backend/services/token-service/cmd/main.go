@@ -149,20 +149,7 @@ func main() {
 	// Define method permissions for S2S auth interceptor
 	// Methods listed here require service token + specified roles.
 	// AuthenticateService is intentionally NOT protected (it's the login endpoint for services).
-	methodPerms := interceptor.MethodPermissions{
-		// These methods require service auth + specific roles
-		"/token.v1.TokenService/GenerateUserTokens":    {"token:generate"},
-		"/token.v1.TokenService/ValidateAccessToken":   {"token:validate"},
-		"/token.v1.TokenService/ValidateRefreshToken":  {"token:validate"},
-		"/token.v1.TokenService/RefreshTokens":         {"token:generate", "token:validate"},
-		"/token.v1.TokenService/RevokeToken":           {"token:revoke"},
-		"/token.v1.TokenService/ListUserSessions":      {"token:revoke"},
-		"/token.v1.TokenService/RevokeSession":         {"token:revoke"},
-		"/token.v1.TokenService/RevokeAllUserSessions": {"token:revoke"},
-		"/token.v1.TokenService/ValidateServiceToken":  {"token:validate"},
-		"/token.v1.TokenService/GenerateServiceToken":  {"token:generate"},
-		// AuthenticateService is NOT in this map → public (no service token required)
-	}
+	methodPerms := interceptor.TokenServiceMethodPermissions()
 
 	grpcOptions := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(

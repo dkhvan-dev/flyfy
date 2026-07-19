@@ -10,6 +10,7 @@ var (
 	ErrNotFound        = errors.New("not found")
 	ErrConflict        = errors.New("conflict")
 	ErrUniqueViolation = errors.New("unique violation")
+	ErrLeaseLost       = errors.New("lease lost")
 )
 
 func classifyPGError(err error) error {

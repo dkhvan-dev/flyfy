@@ -5,6 +5,7 @@ import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
+import 'post_saved_bookmark_button.dart';
 
 typedef FeedPostLikeCallback =
     Future<FeedPostLikeResult?> Function(PostVm post, bool likedByViewer);
@@ -407,6 +408,12 @@ class _FeedPostCardState extends State<FeedPostCard> {
                                   state: state,
                                   compact: true,
                                 ),
+                              ),
+                            if (!isBlocked)
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: PostSavedBookmarkButton(post: post),
                               ),
                           ],
                         ),

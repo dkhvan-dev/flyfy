@@ -28,6 +28,8 @@ type Client struct {
 	serviceName   string
 }
 
+var _ app.SavedGuideUserSource = (*Client)(nil)
+
 func New(target string, internalToken string, serviceName string, opts ...grpc.DialOption) (*Client, error) {
 	internalToken = strings.TrimSpace(internalToken)
 	serviceName = strings.TrimSpace(serviceName)
@@ -138,6 +140,101 @@ func (c *Client) GetUserProfile(ctx context.Context, userID uuid.UUID) (*app.Pub
 		Locale:       profile.GetLocale(),
 		Timezone:     profile.GetTimezone(),
 	}, nil
+}
+
+func (c *Client) GetSavedGuideUserSnapshot(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*app.SavedGuideUserSnapshot, error) {
+	if userID == uuid.Nil {
+		return nil, app.ErrInvalidGuideUserID
+	}
+	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.GetUserById(callCtx, &userv1.GetUserByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, app.ErrUserNotFound
+			case codes.InvalidArgument:
+				return nil, app.ErrInvalidGuideUserID
+			}
+		}
+		return nil, err
+	}
+
+	aggregate := resp.GetAggregate()
+	if aggregate == nil || aggregate.GetUser() == nil || aggregate.GetProfile() == nil {
+		return nil, app.ErrUserNotFound
+	}
+	user := aggregate.GetUser()
+	profile := aggregate.GetProfile()
+	resolvedUserID, err := parseCanonicalUserID(user.GetId())
+	if err != nil || resolvedUserID != userID {
+		return nil, app.ErrInvalidGuideUserID
+	}
+	profileUserID, err := parseCanonicalUserID(profile.GetUserId())
+	if err != nil || profileUserID != userID {
+		return nil, app.ErrInvalidGuideUserID
+	}
+	accountUpdatedAt, err := parseRequiredSourceTime(user.GetUpdatedAt())
+	if err != nil {
+		return nil, err
+	}
+	profileUpdatedAt, err := parseRequiredSourceTime(profile.GetUpdatedAt())
+	if err != nil {
+		return nil, err
+	}
+
+	var avatarFileID *uuid.UUID
+	if rawAvatarFileID := profile.GetAvatarFileId(); rawAvatarFileID != "" {
+		parsed, parseErr := parseCanonicalUserID(rawAvatarFileID)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		avatarFileID = &parsed
+	}
+
+	return &app.SavedGuideUserSnapshot{
+		UserID:           userID,
+		AccountStatus:    strings.TrimSpace(user.GetStatus()),
+		IsDeleted:        user.GetIsDeleted(),
+		FirstName:        optionalString(profile.GetFirstName()),
+		LastName:         optionalString(profile.GetLastName()),
+		Nickname:         optionalString(profile.GetNickname()),
+		AvatarFileID:     avatarFileID,
+		CountryCode:      optionalString(profile.GetCountryCode()),
+		Locale:           strings.TrimSpace(profile.GetLocale()),
+		AccountUpdatedAt: accountUpdatedAt,
+		ProfileUpdatedAt: profileUpdatedAt,
+	}, nil
+}
+
+func parseCanonicalUserID(raw string) (uuid.UUID, error) {
+	if raw == "" || raw != strings.TrimSpace(raw) || len(raw) != len(uuid.Nil.String()) {
+		return uuid.Nil, app.ErrInvalidGuideUserID
+	}
+	parsed, err := uuid.Parse(raw)
+	if err != nil || parsed == uuid.Nil || parsed.String() != raw {
+		return uuid.Nil, app.ErrInvalidGuideUserID
+	}
+	return parsed, nil
+}
+
+func parseRequiredSourceTime(raw string) (time.Time, error) {
+	if raw == "" || raw != strings.TrimSpace(raw) {
+		return time.Time{}, app.ErrSavedSourceUnavailable
+	}
+	parsed, err := time.Parse(time.RFC3339Nano, raw)
+	if err != nil || parsed.IsZero() || parsed.UTC().UnixMicro() <= 0 {
+		return time.Time{}, app.ErrSavedSourceUnavailable
+	}
+	return parsed.UTC(), nil
 }
 
 func (c *Client) ResolveUserIDBySubject(ctx context.Context, subject string) (uuid.UUID, error) {

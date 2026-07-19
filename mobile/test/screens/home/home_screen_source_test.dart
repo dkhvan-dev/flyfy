@@ -168,7 +168,7 @@ void main() {
     final promoEnd = source.indexOf('class _TopDestinationsRow', promoStart);
     final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
     final destinationEnd = source.indexOf(
-      'class _DestinationBookmarkBadge',
+      'class _DestinationTag',
       destinationStart,
     );
     final topPostStart = source.indexOf('class _TopPostCard');
@@ -217,7 +217,7 @@ void main() {
     final promoEnd = source.indexOf('class _TopDestinationsRow', promoStart);
     final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
     final destinationEnd = source.indexOf(
-      'class _DestinationBookmarkBadge',
+      'class _DestinationTag',
       destinationStart,
     );
     final topPostStart = source.indexOf('class _TopPostCard');
@@ -298,7 +298,7 @@ void main() {
   });
 
   test(
-    'home top destination price uses secondary and save affordance is secondary',
+    'home top destination uses secondary price and production Saved bookmark',
     () async {
       final source = await File(
         'lib/screens/home/home_screen.dart',
@@ -306,7 +306,7 @@ void main() {
 
       final destinationStart = source.indexOf('class _TopDestinationPlaceCard');
       final destinationEnd = source.indexOf(
-        'class _DestinationBookmarkBadge',
+        'class _DestinationTag',
         destinationStart,
       );
 
@@ -337,15 +337,56 @@ void main() {
         destinationSource,
         isNot(contains('color: AppPalette.secondarySoft')),
       );
+      expect(destinationSource, contains('SavedTarget.tryCreate('));
+      expect(destinationSource, contains('AppSavedBookmarkButton('));
+      expect(
+        destinationSource,
+        contains('entityType: SavedEntityType.attraction'),
+      );
+      expect(destinationSource, contains('entityId: place.id'));
+      expect(destinationSource, contains('if (savedTarget != null)'));
+      expect(destinationSource, contains('target: savedTarget'));
+      expect(
+        destinationSource,
+        contains('sourceSurface: SavedSourceSurface.card'),
+      );
+      expect(source, isNot(contains('class _DestinationBookmarkBadge')));
+      expect(source, isNot(contains('Icons.bookmark_border_rounded')));
+    },
+  );
 
-      final bookmarkStart = source.indexOf('class _DestinationBookmarkBadge');
-      final tagStart = source.indexOf('class _DestinationTag', bookmarkStart);
-      expect(bookmarkStart, isNonNegative);
-      expect(tagStart, greaterThan(bookmarkStart));
-      final bookmarkSource = source.substring(bookmarkStart, tagStart);
+  test(
+    'home recommendations use canonical activity CARD Saved targets',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class _RecommendedActivityCard');
+      final cardEnd = source.indexOf('class _ActivityJoinButton', cardStart);
 
-      expect(bookmarkSource, contains('AppPalette.secondary.withValues'));
-      expect(bookmarkSource, contains('color: AppPalette.secondarySoft'));
+      expect(cardStart, isNonNegative);
+      expect(cardEnd, greaterThan(cardStart));
+      final cardSource = source.substring(cardStart, cardEnd);
+
+      expect(cardSource, contains('SavedTarget.tryCreate('));
+      expect(cardSource, contains('AppSavedBookmarkButton('));
+      expect(cardSource, contains('entityType: SavedEntityType.activity'));
+      expect(cardSource, contains('entityId: item.id'));
+      expect(cardSource, contains('if (savedTarget != null)'));
+      expect(cardSource, contains('target: savedTarget'));
+      expect(cardSource, contains('sourceSurface: SavedSourceSurface.card'));
+      expect(
+        RegExp(r'AppSavedBookmarkButton\(').allMatches(source),
+        hasLength(2),
+      );
+      expect(
+        RegExp(r'SavedTarget\.tryCreate\(').allMatches(source),
+        hasLength(2),
+      );
+      expect(RegExp(r'SavedTarget\(').allMatches(source), isEmpty);
+      expect(source, isNot(contains('SavedSourceSurface.detail')));
+      expect(source, isNot(contains('SavedEntityType.excursion')));
+      expect(source, isNot(contains('Icons.bookmark_border_rounded')));
     },
   );
 
@@ -478,7 +519,7 @@ void main() {
       final rowStart = source.indexOf('class _TopDestinationsRow');
       final rowEnd = source.indexOf('class _TopDestinationPlaceCard');
       final cardStart = rowEnd;
-      final cardEnd = source.indexOf('class _DestinationBookmarkBadge');
+      final cardEnd = source.indexOf('class _DestinationTag');
 
       expect(rowStart, isNonNegative);
       expect(rowEnd, greaterThan(rowStart));
@@ -504,7 +545,7 @@ void main() {
         'lib/screens/home/home_screen.dart',
       ).readAsString();
       final cardStart = source.indexOf('class _TopDestinationPlaceCard');
-      final cardEnd = source.indexOf('class _DestinationBookmarkBadge');
+      final cardEnd = source.indexOf('class _DestinationTag');
 
       expect(cardStart, isNonNegative);
       expect(cardEnd, greaterThan(cardStart));

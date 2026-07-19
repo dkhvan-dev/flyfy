@@ -26,6 +26,25 @@ const (
 // An empty slice means only authentication is required (any role).
 type MethodPermissions map[string][]string
 
+// TokenServiceMethodPermissions is the complete protected TokenService RPC
+// surface. AuthenticateService is intentionally absent because it is the
+// service login endpoint.
+func TokenServiceMethodPermissions() MethodPermissions {
+	return MethodPermissions{
+		"/token.v1.TokenService/GenerateUserTokens":            {"token:generate"},
+		"/token.v1.TokenService/ValidateAccessToken":           {"token:validate"},
+		"/token.v1.TokenService/ValidateRefreshToken":          {"token:validate"},
+		"/token.v1.TokenService/RefreshTokens":                 {"token:generate", "token:validate"},
+		"/token.v1.TokenService/RevokeToken":                   {"token:revoke"},
+		"/token.v1.TokenService/ListUserSessions":              {"token:revoke"},
+		"/token.v1.TokenService/RevokeSession":                 {"token:revoke"},
+		"/token.v1.TokenService/RevokeAllUserSessions":         {"token:revoke"},
+		"/token.v1.TokenService/ValidateUserSessionGeneration": {"session:validate"},
+		"/token.v1.TokenService/ValidateServiceToken":          {"token:validate"},
+		"/token.v1.TokenService/GenerateServiceToken":          {"token:generate"},
+	}
+}
+
 // ServiceAuthInterceptor validates service tokens and checks RBAC on every gRPC call.
 func ServiceAuthInterceptor(
 	validator port.TokenValidator,

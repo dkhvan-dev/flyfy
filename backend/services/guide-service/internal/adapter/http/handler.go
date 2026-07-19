@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,11 +21,29 @@ import (
 )
 
 type Handler struct {
-	useCase *app.GuideUseCase
+	useCase                  *app.GuideUseCase
+	savedGuideAvatarDelivery savedGuideAvatarDelivery
 }
 
-func NewHandler(useCase *app.GuideUseCase) *Handler {
-	return &Handler{useCase: useCase}
+type savedGuideAvatarDelivery interface {
+	CreatePublicSavedGuideAvatarDownloadURL(
+		ctx context.Context,
+		userID uuid.UUID,
+		savedRevision uint64,
+	) (string, error)
+}
+
+var errInvalidPublicSavedGuideAvatarRequest = errors.New("invalid public saved guide avatar request")
+
+func NewHandler(
+	useCase *app.GuideUseCase,
+	savedAvatarDelivery ...savedGuideAvatarDelivery,
+) *Handler {
+	handler := &Handler{useCase: useCase}
+	if len(savedAvatarDelivery) > 0 {
+		handler.savedGuideAvatarDelivery = savedAvatarDelivery[0]
+	}
+	return handler
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -34,6 +54,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/guides/me/application", h.SubmitMyGuideApplication)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests", h.CreateMyVerificationRequest)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests/", h.AttachMyGuideDocument)
+	mux.HandleFunc("HEAD /v1/guides/public/by-user/{userID}/saved-avatar", h.RejectPublicSavedGuideAvatarHEAD)
+	mux.HandleFunc("GET /v1/guides/public/by-user/{userID}/saved-avatar", h.GetPublicSavedGuideAvatar)
 	mux.HandleFunc("GET /v1/guides/public/by-user/", h.GetPublicGuideByUserID)
 	mux.HandleFunc("GET /v1/guides/public/filter-options", h.ListPublicGuideFilterOptions)
 	mux.HandleFunc("GET /v1/guides/public", h.ListPublicGuides)
@@ -487,6 +509,84 @@ func (h *Handler) GetPublicGuideByUserID(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, toPublicGuideCardResponse(card))
 }
 
+func (h *Handler) RejectPublicSavedGuideAvatarHEAD(w http.ResponseWriter, _ *http.Request) {
+	setPublicSavedGuideAvatarHeaders(w.Header())
+	w.Header().Set("Allow", http.MethodGet)
+	w.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+func (h *Handler) GetPublicSavedGuideAvatar(w http.ResponseWriter, r *http.Request) {
+	setPublicSavedGuideAvatarHeaders(w.Header())
+
+	userID, savedRevision, err := parsePublicSavedGuideAvatarRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid saved avatar request")
+		return
+	}
+	if h.savedGuideAvatarDelivery == nil {
+		writeError(w, http.StatusServiceUnavailable, "saved avatar delivery unavailable")
+		return
+	}
+
+	downloadURL, err := h.savedGuideAvatarDelivery.CreatePublicSavedGuideAvatarDownloadURL(
+		r.Context(),
+		userID,
+		savedRevision,
+	)
+	if err != nil {
+		if errors.Is(err, app.ErrPublicSavedGuideAvatarNotFound) {
+			writeError(w, http.StatusNotFound, "saved avatar not found")
+			return
+		}
+		writeError(w, http.StatusBadGateway, "saved avatar delivery unavailable")
+		return
+	}
+
+	w.Header().Set("Location", downloadURL)
+	w.Header().Set("Content-Length", "0")
+	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func parsePublicSavedGuideAvatarRequest(r *http.Request) (uuid.UUID, uint64, error) {
+	if r == nil || r.URL == nil {
+		return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+	}
+	rawUserID := r.PathValue("userID")
+	userID, err := uuid.Parse(rawUserID)
+	if err != nil || userID == uuid.Nil || userID.String() != rawUserID {
+		return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+	}
+
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(query) != 1 {
+		return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+	}
+	rawRevisions, ok := query["saved_revision"]
+	if !ok || len(rawRevisions) != 1 {
+		return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+	}
+	rawRevision := rawRevisions[0]
+	savedRevision, err := strconv.ParseUint(rawRevision, 10, 64)
+	if err != nil || savedRevision == 0 || strconv.FormatUint(savedRevision, 10) != rawRevision {
+		return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+	}
+
+	if r.Body != nil {
+		bodyPrefix, readErr := io.ReadAll(io.LimitReader(r.Body, 1))
+		if readErr != nil || len(bodyPrefix) != 0 {
+			return uuid.Nil, 0, errInvalidPublicSavedGuideAvatarRequest
+		}
+	}
+	return userID, savedRevision, nil
+}
+
+func setPublicSavedGuideAvatarHeaders(header http.Header) {
+	header.Set("Cache-Control", "no-store")
+	header.Set("Referrer-Policy", "no-referrer")
+	header.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; sandbox")
+	header.Set("X-Content-Type-Options", "nosniff")
+}
+
 func (h *Handler) ListPublicGuideFilterOptions(w http.ResponseWriter, r *http.Request) {
 	options, err := h.useCase.ListPublicGuideFilterOptions(r.Context())
 	if err != nil {
@@ -526,6 +626,10 @@ func (h *Handler) GetGuideByID(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if aggregate.Profile == nil || !canReadGuideAggregate(r.Context(), aggregate.Profile.UserID) {
+		writeError(w, http.StatusNotFound, "guide profile not found")
+		return
+	}
 
 	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
 }
@@ -543,6 +647,10 @@ func (h *Handler) GetGuideByUserID(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
+	if !canReadGuideAggregate(r.Context(), userID) {
+		writeError(w, http.StatusNotFound, "guide profile not found")
+		return
+	}
 
 	aggregate, err := h.useCase.GetGuideAggregateByUserID(r.Context(), userID)
 	if err != nil {
@@ -558,6 +666,18 @@ func (h *Handler) GetGuideByUserID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
+}
+
+func canReadGuideAggregate(ctx context.Context, guideUserID uuid.UUID) bool {
+	if guideUserID == uuid.Nil || strings.TrimSpace(SubjectFromContext(ctx)) == "" {
+		return false
+	}
+	if canReviewGuideApplications(ctx) {
+		return true
+	}
+	rawUserID := strings.TrimSpace(UserIDFromContext(ctx))
+	userID, err := uuid.Parse(rawUserID)
+	return err == nil && userID == guideUserID
 }
 
 func (h *Handler) getCurrentGuideAggregate(r *http.Request) (*app.GuideAggregate, error) {
@@ -632,7 +752,7 @@ func toGuideAggregateResponse(aggregate *app.GuideAggregate) dto.GuideAggregateR
 
 func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardResponse {
 	card := dto.PublicGuideCardResponse{
-		GuideProfile:    toGuideProfileResponse(item.GuideProfile),
+		GuideProfile:    toPublicGuideProfileResponse(item.GuideProfile),
 		Languages:       make([]dto.GuideLanguageResponse, 0, len(item.Languages)),
 		Specializations: make([]dto.GuideSpecializationResponse, 0, len(item.Specializations)),
 	}
@@ -647,6 +767,31 @@ func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardRes
 	card.UserProfile = toPublicUserCard(item.UserProfile)
 
 	return card
+}
+
+func toPublicGuideProfileResponse(profile *model.GuideProfile) dto.PublicGuideProfileResponse {
+	var baseCityID *string
+	if profile.BaseCityID != nil {
+		value := profile.BaseCityID.String()
+		baseCityID = &value
+	}
+	return dto.PublicGuideProfileResponse{
+		ID:                        profile.ID.String(),
+		UserID:                    profile.UserID.String(),
+		Type:                      string(profile.Type),
+		Status:                    string(profile.Status),
+		Headline:                  profile.Headline,
+		About:                     profile.About,
+		ExperienceYears:           profile.ExperienceYears,
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   profile.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   profile.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
+		RatingAvg:                 profile.RatingAvg,
+		ReviewsCount:              profile.ReviewsCount,
+		CreatedAt:                 profile.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:                 profile.UpdatedAt.UTC().Format(time.RFC3339),
+	}
 }
 
 func toPublicUserCard(profile *app.PublicUserProfile) *dto.PublicUserCard {

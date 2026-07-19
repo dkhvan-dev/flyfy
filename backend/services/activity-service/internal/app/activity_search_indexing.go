@@ -139,15 +139,7 @@ func isActivitySearchIndexable(item *model.Activity) bool {
 }
 
 func isActivitySearchModerationVisible(status enum.ActivityModerationStatus) bool {
-	switch status {
-	case enum.ActivityModerationStatusNotRequired,
-		enum.ActivityModerationStatusFlagged,
-		enum.ActivityModerationStatusInReview,
-		enum.ActivityModerationStatusApproved:
-		return true
-	default:
-		return false
-	}
+	return isActivityModerationPubliclyVisible(status)
 }
 
 func activitySearchDocument(item *model.Activity, tags []string) SearchIndexDocument {

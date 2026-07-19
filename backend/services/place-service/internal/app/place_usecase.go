@@ -577,13 +577,35 @@ func (u *PlaceUseCase) RecoverPlace(ctx context.Context, placeID uuid.UUID, role
 }
 
 func (u *PlaceUseCase) GetPlace(ctx context.Context, placeID uuid.UUID, locale string) (*PlaceView, error) {
+	place, err := u.loadPlace(ctx, placeID, locale)
+	if err != nil {
+		return nil, err
+	}
+	return u.toPlaceView(ctx, place)
+}
+
+// GetPublicPlace returns only a currently published, non-deleted place. Draft
+// and deleted identities are deliberately indistinguishable from an unknown
+// public identity.
+func (u *PlaceUseCase) GetPublicPlace(ctx context.Context, placeID uuid.UUID, locale string) (*PlaceView, error) {
+	place, err := u.loadPlace(ctx, placeID, locale)
+	if err != nil {
+		return nil, err
+	}
+	if !place.IsPublished() {
+		return nil, ErrPlaceNotFound
+	}
+	return u.toPlaceView(ctx, place)
+}
+
+func (u *PlaceUseCase) loadPlace(ctx context.Context, placeID uuid.UUID, locale string) (*model.Place, error) {
 	normalizedLocale := NormalizePlaceLocale(locale)
 	detailCacheKey, detailCacheOK := u.placeDetailCacheKey(ctx, placeID, normalizedLocale)
 	if detailCacheOK {
 		cacheKey := detailCacheKey
 		place, hit, err := u.cache.GetPlace(ctx, cacheKey)
 		if err == nil && hit && place != nil {
-			return u.toPlaceView(ctx, place)
+			return place, nil
 		}
 	}
 
@@ -597,7 +619,7 @@ func (u *PlaceUseCase) GetPlace(ctx context.Context, placeID uuid.UUID, locale s
 	if detailCacheOK {
 		_ = u.cache.SetPlace(ctx, detailCacheKey, place, u.detailCacheTTL)
 	}
-	return u.toPlaceView(ctx, place)
+	return place, nil
 }
 
 func (u *PlaceUseCase) ListPlaces(ctx context.Context, input ListPlacesInput) ([]*PlaceView, int, error) {

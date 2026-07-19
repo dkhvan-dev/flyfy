@@ -68,6 +68,36 @@ func TestValidateFeedServiceMTLSPortRejectsPlaintextPortReuse(t *testing.T) {
 	}
 }
 
+func TestValidateFeedServiceMTLSPortRequiresDedicatedGRPCPortWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	err := validateFeedServiceMTLSPort(
+		&config.Config{
+			HTTP: config.HTTPConfig{Port: 8087, InternalTLSPort: 9487},
+			GRPC: config.GRPCConfig{Port: 9098},
+		},
+		&tls.Config{MinVersion: tls.VersionTLS13},
+	)
+	if err == nil || !strings.Contains(err.Error(), "INTERNAL_GRPC_TLS_PORT is required") {
+		t.Fatalf("validateFeedServiceMTLSPort() error = %v, want missing gRPC TLS port", err)
+	}
+}
+
+func TestValidateFeedServiceMTLSPortAcceptsSeparateHTTPAndGRPCPorts(t *testing.T) {
+	t.Parallel()
+
+	err := validateFeedServiceMTLSPort(
+		&config.Config{
+			HTTP: config.HTTPConfig{Port: 8087, InternalTLSPort: 9487},
+			GRPC: config.GRPCConfig{Port: 9098, InternalTLSPort: 9448},
+		},
+		&tls.Config{MinVersion: tls.VersionTLS13},
+	)
+	if err != nil {
+		t.Fatalf("validateFeedServiceMTLSPort() error = %v, want nil", err)
+	}
+}
+
 func TestNewInternalFeedMTLSServerUsesDedicatedPort(t *testing.T) {
 	t.Parallel()
 

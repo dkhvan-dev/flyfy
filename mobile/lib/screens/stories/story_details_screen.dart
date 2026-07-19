@@ -14,6 +14,8 @@ import '../../core/network/file_api.dart';
 import '../../core/network/post_api.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/feed/data/feed_api.dart';
+import '../../features/feed/widgets/post_saved_bookmark_button.dart';
+import '../../features/saved/domain/saved_operation.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/editor/domain/story_document.dart';
@@ -1675,6 +1677,10 @@ class _StoryHero extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+              ),
+              PostSavedBookmarkButton(
+                post: story,
+                sourceSurface: SavedSourceSurface.detail,
               ),
               _OverlayIconButton(
                 icon: isSharing

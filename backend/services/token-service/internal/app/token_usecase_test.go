@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -151,9 +152,10 @@ func (m *mockSessionRevocationNotifier) NotifySessionRevoked(
 // --- Session port mocks ---
 
 type mockSessionStore struct {
-	mu      sync.Mutex
-	byID    map[uuid.UUID]*model.UserSession
-	history map[string]uuid.UUID
+	mu          sync.Mutex
+	byID        map[uuid.UUID]*model.UserSession
+	history     map[string]uuid.UUID
+	validateErr error
 }
 
 func newMockSessionStore() *mockSessionStore {
@@ -214,6 +216,41 @@ func (m *mockSessionStore) GetActiveByRefreshJTI(_ context.Context, jti string) 
 		}
 	}
 	return nil, model.ErrSessionNotFound
+}
+
+func (m *mockSessionStore) IsCurrentSessionGeneration(
+	_ context.Context,
+	userID, generation uuid.UUID,
+	now time.Time,
+	inactivityTTL time.Duration,
+) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.validateErr != nil {
+		return false, m.validateErr
+	}
+
+	activeCount := 0
+	var candidate *model.UserSession
+	for _, session := range m.byID {
+		if session.UserID != userID || session.RevokedAt != nil {
+			continue
+		}
+		activeCount++
+		if session.ID == generation {
+			candidate = session
+		}
+	}
+	if activeCount != 1 || candidate == nil {
+		return false, nil
+	}
+	if !candidate.RefreshExpiresAt.After(now) {
+		return false, nil
+	}
+	if inactivityTTL > 0 && candidate.LastUsedAt.Before(now.Add(-inactivityTTL)) {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (m *mockSessionStore) RotateRefresh(_ context.Context, sessionID uuid.UUID, prev port.RotatePrev, next port.RotateNext) error {
@@ -319,7 +356,15 @@ func (m *mockSessionAuditLogger) LogSessionEvent(_ context.Context, _ uuid.UUID,
 
 // --- Test setup ---
 
-func setupUseCase(t *testing.T, opts ...app.Option) (*app.TokenUseCase, *mockKeyStore, *mockRevocationStore, *mockAuditLogger) {
+type useCaseFixture struct {
+	useCase      *app.TokenUseCase
+	keyStore     *mockKeyStore
+	revStore     *mockRevocationStore
+	sessionStore *mockSessionStore
+	audit        *mockAuditLogger
+}
+
+func newUseCaseFixture(t *testing.T, opts ...app.Option) *useCaseFixture {
 	t.Helper()
 	keyStore := newMockKeyStore(t)
 	revStore := newMockRevocationStore()
@@ -346,7 +391,19 @@ func setupUseCase(t *testing.T, opts ...app.Option) (*app.TokenUseCase, *mockKey
 	}
 
 	uc := app.NewTokenUseCase(cfg, sessionCfg, keyStore, revStore, sessionStore, revSessionCache, sessionAudit, svcStore, pwVerifier, audit, logger, opts...)
-	return uc, keyStore, revStore, audit
+	return &useCaseFixture{
+		useCase:      uc,
+		keyStore:     keyStore,
+		revStore:     revStore,
+		sessionStore: sessionStore,
+		audit:        audit,
+	}
+}
+
+func setupUseCase(t *testing.T, opts ...app.Option) (*app.TokenUseCase, *mockKeyStore, *mockRevocationStore, *mockAuditLogger) {
+	t.Helper()
+	fixture := newUseCaseFixture(t, opts...)
+	return fixture.useCase, fixture.keyStore, fixture.revStore, fixture.audit
 }
 
 // --- Tests ---
@@ -414,6 +471,104 @@ func TestGenerateUserTokensNotifiesRevokedPriorSession(t *testing.T) {
 	}
 	if event.Reason != model.RevokeReasonNewLogin {
 		t.Fatalf("expected revoke reason %q, got %q", model.RevokeReasonNewLogin, event.Reason)
+	}
+}
+
+func TestValidateUserSessionGenerationRefreshAndReplacement(t *testing.T) {
+	fixture := newUseCaseFixture(t)
+	ctx := context.Background()
+	userID := uuid.New()
+	claims := model.UserClaims{
+		UserID: userID,
+		Type:   model.TokenTypeUser,
+		Role:   model.RoleTourist,
+	}
+
+	first, err := fixture.useCase.GenerateUserTokens(ctx, claims, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("GenerateUserTokens() first error = %v", err)
+	}
+	assertSessionGenerationValidity(t, fixture.useCase, userID, first.SessionID, true)
+
+	refreshed, err := fixture.useCase.RefreshTokens(ctx, first.RefreshToken, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("RefreshTokens() error = %v", err)
+	}
+	if refreshed.SessionID != first.SessionID {
+		t.Fatalf("RefreshTokens() session = %s, want stable %s", refreshed.SessionID, first.SessionID)
+	}
+	assertSessionGenerationValidity(t, fixture.useCase, userID, first.SessionID, true)
+
+	second, err := fixture.useCase.GenerateUserTokens(ctx, claims, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("GenerateUserTokens() replacement error = %v", err)
+	}
+	assertSessionGenerationValidity(t, fixture.useCase, userID, first.SessionID, false)
+	assertSessionGenerationValidity(t, fixture.useCase, userID, second.SessionID, true)
+	assertSessionGenerationValidity(t, fixture.useCase, uuid.New(), second.SessionID, false)
+	assertSessionGenerationValidity(t, fixture.useCase, userID, uuid.New(), false)
+}
+
+func TestValidateUserSessionGenerationRevokedAndExpired(t *testing.T) {
+	fixture := newUseCaseFixture(t)
+	ctx := context.Background()
+	userID := uuid.New()
+	claims := model.UserClaims{UserID: userID, Type: model.TokenTypeUser, Role: model.RoleTourist}
+
+	revoked, err := fixture.useCase.GenerateUserTokens(ctx, claims, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("GenerateUserTokens() revoked fixture error = %v", err)
+	}
+	if err := fixture.useCase.LogoutSession(ctx, revoked.SessionID, model.RevokeReasonUserLogout); err != nil {
+		t.Fatalf("LogoutSession() error = %v", err)
+	}
+	assertSessionGenerationValidity(t, fixture.useCase, userID, revoked.SessionID, false)
+
+	expired, err := fixture.useCase.GenerateUserTokens(ctx, claims, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("GenerateUserTokens() expired fixture error = %v", err)
+	}
+	fixture.sessionStore.mu.Lock()
+	fixture.sessionStore.byID[expired.SessionID].RefreshExpiresAt = time.Now().Add(-time.Second)
+	fixture.sessionStore.mu.Unlock()
+	assertSessionGenerationValidity(t, fixture.useCase, userID, expired.SessionID, false)
+
+	inactive, err := fixture.useCase.GenerateUserTokens(ctx, claims, model.DeviceInfo{})
+	if err != nil {
+		t.Fatalf("GenerateUserTokens() inactive fixture error = %v", err)
+	}
+	fixture.sessionStore.mu.Lock()
+	fixture.sessionStore.byID[inactive.SessionID].LastUsedAt = time.Now().Add(-366 * 24 * time.Hour)
+	fixture.sessionStore.mu.Unlock()
+	assertSessionGenerationValidity(t, fixture.useCase, userID, inactive.SessionID, false)
+}
+
+func TestValidateUserSessionGenerationStoreFailureFailsClosed(t *testing.T) {
+	fixture := newUseCaseFixture(t)
+	fixture.sessionStore.validateErr = errors.New("storage unavailable")
+
+	valid, err := fixture.useCase.ValidateUserSessionGeneration(t.Context(), uuid.New(), uuid.New())
+	if err == nil {
+		t.Fatal("ValidateUserSessionGeneration() error = nil, want dependency error")
+	}
+	if valid {
+		t.Fatal("ValidateUserSessionGeneration() valid = true on dependency failure")
+	}
+}
+
+func assertSessionGenerationValidity(
+	t *testing.T,
+	useCase *app.TokenUseCase,
+	userID, generation uuid.UUID,
+	want bool,
+) {
+	t.Helper()
+	got, err := useCase.ValidateUserSessionGeneration(t.Context(), userID, generation)
+	if err != nil {
+		t.Fatalf("ValidateUserSessionGeneration() error = %v", err)
+	}
+	if got != want {
+		t.Fatalf("ValidateUserSessionGeneration() = %v, want %v", got, want)
 	}
 }
 

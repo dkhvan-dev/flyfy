@@ -111,6 +111,7 @@ services=(
   place-service
   reference-service
   routing-service
+  saved-service
   search-service
   sticker-service
   support-service

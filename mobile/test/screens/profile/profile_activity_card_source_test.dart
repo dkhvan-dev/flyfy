@@ -21,4 +21,61 @@ void main() {
     expect(source, isNot(contains('profileTextMuted')));
     expect(source, isNot(contains('AppPalette.')));
   });
+
+  test(
+    'profile cards validate canonical public ID before CARD bookmark',
+    () async {
+      final source = await File(
+        'lib/screens/profile/widgets/profile_activity_card.dart',
+      ).readAsString();
+
+      final fullCardStart = source.indexOf('class ProfileActivityCard');
+      final compactCardStart = source.indexOf(
+        'class ProfileCompactActivityCard',
+      );
+      final bookmarkStart = source.indexOf(
+        'class _ProfileActivitySavedBookmarkButton',
+      );
+      final bookmarkEnd = source.indexOf(
+        'String _compactActivityMetaText',
+        bookmarkStart,
+      );
+      expect(fullCardStart, isNonNegative);
+      expect(compactCardStart, greaterThan(fullCardStart));
+      expect(bookmarkStart, greaterThan(compactCardStart));
+      expect(bookmarkEnd, greaterThan(bookmarkStart));
+
+      final fullCardSource = source.substring(fullCardStart, compactCardStart);
+      final compactCardSource = source.substring(
+        compactCardStart,
+        bookmarkStart,
+      );
+      final bookmarkSource = source.substring(bookmarkStart, bookmarkEnd);
+      expect(
+        fullCardSource,
+        contains('_ProfileActivitySavedBookmarkButton(item: item)'),
+      );
+      expect(
+        compactCardSource,
+        contains('_ProfileActivitySavedBookmarkButton('),
+      );
+      expect(
+        bookmarkSource,
+        contains("item.visibility.trim().toUpperCase() != 'PUBLIC'"),
+      );
+      expect(bookmarkSource, contains('return const SizedBox.shrink()'));
+      expect(bookmarkSource, contains('SavedTarget.tryCreate('));
+      expect(bookmarkSource, contains('if (savedTarget == null)'));
+      expect(bookmarkSource, contains('AppSavedBookmarkButton('));
+      expect(bookmarkSource, contains('entityType: SavedEntityType.activity'));
+      expect(bookmarkSource, contains('entityId: item.id'));
+      expect(bookmarkSource, contains('target: savedTarget'));
+      expect(bookmarkSource, isNot(contains('target: SavedTarget(')));
+      expect(
+        bookmarkSource,
+        contains('sourceSurface: SavedSourceSurface.card'),
+      );
+      expect(bookmarkSource, isNot(contains('onTap: () {}')));
+    },
+  );
 }

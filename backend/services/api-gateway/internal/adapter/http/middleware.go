@@ -2,7 +2,9 @@ package http
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -114,9 +116,11 @@ func Chain(cfg *config.Config, verifier app.TokenVerifier, cache *ResponseCache,
 	handler := corsMiddleware(cfg,
 		requestIDMiddleware(cfg,
 			routePolicyMiddleware(cfg,
-				rateLimitMiddleware(cfg, limiter,
-					logMiddleware(
-						authMiddleware(cfg, verifier, dispatchHandler),
+				savedRequestDeadlineMiddleware(cfg,
+					rateLimitMiddleware(cfg, limiter,
+						logMiddleware(
+							authMiddleware(cfg, verifier, requestBodyLimitMiddleware(dispatchHandler)),
+						),
 					),
 				),
 			),
@@ -130,10 +134,35 @@ func Chain(cfg *config.Config, verifier app.TokenVerifier, cache *ResponseCache,
 	return handler
 }
 
+func savedRequestDeadlineMiddleware(cfg *config.Config, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		policy := RoutePolicyFromContext(r.Context())
+		if policy == nil || !policy.SavedPersonal {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx, cancel := withSavedRequestDeadline(r.Context(), cfg)
+		defer cancel()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func withSavedRequestDeadline(ctx context.Context, cfg *config.Config) (context.Context, context.CancelFunc) {
+	timeout := cfg.SavedService.EffectiveRequestTimeout()
+	if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) <= timeout {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, timeout)
+}
+
 func corsMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 	allowedOrigins := splitCSV(cfg.CORS.AllowedOrigins)
 	allowedMethods := joinCSVOrDefault(cfg.CORS.AllowedMethods, "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-	allowedHeaders := joinCSVOrDefault(cfg.CORS.AllowedHeaders, "Authorization,Content-Type,X-Request-Id")
+	allowedHeaders := joinCSVOrDefault(
+		cfg.CORS.AllowedHeaders,
+		"Authorization,Content-Type,X-Request-Id,Operation-Id,Idempotency-Key,Saved-Source-Surface,X-Client-Platform,X-App-Build",
+	)
 	exposeHeaders := joinCSVOrDefault(cfg.CORS.ExposeHeaders, "X-Request-Id")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +201,8 @@ func requestIDMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := strings.TrimSpace(r.Header.Get(headerName))
-		if requestID == "" {
+		parsedRequestID, err := uuid.Parse(requestID)
+		if err != nil || parsedRequestID == uuid.Nil || parsedRequestID.String() != requestID {
 			requestID = uuid.NewString()
 		}
 
@@ -239,7 +269,7 @@ func logMiddleware(next http.Handler) http.Handler {
 		logger := log.Info().
 			Str("transport", "http").
 			Str("method", r.Method).
-			Str("path", r.URL.Path).
+			Str("path", requestLogPath(r)).
 			Int("status", rw.statusCode).
 			Dur("duration", time.Since(startedAt)).
 			Str("request_id", RequestIDFromContext(r.Context()))
@@ -248,7 +278,7 @@ func logMiddleware(next http.Handler) http.Handler {
 			logger = logger.Str("route", routeName)
 		}
 
-		if claims := ClaimsFromContext(r.Context()); claims != nil {
+		if claims := ClaimsFromContext(r.Context()); claims != nil && !isSavedLogRequest(r) {
 			logger = logger.Str("subject", claims.Subject)
 		}
 
@@ -298,11 +328,19 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 
 		claims, err := verifier.VerifyAccessToken(r.Context(), token)
 		if err != nil {
-			log.Warn().
-				Err(err).
+			authLog := log.Warn().
 				Str("route", RouteNameOrDefault(r.Context())).
-				Str("request_id", RequestIDFromContext(r.Context())).
-				Msg("access token verification failed")
+				Str("request_id", RequestIDFromContext(r.Context()))
+			if policy.SavedPersonal {
+				errorClass := "verifier_unavailable"
+				if isTokenAuthFailure(err) {
+					errorClass = "invalid_token"
+				}
+				authLog = authLog.Str("error_class", errorClass)
+			} else {
+				authLog = authLog.Err(err)
+			}
+			authLog.Msg("access token verification failed")
 			if isTokenAuthFailure(err) {
 				writeBusinessError(w, r, http.StatusUnauthorized, errorCodeInvalidAccessToken)
 				return
@@ -310,18 +348,121 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 			writeTechnicalError(w, r, http.StatusServiceUnavailable, errorCodeTechnical)
 			return
 		}
+		if claims == nil {
+			writeBusinessError(w, r, http.StatusUnauthorized, errorCodeInvalidAccessToken)
+			return
+		}
 
 		if policy.AuthMode == RouteAuthRoleBased && !hasAnyRequiredRole(claims.Roles, policy.RequiredRoles) {
 			writeBusinessError(w, r, http.StatusForbidden, errorCodeInsufficientRole)
 			return
 		}
+		if policy.SavedPersonal {
+			sessionGeneration, ok := canonicalSessionGeneration(claims.SessionID)
+			if !ok {
+				writeBusinessError(w, r, http.StatusUnauthorized, errorCodeInvalidAccessToken)
+				return
+			}
+			validatedClaims := *claims
+			validatedClaims.SessionID = sessionGeneration
+			claims = &validatedClaims
+		}
 
-		log.Info().Interface("claims", claims).Msg("claims")
+		if !policy.SavedPersonal {
+			log.Info().
+				Str("route", RouteNameOrDefault(r.Context())).
+				Str("request_id", RequestIDFromContext(r.Context())).
+				Msg("access token verified")
+		}
 
 		ctx := context.WithValue(r.Context(), contextKeyClaims, claims)
 		ctx = context.WithValue(ctx, contextKeySubject, claims.Subject)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func requestBodyLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		policy := RoutePolicyFromContext(r.Context())
+		if policy == nil || policy.MaxRequestBodyBytes <= 0 || r.Body == nil || r.Body == http.NoBody {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		limit := policy.MaxRequestBodyBytes
+		if r.ContentLength > limit {
+			_ = r.Body.Close()
+			writeBusinessError(w, r, http.StatusRequestEntityTooLarge, errorCodeInvalidRequest)
+			return
+		}
+
+		body, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
+		_ = r.Body.Close()
+		if err != nil {
+			writeBusinessError(w, r, http.StatusBadRequest, errorCodeInvalidRequest)
+			return
+		}
+		if int64(len(body)) > limit {
+			writeBusinessError(w, r, http.StatusRequestEntityTooLarge, errorCodeInvalidRequest)
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.ContentLength = int64(len(body))
+		r.GetBody = nil
+		next.ServeHTTP(w, r)
+	})
+}
+
+func canonicalSessionGeneration(raw string) (string, bool) {
+	sessionGeneration, err := uuid.Parse(strings.TrimSpace(raw))
+	if err != nil || sessionGeneration == uuid.Nil {
+		return "", false
+	}
+	return sessionGeneration.String(), true
+}
+
+func requestLogPath(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if policy := RoutePolicyFromContext(r.Context()); policy != nil && policy.SavedPersonal {
+		if template := strings.TrimSpace(policy.LogPathTemplate); template != "" {
+			return template
+		}
+	}
+	if namespace := savedLogNamespace(r.URL.Path); namespace != "" {
+		return namespace + "/{redacted}"
+	}
+	return r.URL.Path
+}
+
+func isSavedLogRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	if policy := RoutePolicyFromContext(r.Context()); policy != nil && policy.SavedPersonal {
+		return true
+	}
+	return savedLogNamespace(r.URL.Path) != ""
+}
+
+func savedLogNamespace(path string) string {
+	for _, namespace := range []string{
+		"/users/me/saved-items",
+		"/users/me/saved-operations",
+		"/users/me/saved-collections",
+	} {
+		index := strings.Index(path, namespace)
+		if index < 0 {
+			continue
+		}
+		boundary := index + len(namespace)
+		if boundary == len(path) || path[boundary] == '/' {
+			return namespace
+		}
+	}
+	return ""
 }
 
 func bearerTokenFromRequest(r *http.Request) string {

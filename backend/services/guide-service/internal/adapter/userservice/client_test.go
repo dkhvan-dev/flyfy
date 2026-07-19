@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -67,9 +68,74 @@ func TestGetPublicUserProfilesMapsLegalNameFields(t *testing.T) {
 	}
 }
 
+func TestGetSavedGuideUserSnapshotMapsPublicIdentityAndRevisions(t *testing.T) {
+	userID := uuid.New()
+	avatarFileID := uuid.New()
+	accountUpdatedAt := time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)
+	profileUpdatedAt := accountUpdatedAt.Add(time.Minute)
+
+	listener := bufconn.Listen(1024 * 1024)
+	server := grpc.NewServer()
+	userv1.RegisterUserServiceServer(server, &publicProfilesServer{
+		aggregate: &userv1.UserAggregate{
+			User: &userv1.User{
+				Id:        userID.String(),
+				Status:    "ACTIVE",
+				UpdatedAt: accountUpdatedAt.Format(time.RFC3339Nano),
+			},
+			Profile: &userv1.UserProfile{
+				UserId:       userID.String(),
+				Nickname:     "Aruzhan",
+				AvatarFileId: avatarFileID.String(),
+				CountryCode:  "KZ",
+				Locale:       "en",
+				UpdatedAt:    profileUpdatedAt.Format(time.RFC3339Nano),
+			},
+		},
+	})
+	go func() { _ = server.Serve(listener) }()
+	defer server.Stop()
+
+	conn, err := grpc.NewClient(
+		"passthrough:///bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return listener.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("new grpc client: %v", err)
+	}
+	defer conn.Close()
+
+	client := &Client{conn: conn, service: userv1.NewUserServiceClient(conn)}
+	snapshot, err := client.GetSavedGuideUserSnapshot(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("GetSavedGuideUserSnapshot() error = %v", err)
+	}
+	if snapshot.UserID != userID || snapshot.AccountStatus != "ACTIVE" || snapshot.IsDeleted {
+		t.Fatalf("snapshot identity = %+v", snapshot)
+	}
+	if snapshot.AvatarFileID == nil || *snapshot.AvatarFileID != avatarFileID {
+		t.Fatalf("avatar = %v", snapshot.AvatarFileID)
+	}
+	if !snapshot.AccountUpdatedAt.Equal(accountUpdatedAt) ||
+		!snapshot.ProfileUpdatedAt.Equal(profileUpdatedAt) {
+		t.Fatalf("snapshot revisions = %+v", snapshot)
+	}
+}
+
 type publicProfilesServer struct {
 	userv1.UnimplementedUserServiceServer
-	items []*userv1.PublicProfile
+	items     []*userv1.PublicProfile
+	aggregate *userv1.UserAggregate
+}
+
+func (s *publicProfilesServer) GetUserById(
+	context.Context,
+	*userv1.GetUserByIdRequest,
+) (*userv1.GetUserByIdResponse, error) {
+	return &userv1.GetUserByIdResponse{Aggregate: s.aggregate}, nil
 }
 
 func (s *publicProfilesServer) GetPublicProfilesByUserIds(

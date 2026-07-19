@@ -65,6 +65,11 @@ type SessionManager interface {
 
 	// RevokeAllUserSessions force-logs the user out everywhere (admin / panic button).
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID, reason string) (int, error)
+
+	// ValidateUserSessionGeneration authoritatively checks that generation is
+	// still the user's single active session. Invalid lifecycle states are
+	// represented by false; only dependency failures return an error.
+	ValidateUserSessionGeneration(ctx context.Context, userID, generation uuid.UUID) (bool, error)
 }
 
 type SessionRevocationNotification struct {
@@ -147,6 +152,16 @@ type SessionStore interface {
 	GetByID(ctx context.Context, sessionID uuid.UUID) (*model.UserSession, error)
 	GetActiveByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSession, error)
 	GetActiveByRefreshJTI(ctx context.Context, refreshJTI string) (*model.UserSession, error)
+
+	// IsCurrentSessionGeneration performs a fresh authoritative read. It must
+	// not consult a cache because callers use it immediately before committing
+	// personal-data mutations.
+	IsCurrentSessionGeneration(
+		ctx context.Context,
+		userID, generation uuid.UUID,
+		now time.Time,
+		inactivityTTL time.Duration,
+	) (bool, error)
 
 	// RotateRefresh updates the session's refresh JTI/hash/timestamps and
 	// pushes the previous refresh JTI into refresh_token_history. Atomically.

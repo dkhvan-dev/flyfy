@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,10 @@ import 'package:inflap/features/feed/models/feed_block_vm.dart';
 import 'package:inflap/features/profile/data/guide_api.dart';
 import 'package:inflap/features/profile/models/guide_profile_vm.dart';
 import 'package:inflap/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/features/saved/domain/saved_operation.dart';
+import 'package:inflap/features/saved/domain/saved_status.dart';
+import 'package:inflap/features/saved/domain/saved_target.dart';
+import 'package:inflap/features/saved/presentation/state/saved_screen_controller.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/activity_provider.dart';
@@ -21,8 +27,11 @@ import 'package:inflap/providers/locale_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
 import 'package:inflap/screens/home/home_screen.dart';
 import 'package:inflap/shared/widgets/app_localized_location_text.dart';
+import 'package:inflap/shared/widgets/app_saved_bookmark_button.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../features/saved/support/saved_test_fakes.dart';
 
 void main() {
   testWidgets('guest profile button opens public app settings', (tester) async {
@@ -788,6 +797,252 @@ void main() {
     expect(event.metadata['tags'], ['bridge']);
   });
 
+  testWidgets(
+    'Saved bookmarks keep canonical home IDs and consume nested card taps',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.binding.setSurfaceSize(const Size(320, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final feedApi = _FakeFeedApi(page: FeedPageVm(items: const []));
+      final savedRepository = FakeSavedFeatureRepository();
+      final placeTarget = SavedTarget(
+        entityType: SavedEntityType.attraction,
+        entityId: 'place-1',
+      );
+      final activityTarget = SavedTarget(
+        entityType: SavedEntityType.activity,
+        entityId: 'activity-1',
+      );
+      savedRepository.registry.hydrateBatch([
+        SavedTargetSnapshot(
+          target: placeTarget,
+          savedState: SavedConfirmation.confirmedUnsaved,
+          eligibility: SavedEligibility.eligible,
+          effectiveCollectionCount: 0,
+          resourceVersion: 1,
+        ),
+        SavedTargetSnapshot(
+          target: activityTarget,
+          savedState: SavedConfirmation.confirmedUnsaved,
+          eligibility: SavedEligibility.eligible,
+          effectiveCollectionCount: 0,
+          resourceVersion: 1,
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            placeApi: _FakePlaceApi(items: [_place()]),
+            guideApi: _FakeGuideApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          activityProvider: _FakeActivityProvider(items: [_activity()]),
+          savedRepository: savedRepository,
+          authenticated: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Dragon Bridge'),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      final placeBookmark = find.byKey(
+        const ValueKey('saved-bookmark-ATTRACTION-place-1'),
+      );
+      expect(placeBookmark, findsOneWidget);
+      await Scrollable.ensureVisible(
+        tester.element(placeBookmark),
+        alignment: 0.5,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getSize(placeBookmark), const Size.square(48));
+      expect(tester.widget<IconButton>(placeBookmark).onPressed, isNotNull);
+
+      savedRepository.targetCollectionsSnapshot = targetCollections(
+        placeTarget,
+        effectiveIds: const <String>[],
+      );
+      await tester.tap(placeBookmark);
+      await _pumpSavedPickerTransition(tester);
+
+      expect(tester.getSize(placeBookmark), const Size.square(48));
+      expect(savedRepository.saveCalls, hasLength(1));
+      final placeCall = savedRepository.saveCalls.single;
+      expect(placeCall.target.entityType, SavedEntityType.attraction);
+      expect(placeCall.target.entityId, 'place-1');
+      expect(placeCall.sourceSurface, SavedSourceSurface.card);
+      expect(savedRepository.desiredAssignments, isEmpty);
+      expect(feedApi.trackedEvents, isEmpty);
+
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Sunrise canyon walk'),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      final activityBookmark = find.byKey(
+        const ValueKey('saved-bookmark-ACTIVITY-activity-1'),
+      );
+      expect(activityBookmark, findsOneWidget);
+      await Scrollable.ensureVisible(
+        tester.element(activityBookmark),
+        alignment: 0.5,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getSize(activityBookmark), const Size.square(48));
+      expect(tester.widget<IconButton>(activityBookmark).onPressed, isNotNull);
+
+      savedRepository.targetCollectionsSnapshot = targetCollections(
+        activityTarget,
+        effectiveIds: const <String>[],
+      );
+      await tester.tap(activityBookmark);
+      await _pumpSavedPickerTransition(tester);
+
+      expect(tester.getSize(activityBookmark), const Size.square(48));
+      expect(savedRepository.saveCalls, hasLength(2));
+      final activityCall = savedRepository.saveCalls.last;
+      expect(activityCall.target.entityType, SavedEntityType.activity);
+      expect(activityCall.target.entityId, 'activity-1');
+      expect(activityCall.sourceSurface, SavedSourceSurface.card);
+      expect(savedRepository.desiredAssignments, isEmpty);
+      expect(feedApi.trackedEvents, isEmpty);
+
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pumpAndSettle();
+
+      expect(savedRepository.unsaveCalls, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('malformed home IDs omit Saved bookmarks without build errors', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(320, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+          placeApi: _FakePlaceApi(
+            items: [_place(id: '', title: 'Blank ID place')],
+          ),
+          guideApi: _FakeGuideApi(),
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+        activityProvider: _FakeActivityProvider(
+          items: [_activity(id: ' activity-1 ')],
+        ),
+        authenticated: true,
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Blank ID place'),
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(AppSavedBookmarkButton), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('Sunrise canyon walk'),
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(AppSavedBookmarkButton), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'disabled unresolved bookmark consumes tap before parent navigation',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.binding.setSurfaceSize(const Size(320, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final feedApi = _FakeFeedApi(page: FeedPageVm(items: const []));
+      final savedRepository = FakeSavedFeatureRepository();
+      final bootstrap = Completer<List<SavedTargetSnapshot>>();
+      savedRepository.bootstrapHandler = (_) => bootstrap.future;
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            placeApi: _FakePlaceApi(items: [_place()]),
+            guideApi: _FakeGuideApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          savedRepository: savedRepository,
+          authenticated: true,
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.scrollUntilVisible(
+        find.text('Dragon Bridge'),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      final bookmark = find.byKey(
+        const ValueKey('saved-bookmark-ATTRACTION-place-1'),
+      );
+      expect(bookmark, findsOneWidget);
+      await Scrollable.ensureVisible(tester.element(bookmark), alignment: 0.5);
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.getSize(bookmark), const Size.square(48));
+      expect(tester.widget<IconButton>(bookmark).onPressed, isNull);
+      expect(find.bySemanticsLabel('Checking Saved status'), findsOneWidget);
+
+      await tester.tap(bookmark);
+      await tester.pump();
+
+      expect(feedApi.trackedEvents, isEmpty);
+      expect(find.text('Dragon Bridge'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      bootstrap.complete([
+        SavedTargetSnapshot(
+          target: SavedTarget(
+            entityType: SavedEntityType.attraction,
+            entityId: 'place-1',
+          ),
+          savedState: SavedConfirmation.confirmedUnsaved,
+          eligibility: SavedEligibility.eligible,
+          effectiveCollectionCount: 0,
+          resourceVersion: 1,
+        ),
+      ]);
+      await tester.pump();
+    },
+  );
+
   testWidgets('tracks recommended activity clicks as home conversion events', (
     tester,
   ) async {
@@ -874,6 +1129,12 @@ void main() {
   });
 }
 
+Future<void> _pumpSavedPickerTransition(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump();
+}
+
 Finder _horizontalScrollables() {
   return find.byWidgetPredicate(
     (widget) =>
@@ -933,6 +1194,7 @@ Future<_FakeFeedApi> _tapHomeService(
 Widget _homeApp(
   Widget home, {
   ActivityProvider? activityProvider,
+  FakeSavedFeatureRepository? savedRepository,
   bool authenticated = false,
   HomeLocationPreference? location,
 }) {
@@ -1003,6 +1265,11 @@ Widget _homeApp(
           authenticated
               ? SessionStatus.authenticated
               : SessionStatus.unauthenticated,
+        ),
+      ),
+      ChangeNotifierProvider<SavedScreenController>(
+        create: (_) => SavedScreenController(
+          repository: savedRepository ?? FakeSavedFeatureRepository(),
         ),
       ),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
@@ -1369,10 +1636,10 @@ PlaceVm _place({String id = 'place-1', String title = 'Dragon Bridge'}) {
   );
 }
 
-ActivityListItemVm _activity() {
+ActivityListItemVm _activity({String id = 'activity-1'}) {
   final startAt = DateTime.now().toUtc().add(const Duration(days: 7));
   return ActivityListItemVm(
-    id: 'activity-1',
+    id: id,
     hostUserId: 'host-1',
     title: 'Sunrise canyon walk',
     description: 'Morning route with a local guide.',

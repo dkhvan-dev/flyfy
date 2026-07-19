@@ -1554,7 +1554,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSavedItemsSubtitle =>
-      'Собранные активности, места и подборки появятся здесь позже.';
+      'Активности, пользователи, места и ваши личные коллекции';
 
   @override
   String get profileBookingsTitle => 'Мои бронирования';
@@ -9759,4 +9759,306 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get trustRestrictionSupportAction => 'Обратиться в поддержку';
+
+  @override
+  String get savedScreenTitle => 'Сохраненное';
+
+  @override
+  String get savedAllItems => 'Все сохраненное';
+
+  @override
+  String get savedCollectionsTitle => 'Коллекции';
+
+  @override
+  String get savedCollectionsLoadError => 'Не удалось загрузить коллекции';
+
+  @override
+  String get savedCollectionsSeeAll => 'Смотреть все';
+
+  @override
+  String get savedCollectionsEmptyTitle => 'Коллекций пока нет';
+
+  @override
+  String get savedCollectionsEmptyMessage =>
+      'Создайте коллекцию, чтобы распределять сохранённые карточки по поездкам и идеям.';
+
+  @override
+  String get savedCollectionsUnavailableTitle => 'Коллекции недоступны';
+
+  @override
+  String get savedCollectionsUnavailableMessage =>
+      'Ваши карточки по-прежнему доступны в разделе «Все сохранённое».';
+
+  @override
+  String get savedCreateCollection => 'Создать коллекцию';
+
+  @override
+  String get savedSearchHint => 'Название, город или страна';
+
+  @override
+  String savedSearchMatchedTitle(String value) {
+    return 'Совпадение по названию: $value';
+  }
+
+  @override
+  String savedSearchMatchedCity(String value) {
+    return 'Совпадение по городу: $value';
+  }
+
+  @override
+  String savedSearchMatchedCountry(String value) {
+    return 'Совпадение по стране: $value';
+  }
+
+  @override
+  String get savedCategoryAll => 'Все';
+
+  @override
+  String get savedCategoryActivities => 'Активности';
+
+  @override
+  String get savedCategoryUsers => 'Пользователи';
+
+  @override
+  String get savedCategoryAttractions => 'Места';
+
+  @override
+  String get savedCategoryPosts => 'Посты';
+
+  @override
+  String get savedDisabledTitle => 'Сохраненное временно недоступно';
+
+  @override
+  String get savedDisabledMessage =>
+      'Ваши сохранения не изменились. Попробуйте позже.';
+
+  @override
+  String get savedEmptyAllTitle => 'Пока ничего не сохранено';
+
+  @override
+  String get savedEmptyAllMessage =>
+      'Нажимайте закладку на активностях, профилях пользователей и местах, чтобы собрать их здесь.';
+
+  @override
+  String get savedEmptyCategoryTitle => 'В этой категории пока пусто';
+
+  @override
+  String get savedEmptyCategoryMessage =>
+      'Сохраненные карточки этой категории появятся здесь.';
+
+  @override
+  String get savedEmptyCollectionTitle => 'Коллекция пока пуста';
+
+  @override
+  String get savedEmptyCollectionMessage =>
+      'Добавляйте сохраненные карточки через выбор коллекций.';
+
+  @override
+  String get savedEmptySearchTitle => 'Ничего не найдено';
+
+  @override
+  String get savedEmptySearchMessage =>
+      'Попробуйте другое слово или очистите поиск.';
+
+  @override
+  String get savedNetworkStale =>
+      'Нет соединения. Показываем карточки, уже загруженные на этом устройстве.';
+
+  @override
+  String get savedUnavailableTitle => 'Карточка недоступна';
+
+  @override
+  String get savedUnavailableMessage =>
+      'Ее больше нельзя открыть, но можно удалить из Сохраненного.';
+
+  @override
+  String get savedBookmarkSaveTooltip => 'Сохранить';
+
+  @override
+  String get savedBookmarkManageTooltip => 'Управлять сохранением';
+
+  @override
+  String get savedBookmarkAuthTooltip =>
+      'Войдите, чтобы использовать Сохраненное';
+
+  @override
+  String get savedBookmarkCheckingTooltip => 'Проверяем статус в Сохраненном';
+
+  @override
+  String get savedBookmarkUpdatingTooltip => 'Обновляем Сохраненное';
+
+  @override
+  String get savedBookmarkPendingUnknownTooltip =>
+      'Изменение не подтверждено. Нажмите, чтобы повторить.';
+
+  @override
+  String get savedBookmarkRetryTooltip =>
+      'Не удалось загрузить статус. Нажмите, чтобы повторить.';
+
+  @override
+  String get savedBookmarkUnavailableTooltip =>
+      'Эту карточку сейчас нельзя сохранить';
+
+  @override
+  String get savedBookmarkOfflineMessage =>
+      'Нет соединения. Сохраненное не изменилось.';
+
+  @override
+  String get savedRemoveEverywhereTooltip => 'Удалить из Сохраненного';
+
+  @override
+  String get savedManageCollectionsTooltip => 'Управлять коллекциями';
+
+  @override
+  String get savedRemoveEverywhereTitle => 'Удалить из Сохраненного?';
+
+  @override
+  String savedRemoveEverywhereMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count коллекции',
+      many: '$count коллекциях',
+      few: '$count коллекциях',
+      one: '1 коллекции',
+      zero: '0 коллекциях',
+    );
+    return 'Сейчас карточка находится в $_temp0. Она будет удалена из Сохраненного везде.';
+  }
+
+  @override
+  String get savedRemoveEverywhereAction => 'Удалить везде';
+
+  @override
+  String get savedRemoveFromCollection => 'Убрать из этой коллекции';
+
+  @override
+  String get savedCollectionPickerTitle => 'Сохранить в коллекции';
+
+  @override
+  String get savedCollectionPickerSearchHint => 'Название коллекции';
+
+  @override
+  String get savedCollectionPickerDone => 'Готово';
+
+  @override
+  String get savedCancelSaveAction => 'Отменить сохранение';
+
+  @override
+  String get savedCollectionPickerEmpty => 'Коллекций пока нет';
+
+  @override
+  String get savedCollectionPickerNoMatches =>
+      'Подходящих коллекций не найдено';
+
+  @override
+  String get savedCollectionCreateInline => 'Новая коллекция';
+
+  @override
+  String get savedCollectionCreateTitle => 'Создать коллекцию';
+
+  @override
+  String get savedCollectionRenameTitle => 'Переименовать коллекцию';
+
+  @override
+  String get savedCollectionTitleLabel => 'Название коллекции';
+
+  @override
+  String get savedCollectionTitleHint => 'Например, Выходные в Алматы';
+
+  @override
+  String get savedCollectionDeleteTitle => 'Удалить коллекцию?';
+
+  @override
+  String get savedCollectionDeleteMessage =>
+      'Удалится только коллекция. Все ее карточки останутся в разделе «Все сохраненное».';
+
+  @override
+  String get savedCollectionDeleteAction => 'Удалить коллекцию';
+
+  @override
+  String get savedCollectionGoAll => 'Перейти ко всему';
+
+  @override
+  String get savedCollectionMenuTooltip => 'Действия с коллекцией';
+
+  @override
+  String get savedCollectionRenameAction => 'Переименовать';
+
+  @override
+  String savedCollectionItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сохранения',
+      many: '$count сохранений',
+      few: '$count сохранения',
+      one: '1 сохранение',
+      zero: 'Пусто',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String savedCardCollectionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'В $count коллекции',
+      many: 'В $count коллекциях',
+      few: 'В $count коллекциях',
+      one: 'В 1 коллекции',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get savedCollectionCreated => 'Коллекция создана';
+
+  @override
+  String get savedCollectionRenamed => 'Коллекция переименована';
+
+  @override
+  String get savedCollectionDeleted =>
+      'Коллекция удалена. Сохраненные карточки остались.';
+
+  @override
+  String get savedAssignmentsUpdated => 'Коллекции обновлены';
+
+  @override
+  String get savedActionPending =>
+      'Ждем подтверждение сервера. Действие временно заблокировано.';
+
+  @override
+  String get savedActionRejected =>
+      'Изменение не применено. Обновите данные и попробуйте снова.';
+
+  @override
+  String get savedActionExpired =>
+      'Время запроса истекло. Сохраненное обновлено с сервера.';
+
+  @override
+  String get savedErrorNetwork =>
+      'Не удалось подключиться. Проверьте соединение и повторите.';
+
+  @override
+  String get savedErrorGeneric =>
+      'Не удалось загрузить Сохраненное. Попробуйте снова.';
+
+  @override
+  String get savedErrorDuplicateCollection =>
+      'Коллекция с таким названием уже существует.';
+
+  @override
+  String get savedErrorQuota => 'Достигнут лимит Сохраненного.';
+
+  @override
+  String get savedErrorConflict =>
+      'Сохраненное изменилось на другом экране. Обновите и повторите.';
+
+  @override
+  String get savedErrorPolicyLocked => 'Сохраненное временно недоступно.';
+
+  @override
+  String get savedPaginationRetry => 'Не удалось загрузить еще';
 }

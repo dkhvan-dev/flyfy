@@ -1,0 +1,5 @@
+DROP INDEX IF EXISTS idx_saved_content_projections_gc_discovery;
+DROP INDEX IF EXISTS idx_saved_outbox_owner_purge;
+DROP INDEX IF EXISTS idx_saved_operations_collection_dependency;
+DROP INDEX IF EXISTS idx_saved_collection_items_deleted_parent_cleanup;
+

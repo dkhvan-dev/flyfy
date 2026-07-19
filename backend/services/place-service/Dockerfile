@@ -6,6 +6,7 @@ ARG TARGETARCH=amd64
 WORKDIR /app
 
 COPY ./proto /app/proto
+COPY ./backend/pkg/natstransport /app/backend/pkg/natstransport
 COPY ./backend/pkg/serviceauth /app/backend/pkg/serviceauth
 COPY ./backend/pkg/switches /app/backend/pkg/switches
 COPY ./backend/pkg/transportauth /app/backend/pkg/transportauth
@@ -24,6 +25,6 @@ WORKDIR /opt/app
 COPY --from=builder /app/backend/services/place-service/place-service /opt/app/place-service
 COPY --from=builder /app/backend/services/place-service/place-service-backfill-search-index /opt/app/place-service-backfill-search-index
 
-EXPOSE 8090
+EXPOSE 8090 9099
 
 ENTRYPOINT ["/opt/app/place-service"]

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,6 +19,8 @@ import (
 type PGGuideRepository struct {
 	pool *pgxpool.Pool
 }
+
+var _ port.SavedSourceRepository = (*PGGuideRepository)(nil)
 
 func NewPGGuideRepository(pool *pgxpool.Pool) *PGGuideRepository {
 	return &PGGuideRepository{pool: pool}
@@ -179,6 +182,112 @@ func (r *PGGuideRepository) GetGuideProfileByUserID(ctx context.Context, userID 
 	item.Status = enum.GuideStatus(statusRaw)
 
 	return &item, nil
+}
+
+func (r *PGGuideRepository) GetSavedSourceGuide(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*model.SavedGuideSnapshot, error) {
+	const query = `
+		SELECT
+			gp.id, gp.user_id, gp.type, gp.status, gp.headline, gp.about, gp.experience_years,
+			gp.base_city_id, gp.is_private_guide_available, gp.is_activity_host_available,
+			gp.is_excursion_guide_available, gp.rating_avg, gp.reviews_count,
+			gp.status_reason, gp.status_changed_at, gp.status_changed_by,
+			gp.created_at, gp.updated_at,
+			latest_verification.status, latest_verification.updated_at,
+			lifecycle.source_revision, lifecycle.projection_revision,
+			lifecycle.visibility_revision, lifecycle.current_visibility,
+			lifecycle.media_reference_revision, lifecycle.media_reference_active,
+			lifecycle.external_avatar_file_id
+		FROM guide_profiles gp
+		JOIN guide_saved_lifecycle_state lifecycle ON lifecycle.guide_profile_id = gp.id
+		LEFT JOIN LATERAL (
+			SELECT vr.status, vr.updated_at
+			FROM guide_verification_requests vr
+			WHERE vr.guide_profile_id = gp.id
+			ORDER BY vr.created_at DESC, vr.id DESC
+			LIMIT 1
+		) latest_verification ON TRUE
+		WHERE gp.user_id = $1
+		LIMIT 1
+	`
+
+	var (
+		profile               model.GuideProfile
+		typeRaw               string
+		statusRaw             string
+		verificationStatusRaw *string
+		verificationUpdatedAt *time.Time
+		sourceRevision        int64
+		projectionRevision    int64
+		visibilityRevision    int64
+		lifecycleVisibility   string
+		mediaRevision         int64
+		mediaActive           bool
+		externalAvatarFileID  *uuid.UUID
+	)
+	err := r.pool.QueryRow(ctx, query, userID).Scan(
+		&profile.ID,
+		&profile.UserID,
+		&typeRaw,
+		&statusRaw,
+		&profile.Headline,
+		&profile.About,
+		&profile.ExperienceYears,
+		&profile.BaseCityID,
+		&profile.IsPrivateGuideAvailable,
+		&profile.IsActivityHostAvailable,
+		&profile.IsExcursionGuideAvailable,
+		&profile.RatingAvg,
+		&profile.ReviewsCount,
+		&profile.StatusReason,
+		&profile.StatusChangedAt,
+		&profile.StatusChangedBy,
+		&profile.CreatedAt,
+		&profile.UpdatedAt,
+		&verificationStatusRaw,
+		&verificationUpdatedAt,
+		&sourceRevision,
+		&projectionRevision,
+		&visibilityRevision,
+		&lifecycleVisibility,
+		&mediaRevision,
+		&mediaActive,
+		&externalAvatarFileID,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("select saved guide snapshot by user id: %w", err)
+	}
+
+	profile.Type = enum.GuideType(typeRaw)
+	profile.Status = enum.GuideStatus(statusRaw)
+	if sourceRevision <= 0 || projectionRevision <= 0 || visibilityRevision <= 0 || mediaRevision <= 0 {
+		return nil, fmt.Errorf("select saved guide snapshot: invalid lifecycle revisions")
+	}
+	visibility := model.SavedLifecycleVisibility(lifecycleVisibility)
+	if !visibility.IsValid() {
+		return nil, fmt.Errorf("select saved guide snapshot: invalid lifecycle visibility")
+	}
+	snapshot := &model.SavedGuideSnapshot{
+		Profile:                     &profile,
+		LatestVerificationUpdatedAt: verificationUpdatedAt,
+		SourceRevision:              uint64(sourceRevision),
+		ProjectionRevision:          uint64(projectionRevision),
+		VisibilityRevision:          uint64(visibilityRevision),
+		LifecycleVisibility:         visibility,
+		MediaReferenceRevision:      uint64(mediaRevision),
+		MediaReferenceActive:        mediaActive,
+		ExternalAvatarFileID:        externalAvatarFileID,
+	}
+	if verificationStatusRaw != nil {
+		verificationStatus := enum.VerificationRequestStatus(*verificationStatusRaw)
+		snapshot.LatestVerificationStatus = &verificationStatus
+	}
+	return snapshot, nil
 }
 
 func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *model.GuideProfile) error {
@@ -910,6 +1019,14 @@ func (r *PGGuideRepository) ListPublicGuideFilterOptions(
 		FROM guide_languages gl
 		JOIN guide_profiles gp ON gp.id = gl.guide_profile_id
 		WHERE gp.status = $1
+			AND gp.deleted_at IS NULL
+			AND (
+				SELECT vr.status
+				FROM guide_verification_requests vr
+				WHERE vr.guide_profile_id = gp.id
+				ORDER BY vr.created_at DESC, vr.id DESC
+				LIMIT 1
+			) = $2
 			AND TRIM(gl.language_code) <> ''
 		ORDER BY 1
 	`)
@@ -922,6 +1039,14 @@ func (r *PGGuideRepository) ListPublicGuideFilterOptions(
 		FROM guide_specializations gs
 		JOIN guide_profiles gp ON gp.id = gs.guide_profile_id
 		WHERE gp.status = $1
+			AND gp.deleted_at IS NULL
+			AND (
+				SELECT vr.status
+				FROM guide_verification_requests vr
+				WHERE vr.guide_profile_id = gp.id
+				ORDER BY vr.created_at DESC, vr.id DESC
+				LIMIT 1
+			) = $2
 			AND TRIM(gs.specialization_code) <> ''
 		ORDER BY 1
 	`)
@@ -939,7 +1064,12 @@ func (r *PGGuideRepository) listDistinctPublicGuideCodes(
 	ctx context.Context,
 	query string,
 ) ([]string, error) {
-	rows, err := r.pool.Query(ctx, query, string(enum.GuideStatusActive))
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		string(enum.GuideStatusActive),
+		string(enum.VerificationRequestStatusApproved),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1002,8 +1132,19 @@ func scanGuideProfile(row guideProfileScanner) (*model.GuideProfile, error) {
 }
 
 func buildPublicGuideWhere(filter port.PublicGuideListFilter) ([]string, []any) {
-	where := []string{"gp.status = $1"}
-	args := []any{string(enum.GuideStatusActive)}
+	where := []string{`gp.status = $1
+		AND gp.deleted_at IS NULL
+		AND (
+			SELECT vr.status
+			FROM guide_verification_requests vr
+			WHERE vr.guide_profile_id = gp.id
+			ORDER BY vr.created_at DESC, vr.id DESC
+			LIMIT 1
+		) = $2`}
+	args := []any{
+		string(enum.GuideStatusActive),
+		string(enum.VerificationRequestStatusApproved),
+	}
 	addArg := func(value any) string {
 		args = append(args, value)
 		return fmt.Sprintf("$%d", len(args))

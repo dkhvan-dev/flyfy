@@ -11,6 +11,7 @@ import '../data/feed_api.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
 import 'feed_post_card.dart';
+import 'post_saved_bookmark_button.dart';
 
 typedef QuickPostEngagementCallback =
     void Function(PostVm post, String eventType);
@@ -389,6 +390,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                       ),
                     ),
                     const SizedBox(width: 10),
+                    PostSavedBookmarkButton(post: widget.post),
                     if (widget.canInteract &&
                         widget.post.editable &&
                         widget.onEdit != null) ...[

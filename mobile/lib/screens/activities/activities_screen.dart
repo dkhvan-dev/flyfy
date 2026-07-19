@@ -25,6 +25,8 @@ import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../features/trust/providers/trust_access_provider.dart';
 import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -35,6 +37,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import '../map/map_screen.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
@@ -1326,6 +1329,12 @@ class _DiscoverActivityCard extends StatelessWidget {
     final avatarSize = _activitiesScaled(context, 38, min: 34, max: 40);
     final avatarIcon = _activitiesScaled(context, 18, min: 16, max: 18);
     final categoryFont = _activitiesScaled(context, 11, min: 10, max: 11);
+    final savedTarget = item.visibility.trim().toUpperCase() == 'PUBLIC'
+        ? SavedTarget.tryCreate(
+            entityType: SavedEntityType.activity,
+            entityId: item.id,
+          )
+        : null;
 
     return Material(
       color: context.activitiesColors.transparent,
@@ -1493,6 +1502,23 @@ class _DiscoverActivityCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (savedTarget != null) ...[
+                          SizedBox(
+                            width: _activitiesScaled(
+                              context,
+                              8,
+                              min: 6,
+                              max: 10,
+                            ),
+                          ),
+                          AppSavedBookmarkButton(
+                            target: savedTarget,
+                            sourceSurface: SavedSourceSurface.card,
+                            previewTitle: localizedCopy.title,
+                            previewSubtitle: categoryLabel,
+                            previewImageUrl: resolveActivityCoverUrl(item),
+                          ),
+                        ],
                       ],
                     ),
                     SizedBox(

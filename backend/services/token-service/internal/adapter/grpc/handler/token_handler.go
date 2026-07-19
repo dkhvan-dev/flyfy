@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -24,6 +25,8 @@ type TokenGRPCHandler struct {
 	authenticator port.ServiceAuthenticator
 	logger        zerolog.Logger
 }
+
+const sessionGenerationValidationTimeout = 2 * time.Second
 
 func NewTokenGRPCHandler(
 	gen port.TokenGenerator,
@@ -159,6 +162,32 @@ func (h *TokenGRPCHandler) RevokeAllUserSessions(ctx context.Context, userID, re
 	return int32(count), nil
 }
 
+func (h *TokenGRPCHandler) ValidateUserSessionGeneration(
+	ctx context.Context,
+	subject, sessionGeneration string,
+) (bool, error) {
+	userID, ok := parseCanonicalUUID(subject)
+	if !ok {
+		return false, status.Error(codes.InvalidArgument, "subject must be a canonical UUID")
+	}
+	generation, ok := parseCanonicalUUID(sessionGeneration)
+	if !ok {
+		return false, status.Error(codes.InvalidArgument, "session_generation must be a canonical UUID")
+	}
+
+	validationCtx, cancel := context.WithTimeout(ctx, sessionGenerationValidationTimeout)
+	defer cancel()
+
+	valid, err := h.sessions.ValidateUserSessionGeneration(validationCtx, userID, generation)
+	if err != nil {
+		// Do not attach the dependency error or session identifiers: callers need
+		// only a fail-closed availability signal.
+		h.logger.Error().Msg("session generation validation unavailable")
+		return false, status.Error(codes.Unavailable, "session generation validation unavailable")
+	}
+	return valid, nil
+}
+
 // --- Service Token Methods ---
 
 func (h *TokenGRPCHandler) AuthenticateService(ctx context.Context, serviceID, serviceSecret string) (*ServiceTokenResult, error) {
@@ -288,4 +317,12 @@ func sessionToResult(s *model.UserSession) *UserSessionResult {
 		res.LastRefreshedAt = timestamppb.New(*s.LastRefreshedAt)
 	}
 	return res
+}
+
+func parseCanonicalUUID(value string) (uuid.UUID, bool) {
+	parsed, err := uuid.Parse(value)
+	if err != nil || parsed == uuid.Nil || parsed.String() != value {
+		return uuid.Nil, false
+	}
+	return parsed, true
 }

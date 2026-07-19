@@ -23,12 +23,15 @@ import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../features/stories/models/post_vm.dart';
 import '../../features/trust/providers/trust_access_provider.dart';
 import '../../features/trust/widgets/trust_restriction_notice.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
@@ -1107,6 +1110,28 @@ class _ProfileBody extends StatelessWidget {
   Widget _buildProfileTopBar(BuildContext context, AppLocalizations l10n) {
     final title = isOwnProfile ? l10n.myProfileTitle : profile.preferredName;
     final leadingTap = isOwnProfile ? onSettingsTap : () => context.pop();
+    final savedUserTarget = !isOwnProfile
+        ? SavedTarget.tryCreate(
+            entityType: SavedEntityType.user,
+            entityId: profile.userId,
+          )
+        : null;
+    final savedBookmark = savedUserTarget != null
+        ? SizedBox.square(
+            dimension: AppSizes.minTapTarget,
+            child: AppSavedBookmarkButton(
+              target: savedUserTarget,
+              sourceSurface: SavedSourceSurface.detail,
+              previewTitle: profile.preferredName,
+              previewSubtitle:
+                  profile.fullName.isEmpty ||
+                      profile.fullName == profile.preferredName
+                  ? null
+                  : profile.fullName,
+              previewImageUrl: avatarUrl,
+            ),
+          )
+        : null;
 
     if (isOwnProfile || blockStatusFuture == null) {
       return _ProfileTopBar(
@@ -1114,6 +1139,7 @@ class _ProfileBody extends StatelessWidget {
         title: title,
         onLeadingTap: leadingTap,
         onShareTap: onCopyProfileLink,
+        savedBookmark: savedBookmark,
       );
     }
 
@@ -1127,6 +1153,7 @@ class _ProfileBody extends StatelessWidget {
           title: title,
           onLeadingTap: leadingTap,
           onShareTap: onCopyProfileLink,
+          savedBookmark: savedBookmark,
           isBlockedByMe: isBlockedByMe,
           isBlockActionLoading: isBlockActionLoading,
           onToggleBlock: onToggleBlock == null
@@ -1144,6 +1171,7 @@ class _ProfileTopBar extends StatelessWidget {
     required this.title,
     required this.onLeadingTap,
     required this.onShareTap,
+    this.savedBookmark,
     this.isBlockedByMe = false,
     this.isBlockActionLoading = false,
     this.onToggleBlock,
@@ -1153,6 +1181,7 @@ class _ProfileTopBar extends StatelessWidget {
   final String title;
   final VoidCallback? onLeadingTap;
   final VoidCallback onShareTap;
+  final Widget? savedBookmark;
   final bool isBlockedByMe;
   final bool isBlockActionLoading;
   final VoidCallback? onToggleBlock;
@@ -1187,6 +1216,10 @@ class _ProfileTopBar extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (savedBookmark != null) ...[
+              savedBookmark!,
+              SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
+            ],
             ProfileTopIconButton(
               icon: Icons.ios_share_outlined,
               onTap: onShareTap,
@@ -2616,10 +2649,11 @@ class _OwnProfileSections extends StatelessWidget {
             onTap: () => context.push('/user-routes'),
           ),
         _ProfileMenuTile(
+          key: const ValueKey('profile-saved-items-tile'),
           icon: Icons.bookmark_border_rounded,
           title: l10n.profileSavedItemsTitle,
           subtitle: l10n.profileSavedItemsSubtitle,
-          disabled: true,
+          onTap: () => context.push('/profile/saved'),
         ),
         _ProfileMenuTile(
           icon: Icons.people_alt_outlined,
@@ -3760,12 +3794,12 @@ class _GuideReviewSkeletonCard extends StatelessWidget {
 
 class _ProfileMenuTile extends StatelessWidget {
   const _ProfileMenuTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
     this.onTap,
     this.trailing,
-    this.disabled = false,
   });
 
   final IconData icon;
@@ -3773,11 +3807,10 @@ class _ProfileMenuTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
   final Widget? trailing;
-  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveDisabled = disabled || onTap == null;
+    final effectiveDisabled = onTap == null;
     return Opacity(
       opacity: effectiveDisabled ? 0.68 : 1,
       child: Padding(

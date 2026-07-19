@@ -62,6 +62,8 @@ import '../../features/help_center/presentation/support_tickets_screen.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../features/search/presentation/search_route_config.dart';
 import '../../features/search/presentation/search_screen.dart';
+import '../../features/saved/presentation/saved_collections_screen.dart';
+import '../../features/saved/presentation/saved_screen.dart';
 import '../../features/settings/presentation/app_settings_screen.dart';
 import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../features/user_routes/presentation/user_route_details_screen.dart';
@@ -314,6 +316,16 @@ class AppRouter {
           path: '/profile',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ProfileScreen()),
+        ),
+        GoRoute(
+          path: '/profile/saved',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const SavedScreen()),
+        ),
+        GoRoute(
+          path: '/profile/saved/collections',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const SavedCollectionsScreen()),
         ),
         GoRoute(
           path: '/profile/settings',

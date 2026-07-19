@@ -3,6 +3,7 @@ import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../features/stories/models/post_vm.dart';
 import '../../../features/stories/story_ui.dart';
+import '../../../features/feed/widgets/post_saved_bookmark_button.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../profile_style.dart';
 
@@ -145,6 +146,7 @@ class ProfilePostCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  PostSavedBookmarkButton(post: post),
                 ],
               ),
             ),

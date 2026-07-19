@@ -1360,21 +1360,7 @@ func (u *GuideUseCase) ListPublicGuideCards(
 	}
 
 	if u.userClient == nil {
-		result := make([]*PublicGuideCard, 0, len(items))
-		for _, item := range items {
-			result = append(result, &PublicGuideCard{
-				GuideProfile:    item,
-				Languages:       languagesByProfileID[item.ID],
-				Specializations: specializationsByProfileID[item.ID],
-			})
-		}
-		filter := normalizePublicGuideListFilter(input)
-		return PublicGuideCardList{
-			Items:  result,
-			Total:  profiles.Total,
-			Limit:  filter.Limit,
-			Offset: filter.Offset,
-		}, nil
+		return PublicGuideCardList{}, fmt.Errorf("user service client is not configured")
 	}
 
 	userIDs := make([]uuid.UUID, 0, len(items))
@@ -1389,22 +1375,28 @@ func (u *GuideUseCase) ListPublicGuideCards(
 
 	result := make([]*PublicGuideCard, 0, len(items))
 	for _, item := range items {
+		profile, ok := userProfiles[item.UserID]
+		if !ok || profile.UserID != item.UserID {
+			continue
+		}
 		card := &PublicGuideCard{
 			GuideProfile:    item,
 			Languages:       languagesByProfileID[item.ID],
 			Specializations: specializationsByProfileID[item.ID],
 		}
-		if profile, ok := userProfiles[item.UserID]; ok {
-			p := profile
-			card.UserProfile = &p
-		}
+		p := profile
+		card.UserProfile = &p
 		result = append(result, card)
 	}
 
 	filter := normalizePublicGuideListFilter(input)
+	adjustedTotal := profiles.Total - (len(items) - len(result))
+	if adjustedTotal < len(result) {
+		adjustedTotal = len(result)
+	}
 	return PublicGuideCardList{
 		Items:  result,
-		Total:  profiles.Total,
+		Total:  adjustedTotal,
 		Limit:  filter.Limit,
 		Offset: filter.Offset,
 	}, nil

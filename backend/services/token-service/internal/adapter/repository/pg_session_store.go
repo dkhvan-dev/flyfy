@@ -157,6 +157,70 @@ func (s *PgSessionStore) GetActiveByRefreshJTI(ctx context.Context, refreshJTI s
 	return sess, err
 }
 
+type sessionGenerationQueryer interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+const currentSessionGenerationQuery = `
+	SELECT EXISTS (
+		SELECT 1
+		  FROM user_sessions AS candidate
+		 WHERE candidate.user_id = $1
+		   AND candidate.id = $2
+		   AND candidate.revoked_at IS NULL
+		   AND candidate.refresh_expires_at > $3
+		   AND (NOT $4::boolean OR candidate.last_used_at >= $5)
+		   AND NOT EXISTS (
+			SELECT 1
+			  FROM user_sessions AS other
+			 WHERE other.user_id = candidate.user_id
+			   AND other.revoked_at IS NULL
+			   AND other.id <> candidate.id
+		   )
+	)
+`
+
+// IsCurrentSessionGeneration checks ownership, revocation, absolute refresh
+// expiry, inactivity expiry, and the single-active-session invariant in one
+// PostgreSQL statement. It deliberately bypasses Redis.
+func (s *PgSessionStore) IsCurrentSessionGeneration(
+	ctx context.Context,
+	userID, generation uuid.UUID,
+	now time.Time,
+	inactivityTTL time.Duration,
+) (bool, error) {
+	return queryCurrentSessionGeneration(ctx, s.pool, userID, generation, now, inactivityTTL)
+}
+
+func queryCurrentSessionGeneration(
+	ctx context.Context,
+	queryer sessionGenerationQueryer,
+	userID, generation uuid.UUID,
+	now time.Time,
+	inactivityTTL time.Duration,
+) (bool, error) {
+	now = now.UTC()
+	inactivityEnabled := inactivityTTL > 0
+	inactivityCutoff := now
+	if inactivityEnabled {
+		inactivityCutoff = now.Add(-inactivityTTL)
+	}
+
+	var valid bool
+	if err := queryer.QueryRow(
+		ctx,
+		currentSessionGenerationQuery,
+		userID,
+		generation,
+		now,
+		inactivityEnabled,
+		inactivityCutoff,
+	).Scan(&valid); err != nil {
+		return false, fmt.Errorf("query current session generation: %w", err)
+	}
+	return valid, nil
+}
+
 // RotateRefresh atomically:
 //   - inserts the previous refresh JTI/hash into refresh_token_history,
 //   - updates the session row with the new refresh JTI/hash/expiry, last_refreshed_at, last_used_at,

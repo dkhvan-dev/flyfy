@@ -17,6 +17,8 @@ import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
 import '../../features/places/models/place_vm.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/currency_rate_provider.dart';
 import '../../providers/home_location_provider.dart';
@@ -24,6 +26,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import 'places_filter_sheet.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
@@ -781,6 +784,10 @@ class _MustVisitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final coverMedia = place.coverMedia;
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.attraction,
+      entityId: place.id,
+    );
     final imageTargetWidth = placeImageTargetWidth(
       context,
       width,
@@ -831,6 +838,23 @@ class _MustVisitCard extends StatelessWidget {
                             decoration: AppBoxDecoration(
                               gradient: coverOverlayGradient,
                             ),
+                          ),
+                        ),
+                      if (savedTarget != null)
+                        Positioned(
+                          top: adaptive.scale(8, minFactor: 0.78),
+                          left: adaptive.scale(8, minFactor: 0.78),
+                          child: AppSavedBookmarkButton(
+                            target: savedTarget,
+                            sourceSurface: SavedSourceSurface.card,
+                            previewTitle: place.title,
+                            previewSubtitle: localizedPlaceCategoryLabel(
+                              l10n,
+                              place.category,
+                            ),
+                            previewImageUrl: coverUrls.isEmpty
+                                ? null
+                                : coverUrls.first,
                           ),
                         ),
                       Positioned(
@@ -1067,6 +1091,10 @@ class _DiscoverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final coverMedia = place.coverMedia;
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.attraction,
+      entityId: place.id,
+    );
 
     return GestureDetector(
       onTap: () => onTap(place),
@@ -1124,11 +1152,20 @@ class _DiscoverCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        Positioned(
-                          top: adaptive.scale(8),
-                          right: adaptive.scale(8),
-                          child: _saveButton(context),
-                        ),
+                        if (savedTarget != null)
+                          Positioned(
+                            top: adaptive.scale(8),
+                            right: adaptive.scale(8),
+                            child: AppSavedBookmarkButton(
+                              target: savedTarget,
+                              sourceSurface: SavedSourceSurface.card,
+                              previewTitle: place.title,
+                              previewSubtitle: _categoryLabel(place.category),
+                              previewImageUrl: coverUrls.isEmpty
+                                  ? null
+                                  : coverUrls.first,
+                            ),
+                          ),
                         Positioned(
                           left: adaptive.scale(32, minFactor: 0.48),
                           bottom: adaptive.scale(28, minFactor: 0.5),
@@ -1194,35 +1231,6 @@ class _DiscoverCard extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _saveButton(BuildContext context) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final size = adaptive.scale(42, minFactor: 0.86);
-    return Container(
-      width: size,
-      height: size,
-      decoration: AppBoxDecoration(
-        color: colors.surfaceTeal,
-        shape: BoxShape.circle,
-        border: Border.all(color: colors.borderSecondary),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: colors.black.withValues(alpha: 0.18),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
-              ]
-            : const [],
-      ),
-      child: Icon(
-        Icons.bookmark_border_rounded,
-        color: colors.secondary,
-        size: adaptive.scale(19, minFactor: 0.86),
       ),
     );
   }

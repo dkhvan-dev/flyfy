@@ -2911,7 +2911,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSavedItemsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Saved activities, places, and collections will appear here later.'**
+  /// **'Activities, people, places, and your private collections'**
   String get profileSavedItemsSubtitle;
 
   /// No description provided for @profileBookingsTitle.
@@ -17539,6 +17539,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contact support'**
   String get trustRestrictionSupportAction;
+
+  /// No description provided for @savedScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedScreenTitle;
+
+  /// No description provided for @savedAllItems.
+  ///
+  /// In en, this message translates to:
+  /// **'All saved'**
+  String get savedAllItems;
+
+  /// No description provided for @savedCollectionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections'**
+  String get savedCollectionsTitle;
+
+  /// No description provided for @savedCollectionsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections couldn\'t be loaded'**
+  String get savedCollectionsLoadError;
+
+  /// No description provided for @savedCollectionsSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get savedCollectionsSeeAll;
+
+  /// No description provided for @savedCollectionsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No collections yet'**
+  String get savedCollectionsEmptyTitle;
+
+  /// No description provided for @savedCollectionsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a collection to organize saved cards for trips and ideas.'**
+  String get savedCollectionsEmptyMessage;
+
+  /// No description provided for @savedCollectionsUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections aren\'t available'**
+  String get savedCollectionsUnavailableTitle;
+
+  /// No description provided for @savedCollectionsUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cards are still available in All saved.'**
+  String get savedCollectionsUnavailableMessage;
+
+  /// No description provided for @savedCreateCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Create collection'**
+  String get savedCreateCollection;
+
+  /// No description provided for @savedSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, city or country'**
+  String get savedSearchHint;
+
+  /// No description provided for @savedSearchMatchedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched name: {value}'**
+  String savedSearchMatchedTitle(String value);
+
+  /// No description provided for @savedSearchMatchedCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched city: {value}'**
+  String savedSearchMatchedCity(String value);
+
+  /// No description provided for @savedSearchMatchedCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched country: {value}'**
+  String savedSearchMatchedCountry(String value);
+
+  /// No description provided for @savedCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get savedCategoryAll;
+
+  /// No description provided for @savedCategoryActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get savedCategoryActivities;
+
+  /// No description provided for @savedCategoryUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get savedCategoryUsers;
+
+  /// No description provided for @savedCategoryAttractions.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get savedCategoryAttractions;
+
+  /// No description provided for @savedCategoryPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get savedCategoryPosts;
+
+  /// No description provided for @savedDisabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved is temporarily unavailable'**
+  String get savedDisabledTitle;
+
+  /// No description provided for @savedDisabledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved items are unchanged. Try again later.'**
+  String get savedDisabledMessage;
+
+  /// No description provided for @savedEmptyAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing saved yet'**
+  String get savedEmptyAllTitle;
+
+  /// No description provided for @savedEmptyAllMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the bookmark on activities, people, and places to keep them here.'**
+  String get savedEmptyAllMessage;
+
+  /// No description provided for @savedEmptyCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved items in this category'**
+  String get savedEmptyCategoryTitle;
+
+  /// No description provided for @savedEmptyCategoryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved items from this category will appear here.'**
+  String get savedEmptyCategoryMessage;
+
+  /// No description provided for @savedEmptyCollectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This collection is empty'**
+  String get savedEmptyCollectionTitle;
+
+  /// No description provided for @savedEmptyCollectionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add saved cards through their collection picker.'**
+  String get savedEmptyCollectionMessage;
+
+  /// No description provided for @savedEmptySearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get savedEmptySearchTitle;
+
+  /// No description provided for @savedEmptySearchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another word or clear the search.'**
+  String get savedEmptySearchMessage;
+
+  /// No description provided for @savedNetworkStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost. Showing items loaded on this device.'**
+  String get savedNetworkStale;
+
+  /// No description provided for @savedUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Item unavailable'**
+  String get savedUnavailableTitle;
+
+  /// No description provided for @savedUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This card can no longer be opened, but you can remove it from Saved.'**
+  String get savedUnavailableMessage;
+
+  /// No description provided for @savedBookmarkSaveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get savedBookmarkSaveTooltip;
+
+  /// No description provided for @savedBookmarkManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved item'**
+  String get savedBookmarkManageTooltip;
+
+  /// No description provided for @savedBookmarkAuthTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to use Saved'**
+  String get savedBookmarkAuthTooltip;
+
+  /// No description provided for @savedBookmarkCheckingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking Saved status'**
+  String get savedBookmarkCheckingTooltip;
+
+  /// No description provided for @savedBookmarkUpdatingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating Saved'**
+  String get savedBookmarkUpdatingTooltip;
+
+  /// No description provided for @savedBookmarkPendingUnknownTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved update isn\'t confirmed. Tap to retry.'**
+  String get savedBookmarkPendingUnknownTooltip;
+
+  /// No description provided for @savedBookmarkRetryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved status couldn\'t be loaded. Tap to retry.'**
+  String get savedBookmarkRetryTooltip;
+
+  /// No description provided for @savedBookmarkUnavailableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving this item is unavailable'**
+  String get savedBookmarkUnavailableTooltip;
+
+  /// No description provided for @savedBookmarkOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline. Saved wasn\'t changed.'**
+  String get savedBookmarkOfflineMessage;
+
+  /// No description provided for @savedRemoveEverywhereTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Saved'**
+  String get savedRemoveEverywhereTooltip;
+
+  /// No description provided for @savedManageCollectionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage collections'**
+  String get savedManageCollectionsTooltip;
+
+  /// No description provided for @savedRemoveEverywhereTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Saved?'**
+  String get savedRemoveEverywhereTitle;
+
+  /// No description provided for @savedRemoveEverywhereMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This card is currently in {count, plural, =0{no collections} =1{1 collection} other{{count} collections}}. It will be removed from Saved everywhere.'**
+  String savedRemoveEverywhereMessage(int count);
+
+  /// No description provided for @savedRemoveEverywhereAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove everywhere'**
+  String get savedRemoveEverywhereAction;
+
+  /// No description provided for @savedRemoveFromCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this collection'**
+  String get savedRemoveFromCollection;
+
+  /// No description provided for @savedCollectionPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to collections'**
+  String get savedCollectionPickerTitle;
+
+  /// No description provided for @savedCollectionPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection name'**
+  String get savedCollectionPickerSearchHint;
+
+  /// No description provided for @savedCollectionPickerDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get savedCollectionPickerDone;
+
+  /// No description provided for @savedCancelSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Saved'**
+  String get savedCancelSaveAction;
+
+  /// No description provided for @savedCollectionPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No collections yet'**
+  String get savedCollectionPickerEmpty;
+
+  /// No description provided for @savedCollectionPickerNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching collections'**
+  String get savedCollectionPickerNoMatches;
+
+  /// No description provided for @savedCollectionCreateInline.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection'**
+  String get savedCollectionCreateInline;
+
+  /// No description provided for @savedCollectionCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create collection'**
+  String get savedCollectionCreateTitle;
+
+  /// No description provided for @savedCollectionRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename collection'**
+  String get savedCollectionRenameTitle;
+
+  /// No description provided for @savedCollectionTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection name'**
+  String get savedCollectionTitleLabel;
+
+  /// No description provided for @savedCollectionTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example, Weekend in Almaty'**
+  String get savedCollectionTitleHint;
+
+  /// No description provided for @savedCollectionDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete collection?'**
+  String get savedCollectionDeleteTitle;
+
+  /// No description provided for @savedCollectionDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the collection will be deleted. Its cards will remain in All saved.'**
+  String get savedCollectionDeleteMessage;
+
+  /// No description provided for @savedCollectionDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete collection'**
+  String get savedCollectionDeleteAction;
+
+  /// No description provided for @savedCollectionGoAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to All saved'**
+  String get savedCollectionGoAll;
+
+  /// No description provided for @savedCollectionMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection actions'**
+  String get savedCollectionMenuTooltip;
+
+  /// No description provided for @savedCollectionRenameAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get savedCollectionRenameAction;
+
+  /// No description provided for @savedCollectionItemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Empty} =1{1 saved item} other{{count} saved items}}'**
+  String savedCollectionItemCount(int count);
+
+  /// No description provided for @savedCardCollectionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{In 1 collection} other{In {count} collections}}'**
+  String savedCardCollectionsCount(int count);
+
+  /// No description provided for @savedCollectionCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection created'**
+  String get savedCollectionCreated;
+
+  /// No description provided for @savedCollectionRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection renamed'**
+  String get savedCollectionRenamed;
+
+  /// No description provided for @savedCollectionDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection deleted. Saved cards were kept.'**
+  String get savedCollectionDeleted;
+
+  /// No description provided for @savedAssignmentsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections updated'**
+  String get savedAssignmentsUpdated;
+
+  /// No description provided for @savedActionPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Still confirming with the server. This action is temporarily locked.'**
+  String get savedActionPending;
+
+  /// No description provided for @savedActionRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The change was not applied. Refresh and try again.'**
+  String get savedActionRejected;
+
+  /// No description provided for @savedActionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The request expired. Saved was refreshed from the server.'**
+  String get savedActionExpired;
+
+  /// No description provided for @savedErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your connection and try again.'**
+  String get savedErrorNetwork;
+
+  /// No description provided for @savedErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved couldn\'t be loaded. Try again.'**
+  String get savedErrorGeneric;
+
+  /// No description provided for @savedErrorDuplicateCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'A collection with this name already exists.'**
+  String get savedErrorDuplicateCollection;
+
+  /// No description provided for @savedErrorQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the Saved limit.'**
+  String get savedErrorQuota;
+
+  /// No description provided for @savedErrorConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved changed on another screen. Refresh and try again.'**
+  String get savedErrorConflict;
+
+  /// No description provided for @savedErrorPolicyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved is temporarily unavailable.'**
+  String get savedErrorPolicyLocked;
+
+  /// No description provided for @savedPaginationRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more'**
+  String get savedPaginationRetry;
 }
 
 class _AppLocalizationsDelegate

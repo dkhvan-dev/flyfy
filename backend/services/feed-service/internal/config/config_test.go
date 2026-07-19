@@ -110,6 +110,12 @@ func TestLoadParsesPostCreateCooldown(t *testing.T) {
 	if cfg.Post.CreateCooldown != 5*time.Minute {
 		t.Fatalf("Post.CreateCooldown = %s, want 5m", cfg.Post.CreateCooldown)
 	}
+	if cfg.GRPC.Port != 9098 || cfg.GRPC.InternalTLSPort != 0 {
+		t.Fatalf("Saved source gRPC ports = %d/%d, want 9098/0", cfg.GRPC.Port, cfg.GRPC.InternalTLSPort)
+	}
+	if !cfg.Security.ServiceAuthEnabled() || cfg.Security.ServiceAuthCacheTTL != 5*time.Minute {
+		t.Fatalf("Saved source service auth defaults = %+v", cfg.Security)
+	}
 }
 
 func TestLoadParsesFeedRankingPolicyEnvOverrides(t *testing.T) {

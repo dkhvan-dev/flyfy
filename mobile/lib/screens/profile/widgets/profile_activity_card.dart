@@ -6,8 +6,11 @@ import '../../../features/activities/activity_category_art.dart';
 import '../../../features/activities/activity_cover_url.dart';
 import '../../../features/activities/activity_formatters.dart';
 import '../../../features/activities/models/activity_list_item_vm.dart';
+import '../../../features/saved/domain/saved_operation.dart';
+import '../../../features/saved/domain/saved_target.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/widgets/app_localized_location_text.dart';
+import '../../../shared/widgets/app_saved_bookmark_button.dart';
 import '../profile_style.dart';
 
 class ProfileActivityCard extends StatelessWidget {
@@ -57,7 +60,17 @@ class ProfileActivityCard extends StatelessWidget {
                 ),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: _ProfileActivityCover(item: item),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _ProfileActivityCover(item: item),
+                      Positioned(
+                        top: profileScaled(context, 8, min: 6, max: 10),
+                        right: profileScaled(context, 8, min: 6, max: 10),
+                        child: _ProfileActivitySavedBookmarkButton(item: item),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
@@ -173,7 +186,24 @@ class ProfileCompactActivityCard extends StatelessWidget {
                           borderRadius: AppBorderRadius.circular(
                             profileScaled(context, 18, min: 14, max: 20),
                           ),
-                          child: _ProfileActivityCover(item: item),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              _ProfileActivityCover(item: item),
+                              Positioned(
+                                top: profileScaled(context, 5, min: 4, max: 6),
+                                right: profileScaled(
+                                  context,
+                                  5,
+                                  min: 4,
+                                  max: 6,
+                                ),
+                                child: _ProfileActivitySavedBookmarkButton(
+                                  item: item,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -253,6 +283,40 @@ class ProfileCompactActivityCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileActivitySavedBookmarkButton extends StatelessWidget {
+  const _ProfileActivitySavedBookmarkButton({required this.item});
+
+  final ActivityListItemVm item;
+
+  @override
+  Widget build(BuildContext context) {
+    if (item.visibility.trim().toUpperCase() != 'PUBLIC') {
+      return const SizedBox.shrink();
+    }
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.activity,
+      entityId: item.id,
+    );
+    if (savedTarget == null) {
+      return const SizedBox.shrink();
+    }
+    final localeName = Localizations.localeOf(context).toString();
+    final localizedCopy = item.localizedCopy(localeName);
+
+    return AppSavedBookmarkButton(
+      target: savedTarget,
+      sourceSurface: SavedSourceSurface.card,
+      previewTitle: localizedCopy.title,
+      previewSubtitle: formatEventDate(
+        item.completedAt ?? item.endAt,
+        timezoneId: item.timezone,
+        localeName: localeName,
+      ),
+      previewImageUrl: resolveActivityCoverUrl(item),
     );
   }
 }

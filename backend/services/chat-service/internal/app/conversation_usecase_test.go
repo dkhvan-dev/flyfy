@@ -34,6 +34,36 @@ func TestNewSystemMessageDefaultsModerationFields(t *testing.T) {
 	}
 }
 
+func TestListSavedUserIDsDenyingAccessUsesOneBatchAndPreservesCandidateOrder(t *testing.T) {
+	t.Parallel()
+
+	ownerUserID := uuid.New()
+	allowedUserID := uuid.New()
+	deniedUserIDOne := uuid.New()
+	deniedUserIDTwo := uuid.New()
+	repo := newFakeMessageRepo(uuid.New(), ownerUserID)
+	repo.blockedPairs = map[[2]uuid.UUID]bool{
+		{deniedUserIDOne, ownerUserID}: true,
+		{deniedUserIDTwo, ownerUserID}: true,
+	}
+	useCase := NewConversationUseCase(repo, fakeEventPublisher{}, nil)
+
+	denied, err := useCase.ListSavedUserIDsDenyingAccess(
+		context.Background(),
+		ownerUserID,
+		[]uuid.UUID{deniedUserIDTwo, allowedUserID, deniedUserIDOne, deniedUserIDTwo, ownerUserID},
+	)
+	if err != nil {
+		t.Fatalf("ListSavedUserIDsDenyingAccess() error = %v", err)
+	}
+	if repo.blockListLookupCount != 1 || repo.blockLookupCount != 0 {
+		t.Fatalf("batch lookups=%d point lookups=%d", repo.blockListLookupCount, repo.blockLookupCount)
+	}
+	if len(denied) != 2 || denied[0] != deniedUserIDTwo || denied[1] != deniedUserIDOne {
+		t.Fatalf("denied = %v", denied)
+	}
+}
+
 func TestSyncExcursionScheduleSlotConversationCreatesConversationWithGuideAndBookingAuthors(t *testing.T) {
 	slotID := uuid.New()
 	guideUserID := uuid.New()

@@ -99,6 +99,7 @@ server_services=(
   place-service
   reference-service
   routing-service
+  saved-service
   search-service
   sticker-service
   support-service
@@ -124,6 +125,7 @@ client_services=(
   guide-service
   payment-service
   place-service
+  saved-service
   search-service
   sticker-service
   support-service
@@ -134,10 +136,22 @@ client_services=(
 
 seconds=$((min_valid_days * 86400))
 
+stat_value() {
+  local linux_format="$1"
+  local bsd_format="$2"
+  local path="$3"
+
+  if stat -c "${linux_format}" "${path}" >/dev/null 2>&1; then
+    stat -c "${linux_format}" "${path}"
+    return
+  fi
+  stat -f "${bsd_format}" "${path}" 2>/dev/null || fail "stat failed: ${path}"
+}
+
 group_perm_digit() {
   local path="$1"
   local mode
-  mode="$(stat -c '%a' "${path}" 2>/dev/null)" || fail "stat failed: ${path}"
+  mode="$(stat_value '%a' '%Lp' "${path}")"
   mode="${mode: -3}"
   printf '%s' "${mode:1:1}"
 }
@@ -148,7 +162,7 @@ check_group_access() {
   local gid
   local group_digit
 
-  gid="$(stat -c '%g' "${path}" 2>/dev/null)" || fail "stat failed: ${path}"
+  gid="$(stat_value '%g' '%g' "${path}")"
   [[ "${gid}" == "${cert_group_id}" ]] || \
     fail "mTLS bundle path must be owned by group GID ${cert_group_id} for container read access: ${path} has GID ${gid}"
 

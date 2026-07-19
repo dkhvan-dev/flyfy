@@ -2,7 +2,9 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,34 +23,46 @@ import (
 )
 
 type ProxyHandler struct {
-	cfg                *config.Config
-	readiness          *ReadinessHandler
-	authProxy          *httputil.ReverseProxy
-	userProxy          *httputil.ReverseProxy
-	guideProxy         *httputil.ReverseProxy
-	fileManagerProxy   *httputil.ReverseProxy
-	activityProxy      *httputil.ReverseProxy
-	excursionProxy     *httputil.ReverseProxy
-	feedProxy          *httputil.ReverseProxy
-	chatProxy          *httputil.ReverseProxy
-	referenceProxy     *httputil.ReverseProxy
-	checklistProxy     *httputil.ReverseProxy
-	currencyProxy      *httputil.ReverseProxy
-	placeProxy         *httputil.ReverseProxy
-	routingProxy       *httputil.ReverseProxy
-	userRouteProxy     *httputil.ReverseProxy
-	searchProxy        *httputil.ReverseProxy
-	paymentProxy       *httputil.ReverseProxy
-	stickerProxy       *httputil.ReverseProxy
-	notificationProxy  *httputil.ReverseProxy
-	supportProxy       *httputil.ReverseProxy
-	adminPanelProxy    *httputil.ReverseProxy
-	trustClient        *trustserviceadapter.Client
-	serviceTokenSource *serviceauth.GRPCServiceTokenSource
-	userIDResolver     userIDResolver
+	cfg                 *config.Config
+	readiness           *ReadinessHandler
+	authProxy           *httputil.ReverseProxy
+	userProxy           *httputil.ReverseProxy
+	guideProxy          *httputil.ReverseProxy
+	fileManagerProxy    *httputil.ReverseProxy
+	activityProxy       *httputil.ReverseProxy
+	excursionProxy      *httputil.ReverseProxy
+	feedProxy           *httputil.ReverseProxy
+	chatProxy           *httputil.ReverseProxy
+	referenceProxy      *httputil.ReverseProxy
+	checklistProxy      *httputil.ReverseProxy
+	currencyProxy       *httputil.ReverseProxy
+	placeProxy          *httputil.ReverseProxy
+	routingProxy        *httputil.ReverseProxy
+	userRouteProxy      *httputil.ReverseProxy
+	searchProxy         *httputil.ReverseProxy
+	savedProxy          *httputil.ReverseProxy
+	paymentProxy        *httputil.ReverseProxy
+	stickerProxy        *httputil.ReverseProxy
+	notificationProxy   *httputil.ReverseProxy
+	supportProxy        *httputil.ReverseProxy
+	adminPanelProxy     *httputil.ReverseProxy
+	trustClient         *trustserviceadapter.Client
+	serviceTokenSource  *serviceauth.GRPCServiceTokenSource
+	userIDResolver      userIDResolver
+	platformPolicyGuard platformPersonalDataGuard
 }
 
+const savedSessionGenerationHeader = "X-Session-Generation"
+
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	platformPolicyGuard, err := newPlatformPersonalDataGuard(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	serviceTokenSource, err := serviceauth.NewGRPCServiceTokenSource(serviceauth.TokenSourceConfig{
 		Target:        cfg.TokenService.Target,
 		ServiceID:     cfg.TokenService.ServiceID,
@@ -136,9 +150,14 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
-	// Search-service already validates service JWT/RBAC for internal indexing endpoints.
+	// Search-service and saved-service validate service JWT/RBAC.
 	// Other downstreams keep the legacy header until their inbound middleware is migrated.
 	searchProxy, err := newGatewayDownstreamProxy("search", cfg.Downstreams.SearchService, cfg.Security.InternalServiceToken, serviceTokenSource, cfg.MTLS)
+	if err != nil {
+		return nil, err
+	}
+
+	savedProxy, err := newGatewayDownstreamProxy("saved", cfg.SavedService.URL, cfg.Security.InternalServiceToken, serviceTokenSource, cfg.MTLS)
 	if err != nil {
 		return nil, err
 	}
@@ -185,31 +204,33 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 
 	proxyHandlerReady = true
 	return &ProxyHandler{
-		cfg:                cfg,
-		readiness:          readiness,
-		authProxy:          authProxy,
-		userProxy:          userProxy,
-		guideProxy:         guideProxy,
-		fileManagerProxy:   fileManagerProxy,
-		activityProxy:      activityProxy,
-		excursionProxy:     excursionProxy,
-		feedProxy:          feedProxy,
-		chatProxy:          chatProxy,
-		referenceProxy:     referenceProxy,
-		checklistProxy:     checklistProxy,
-		currencyProxy:      currencyProxy,
-		placeProxy:         placeProxy,
-		routingProxy:       routingProxy,
-		userRouteProxy:     userRouteProxy,
-		searchProxy:        searchProxy,
-		paymentProxy:       paymentProxy,
-		stickerProxy:       stickerProxy,
-		notificationProxy:  notificationProxy,
-		supportProxy:       supportProxy,
-		adminPanelProxy:    adminPanelProxy,
-		trustClient:        trustClient,
-		serviceTokenSource: serviceTokenSource,
-		userIDResolver:     userIDResolver,
+		cfg:                 cfg,
+		readiness:           readiness,
+		authProxy:           authProxy,
+		userProxy:           userProxy,
+		guideProxy:          guideProxy,
+		fileManagerProxy:    fileManagerProxy,
+		activityProxy:       activityProxy,
+		excursionProxy:      excursionProxy,
+		feedProxy:           feedProxy,
+		chatProxy:           chatProxy,
+		referenceProxy:      referenceProxy,
+		checklistProxy:      checklistProxy,
+		currencyProxy:       currencyProxy,
+		placeProxy:          placeProxy,
+		routingProxy:        routingProxy,
+		userRouteProxy:      userRouteProxy,
+		searchProxy:         searchProxy,
+		savedProxy:          savedProxy,
+		paymentProxy:        paymentProxy,
+		stickerProxy:        stickerProxy,
+		notificationProxy:   notificationProxy,
+		supportProxy:        supportProxy,
+		adminPanelProxy:     adminPanelProxy,
+		trustClient:         trustClient,
+		serviceTokenSource:  serviceTokenSource,
+		userIDResolver:      userIDResolver,
+		platformPolicyGuard: platformPolicyGuard,
 	}, nil
 }
 
@@ -260,6 +281,19 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 		writeBusinessError(w, r, http.StatusNotFound, errorCodeRouteNotFound)
 		return
 	}
+	if RoutePolicyFromContext(r.Context()) == nil {
+		ctx := context.WithValue(r.Context(), contextKeyPolicy, policy)
+		ctx = context.WithValue(ctx, contextKeyRouteName, policy.Name)
+		r = r.WithContext(ctx)
+	}
+	if policy.SavedPersonal {
+		requestCtx, cancel := withSavedRequestDeadline(r.Context(), h.cfg)
+		defer cancel()
+		r = r.WithContext(requestCtx)
+	}
+	if !h.guardPlatformPersonalData(w, r, policy) {
+		return
+	}
 
 	if policy.Upstream == "trust" {
 		h.dispatchTrust(w, r, policy)
@@ -273,24 +307,41 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	proxyReq := r.Clone(r.Context())
+	if RoutePolicyFromContext(proxyReq.Context()) == nil {
+		ctx := context.WithValue(proxyReq.Context(), contextKeyPolicy, policy)
+		ctx = context.WithValue(ctx, contextKeyRouteName, policy.Name)
+		proxyReq = proxyReq.WithContext(ctx)
+	}
 	h.rewritePath(proxyReq, policy)
-	if err := h.injectTrustedHeaders(proxyReq, policy.AuthMode); err != nil {
-		log.Warn().
-			Err(err).
+	if err := h.injectTrustedHeaders(proxyReq, policy); err != nil {
+		headerLog := log.Warn().
 			Str("route", policy.Name).
-			Str("request_id", RequestIDFromContext(r.Context())).
-			Msg("failed to inject trusted auth headers")
+			Str("request_id", RequestIDFromContext(r.Context()))
+		if policy.SavedPersonal {
+			headerLog = headerLog.Str("error_class", "trusted_header_injection_failed")
+		} else {
+			headerLog = headerLog.Err(err)
+		}
+		headerLog.Msg("failed to inject trusted auth headers")
 		writeTechnicalError(w, r, http.StatusBadGateway, errorCodeUserResolution)
 		return
 	}
 
-	log.Info().
+	proxyLog := log.Info().
 		Str("upstream", policy.Upstream).
 		Str("route", policy.Name).
-		Str("request_id", RequestIDFromContext(r.Context())).
-		Str("original_path", r.URL.Path).
-		Str("rewritten_path", proxyReq.URL.Path).
-		Msg("proxying request")
+		Str("request_id", RequestIDFromContext(r.Context()))
+	if policy.SavedPersonal {
+		proxyLog = proxyLog.Str("path_template", policy.LogPathTemplate)
+	} else {
+		proxyLog = proxyLog.
+			Str("original_path", r.URL.Path).
+			Str("rewritten_path", proxyReq.URL.Path)
+	}
+	proxyLog.Msg("proxying request")
+	if policy.SavedPersonal {
+		proxyReq.GetBody = nil
+	}
 
 	proxy.ServeHTTP(w, proxyReq)
 }
@@ -327,6 +378,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.userRouteProxy
 	case "search":
 		return h.searchProxy
+	case "saved":
+		return h.savedProxy
 	case "payment":
 		return h.paymentProxy
 	case "sticker":
@@ -342,16 +395,24 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 	}
 }
 
-func (h *ProxyHandler) injectTrustedHeaders(r *http.Request, authMode RouteAuthMode) error {
+func (h *ProxyHandler) injectTrustedHeaders(r *http.Request, policy *RoutePolicy) error {
 	r.Header.Del(h.cfg.Security.TrustedHeaderUser)
 	r.Header.Del(h.cfg.Security.TrustedHeaderRoles)
 	r.Header.Del(h.cfg.Security.TrustedHeaderSub)
 	r.Header.Del(h.cfg.Security.RequestIDHeader)
+	r.Header.Del(savedSessionGenerationHeader)
 
 	claims := ClaimsFromContext(r.Context())
 
 	if claims == nil {
 		return nil
+	}
+	if policy != nil && policy.SavedPersonal {
+		sessionGeneration, ok := canonicalSessionGeneration(claims.SessionID)
+		if !ok {
+			return fmt.Errorf("saved session generation is invalid")
+		}
+		r.Header.Set(savedSessionGenerationHeader, sessionGeneration)
 	}
 
 	subject := strings.TrimSpace(claims.Subject)
@@ -371,7 +432,7 @@ func (h *ProxyHandler) injectTrustedHeaders(r *http.Request, authMode RouteAuthM
 			RequestIDFromContext(r.Context()),
 		)
 		if err != nil {
-			if authMode != RouteAuthPublic {
+			if policy == nil || policy.AuthMode != RouteAuthPublic {
 				return fmt.Errorf("resolve user id by subject: %w", err)
 			}
 			log.Warn().
@@ -539,16 +600,36 @@ func newSingleHostProxyWithTransport(
 		return nil
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		log.Error().
-			Err(err).
-			Str("upstream", upstreamName).
-			Str("request_id", RequestIDFromContext(r.Context())).
-			Msg("downstream proxy error")
+		statusCode := http.StatusBadGateway
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(r.Context().Err(), context.DeadlineExceeded) {
+			statusCode = http.StatusGatewayTimeout
+		}
 
-		writeTechnicalError(w, r, http.StatusBadGateway, errorCodeUpstreamUnavailable)
+		proxyErrorLog := log.Error().
+			Str("upstream", upstreamName).
+			Str("request_id", RequestIDFromContext(r.Context()))
+		if isSavedLogRequest(r) {
+			proxyErrorLog = proxyErrorLog.Str("error_class", savedProxyErrorClass(err))
+		} else {
+			proxyErrorLog = proxyErrorLog.Err(err)
+		}
+		proxyErrorLog.Msg("downstream proxy error")
+
+		writeTechnicalError(w, r, statusCode, errorCodeUpstreamUnavailable)
 	}
 
 	return proxy, nil
+}
+
+func savedProxyErrorClass(err error) string {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return "deadline_exceeded"
+	case errors.Is(err, context.Canceled):
+		return "request_canceled"
+	default:
+		return "downstream_failure"
+	}
 }
 
 func rewriteDownstreamErrorResponse(resp *http.Response, maintenanceOnly bool) (bool, error) {

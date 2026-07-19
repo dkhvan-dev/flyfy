@@ -93,6 +93,25 @@ func (r *PGActivityRepository) CreateActivityWithTranslationJobs(
 			return err
 		}
 	}
+	after, err := getActivityForUpdate(ctx, tx, activity.ID)
+	if err != nil {
+		return err
+	}
+	if after == nil {
+		return fmt.Errorf("created activity disappeared before Saved lifecycle enqueue")
+	}
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		tx,
+		nil,
+		after,
+		nil,
+		nil,
+		after.UpdatedAt,
+	); err != nil {
+		return err
+	}
+	copyActivitySavedPersistenceState(activity, after)
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit create activity with translation jobs tx: %w", err)
 	}
@@ -110,6 +129,17 @@ func (r *PGActivityRepository) UpdateActivityWithTranslationJobs(
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	before, err := getActivityForUpdate(ctx, tx, activity.ID)
+	if err != nil {
+		return err
+	}
+	if before == nil {
+		return nil
+	}
+	media, err := listActivityMediaByActivityID(ctx, tx, activity.ID)
+	if err != nil {
+		return err
+	}
 	if err = updateActivity(ctx, tx, activity); err != nil {
 		return err
 	}
@@ -147,10 +177,41 @@ func (r *PGActivityRepository) UpdateActivityWithTranslationJobs(
 			return err
 		}
 	}
+	after, err := getActivityForUpdate(ctx, tx, activity.ID)
+	if err != nil {
+		return err
+	}
+	if after == nil {
+		return fmt.Errorf("updated activity disappeared before Saved lifecycle enqueue")
+	}
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		tx,
+		before,
+		after,
+		media,
+		media,
+		after.UpdatedAt,
+	); err != nil {
+		return err
+	}
+	copyActivitySavedPersistenceState(activity, after)
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit update activity with translation jobs tx: %w", err)
 	}
 	return nil
+}
+
+func copyActivitySavedPersistenceState(target *model.Activity, source *model.Activity) {
+	if target == nil || source == nil {
+		return
+	}
+	target.SavedSourceRevision = source.SavedSourceRevision
+	target.SavedProjectionRevision = source.SavedProjectionRevision
+	target.SavedVisibilityRevision = source.SavedVisibilityRevision
+	target.Translations = source.Translations
+	target.TranslationStatus = source.TranslationStatus
+	target.UpdatedAt = source.UpdatedAt
 }
 
 func (r *PGActivityRepository) EnqueueActivityTranslationJobs(
@@ -279,33 +340,26 @@ func (r *PGActivityRepository) ApplyActivityTranslationJob(
 		return model.ActivityTranslationNoop, fmt.Errorf("load activity translation job for apply: %w", err)
 	}
 
-	var (
-		title           string
-		description     string
-		sourceLanguage  string
-		translationsRaw []byte
-	)
-	err = tx.QueryRow(ctx, `
-		SELECT title, description, source_language, translations
-		FROM activities
-		WHERE id = $1
-		FOR UPDATE
-	`, job.ActivityID).Scan(&title, &description, &sourceLanguage, &translationsRaw)
+	before, err := getActivityForUpdate(ctx, tx, job.ActivityID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			if err = markActivityTranslationJobStale(ctx, tx, job.ID); err != nil {
-				return model.ActivityTranslationNoop, err
-			}
-			if err = tx.Commit(ctx); err != nil {
-				return model.ActivityTranslationNoop, fmt.Errorf("commit missing activity stale translation job: %w", err)
-			}
-			return model.ActivityTranslationStale, nil
-		}
-		return model.ActivityTranslationNoop, fmt.Errorf("load activity for translation apply: %w", err)
+		return model.ActivityTranslationNoop, err
 	}
-	currentHash := model.HashActivityTranslationSource(sourceLanguage, map[string]string{
-		"title":       title,
-		"description": description,
+	if before == nil {
+		if err = markActivityTranslationJobStale(ctx, tx, job.ID); err != nil {
+			return model.ActivityTranslationNoop, err
+		}
+		if err = tx.Commit(ctx); err != nil {
+			return model.ActivityTranslationNoop, fmt.Errorf("commit missing activity stale translation job: %w", err)
+		}
+		return model.ActivityTranslationStale, nil
+	}
+	media, err := listActivityMediaByActivityID(ctx, tx, job.ActivityID)
+	if err != nil {
+		return model.ActivityTranslationNoop, err
+	}
+	currentHash := model.HashActivityTranslationSource(before.SourceLanguage, map[string]string{
+		"title":       before.Title,
+		"description": before.Description,
 	})
 	if currentHash != job.SourceHash {
 		if err = markActivityTranslationJobStale(ctx, tx, job.ID); err != nil {
@@ -320,11 +374,9 @@ func (r *PGActivityRepository) ApplyActivityTranslationJob(
 		return model.ActivityTranslationStale, nil
 	}
 
-	translations := make(model.ActivityTranslations)
-	if len(translationsRaw) > 0 {
-		if err = json.Unmarshal(translationsRaw, &translations); err != nil {
-			return model.ActivityTranslationNoop, fmt.Errorf("decode activity translations: %w", err)
-		}
+	translations := model.NormalizeActivityTranslations(before.Translations)
+	if translations == nil {
+		translations = make(model.ActivityTranslations)
 	}
 	targetCopy := translations[job.TargetLanguage]
 	if strings.TrimSpace(targetCopy.Title) == "" {
@@ -357,6 +409,24 @@ func (r *PGActivityRepository) ApplyActivityTranslationJob(
 		return model.ActivityTranslationNoop, fmt.Errorf("complete activity translation job: %w", err)
 	}
 	if err = refreshActivityTranslationStatus(ctx, tx, job.ActivityID); err != nil {
+		return model.ActivityTranslationNoop, err
+	}
+	after, err := getActivityForUpdate(ctx, tx, job.ActivityID)
+	if err != nil {
+		return model.ActivityTranslationNoop, err
+	}
+	if after == nil {
+		return model.ActivityTranslationNoop, fmt.Errorf("activity disappeared while applying translation")
+	}
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		tx,
+		before,
+		after,
+		media,
+		media,
+		after.UpdatedAt,
+	); err != nil {
 		return model.ActivityTranslationNoop, err
 	}
 	if err = tx.Commit(ctx); err != nil {

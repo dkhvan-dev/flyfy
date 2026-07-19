@@ -247,6 +247,8 @@ func TestGetPublicGuideByUserIDReturnsPublicCardOnly(t *testing.T) {
 	now := time.Date(2026, 5, 11, 9, 30, 0, 0, time.UTC)
 	headline := "Almaty mountain guide"
 	nickname := "Aruzhan Guide"
+	staleReason := "internal moderation reason"
+	staleActor := uuid.MustParse("99999999-9999-9999-9999-999999999999")
 	repo := &publicGuideRepositoryStub{
 		result: port.PublicGuideListResult{
 			Items: []*model.GuideProfile{
@@ -259,6 +261,9 @@ func TestGetPublicGuideByUserIDReturnsPublicCardOnly(t *testing.T) {
 					ExperienceYears: 8,
 					RatingAvg:       5,
 					ReviewsCount:    0,
+					StatusReason:    &staleReason,
+					StatusChangedAt: &now,
+					StatusChangedBy: &staleActor,
 					CreatedAt:       now,
 					UpdatedAt:       now,
 				},
@@ -308,7 +313,9 @@ func TestGetPublicGuideByUserIDReturnsPublicCardOnly(t *testing.T) {
 		t.Fatalf("unexpected guide user filter: %#v", repo.lastFilter.UserIDs)
 	}
 	body := rec.Body.String()
-	if strings.Contains(body, "documents") || strings.Contains(body, "verificationRequest") {
+	if strings.Contains(body, "documents") || strings.Contains(body, "verificationRequest") ||
+		strings.Contains(body, "statusReason") || strings.Contains(body, staleReason) ||
+		strings.Contains(body, staleActor.String()) {
 		t.Fatalf("public guide card leaked private aggregate fields: %s", body)
 	}
 
@@ -340,6 +347,90 @@ func TestGetPublicGuideByUserIDReturnsPublicCardOnly(t *testing.T) {
 	}
 	if len(payload.Languages) != 1 || payload.Languages[0].LanguageCode != "ru" {
 		t.Fatalf("expected guide languages, got %#v", payload.Languages)
+	}
+}
+
+func TestGetPublicGuideByUserIDHidesGuideWithoutPublicUserProfile(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	now := time.Date(2026, 5, 11, 9, 30, 0, 0, time.UTC)
+	repo := &publicGuideRepositoryStub{result: port.PublicGuideListResult{
+		Items: []*model.GuideProfile{
+			{
+				ID:        uuid.New(),
+				UserID:    userID,
+				Type:      enum.GuideTypeIndependent,
+				Status:    enum.GuideStatusActive,
+				RatingAvg: 5,
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		},
+		Total: 1,
+	}}
+	handler := NewHandler(app.NewGuideUseCase(
+		repo,
+		&publicUserClientStub{profiles: map[uuid.UUID]app.PublicUserProfile{}},
+		nil,
+	))
+	req := httptest.NewRequest(
+		nethttp.MethodGet,
+		"/v1/guides/public/by-user/"+userID.String(),
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.GetPublicGuideByUserID(rec, req)
+
+	if rec.Code != nethttp.StatusNotFound {
+		t.Fatalf("status = %d, want %d: %s", rec.Code, nethttp.StatusNotFound, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), userID.String()) {
+		t.Fatalf("response leaked unavailable guide identity: %s", rec.Body.String())
+	}
+}
+
+func TestPrivateGuideAggregateRouteHidesProfileFromUnauthenticatedCaller(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	handler := NewHandler(nil)
+	req := httptest.NewRequest(
+		nethttp.MethodGet,
+		"/v1/guides/by-user/"+userID.String(),
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.GetGuideByUserID(rec, req)
+
+	if rec.Code != nethttp.StatusNotFound {
+		t.Fatalf("status = %d, want %d: %s", rec.Code, nethttp.StatusNotFound, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), userID.String()) {
+		t.Fatalf("response leaked private guide identity: %s", rec.Body.String())
+	}
+}
+
+func TestCanReadGuideAggregateAllowsOnlyOwnerOrModeration(t *testing.T) {
+	t.Parallel()
+
+	guideUserID := uuid.New()
+	ownerCtx := withSubject(context.Background(), "auth-subject")
+	ownerCtx = withUserID(ownerCtx, guideUserID.String())
+	if !canReadGuideAggregate(ownerCtx, guideUserID) {
+		t.Fatal("owner should be allowed to read the private guide aggregate")
+	}
+	otherCtx := withSubject(context.Background(), "auth-subject")
+	otherCtx = withUserID(otherCtx, uuid.NewString())
+	if canReadGuideAggregate(otherCtx, guideUserID) {
+		t.Fatal("another user must not read the private guide aggregate")
+	}
+	moderatorCtx := withSubject(context.Background(), "moderator-subject")
+	moderatorCtx = withUserRoles(moderatorCtx, []string{"MODERATOR"})
+	if !canReadGuideAggregate(moderatorCtx, guideUserID) {
+		t.Fatal("moderator should be allowed to read the private guide aggregate")
 	}
 }
 

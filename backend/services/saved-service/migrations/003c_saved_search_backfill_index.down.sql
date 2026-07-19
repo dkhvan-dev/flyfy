@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_saved_content_projections_search_backfill_v1;

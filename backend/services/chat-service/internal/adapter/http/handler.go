@@ -1,7 +1,10 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,6 +24,11 @@ type Handler struct {
 	messageUC      *app.MessageUseCase
 	wsHandler      *ws.WSHandler
 	actorResolver  ActorResolver
+	savedAccessUC  SavedUserAccessUseCase
+}
+
+type SavedUserAccessUseCase interface {
+	ListSavedUserIDsDenyingAccess(context.Context, uuid.UUID, []uuid.UUID) ([]uuid.UUID, error)
 }
 
 func NewHandler(
@@ -34,6 +42,7 @@ func NewHandler(
 		messageUC:      messageUC,
 		wsHandler:      wsHandler,
 		actorResolver:  actorResolver,
+		savedAccessUC:  conversationUC,
 	}
 }
 
@@ -48,6 +57,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/internal/activity-conversations/participants", h.EnsureActivityParticipant)
 	mux.HandleFunc("POST /v1/internal/activity-conversations/sync", h.SyncActivityConversation)
 	mux.HandleFunc("POST /v1/internal/excursion-schedule-slot-conversations/sync", h.SyncExcursionScheduleSlotConversation)
+	mux.HandleFunc("POST /v1/internal/saved-user-access/check", h.CheckSavedUserAccess)
 	mux.HandleFunc("GET /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("POST /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("PATCH /v1/conversations/", h.handleConversationRoutes)
@@ -57,6 +67,98 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/users/", h.handleUserRoutes)
 
 	mux.HandleFunc("GET /v1/ws", h.WebSocketUpgrade)
+}
+
+const (
+	maxSavedUserAccessTargets   = 200
+	maxSavedUserAccessBodyBytes = 16 * 1024
+)
+
+func (h *Handler) CheckSavedUserAccess(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, r, http.StatusUnauthorized, "missing internal service token")
+		return
+	}
+	if strings.TrimSpace(r.Header.Get("X-Service-Name")) != "saved-service" {
+		writeError(w, r, http.StatusForbidden, "forbidden")
+		return
+	}
+	if h == nil || h.savedAccessUC == nil {
+		writeError(w, r, http.StatusServiceUnavailable, "service unavailable")
+		return
+	}
+
+	var request dto.SavedUserAccessCheckRequest
+	if err := decodeSavedUserAccessRequest(w, r, &request); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	ownerUserID, ok := canonicalSavedAccessUserID(request.OwnerUserID)
+	if !ok || len(request.TargetUserIDs) == 0 || len(request.TargetUserIDs) > maxSavedUserAccessTargets {
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	targetUserIDs := make([]uuid.UUID, 0, len(request.TargetUserIDs))
+	seen := make(map[uuid.UUID]struct{}, len(request.TargetUserIDs))
+	for _, rawTargetUserID := range request.TargetUserIDs {
+		targetUserID, valid := canonicalSavedAccessUserID(rawTargetUserID)
+		if !valid {
+			writeError(w, r, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		if _, duplicate := seen[targetUserID]; duplicate {
+			writeError(w, r, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		seen[targetUserID] = struct{}{}
+		targetUserIDs = append(targetUserIDs, targetUserID)
+	}
+
+	deniedUserIDs, err := h.savedAccessUC.ListSavedUserIDsDenyingAccess(
+		r.Context(),
+		ownerUserID,
+		targetUserIDs,
+	)
+	if err != nil {
+		h.writeAppError(w, r, err, "check Saved user access failed")
+		return
+	}
+	response := dto.SavedUserAccessCheckResponse{
+		DeniedTargetUserIDs: make([]string, len(deniedUserIDs)),
+	}
+	for index, deniedUserID := range deniedUserIDs {
+		response.DeniedTargetUserIDs[index] = deniedUserID.String()
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func decodeSavedUserAccessRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+	destination *dto.SavedUserAccessCheckRequest,
+) error {
+	if r == nil || r.Body == nil || destination == nil {
+		return errors.New("invalid request")
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxSavedUserAccessBodyBytes)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(destination); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return errors.New("request must contain exactly one JSON document")
+	}
+	return nil
+}
+
+func canonicalSavedAccessUserID(raw string) (uuid.UUID, bool) {
+	if raw == "" || raw != strings.TrimSpace(raw) || len(raw) != len(uuid.Nil.String()) {
+		return uuid.Nil, false
+	}
+	parsed, err := uuid.Parse(raw)
+	return parsed, err == nil && parsed != uuid.Nil && parsed.String() == raw
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {

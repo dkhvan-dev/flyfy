@@ -22,6 +22,44 @@ void main() {
   );
 
   test(
+    'every foreign profile saves its user id from the DETAIL surface',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final topBarBuilderStart = source.indexOf('Widget _buildProfileTopBar');
+      final topBarClassStart = source.indexOf('class _ProfileTopBar');
+
+      expect(topBarBuilderStart, isNonNegative);
+      expect(topBarClassStart, greaterThan(topBarBuilderStart));
+
+      final topBarBuilderSource = source.substring(
+        topBarBuilderStart,
+        topBarClassStart,
+      );
+
+      expect(source, contains("saved_operation.dart';"));
+      expect(source, contains("saved_target.dart';"));
+      expect(source, contains('app_saved_bookmark_button.dart'));
+      expect(
+        topBarBuilderSource,
+        isNot(contains("guide?.status.trim().toUpperCase() == 'ACTIVE'")),
+      );
+      expect(topBarBuilderSource, contains('!isOwnProfile'));
+      expect(topBarBuilderSource, contains('SavedTarget.tryCreate('));
+      expect(topBarBuilderSource, contains('AppSavedBookmarkButton('));
+      expect(topBarBuilderSource, contains('entityType: SavedEntityType.user'));
+      expect(topBarBuilderSource, contains('entityId: profile.userId'));
+      expect(topBarBuilderSource, isNot(contains('entityId: guide.id')));
+      expect(
+        topBarBuilderSource,
+        contains('sourceSurface: SavedSourceSurface.detail'),
+      );
+      expect(topBarBuilderSource, contains('dimension: AppSizes.minTapTarget'));
+    },
+  );
+
+  test(
     'own profile reuses public showcase previews and request badge',
     () async {
       final source = await File(

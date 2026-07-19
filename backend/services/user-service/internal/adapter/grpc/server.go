@@ -12,18 +12,33 @@ import (
 	"kz/inflap/backend/services/user-service/internal/app"
 	"kz/inflap/backend/services/user-service/internal/domain/enum"
 	"kz/inflap/backend/services/user-service/internal/domain/model"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 type Server struct {
 	userv1.UnimplementedUserServiceServer
-	useCase *app.UserUseCase
+	contentv1.UnimplementedSavedSourceServiceServer
+	useCase                *app.UserUseCase
+	savedUserSourceUseCase *app.SavedUserSourceUseCase
 }
 
-func NewServer(useCase *app.UserUseCase) *Server {
-	return &Server{
-		useCase: useCase,
+type ServerOption func(*Server)
+
+func WithSavedUserSource(useCase *app.SavedUserSourceUseCase) ServerOption {
+	return func(server *Server) {
+		server.savedUserSourceUseCase = useCase
 	}
+}
+
+func NewServer(useCase *app.UserUseCase, options ...ServerOption) *Server {
+	server := &Server{useCase: useCase}
+	for _, option := range options {
+		if option != nil {
+			option(server)
+		}
+	}
+	return server
 }
 
 func (s *Server) GetOrCreateUserBySubject(

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -8,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -18,6 +20,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"kz/inflap/backend/pkg/transportauth"
 	"kz/inflap/backend/services/api-gateway/internal/app"
@@ -55,7 +60,7 @@ func TestInjectTrustedHeadersResolvesAuthSubjectToDomainUserID(t *testing.T) {
 	ctx = context.WithValue(ctx, contextKeyRequestID, "request-1")
 
 	req := httptest.NewRequest("POST", "/api/v1/me/excursions", nil).WithContext(ctx)
-	if err := handler.injectTrustedHeaders(req, RouteAuthAuthenticated); err != nil {
+	if err := handler.injectTrustedHeaders(req, &RoutePolicy{AuthMode: RouteAuthAuthenticated}); err != nil {
 		t.Fatalf("injectTrustedHeaders returned error: %v", err)
 	}
 
@@ -67,6 +72,170 @@ func TestInjectTrustedHeadersResolvesAuthSubjectToDomainUserID(t *testing.T) {
 	}
 	if got := req.Header.Get("X-User-Roles"); got != "GUIDE" {
 		t.Fatalf("X-User-Roles = %q, want GUIDE", got)
+	}
+}
+
+func TestInjectTrustedHeadersReplacesSpoofedSavedSessionGeneration(t *testing.T) {
+	const sessionID = "C51500F3-F6C8-4D54-B9B8-EF6DB7FC74AA"
+
+	cfg := &config.Config{}
+	cfg.Security.RequestIDHeader = "X-Request-Id"
+	cfg.Security.TrustedHeaderSub = "X-Auth-Subject"
+	cfg.Security.TrustedHeaderUser = "X-User-Id"
+	cfg.Security.TrustedHeaderRoles = "X-User-Roles"
+	handler := &ProxyHandler{cfg: cfg}
+
+	policy := &RoutePolicy{AuthMode: RouteAuthAuthenticated, SavedPersonal: true}
+	ctx := context.WithValue(context.Background(), contextKeyClaims, &app.TokenClaims{
+		Subject:   "auth-subject-1",
+		UserID:    "user-1",
+		SessionID: sessionID,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/saved-items", nil).WithContext(ctx)
+	req.Header.Set(savedSessionGenerationHeader, "attacker-controlled")
+
+	if err := handler.injectTrustedHeaders(req, policy); err != nil {
+		t.Fatalf("injectTrustedHeaders returned error: %v", err)
+	}
+
+	if got := req.Header.Get(savedSessionGenerationHeader); got != strings.ToLower(sessionID) {
+		t.Fatalf("%s = %q, want validated token session %q", savedSessionGenerationHeader, got, strings.ToLower(sessionID))
+	}
+}
+
+func TestInjectTrustedHeadersStripsSessionGenerationFromUnrelatedRoute(t *testing.T) {
+	cfg := &config.Config{}
+	handler := &ProxyHandler{cfg: cfg}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	req.Header.Set(savedSessionGenerationHeader, "attacker-controlled")
+
+	if err := handler.injectTrustedHeaders(req, &RoutePolicy{AuthMode: RouteAuthAuthenticated}); err != nil {
+		t.Fatalf("injectTrustedHeaders returned error: %v", err)
+	}
+	if got := req.Header.Get(savedSessionGenerationHeader); got != "" {
+		t.Fatalf("%s = %q, want stripped header", savedSessionGenerationHeader, got)
+	}
+}
+
+func TestSavedDispatchTimesOutDownstreamWithoutReplay(t *testing.T) {
+	var output bytes.Buffer
+	previousLogger := log.Logger
+	log.Logger = zerolog.New(&output)
+	t.Cleanup(func() { log.Logger = previousLogger })
+
+	cfg := &config.Config{}
+	cfg.Routes.APIPrefix = "/api/v1"
+	cfg.SavedService.RequestTimeout = 20 * time.Millisecond
+	cfg.Security.RequestIDHeader = "X-Request-Id"
+	cfg.Security.TrustedHeaderSub = "X-Auth-Subject"
+	cfg.Security.TrustedHeaderUser = "X-User-Id"
+	cfg.Security.TrustedHeaderRoles = "X-User-Roles"
+
+	proxy, err := newSingleHostProxy("saved", "http://saved-service.local", "", nil)
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+	calls := 0
+	proxy.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		<-r.Context().Done()
+		return nil, fmt.Errorf("private downstream URL ?cursor=transport-secret: %w", r.Context().Err())
+	})
+	handler := &ProxyHandler{
+		cfg:                 cfg,
+		savedProxy:          proxy,
+		platformPolicyGuard: mustAvailablePlatformPolicyGuard(t),
+	}
+
+	path := "/api/v1/users/me/saved-items"
+	policy := matchRoutePolicyForMethod(http.MethodGet, path, cfg.Routes.APIPrefix)
+	if policy == nil {
+		t.Fatal("expected Saved route policy")
+	}
+	ctx := routeContext(context.Background(), policy)
+	ctx = context.WithValue(ctx, contextKeyRequestID, "request-1")
+	ctx = context.WithValue(ctx, contextKeyClaims, &app.TokenClaims{
+		Subject:   "auth-subject-1",
+		UserID:    "user-1",
+		SessionID: "c51500f3-f6c8-4d54-b9b8-ef6db7fc74aa",
+	})
+	req := httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	startedAt := time.Now()
+	handler.Dispatch(rr, req)
+
+	if rr.Code != http.StatusGatewayTimeout {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusGatewayTimeout)
+	}
+	if calls != 1 {
+		t.Fatalf("downstream calls = %d, want exactly one", calls)
+	}
+	if elapsed := time.Since(startedAt); elapsed > time.Second {
+		t.Fatalf("Saved downstream timeout took %s", elapsed)
+	}
+	if strings.Contains(output.String(), "transport-secret") {
+		t.Fatalf("Saved proxy error log leaked raw transport error: %s", output.String())
+	}
+}
+
+func TestSavedProxyLogUsesRouteTemplate(t *testing.T) {
+	var output bytes.Buffer
+	previousLogger := log.Logger
+	log.Logger = zerolog.New(&output)
+	t.Cleanup(func() { log.Logger = previousLogger })
+
+	cfg := &config.Config{}
+	cfg.Routes.APIPrefix = "/api/v1"
+	cfg.SavedService.RequestTimeout = time.Second
+	cfg.Security.RequestIDHeader = "X-Request-Id"
+	cfg.Security.TrustedHeaderSub = "X-Auth-Subject"
+	cfg.Security.TrustedHeaderUser = "X-User-Id"
+	cfg.Security.TrustedHeaderRoles = "X-User-Roles"
+
+	proxy, err := newSingleHostProxy("saved", "http://saved-service.local", "", nil)
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+	proxy.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusNoContent,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	})
+	handler := &ProxyHandler{
+		cfg:                 cfg,
+		savedProxy:          proxy,
+		platformPolicyGuard: mustAvailablePlatformPolicyGuard(t),
+	}
+
+	const collectionID = "17882988-667b-42e6-831c-9e79bbf52075"
+	path := "/api/v1/users/me/saved-collections/" + collectionID
+	policy := matchRoutePolicyForMethod(http.MethodGet, path, cfg.Routes.APIPrefix)
+	if policy == nil {
+		t.Fatal("expected Saved route policy")
+	}
+	ctx := routeContext(context.Background(), policy)
+	ctx = context.WithValue(ctx, contextKeyRequestID, "request-1")
+	ctx = context.WithValue(ctx, contextKeyClaims, &app.TokenClaims{
+		Subject:   "auth-subject-1",
+		UserID:    "user-1",
+		SessionID: "c51500f3-f6c8-4d54-b9b8-ef6db7fc74aa",
+	})
+	req := httptest.NewRequest(http.MethodGet, path+"?cursor=private-cursor", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.Dispatch(rr, req)
+
+	logged := output.String()
+	for _, secret := range []string{collectionID, "private-cursor"} {
+		if strings.Contains(logged, secret) {
+			t.Fatalf("Saved proxy log leaked %q: %s", secret, logged)
+		}
+	}
+	if !strings.Contains(logged, policy.LogPathTemplate) {
+		t.Fatalf("Saved proxy log = %s, want route template %q", logged, policy.LogPathTemplate)
 	}
 }
 

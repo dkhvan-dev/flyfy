@@ -91,7 +91,7 @@ void main() {
   );
 
   test(
-    'place cards display every backend category and use compact save icon',
+    'place cards display every backend category and use Saved bookmark UI',
     () async {
       final source = await File(
         'lib/screens/places/places_screen.dart',
@@ -120,23 +120,35 @@ void main() {
         expect(uiSource, contains("case '$category':"));
       }
 
-      final saveButtonStart = source.indexOf(
-        'Widget _saveButton(BuildContext context)',
-      );
+      final discoverCardStart = source.indexOf('class _DiscoverCard');
       final categoryTagStart = source.indexOf(
         'Widget _categoryTag(BuildContext context)',
+        discoverCardStart,
       );
-      expect(saveButtonStart, isNonNegative);
-      expect(categoryTagStart, greaterThan(saveButtonStart));
-      final saveButtonSource = source.substring(
-        saveButtonStart,
+      expect(discoverCardStart, isNonNegative);
+      expect(categoryTagStart, greaterThan(discoverCardStart));
+      final discoverCardSource = source.substring(
+        discoverCardStart,
         categoryTagStart,
       );
 
-      expect(saveButtonSource, contains('adaptive.scale(42'));
-      expect(saveButtonSource, contains('adaptive.scale(19'));
-      expect(saveButtonSource, isNot(contains('adaptive.scale(56')));
-      expect(saveButtonSource, isNot(contains('adaptive.scale(27')));
+      expect(discoverCardSource, contains('SavedTarget.tryCreate('));
+      expect(discoverCardSource, contains('AppSavedBookmarkButton('));
+      expect(
+        discoverCardSource,
+        contains('entityType: SavedEntityType.attraction'),
+      );
+      expect(discoverCardSource, contains('entityId: place.id'));
+      expect(discoverCardSource, contains('if (savedTarget != null)'));
+      expect(discoverCardSource, contains('target: savedTarget'));
+      expect(
+        discoverCardSource,
+        contains('sourceSurface: SavedSourceSurface.card'),
+      );
+      expect(
+        discoverCardSource,
+        isNot(contains('Icons.bookmark_border_rounded')),
+      );
 
       expect(sheetSource, contains("value: 'PARK'"));
       expect(sheetSource, contains("value: 'MUSEUM'"));

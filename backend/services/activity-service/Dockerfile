@@ -8,6 +8,7 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/activity-service/go.mod backend/services/activity-service/go.sum* ./backend/services/activity-service/
+COPY backend/pkg/natstransport/go.mod backend/pkg/natstransport/go.sum* ./backend/pkg/natstransport/
 COPY backend/pkg/serviceauth/go.mod backend/pkg/serviceauth/go.sum* ./backend/pkg/serviceauth/
 COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 COPY backend/pkg/trustpolicy/go.mod backend/pkg/trustpolicy/go.sum* ./backend/pkg/trustpolicy/
@@ -17,6 +18,7 @@ COPY proto ./proto
 WORKDIR /app/backend/services/activity-service
 RUN go mod download
 
+COPY backend/pkg/natstransport /app/backend/pkg/natstransport
 COPY backend/pkg/trustpolicy /app/backend/pkg/trustpolicy
 COPY backend/pkg/serviceauth /app/backend/pkg/serviceauth
 COPY backend/pkg/switches /app/backend/pkg/switches

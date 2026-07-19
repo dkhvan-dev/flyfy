@@ -9,16 +9,36 @@ import (
 
 	"kz/inflap/backend/services/guide-service/internal/app"
 	"kz/inflap/backend/services/guide-service/internal/domain/model"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 	guidev1 "kz/inflap/proto/gen/go/guide/v1"
 )
 
 type Server struct {
 	guidev1.UnimplementedGuideServiceServer
-	useCase *app.GuideUseCase
+	contentv1.UnimplementedSavedSourceServiceServer
+
+	useCase            *app.GuideUseCase
+	savedSourceUseCase *app.SavedGuideSourceUseCase
 }
 
-func NewServer(useCase *app.GuideUseCase) *Server {
-	return &Server{useCase: useCase}
+var _ contentv1.SavedSourceServiceServer = (*Server)(nil)
+
+type ServerOption func(*Server)
+
+func WithSavedSource(useCase *app.SavedGuideSourceUseCase) ServerOption {
+	return func(server *Server) {
+		server.savedSourceUseCase = useCase
+	}
+}
+
+func NewServer(useCase *app.GuideUseCase, options ...ServerOption) *Server {
+	server := &Server{useCase: useCase}
+	for _, option := range options {
+		if option != nil {
+			option(server)
+		}
+	}
+	return server
 }
 
 func (s *Server) GetOrCreateGuideProfile(

@@ -96,19 +96,46 @@ func auditLoggingMiddleware(next http.Handler) http.Handler {
 		logger := log.Info().
 			Str("transport", "http").
 			Str("method", r.Method).
-			Str("path", r.URL.Path).
+			Str("path", auditLogPath(r)).
 			Int("status", rw.statusCode).
 			Str("request_id", RequestIDFromContext(r.Context()))
 
-		if userID := UserIDFromContext(r.Context()); userID != "" {
-			logger = logger.Str("user_id", userID)
-		}
-		if subject := SubjectFromContext(r.Context()); subject != "" {
-			logger = logger.Str("subject", subject)
+		if !isSavedAttractionCoverPath(r) {
+			if userID := UserIDFromContext(r.Context()); userID != "" {
+				logger = logger.Str("user_id", userID)
+			}
+			if subject := SubjectFromContext(r.Context()); subject != "" {
+				logger = logger.Str("subject", subject)
+			}
 		}
 
 		logger.Msg("http request completed")
 	})
+}
+
+func auditLogPath(r *http.Request) string {
+	if r == nil || r.URL == nil {
+		return ""
+	}
+	if isSavedAttractionCoverPath(r) {
+		return "/v1/places/{id}/saved-cover"
+	}
+	return r.URL.Path
+}
+
+func isSavedAttractionCoverPath(r *http.Request) bool {
+	if r == nil || r.URL == nil {
+		return false
+	}
+	const (
+		prefix = "/v1/places/"
+		suffix = "/saved-cover"
+	)
+	if !strings.HasPrefix(r.URL.Path, prefix) || !strings.HasSuffix(r.URL.Path, suffix) {
+		return false
+	}
+	targetID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), suffix)
+	return targetID != "" && !strings.Contains(targetID, "/")
 }
 
 func splitCSV(v string) []string {

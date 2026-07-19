@@ -14,6 +14,7 @@ import (
 type Config struct {
 	App           AppConfig
 	HTTP          HTTPConfig
+	GRPC          GRPCConfig
 	Postgres      PostgresConfig
 	Redis         RedisConfig
 	Log           LogConfig
@@ -46,6 +47,19 @@ type HTTPConfig struct {
 	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
 	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
 	IdleTimeout     time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
+}
+
+type GRPCConfig struct {
+	Port            int `env:"GRPC_PORT, default=9098"`
+	InternalTLSPort int `env:"INTERNAL_GRPC_TLS_PORT, default=0"`
+}
+
+func (config GRPCConfig) Address() string {
+	return fmt.Sprintf(":%d", config.Port)
+}
+
+func (config GRPCConfig) InternalTLSAddress() string {
+	return fmt.Sprintf(":%d", config.InternalTLSPort)
 }
 
 func (h HTTPConfig) Address() string {
@@ -112,12 +126,20 @@ type LogConfig struct {
 }
 
 type SecurityConfig struct {
-	InternalServiceToken       string `env:"INTERNAL_SERVICE_TOKEN, required"`
-	RequireAuthenticatedWrites bool   `env:"REQUIRE_AUTHENTICATED_WRITES, default=true"`
-	TrustedGatewayHeaderUserID string `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
-	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
-	TrustedGatewayHeaderSub    string `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
-	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+	InternalServiceToken       string        `env:"INTERNAL_SERVICE_TOKEN, required"`
+	RequireAuthenticatedWrites bool          `env:"REQUIRE_AUTHENTICATED_WRITES, default=true"`
+	TrustedGatewayHeaderUserID string        `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
+	TrustedGatewayHeaderRoles  string        `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
+	TrustedGatewayHeaderSub    string        `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
+	RequestIDHeader            string        `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+	ServiceAuthIssuer          string        `env:"SERVICE_AUTH_ISSUER, default=tourism-inflap/token-service"`
+	ServiceAuthJWKSURL         string        `env:"SERVICE_AUTH_JWKS_URL, default=http://token-service:8081/.well-known/jwks.json"`
+	ServiceAuthCacheTTL        time.Duration `env:"SERVICE_AUTH_JWKS_CACHE_TTL, default=5m"`
+}
+
+func (config SecurityConfig) ServiceAuthEnabled() bool {
+	return strings.TrimSpace(config.ServiceAuthIssuer) != "" &&
+		strings.TrimSpace(config.ServiceAuthJWKSURL) != ""
 }
 
 type UserServiceConfig struct {

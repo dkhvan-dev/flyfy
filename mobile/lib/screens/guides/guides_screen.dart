@@ -22,10 +22,14 @@ import '../../features/guides/guide_localization.dart';
 import '../../features/guides/guide_search.dart';
 import '../../features/guides/guide_ui.dart';
 import '../../features/guides/models/public_guide_vm.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
+import '../../providers/session_provider.dart';
 import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
 enum _GuideSortMode { rating, experience }
@@ -721,6 +725,9 @@ class _GuidesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = context.select<SessionProvider, String?>(
+      (session) => session.profile?.userId,
+    );
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -744,6 +751,7 @@ class _GuidesGrid extends StatelessWidget {
           delegate: SliverChildBuilderDelegate(
             (context, index) => _GuideCard(
               guide: guides[index],
+              currentUserId: currentUserId,
               imageHeight: imageHeight,
               onTap: () => onGuideTap(guides[index]),
             ),
@@ -965,14 +973,23 @@ double _guideCardBodyHeight(BuildContext context) {
   return math.max(_guideCardBodyMinHeight, contentHeight);
 }
 
+bool _isVerifiedPublicGuide(PublicGuideVm guide) {
+  final status = guide.status.trim().toUpperCase();
+  return status == 'ACTIVE';
+}
+
+void _consumeGuideCardBookmarkTap() {}
+
 class _GuideCard extends StatelessWidget {
   const _GuideCard({
     required this.guide,
+    required this.currentUserId,
     required this.imageHeight,
     required this.onTap,
   });
 
   final PublicGuideVm guide;
+  final String? currentUserId;
   final double imageHeight;
   final VoidCallback onTap;
 
@@ -1003,8 +1020,15 @@ class _GuideCard extends StatelessWidget {
       if (serviceLabel.isNotEmpty) serviceLabel,
       l10n.guidesViewProfile,
     ].join(', ');
+    final savedTarget =
+        _isVerifiedPublicGuide(guide) && guide.userId != currentUserId
+        ? SavedTarget.tryCreate(
+            entityType: SavedEntityType.user,
+            entityId: guide.userId,
+          )
+        : null;
 
-    return Semantics(
+    final card = Semantics(
       button: true,
       label: semanticsLabel,
       onTap: onTap,
@@ -1059,9 +1083,9 @@ class _GuideCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Positioned(
+                          PositionedDirectional(
                             top: 13,
-                            right: 12,
+                            end: 12,
                             child: _RatingBadge(rating: guide.ratingAvg),
                           ),
                         ],
@@ -1160,6 +1184,33 @@ class _GuideCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        card,
+        if (savedTarget != null)
+          PositionedDirectional(
+            top: 4,
+            start: 4,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              excludeFromSemantics: true,
+              onTap: _consumeGuideCardBookmarkTap,
+              child: SizedBox.square(
+                dimension: AppSizes.minTapTarget,
+                child: AppSavedBookmarkButton(
+                  target: savedTarget,
+                  sourceSurface: SavedSourceSurface.card,
+                  previewTitle: guide.preferredName,
+                  previewSubtitle: roleLabel,
+                  previewImageUrl: avatarUrl,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

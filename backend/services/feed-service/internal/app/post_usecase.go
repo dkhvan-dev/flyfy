@@ -804,9 +804,22 @@ func (u *PostUseCase) GetPostByID(ctx context.Context, subject string, postID uu
 }
 
 func (u *PostUseCase) GetPostBySlug(ctx context.Context, slug string, subject string) (*PostDetail, error) {
-	post, err := u.repo.GetPostBySlug(ctx, strings.TrimSpace(slug))
-	if err != nil {
-		return nil, fmt.Errorf("get post by slug: %w", err)
+	identifier := strings.TrimSpace(slug)
+	postID, parseErr := uuid.Parse(identifier)
+	var (
+		post *model.Post
+		err  error
+	)
+	if parseErr == nil && postID != uuid.Nil && postID.String() == identifier {
+		post, err = u.repo.GetPostByID(ctx, postID)
+		if err != nil {
+			return nil, fmt.Errorf("get post by id: %w", err)
+		}
+	} else {
+		post, err = u.repo.GetPostBySlug(ctx, identifier)
+		if err != nil {
+			return nil, fmt.Errorf("get post by slug: %w", err)
+		}
 	}
 	if post == nil || !post.IsPubliclyVisible() {
 		return nil, ErrPostNotFound

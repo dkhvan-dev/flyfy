@@ -381,6 +381,48 @@ void main() {
   });
 
   test(
+    'discover card validates canonical public ID before CARD bookmark',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activities_screen.dart',
+      ).readAsString();
+
+      final cardStart = source.indexOf('class _DiscoverActivityCard');
+      final cardEnd = source.indexOf('class _VisibilityBadgeStyle', cardStart);
+      expect(cardStart, isNonNegative);
+      expect(cardEnd, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, cardEnd);
+      expect(
+        source,
+        contains("import '../../features/saved/domain/saved_operation.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../features/saved/domain/saved_target.dart';"),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../shared/widgets/app_saved_bookmark_button.dart';",
+        ),
+      );
+      expect(cardSource, contains('item.visibility.trim().toUpperCase()'));
+      expect(cardSource, contains("'PUBLIC'"));
+      expect(cardSource, contains('SavedTarget.tryCreate('));
+      expect(cardSource, contains('if (savedTarget != null)'));
+      expect(cardSource, contains('AppSavedBookmarkButton('));
+      expect(cardSource, contains('entityType: SavedEntityType.activity'));
+      expect(cardSource, contains('entityId: item.id'));
+      expect(cardSource, isNot(contains('entityId: item.hostUserId')));
+      expect(cardSource, contains('target: savedTarget'));
+      expect(cardSource, isNot(contains('target: SavedTarget(')));
+      expect(cardSource, contains('sourceSurface: SavedSourceSurface.card'));
+      expect(cardSource, isNot(contains('onTap: () {}')));
+    },
+  );
+
+  test(
     'activities light cover fallbacks and map preview avoid dimming layers',
     () async {
       final activitiesSource = await File(

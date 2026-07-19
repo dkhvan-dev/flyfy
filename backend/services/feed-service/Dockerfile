@@ -25,6 +25,6 @@ WORKDIR /opt/app
 COPY --from=builder /app/backend/services/feed-service/feed-service /opt/app/feed-service
 COPY --from=builder /app/backend/services/feed-service/feed-service-backfill-search-index /opt/app/feed-service-backfill-search-index
 
-EXPOSE 8087
+EXPOSE 8087 9098
 
 ENTRYPOINT ["/opt/app/feed-service"]

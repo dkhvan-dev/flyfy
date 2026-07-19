@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_saved_content_projections_public_search_target_v1;

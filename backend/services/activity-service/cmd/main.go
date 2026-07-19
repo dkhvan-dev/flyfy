@@ -14,8 +14,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"kz/inflap/backend/pkg/natstransport"
 	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/transportauth"
@@ -26,6 +28,7 @@ import (
 	grpcadapter "kz/inflap/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/activity-service/internal/adapter/http"
 	metricsadapter "kz/inflap/backend/services/activity-service/internal/adapter/metrics"
+	natsadapter "kz/inflap/backend/services/activity-service/internal/adapter/nats"
 	notificationadapter "kz/inflap/backend/services/activity-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/activity-service/internal/adapter/payment"
 	"kz/inflap/backend/services/activity-service/internal/adapter/repository"
@@ -36,6 +39,7 @@ import (
 	"kz/inflap/backend/services/activity-service/internal/config"
 	"kz/inflap/backend/services/activity-service/internal/domain/port"
 	activityv1 "kz/inflap/proto/gen/go/activity/v1"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
@@ -157,6 +161,11 @@ func main() {
 	}
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
+	savedSourceUC := app.NewSavedSourceUseCase(repo)
+	savedSourceAuthorizer, err := newSavedSourceAuthorizer(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure Saved source service authentication")
+	}
 
 	httpHandler := httpadapter.NewHandler(
 		activityUC,
@@ -186,6 +195,7 @@ func main() {
 		joinUC,
 		searchUC,
 		moderationUC,
+		grpcadapter.WithSavedSource(savedSourceUC, savedSourceAuthorizer),
 	)
 	transportTLSConfig := cfg.MTLS.ServerConfig()
 	mtlsConfig, err := transportTLSConfig.ServerTLSConfig()
@@ -289,6 +299,69 @@ func main() {
 		}()
 	}
 
+	var savedLifecycleNATS *nats.Conn
+	if cfg.SavedLifecycle.Enabled {
+		natsConfig, configErr := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+		if configErr != nil {
+			log.Fatal().Err(configErr).Msg("validate activity Saved lifecycle NATS transport")
+		}
+		savedLifecycleNATS, err = natstransport.Connect(
+			natsConfig,
+			cfg.App.Name+"-saved-lifecycle",
+			natstransport.Hooks{
+				Disconnected: func(disconnectErr error) {
+					log.Warn().Err(disconnectErr).Msg("activity Saved lifecycle NATS disconnected")
+				},
+				Reconnected: func() {
+					log.Info().Msg("activity Saved lifecycle NATS reconnected")
+				},
+				Closed: func(closeErr error) {
+					if closeErr == nil {
+						log.Info().Msg("activity Saved lifecycle NATS connection closed")
+						return
+					}
+					log.Warn().Err(closeErr).Msg("activity Saved lifecycle NATS connection closed unexpectedly")
+				},
+				AsyncError: func(asyncErr error) {
+					log.Warn().Err(asyncErr).Msg("activity Saved lifecycle NATS asynchronous error")
+				},
+			},
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("configure activity Saved lifecycle NATS connection")
+		}
+		defer savedLifecycleNATS.Close()
+		savedLifecyclePublisher, publisherErr := natsadapter.NewActivitySavedLifecyclePublisher(
+			savedLifecycleNATS,
+		)
+		if publisherErr != nil {
+			log.Fatal().Err(publisherErr).Msg("initialize activity Saved lifecycle publisher")
+		}
+		savedLifecycleWorker := app.NewActivitySavedLifecycleWorker(
+			repo,
+			savedLifecyclePublisher,
+			translationMetrics,
+			app.ActivitySavedLifecycleWorkerConfig{
+				WorkerID:         activitySavedLifecycleWorkerID(),
+				BatchSize:        cfg.SavedLifecycle.WorkerBatchSize,
+				PollInterval:     cfg.SavedLifecycle.PollInterval,
+				LeaseDuration:    cfg.SavedLifecycle.LeaseDuration,
+				PublishTimeout:   cfg.SavedLifecycle.PublishTimeout,
+				RetryBaseDelay:   cfg.SavedLifecycle.RetryBaseDelay,
+				RetryMaxDelay:    cfg.SavedLifecycle.RetryMaxDelay,
+				CleanupInterval:  cfg.SavedLifecycle.CleanupInterval,
+				CleanupBatchSize: cfg.SavedLifecycle.CleanupBatchSize,
+			},
+		)
+		backgroundWG.Add(1)
+		go func() {
+			defer backgroundWG.Done()
+			if runErr := savedLifecycleWorker.Run(backgroundCtx); runErr != nil {
+				log.Error().Err(runErr).Msg("activity Saved lifecycle worker stopped")
+			}
+		}()
+	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
@@ -311,6 +384,11 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
 	stopBackground()
 	backgroundWG.Wait()
+	if savedLifecycleNATS != nil {
+		if err := natstransport.Drain(savedLifecycleNATS); err != nil {
+			log.Warn().Err(err).Msg("drain activity Saved lifecycle NATS connection")
+		}
+	}
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
@@ -341,10 +419,43 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
 
-func newActivityGRPCServer(activityServer activityv1.ActivityServiceServer, options ...grpc.ServerOption) *grpc.Server {
+func newActivityGRPCServer(activityServer *grpcadapter.Server, options ...grpc.ServerOption) *grpc.Server {
 	grpcServer := grpc.NewServer(options...)
 	activityv1.RegisterActivityServiceServer(grpcServer, activityServer)
+	contentv1.RegisterSavedSourceServiceServer(grpcServer, activityServer)
 	return grpcServer
+}
+
+func newSavedSourceAuthorizer(cfg *config.Config) (*serviceauth.JWTVerifier, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("activity service config is required")
+	}
+	if !cfg.Security.ServiceAuthEnabled() {
+		if cfg.App.IsProduction() {
+			return nil, fmt.Errorf("SERVICE_AUTH_ISSUER and SERVICE_AUTH_JWKS_URL are required in production")
+		}
+		return nil, nil
+	}
+
+	jwksClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(
+			transportauth.ServerNameFromTarget(cfg.Security.ServiceAuthJWKSURL),
+		),
+		3*time.Second,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth JWKS client: %w", err)
+	}
+	verifier, err := serviceauth.NewJWTVerifier(serviceauth.VerifierConfig{
+		Issuer:   cfg.Security.ServiceAuthIssuer,
+		JWKSURL:  cfg.Security.ServiceAuthJWKSURL,
+		CacheTTL: cfg.Security.ServiceAuthCacheTTL,
+		Client:   jwksClient,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth verifier: %w", err)
+	}
+	return verifier, nil
 }
 
 func serveActivityGRPCServer(address string, server *grpc.Server) error {
@@ -447,6 +558,14 @@ func activityTranslationWorkerID() string {
 		hostname = "unknown-host"
 	}
 	return fmt.Sprintf("%s:%d", hostname, os.Getpid())
+}
+
+func activitySavedLifecycleWorkerID() string {
+	hostname, err := os.Hostname()
+	if err != nil || strings.TrimSpace(hostname) == "" {
+		hostname = "unknown-host"
+	}
+	return fmt.Sprintf("%s:saved-lifecycle:%d", hostname, os.Getpid())
 }
 
 func newSearchIndexOptions(cfg *config.Config) ([]searchindexadapter.Option, func()) {

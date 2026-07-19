@@ -435,6 +435,26 @@ func (uc *TokenUseCase) RevokeAllUserSessions(ctx context.Context, userID uuid.U
 	return count, nil
 }
 
+// ValidateUserSessionGeneration bypasses the revoked-session cache and checks
+// the session store directly. Saved uses this immediately before its final
+// personal-data commit, so a stale positive cache entry would be unsafe.
+func (uc *TokenUseCase) ValidateUserSessionGeneration(
+	ctx context.Context,
+	userID, generation uuid.UUID,
+) (bool, error) {
+	valid, err := uc.sessionStore.IsCurrentSessionGeneration(
+		ctx,
+		userID,
+		generation,
+		time.Now(),
+		uc.sessionCfg.InactivityTTL,
+	)
+	if err != nil {
+		return false, fmt.Errorf("validating user session generation: %w", err)
+	}
+	return valid, nil
+}
+
 // --- ServiceAuthenticator ---
 
 func (uc *TokenUseCase) AuthenticateService(ctx context.Context, serviceID, serviceSecret string) (*model.ServiceToken, error) {

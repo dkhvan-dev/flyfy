@@ -35,6 +35,8 @@ import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/routing/models/routing_models.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -44,6 +46,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../../shared/widgets/app_map_card.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import '../../shared/widgets/trip_preparation_cta.dart';
 import '../map/map_screen.dart';
 import 'activity_payment_screen.dart';
@@ -1713,6 +1716,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
+    final savedTarget = activity.visibility.trim().toUpperCase() == 'PUBLIC'
+        ? SavedTarget.tryCreate(
+            entityType: SavedEntityType.activity,
+            entityId: activity.id,
+          )
+        : null;
+
     final appLanguageCode = Localizations.localeOf(context).languageCode;
     final translationNoticeState = activity.translationNoticeState(
       appLanguageCode,
@@ -1890,6 +1900,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           ),
                           compact: compact,
                           onBack: () => context.pop(),
+                          savedTarget: savedTarget,
+                          savedPreviewTitle: visibleCopy.title,
+                          savedPreviewSubtitle: categoryLabel,
+                          savedPreviewImageUrl: resolveActivityCoverUrl(
+                            activity,
+                          ),
                           onShare: () => _copyValue(
                             '/activities/${activity.id}',
                             l10n.activityDetailsLinkCopied,
@@ -3168,6 +3184,10 @@ class _DetailsTopBar extends StatelessWidget {
     required this.statusColor,
     required this.compact,
     required this.onBack,
+    required this.savedTarget,
+    required this.savedPreviewTitle,
+    required this.savedPreviewSubtitle,
+    required this.savedPreviewImageUrl,
     required this.onShare,
   });
 
@@ -3176,6 +3196,10 @@ class _DetailsTopBar extends StatelessWidget {
   final Color statusColor;
   final bool compact;
   final VoidCallback onBack;
+  final SavedTarget? savedTarget;
+  final String savedPreviewTitle;
+  final String? savedPreviewSubtitle;
+  final String? savedPreviewImageUrl;
   final VoidCallback onShare;
 
   @override
@@ -3247,7 +3271,22 @@ class _DetailsTopBar extends StatelessWidget {
           ),
         ),
         SizedBox(width: sideSpacing),
-        _CircleIconButton(icon: Icons.share_outlined, onTap: onShare),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _CircleIconButton(icon: Icons.share_outlined, onTap: onShare),
+            if (savedTarget != null) ...[
+              SizedBox(width: _detailsScaled(context, 4, min: 2, max: 6)),
+              AppSavedBookmarkButton(
+                target: savedTarget!,
+                sourceSurface: SavedSourceSurface.detail,
+                previewTitle: savedPreviewTitle,
+                previewSubtitle: savedPreviewSubtitle,
+                previewImageUrl: savedPreviewImageUrl,
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }

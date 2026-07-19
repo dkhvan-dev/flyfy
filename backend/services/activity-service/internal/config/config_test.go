@@ -23,6 +23,81 @@ func TestLoadSearchServiceDefaults(t *testing.T) {
 	if cfg.SearchService.Timeout != 800*time.Millisecond {
 		t.Fatalf("search service timeout = %s, want 800ms", cfg.SearchService.Timeout)
 	}
+	if !cfg.Security.ServiceAuthEnabled() {
+		t.Fatal("service JWT verification is disabled by default")
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		t.Fatalf("NATSConfig returned error: %v", err)
+	}
+	if cfg.Security.ServiceAuthIssuer != "tourism-inflap/token-service" ||
+		cfg.Security.ServiceAuthJWKSURL != "http://token-service:8081/.well-known/jwks.json" ||
+		cfg.Security.ServiceAuthCacheTTL != 5*time.Minute {
+		t.Fatalf("service auth config = %+v", cfg.Security)
+	}
+	if !cfg.SavedLifecycle.Enabled ||
+		natsConfig.URLs != "nats://localhost:4222" ||
+		cfg.SavedLifecycle.WorkerBatchSize != 50 ||
+		cfg.SavedLifecycle.LeaseDuration != 2*time.Minute ||
+		cfg.SavedLifecycle.PublishTimeout != 2*time.Second ||
+		cfg.SavedLifecycle.CleanupInterval != time.Minute {
+		t.Fatalf("Saved lifecycle defaults = %+v", cfg.SavedLifecycle)
+	}
+}
+
+func TestLoadSavedLifecycleConfigFromEnvironment(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("NATS_URL", "nats://nats.test:4222")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_BATCH_SIZE", "25")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_LEASE_DURATION", "90s")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_PUBLISH_TIMEOUT", "3s")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_CLEANUP_BATCH_SIZE", "300")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		t.Fatalf("NATSConfig returned error: %v", err)
+	}
+	if natsConfig.URLs != "nats://nats.test:4222" ||
+		cfg.SavedLifecycle.WorkerBatchSize != 25 ||
+		cfg.SavedLifecycle.LeaseDuration != 90*time.Second ||
+		cfg.SavedLifecycle.PublishTimeout != 3*time.Second ||
+		cfg.SavedLifecycle.CleanupBatchSize != 300 {
+		t.Fatalf("Saved lifecycle config = %+v", cfg.SavedLifecycle)
+	}
+}
+
+func TestLoadRejectsPlaintextSavedLifecycleNATSInProduction(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("NATS_URL", "nats://nats.internal:4222")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for plaintext production NATS")
+	}
+}
+
+func TestLoadRejectsSavedLifecycleBatchThatOutlivesLease(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_BATCH_SIZE", "50")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_LEASE_DURATION", "30s")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_PUBLISH_TIMEOUT", "2s")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for a Saved lifecycle batch longer than its lease")
+	}
+}
+
+func TestLoadRejectsInvalidSavedLifecycleLease(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("ACTIVITY_SAVED_LIFECYCLE_LEASE_DURATION", "0s")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for zero Saved lifecycle lease")
+	}
 }
 
 func TestLoadSearchServiceConfigFromEnvironment(t *testing.T) {

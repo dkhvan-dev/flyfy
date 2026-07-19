@@ -10,15 +10,19 @@ import (
 	"kz/inflap/backend/services/activity-service/internal/app"
 	"kz/inflap/backend/services/activity-service/internal/domain/model"
 	activityv1 "kz/inflap/proto/gen/go/activity/v1"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 )
 
 type Server struct {
 	activityv1.UnimplementedActivityServiceServer
+	contentv1.UnimplementedSavedSourceServiceServer
 
-	activityUC   *app.ActivityUseCase
-	joinUC       *app.JoinUseCase
-	searchUC     *app.SearchUseCase
-	moderationUC *app.ModerationUseCase
+	activityUC        *app.ActivityUseCase
+	joinUC            *app.JoinUseCase
+	searchUC          *app.SearchUseCase
+	moderationUC      *app.ModerationUseCase
+	savedSourceUC     *app.SavedSourceUseCase
+	serviceAuthorizer ServiceAuthorizer
 }
 
 func NewServer(
@@ -26,13 +30,18 @@ func NewServer(
 	joinUC *app.JoinUseCase,
 	searchUC *app.SearchUseCase,
 	moderationUC *app.ModerationUseCase,
+	opts ...ServerOption,
 ) *Server {
-	return &Server{
+	server := &Server{
 		activityUC:   activityUC,
 		joinUC:       joinUC,
 		searchUC:     searchUC,
 		moderationUC: moderationUC,
 	}
+	for _, opt := range opts {
+		opt(server)
+	}
+	return server
 }
 
 func (s *Server) GetActivityById(

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,12 +16,14 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/transportauth"
 	activityadapter "kz/inflap/backend/services/feed-service/internal/adapter/activity"
 	cacheadapter "kz/inflap/backend/services/feed-service/internal/adapter/cache"
 	filemanageradapter "kz/inflap/backend/services/feed-service/internal/adapter/filemanager"
+	grpcadapter "kz/inflap/backend/services/feed-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/feed-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/feed-service/internal/adapter/notification"
 	"kz/inflap/backend/services/feed-service/internal/adapter/repository"
@@ -30,6 +33,7 @@ import (
 	"kz/inflap/backend/services/feed-service/internal/app"
 	"kz/inflap/backend/services/feed-service/internal/config"
 	"kz/inflap/backend/services/feed-service/internal/domain/port"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 )
 
 func main() {
@@ -111,6 +115,14 @@ func main() {
 		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey).
 		WithFeedExperimentVariants(cfg.Feed.RankingExperimentVariants).
 		WithFeedExperimentPolicyOverrides(cfg.Feed.RankingExperimentPolicies)
+	savedPostSourceAuthorizer, err := newSavedPostSourceAuthorizer(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure Saved post source authentication")
+	}
+	savedPostSourceServer := grpcadapter.NewSavedPostSourceServer(
+		app.NewSavedPostSourceUseCase(repo),
+		savedPostSourceAuthorizer,
+	)
 	if cfg.SearchService.Enabled {
 		searchIndexOptions, closeSearchIndexAuth := newSearchIndexOptions(cfg)
 		defer closeSearchIndexAuth()
@@ -171,6 +183,18 @@ func main() {
 		log.Fatal().Err(err).Msg("invalid feed-service mTLS listener configuration")
 	}
 	internalMTLSServer := newInternalFeedMTLSServer(cfg, httpHandler, tlsConfig)
+	savedGRPCServer := newFeedSavedSourceGRPCServer(savedPostSourceServer)
+	var internalSavedGRPCServer *grpc.Server
+	if tlsConfig != nil {
+		serverOptions, optionsErr := transportauth.GRPCServerOptions(transportTLSConfig)
+		if optionsErr != nil {
+			log.Fatal().Err(optionsErr).Msg("configure feed-service internal mTLS gRPC")
+		}
+		internalSavedGRPCServer = newFeedSavedSourceGRPCServer(
+			savedPostSourceServer,
+			serverOptions...,
+		)
+	}
 
 	go func() {
 		log.Info().Str("address", cfg.HTTP.Address()).Msg("http server started")
@@ -183,6 +207,20 @@ func main() {
 			log.Info().Str("address", cfg.HTTP.InternalTLSAddress()).Msg("internal mTLS http server started")
 			if err := internalMTLSServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal().Err(err).Msg("internal mTLS http server failed")
+			}
+		}()
+	}
+	go func() {
+		log.Info().Str("address", cfg.GRPC.Address()).Msg("Saved source gRPC server started")
+		if serveErr := serveFeedSavedSourceGRPCServer(cfg.GRPC.Address(), savedGRPCServer); serveErr != nil {
+			log.Fatal().Err(serveErr).Msg("Saved source gRPC server failed")
+		}
+	}()
+	if internalSavedGRPCServer != nil {
+		go func() {
+			log.Info().Str("address", cfg.GRPC.InternalTLSAddress()).Msg("internal mTLS Saved source gRPC server started")
+			if serveErr := serveFeedSavedSourceGRPCServer(cfg.GRPC.InternalTLSAddress(), internalSavedGRPCServer); serveErr != nil {
+				log.Fatal().Err(serveErr).Msg("internal mTLS Saved source gRPC server failed")
 			}
 		}()
 	}
@@ -205,6 +243,7 @@ func main() {
 			log.Info().Msg("internal mTLS http server stopped")
 		}
 	}
+	stopFeedSavedSourceGRPCServers(savedGRPCServer, internalSavedGRPCServer, 10*time.Second)
 }
 
 func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
@@ -418,7 +457,95 @@ func validateFeedServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) erro
 	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
 		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
 	}
+	if cfg.GRPC.InternalTLSPort == 0 {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT is required when feed-service mTLS is enabled")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.GRPC.Port {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from GRPC_PORT")
+	}
+	if cfg.GRPC.InternalTLSPort == cfg.HTTP.InternalTLSPort {
+		return fmt.Errorf("INTERNAL_GRPC_TLS_PORT must be different from INTERNAL_HTTP_TLS_PORT")
+	}
 	return nil
+}
+
+func newFeedSavedSourceGRPCServer(
+	server *grpcadapter.SavedPostSourceServer,
+	options ...grpc.ServerOption,
+) *grpc.Server {
+	grpcServer := grpc.NewServer(options...)
+	contentv1.RegisterSavedSourceServiceServer(grpcServer, server)
+	return grpcServer
+}
+
+func serveFeedSavedSourceGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen for Saved source gRPC: %w", err)
+	}
+	if err = server.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+		return fmt.Errorf("serve Saved source gRPC: %w", err)
+	}
+	return nil
+}
+
+func stopFeedSavedSourceGRPCServers(
+	publicServer *grpc.Server,
+	internalServer *grpc.Server,
+	timeout time.Duration,
+) {
+	if timeout <= 0 {
+		timeout = 10 * time.Second
+	}
+	done := make(chan struct{})
+	go func() {
+		publicServer.GracefulStop()
+		if internalServer != nil {
+			internalServer.GracefulStop()
+		}
+		close(done)
+	}()
+	select {
+	case <-done:
+		log.Info().Msg("Saved source gRPC servers stopped")
+	case <-time.After(timeout):
+		publicServer.Stop()
+		if internalServer != nil {
+			internalServer.Stop()
+		}
+		log.Warn().Msg("Saved source gRPC shutdown timed out")
+	}
+}
+
+func newSavedPostSourceAuthorizer(cfg *config.Config) (*serviceauth.JWTVerifier, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("feed service config is required")
+	}
+	if !cfg.Security.ServiceAuthEnabled() {
+		if cfg.App.IsProduction() {
+			return nil, fmt.Errorf("SERVICE_AUTH_ISSUER and SERVICE_AUTH_JWKS_URL are required in production")
+		}
+		return nil, nil
+	}
+	jwksClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(
+			transportauth.ServerNameFromTarget(cfg.Security.ServiceAuthJWKSURL),
+		),
+		3*time.Second,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth JWKS client: %w", err)
+	}
+	verifier, err := serviceauth.NewJWTVerifier(serviceauth.VerifierConfig{
+		Issuer:   cfg.Security.ServiceAuthIssuer,
+		JWKSURL:  cfg.Security.ServiceAuthJWKSURL,
+		CacheTTL: cfg.Security.ServiceAuthCacheTTL,
+		Client:   jwksClient,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth verifier: %w", err)
+	}
+	return verifier, nil
 }
 
 func newInternalFeedMTLSServer(cfg *config.Config, handler http.Handler, tlsConfig *tls.Config) *http.Server {

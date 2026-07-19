@@ -95,17 +95,25 @@ func (c *Client) verifyWithCachedServiceToken(ctx context.Context, accessToken s
 		return nil, fmt.Errorf("validate access token: %w", err)
 	}
 
-	claims := &app.TokenClaims{
-		Subject: adapter.ValueOrEmpty(resp.GetSubject()),
-		UserID:  adapter.ValueOrEmpty(resp.GetUserId()),
-		Roles:   adapter.NormalizeRoles(resp.GetRoles(), resp.GetRole()),
-	}
+	claims := tokenClaimsFromResponse(resp)
 
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("token-service returned empty subject")
 	}
 
 	return claims, nil
+}
+
+func tokenClaimsFromResponse(resp *tokenpb.ValidatedClaimsResponse) *app.TokenClaims {
+	if resp == nil {
+		return &app.TokenClaims{}
+	}
+	return &app.TokenClaims{
+		Subject:   adapter.ValueOrEmpty(resp.GetSubject()),
+		UserID:    adapter.ValueOrEmpty(resp.GetUserId()),
+		SessionID: adapter.ValueOrEmpty(resp.GetSessionId()),
+		Roles:     adapter.NormalizeRoles(resp.GetRoles(), resp.GetRole()),
+	}
 }
 
 func (c *Client) getOrAuthenticateServiceToken(ctx context.Context) (string, error) {

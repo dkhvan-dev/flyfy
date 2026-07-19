@@ -85,3 +85,127 @@ func TestLoadInternalHTTPTLSPortFromEnvironment(t *testing.T) {
 		t.Fatalf("HTTP.InternalTLSAddress() = %q, want :9490", cfg.HTTP.InternalTLSAddress())
 	}
 }
+
+func TestLoadSavedSourceGRPCAndServiceAuthDefaults(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.GRPC.Port != 9099 || cfg.GRPC.Address() != ":9099" {
+		t.Fatalf("GRPC config = %+v, want :9099", cfg.GRPC)
+	}
+	if !cfg.Security.ServiceAuthEnabled() {
+		t.Fatal("service JWT validation disabled by default")
+	}
+	if cfg.Security.ServiceAuthIssuer != "tourism-inflap/token-service" {
+		t.Fatalf("service auth issuer = %q", cfg.Security.ServiceAuthIssuer)
+	}
+	if cfg.Security.ServiceAuthCacheTTL != 5*time.Minute {
+		t.Fatalf("service auth cache TTL = %s, want 5m", cfg.Security.ServiceAuthCacheTTL)
+	}
+}
+
+func TestLoadSavedCoverFileManagerDefaults(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.FileManager.GRPCTarget != "dns:///file-manager-service:9093" ||
+		cfg.FileManager.RequestTimeout != 3*time.Second {
+		t.Fatalf("FileManager config = %+v", cfg.FileManager)
+	}
+}
+
+func TestLoadSavedCoverFileManagerConfigFromEnvironment(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("FILE_MANAGER_GRPC_TARGET", "dns:///files.internal:9443")
+	t.Setenv("SAVED_COVER_FILE_MANAGER_TIMEOUT", "1500ms")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.FileManager.GRPCTarget != "dns:///files.internal:9443" ||
+		cfg.FileManager.RequestTimeout != 1500*time.Millisecond {
+		t.Fatalf("FileManager config = %+v", cfg.FileManager)
+	}
+}
+
+func TestLoadRejectsUnboundedSavedCoverFileManagerTimeout(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("SAVED_COVER_FILE_MANAGER_TIMEOUT", "30s")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for unbounded Saved cover file-manager timeout")
+	}
+}
+
+func TestAppConfigRecognizesProductionCaseInsensitively(t *testing.T) {
+	t.Parallel()
+
+	if !(AppConfig{Env: " PRODUCTION "}).IsProduction() {
+		t.Fatal("IsProduction() = false for normalized production environment")
+	}
+}
+
+func TestLoadSavedLifecycleDefaultsToDeferredDevelopmentDispatch(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.SavedLifecycle.Enabled {
+		t.Fatal("Saved lifecycle dispatch enabled by default in development")
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		t.Fatalf("NATSConfig returned error: %v", err)
+	}
+	if natsConfig.URLs != "nats://localhost:4222" ||
+		cfg.SavedLifecycle.BatchSize != 50 ||
+		cfg.SavedLifecycle.Concurrency != 8 ||
+		cfg.SavedLifecycle.LeaseDuration != 2*time.Minute ||
+		cfg.SavedLifecycle.MaxAttempts != 20 {
+		t.Fatalf("unexpected Saved lifecycle defaults: %+v", cfg.SavedLifecycle)
+	}
+}
+
+func TestLoadSavedLifecycleRequiresDispatcherInProduction(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("SAVED_LIFECYCLE_EVENTS_ENABLED", "false")
+
+	_, err := Load(context.Background())
+	if err == nil {
+		t.Fatal("Load returned nil error for disabled production lifecycle dispatcher")
+	}
+}
+
+func TestLoadRejectsPlaintextSavedLifecycleNATSInProduction(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("SAVED_LIFECYCLE_EVENTS_ENABLED", "true")
+	t.Setenv("NATS_URL", "nats://nats.internal:4222")
+
+	if _, err := Load(context.Background()); err == nil {
+		t.Fatal("Load returned nil error for plaintext production NATS")
+	}
+}
+
+func TestLoadSavedLifecycleValidatesBoundedWorkerConfig(t *testing.T) {
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+	t.Setenv("SAVED_LIFECYCLE_EVENTS_ENABLED", "true")
+	t.Setenv("SAVED_LIFECYCLE_BATCH_SIZE", "4")
+	t.Setenv("SAVED_LIFECYCLE_CONCURRENCY", "5")
+
+	_, err := Load(context.Background())
+	if err == nil {
+		t.Fatal("Load returned nil error for concurrency above batch size")
+	}
+}

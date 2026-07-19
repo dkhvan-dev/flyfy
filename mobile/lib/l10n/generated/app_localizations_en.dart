@@ -1547,7 +1547,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSavedItemsSubtitle =>
-      'Saved activities, places, and collections will appear here later.';
+      'Activities, people, places, and your private collections';
 
   @override
   String get profileBookingsTitle => 'My bookings';
@@ -9682,4 +9682,297 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trustRestrictionSupportAction => 'Contact support';
+
+  @override
+  String get savedScreenTitle => 'Saved';
+
+  @override
+  String get savedAllItems => 'All saved';
+
+  @override
+  String get savedCollectionsTitle => 'Collections';
+
+  @override
+  String get savedCollectionsLoadError => 'Collections couldn\'t be loaded';
+
+  @override
+  String get savedCollectionsSeeAll => 'See all';
+
+  @override
+  String get savedCollectionsEmptyTitle => 'No collections yet';
+
+  @override
+  String get savedCollectionsEmptyMessage =>
+      'Create a collection to organize saved cards for trips and ideas.';
+
+  @override
+  String get savedCollectionsUnavailableTitle =>
+      'Collections aren\'t available';
+
+  @override
+  String get savedCollectionsUnavailableMessage =>
+      'Your cards are still available in All saved.';
+
+  @override
+  String get savedCreateCollection => 'Create collection';
+
+  @override
+  String get savedSearchHint => 'Name, city or country';
+
+  @override
+  String savedSearchMatchedTitle(String value) {
+    return 'Matched name: $value';
+  }
+
+  @override
+  String savedSearchMatchedCity(String value) {
+    return 'Matched city: $value';
+  }
+
+  @override
+  String savedSearchMatchedCountry(String value) {
+    return 'Matched country: $value';
+  }
+
+  @override
+  String get savedCategoryAll => 'All';
+
+  @override
+  String get savedCategoryActivities => 'Activities';
+
+  @override
+  String get savedCategoryUsers => 'People';
+
+  @override
+  String get savedCategoryAttractions => 'Places';
+
+  @override
+  String get savedCategoryPosts => 'Posts';
+
+  @override
+  String get savedDisabledTitle => 'Saved is temporarily unavailable';
+
+  @override
+  String get savedDisabledMessage =>
+      'Your saved items are unchanged. Try again later.';
+
+  @override
+  String get savedEmptyAllTitle => 'Nothing saved yet';
+
+  @override
+  String get savedEmptyAllMessage =>
+      'Use the bookmark on activities, people, and places to keep them here.';
+
+  @override
+  String get savedEmptyCategoryTitle => 'No saved items in this category';
+
+  @override
+  String get savedEmptyCategoryMessage =>
+      'Saved items from this category will appear here.';
+
+  @override
+  String get savedEmptyCollectionTitle => 'This collection is empty';
+
+  @override
+  String get savedEmptyCollectionMessage =>
+      'Add saved cards through their collection picker.';
+
+  @override
+  String get savedEmptySearchTitle => 'No matches';
+
+  @override
+  String get savedEmptySearchMessage => 'Try another word or clear the search.';
+
+  @override
+  String get savedNetworkStale =>
+      'Connection lost. Showing items loaded on this device.';
+
+  @override
+  String get savedUnavailableTitle => 'Item unavailable';
+
+  @override
+  String get savedUnavailableMessage =>
+      'This card can no longer be opened, but you can remove it from Saved.';
+
+  @override
+  String get savedBookmarkSaveTooltip => 'Save';
+
+  @override
+  String get savedBookmarkManageTooltip => 'Manage saved item';
+
+  @override
+  String get savedBookmarkAuthTooltip => 'Sign in to use Saved';
+
+  @override
+  String get savedBookmarkCheckingTooltip => 'Checking Saved status';
+
+  @override
+  String get savedBookmarkUpdatingTooltip => 'Updating Saved';
+
+  @override
+  String get savedBookmarkPendingUnknownTooltip =>
+      'Saved update isn\'t confirmed. Tap to retry.';
+
+  @override
+  String get savedBookmarkRetryTooltip =>
+      'Saved status couldn\'t be loaded. Tap to retry.';
+
+  @override
+  String get savedBookmarkUnavailableTooltip =>
+      'Saving this item is unavailable';
+
+  @override
+  String get savedBookmarkOfflineMessage =>
+      'You\'re offline. Saved wasn\'t changed.';
+
+  @override
+  String get savedRemoveEverywhereTooltip => 'Remove from Saved';
+
+  @override
+  String get savedManageCollectionsTooltip => 'Manage collections';
+
+  @override
+  String get savedRemoveEverywhereTitle => 'Remove from Saved?';
+
+  @override
+  String savedRemoveEverywhereMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collections',
+      one: '1 collection',
+      zero: 'no collections',
+    );
+    return 'This card is currently in $_temp0. It will be removed from Saved everywhere.';
+  }
+
+  @override
+  String get savedRemoveEverywhereAction => 'Remove everywhere';
+
+  @override
+  String get savedRemoveFromCollection => 'Remove from this collection';
+
+  @override
+  String get savedCollectionPickerTitle => 'Save to collections';
+
+  @override
+  String get savedCollectionPickerSearchHint => 'Collection name';
+
+  @override
+  String get savedCollectionPickerDone => 'Done';
+
+  @override
+  String get savedCancelSaveAction => 'Remove from Saved';
+
+  @override
+  String get savedCollectionPickerEmpty => 'No collections yet';
+
+  @override
+  String get savedCollectionPickerNoMatches => 'No matching collections';
+
+  @override
+  String get savedCollectionCreateInline => 'New collection';
+
+  @override
+  String get savedCollectionCreateTitle => 'Create collection';
+
+  @override
+  String get savedCollectionRenameTitle => 'Rename collection';
+
+  @override
+  String get savedCollectionTitleLabel => 'Collection name';
+
+  @override
+  String get savedCollectionTitleHint => 'For example, Weekend in Almaty';
+
+  @override
+  String get savedCollectionDeleteTitle => 'Delete collection?';
+
+  @override
+  String get savedCollectionDeleteMessage =>
+      'Only the collection will be deleted. Its cards will remain in All saved.';
+
+  @override
+  String get savedCollectionDeleteAction => 'Delete collection';
+
+  @override
+  String get savedCollectionGoAll => 'Go to All saved';
+
+  @override
+  String get savedCollectionMenuTooltip => 'Collection actions';
+
+  @override
+  String get savedCollectionRenameAction => 'Rename';
+
+  @override
+  String savedCollectionItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved items',
+      one: '1 saved item',
+      zero: 'Empty',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String savedCardCollectionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In $count collections',
+      one: 'In 1 collection',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get savedCollectionCreated => 'Collection created';
+
+  @override
+  String get savedCollectionRenamed => 'Collection renamed';
+
+  @override
+  String get savedCollectionDeleted =>
+      'Collection deleted. Saved cards were kept.';
+
+  @override
+  String get savedAssignmentsUpdated => 'Collections updated';
+
+  @override
+  String get savedActionPending =>
+      'Still confirming with the server. This action is temporarily locked.';
+
+  @override
+  String get savedActionRejected =>
+      'The change was not applied. Refresh and try again.';
+
+  @override
+  String get savedActionExpired =>
+      'The request expired. Saved was refreshed from the server.';
+
+  @override
+  String get savedErrorNetwork =>
+      'Couldn\'t connect. Check your connection and try again.';
+
+  @override
+  String get savedErrorGeneric => 'Saved couldn\'t be loaded. Try again.';
+
+  @override
+  String get savedErrorDuplicateCollection =>
+      'A collection with this name already exists.';
+
+  @override
+  String get savedErrorQuota => 'You\'ve reached the Saved limit.';
+
+  @override
+  String get savedErrorConflict =>
+      'Saved changed on another screen. Refresh and try again.';
+
+  @override
+  String get savedErrorPolicyLocked => 'Saved is temporarily unavailable.';
+
+  @override
+  String get savedPaginationRetry => 'Couldn\'t load more';
 }

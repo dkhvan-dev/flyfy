@@ -20,6 +20,9 @@ import (
 	featurehttp "kz/inflap/backend/services/switches-service/internal/featureflag/adapter/http"
 	featurerepo "kz/inflap/backend/services/switches-service/internal/featureflag/adapter/repository"
 	featureapp "kz/inflap/backend/services/switches-service/internal/featureflag/app"
+	policyhttp "kz/inflap/backend/services/switches-service/internal/platformpolicy/adapter/http"
+	policyrepo "kz/inflap/backend/services/switches-service/internal/platformpolicy/adapter/repository"
+	policyapp "kz/inflap/backend/services/switches-service/internal/platformpolicy/app"
 	techhttp "kz/inflap/backend/services/switches-service/internal/techbreak/adapter/http"
 	techrepo "kz/inflap/backend/services/switches-service/internal/techbreak/adapter/repository"
 	techapp "kz/inflap/backend/services/switches-service/internal/techbreak/app"
@@ -67,10 +70,17 @@ func main() {
 	)
 	techScopeService := techapp.NewTechBreakScopeService(techRepo, techRepo)
 	techDomainService := techapp.NewDomainService(techRepo)
+	policyRepo := policyrepo.NewPGRepository(pool)
+	policyService := policyapp.NewService(policyRepo, nil)
 
 	mux := http.NewServeMux()
 	featurehttp.NewHandler(featureService, featureDomainService, cfg.Security.InternalServiceToken, pool.Ping).Register(mux)
 	techhttp.NewHandler(techBreakService, techScopeService, techDomainService, cfg.Security.InternalServiceToken).Register(mux)
+	policyhttp.NewHandler(policyService, policyhttp.AuthConfig{
+		InternalServiceToken:      cfg.Security.InternalServiceToken,
+		TrustedGatewayHeaderRoles: cfg.Security.TrustedGatewayHeaderRoles,
+		TrustedGatewayHeaderSub:   cfg.Security.TrustedGatewayHeaderSub,
+	}).Register(mux)
 
 	if cfg.Scheduler.Enabled {
 		go featureapp.NewScheduler(cfg.Scheduler.Interval, featureService.SwitchDue).Start(rootCtx)

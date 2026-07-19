@@ -6,6 +6,7 @@ x-mtls-api-gateway-volumes: &mtls-api-gateway-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/api-gateway:/opt/inflap/secrets/mtls/api-gateway:ro
 x-mtls-activity-service-volumes: &mtls-activity-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/activity-service:/opt/inflap/secrets/mtls/activity-service:ro
+  - ${NATS_SECRETS_DIR:-./secrets/nats}/activity-service:/opt/inflap/secrets/nats/activity-service:ro
 x-mtls-auth-service-volumes: &mtls-auth-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/auth-service:/opt/inflap/secrets/mtls/auth-service:ro
 x-mtls-chat-service-volumes: &mtls-chat-service-volumes
@@ -22,16 +23,21 @@ x-mtls-file-manager-service-volumes: &mtls-file-manager-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/file-manager-service:/opt/inflap/secrets/mtls/file-manager-service:ro
 x-mtls-guide-service-volumes: &mtls-guide-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/guide-service:/opt/inflap/secrets/mtls/guide-service:ro
+  - ${NATS_SECRETS_DIR:-./secrets/nats}/guide-service:/opt/inflap/secrets/nats/guide-service:ro
 x-mtls-notification-service-volumes: &mtls-notification-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/notification-service:/opt/inflap/secrets/mtls/notification-service:ro
 x-mtls-payment-service-volumes: &mtls-payment-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/payment-service:/opt/inflap/secrets/mtls/payment-service:ro
 x-mtls-place-service-volumes: &mtls-place-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/place-service:/opt/inflap/secrets/mtls/place-service:ro
+  - ${NATS_SECRETS_DIR:-./secrets/nats}/place-service:/opt/inflap/secrets/nats/place-service:ro
 x-mtls-reference-service-volumes: &mtls-reference-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/reference-service:/opt/inflap/secrets/mtls/reference-service:ro
 x-mtls-routing-service-volumes: &mtls-routing-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/routing-service:/opt/inflap/secrets/mtls/routing-service:ro
+x-mtls-saved-service-volumes: &mtls-saved-service-volumes
+  - ${MTLS_SECRETS_DIR:-./secrets/mtls}/saved-service:/opt/inflap/secrets/mtls/saved-service:ro
+  - ${NATS_SECRETS_DIR:-./secrets/nats}/saved-service:/opt/inflap/secrets/nats/saved-service:ro
 x-mtls-search-service-volumes: &mtls-search-service-volumes
   - ${MTLS_SECRETS_DIR:-./secrets/mtls}/search-service:/opt/inflap/secrets/mtls/search-service:ro
 x-mtls-sticker-service-volumes: &mtls-sticker-service-volumes
@@ -69,6 +75,7 @@ services:
       FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
       GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
       PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      SAVED_SERVICE_TOKEN_SERVICE_SECRET: ${SAVED_SERVICE_TOKEN_SERVICE_SECRET:-saved-service-secret}
       SUPPORT_SERVICE_TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
       USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     ports:
@@ -103,6 +110,7 @@ services:
       FEED_SERVICE_TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
       GUIDE_SERVICE_TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
       PLACE_SERVICE_TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
+      SAVED_SERVICE_TOKEN_SERVICE_SECRET: ${SAVED_SERVICE_TOKEN_SERVICE_SECRET:-saved-service-secret}
       SUPPORT_SERVICE_TOKEN_SERVICE_SECRET: ${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:-support-service-secret}
       USER_SERVICE_TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
     volumes:
@@ -678,6 +686,88 @@ services:
       - inflap-network
 
   # ============================================
+  # Saved Service PostgreSQL
+  # ============================================
+  saved-postgres:
+    image: postgres:17-alpine
+    container_name: saved-postgres
+    environment:
+      POSTGRES_DB: saved_service_db
+      POSTGRES_USER: saved_service
+      POSTGRES_PASSWORD: ${SAVED_POSTGRES_PASSWORD:-saved_secret_dev}
+    ports:
+      - "${SAVED_POSTGRES_HOST_PORT:-5457}:5432"
+    volumes:
+      - saved_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saved_service -d saved_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  saved-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: saved-postgres-migrator
+    environment:
+      PGHOST: ${SAVED_POSTGRES_HOST:-saved-postgres}
+      PGPORT: ${SAVED_POSTGRES_PORT:-5432}
+      PGSSLMODE: ${SAVED_POSTGRES_SSLMODE:-disable}
+      PGSSLROOTCERT: ${SAVED_POSTGRES_SSL_ROOT_CERT:-}
+      POSTGRES_DB: ${SAVED_POSTGRES_DB:-saved_service_db}
+      POSTGRES_USER: ${SAVED_POSTGRES_USER:-saved_service}
+      POSTGRES_PASSWORD: ${SAVED_POSTGRES_PASSWORD:-saved_secret_dev}
+    volumes:
+      - ./init-scripts/025_saved_service_migrate.sh:/usr/local/bin/025_saved_service_migrate.sh:ro
+      - ../backend/services/saved-service/migrations:/migrations/saved-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/025_saved_service_migrate.sh"]
+    depends_on:
+      saved-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  saved-search-rollout:
+    build:
+      context: ..
+      dockerfile: ./deploy/dockerfiles/saved-service.Dockerfile
+    image: ${SAVED_SERVICE_IMAGE:-inflap-saved-service:local}
+    container_name: saved-search-rollout
+    labels:
+      com.inflap.smoke.allow-exited: "true"
+    entrypoint: ["/app/saved-search-backfill"]
+    command:
+      - "-mode=rollout"
+      - "-batch-size=${SAVED_SEARCH_BACKFILL_BATCH_SIZE:-500}"
+      - "-max-batches=${SAVED_SEARCH_BACKFILL_MAX_BATCHES:-10000}"
+      - "-pause=${SAVED_SEARCH_BACKFILL_PAUSE:-25ms}"
+      - "-lock-timeout=${SAVED_SEARCH_LOCK_TIMEOUT:-1s}"
+      - "-statement-timeout=${SAVED_SEARCH_STATEMENT_TIMEOUT:-10s}"
+      - "-contract-timeout=${SAVED_SEARCH_CONTRACT_TIMEOUT:-30m}"
+    environment:
+      PGHOST: ${SAVED_POSTGRES_HOST:-saved-postgres}
+      PGPORT: ${SAVED_POSTGRES_PORT:-5432}
+      PGUSER: ${SAVED_POSTGRES_USER:-saved_service}
+      PGPASSWORD: ${SAVED_POSTGRES_PASSWORD:-saved_secret_dev}
+      PGDATABASE: ${SAVED_POSTGRES_DB:-saved_service_db}
+      PGSSLMODE: ${SAVED_POSTGRES_SSLMODE:-disable}
+      PGSSLROOTCERT: ${SAVED_POSTGRES_SSL_ROOT_CERT:-}
+    depends_on:
+      saved-postgres:
+        condition: service_healthy
+      saved-postgres-migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # Checklist Service PostgreSQL
   # ============================================
   checklist-postgres:
@@ -872,8 +962,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/token-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/token-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/token-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/translation-service,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,search-service,support-service,translation-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${TOKEN_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/search-service,spiffe://inflap/dev/support-service,spiffe://inflap/dev/translation-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${TOKEN_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,api-gateway,auth-service,excursion-service,feed-service,guide-service,place-service,saved-service,search-service,support-service,translation-service,user-service}
 
       JWT_ISSUER: tourism-inflap/token-service
       JWT_ACCESS_TTL: 30m
@@ -1159,8 +1249,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/user-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/user-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/user-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/support-service}
-      MTLS_ALLOWED_DNS_NAMES: ${USER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,activity-service,api-gateway,auth-service,chat-service,excursion-service,feed-service,guide-service,place-service,support-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${USER_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/activity-service,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/guide-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${USER_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,activity-service,api-gateway,auth-service,chat-service,excursion-service,feed-service,guide-service,place-service,saved-service,support-service}
       TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: user-service
       TOKEN_SERVICE_SECRET: ${USER_SERVICE_TOKEN_SERVICE_SECRET:-user-service-secret}
@@ -1245,6 +1335,8 @@ services:
         condition: service_started
       search-service:
         condition: service_started
+      nats:
+        condition: service_healthy
     ports:
       - "8085:8085"
       - "9095:9095"
@@ -1291,6 +1383,15 @@ services:
       SEARCH_INDEXING_ENABLED: "true"
       SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
       SEARCH_SERVICE_TIMEOUT: 800ms
+      SAVED_LIFECYCLE_ENABLED: ${GUIDE_SAVED_LIFECYCLE_ENABLED:-true}
+      SAVED_LIFECYCLE_SUBJECT: saved.source.guide.lifecycle.v1
+      NATS_URL: ${GUIDE_SAVED_NATS_URL:-${NATS_URL:-nats://nats:4222}}
+      NATS_CREDS_PATH: ${GUIDE_SAVED_NATS_CREDS_PATH:-}
+      NATS_CA_CERT_PATH: ${GUIDE_SAVED_NATS_CA_CERT_PATH:-}
+      NATS_CLIENT_CERT_PATH: ${GUIDE_SAVED_NATS_CLIENT_CERT_PATH:-}
+      NATS_CLIENT_KEY_PATH: ${GUIDE_SAVED_NATS_CLIENT_KEY_PATH:-}
+      NATS_TLS_SERVER_NAME: ${GUIDE_SAVED_NATS_TLS_SERVER_NAME:-}
+      NATS_TLS_MIN_VERSION: "1.3"
       MTLS_MODE: ${GUIDE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/ca.crt
@@ -1298,8 +1399,12 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/guide-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/guide-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/guide-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/support-service}
-      MTLS_ALLOWED_DNS_NAMES: ${GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service,support-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${GUIDE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${GUIDE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service,saved-service,support-service}
+      SERVICE_AUTH_ISSUER: tourism-inflap/token-service
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
+      SAVED_SOURCE_ALLOWED_CALLER: saved-service
       TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: guide-service
       TOKEN_SERVICE_SECRET: ${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:-guide-service-secret}
@@ -1371,6 +1476,8 @@ services:
         condition: service_healthy
       activity-postgres-migrator:
         condition: service_completed_successfully
+      nats:
+        condition: service_healthy
       payment-service:
         condition: service_started
       anti-fraud-service:
@@ -1452,6 +1559,14 @@ services:
       ACTIVITY_TRANSLATION_RETRY_BASE_DELAY: ${ACTIVITY_TRANSLATION_RETRY_BASE_DELAY:-30s}
       ACTIVITY_TRANSLATION_REQUEST_TIMEOUT: ${ACTIVITY_TRANSLATION_REQUEST_TIMEOUT:-8s}
       ACTIVITY_TRANSLATION_LOCK_TIMEOUT: ${ACTIVITY_TRANSLATION_LOCK_TIMEOUT:-2m}
+      ACTIVITY_SAVED_LIFECYCLE_ENABLED: ${ACTIVITY_SAVED_LIFECYCLE_ENABLED:-true}
+      NATS_URL: ${ACTIVITY_SAVED_NATS_URL:-${NATS_URL:-nats://nats:4222}}
+      NATS_CREDS_PATH: ${ACTIVITY_SAVED_NATS_CREDS_PATH:-}
+      NATS_CA_CERT_PATH: ${ACTIVITY_SAVED_NATS_CA_CERT_PATH:-}
+      NATS_CLIENT_CERT_PATH: ${ACTIVITY_SAVED_NATS_CLIENT_CERT_PATH:-}
+      NATS_CLIENT_KEY_PATH: ${ACTIVITY_SAVED_NATS_CLIENT_KEY_PATH:-}
+      NATS_TLS_SERVER_NAME: ${ACTIVITY_SAVED_NATS_TLS_SERVER_NAME:-}
+      NATS_TLS_MIN_VERSION: "1.3"
       MTLS_MODE: ${ACTIVITY_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/ca.crt
@@ -1459,8 +1574,11 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/activity-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/activity-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/feed-service}
-      MTLS_ALLOWED_DNS_NAMES: ${ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,chat-service,feed-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${ACTIVITY_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/saved-service}
+      MTLS_ALLOWED_DNS_NAMES: ${ACTIVITY_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,chat-service,feed-service,saved-service}
+      SERVICE_AUTH_ISSUER: tourism-inflap/token-service
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
       TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: activity-service
       TOKEN_SERVICE_SECRET: ${ACTIVITY_SERVICE_TOKEN_SERVICE_SECRET:-activity-service-secret}
@@ -1939,6 +2057,8 @@ services:
         condition: service_healthy
       feed-postgres-migrator:
         condition: service_completed_successfully
+      token-service:
+        condition: service_started
       user-service:
         condition: service_started
       activity-service:
@@ -1952,11 +2072,15 @@ services:
     ports:
       - "8087:8087"
     expose:
+      - "9098"
       - "${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-9487}"
+      - "${FEED_SERVICE_INTERNAL_GRPC_TLS_PORT:-9448}"
     environment:
       APP_ENV: development
       HTTP_PORT: 8087
       INTERNAL_HTTP_TLS_PORT: ${FEED_SERVICE_INTERNAL_HTTP_TLS_PORT:-9487}
+      GRPC_PORT: 9098
+      INTERNAL_GRPC_TLS_PORT: ${FEED_SERVICE_INTERNAL_GRPC_TLS_PORT:-9448}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
@@ -2004,8 +2128,11 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/feed-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/feed-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/feed-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${FEED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${FEED_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,saved-service,user-service}
+      SERVICE_AUTH_ISSUER: ${SAVED_GATEWAY_AUTH_ISSUER:-tourism-inflap/token-service}
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
       TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: feed-service
       TOKEN_SERVICE_SECRET: ${FEED_SERVICE_TOKEN_SERVICE_SECRET:-feed-service-secret}
@@ -2154,8 +2281,8 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/chat-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/chat-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/chat-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/support-service}
-      MTLS_ALLOWED_DNS_NAMES: ${CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,excursion-service,support-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${CHAT_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/support-service}
+      MTLS_ALLOWED_DNS_NAMES: ${CHAT_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,excursion-service,saved-service,support-service}
 
       SWITCHES_SERVICE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
@@ -2430,7 +2557,7 @@ services:
 
       LOG_LEVEL: debug
 
-      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      INTERNAL_SERVICE_TOKEN: ${PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN:-super-secret-internal-token}
       TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
       TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
@@ -2440,12 +2567,187 @@ services:
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/switches-service/ca.crt
       MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/switches-service/server.crt
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/switches-service/server.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/currency-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/file-manager-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/user-service}
-      MTLS_ALLOWED_DNS_NAMES: ${SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,user-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${SWITCHES_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/activity-service,spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/auth-service,spiffe://inflap/dev/chat-service,spiffe://inflap/dev/currency-service,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/feed-service,spiffe://inflap/dev/file-manager-service,spiffe://inflap/dev/place-service,spiffe://inflap/dev/saved-service,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SWITCHES_SERVICE_MTLS_ALLOWED_DNS_NAMES:-activity-service,admin-panel,api-gateway,auth-service,chat-service,currency-service,excursion-service,feed-service,file-manager-service,place-service,saved-service,user-service}
 
       SCHEDULER_ENABLED: "true"
       SCHEDULER_INTERVAL: 1m
     volumes: *mtls-switches-service-volumes
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Saved Service
+  # ============================================
+  saved-service:
+    build:
+      context: ..
+      dockerfile: ./deploy/dockerfiles/saved-service.Dockerfile
+    image: ${SAVED_SERVICE_IMAGE:-inflap-saved-service:local}
+    container_name: saved-service
+    depends_on:
+      saved-postgres:
+        condition: service_healthy
+      saved-postgres-migrator:
+        condition: service_completed_successfully
+      saved-search-rollout:
+        condition: service_completed_successfully
+      token-service:
+        condition: service_started
+      switches-service:
+        condition: service_healthy
+      activity-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+      place-service:
+        condition: service_started
+      feed-service:
+        condition: service_started
+      nats:
+        condition: service_healthy
+    ports:
+      - "${SAVED_SERVICE_HOST_PORT:-8102}:8102"
+    environment:
+      APP_NAME: saved-service
+      APP_ENV: ${SAVED_SERVICE_APP_ENV:-development}
+
+      HTTP_PORT: 8102
+      INTERNAL_HTTP_TLS_PORT: ${SAVED_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
+      HTTP_READ_HEADER_TIMEOUT: 5s
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+      HTTP_SHUTDOWN_TIMEOUT: 10s
+      READINESS_TIMEOUT: 2s
+
+      POSTGRES_HOST: ${SAVED_POSTGRES_HOST:-saved-postgres}
+      POSTGRES_PORT: ${SAVED_POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${SAVED_POSTGRES_USER:-saved_service}
+      POSTGRES_PASSWORD: ${SAVED_POSTGRES_PASSWORD:-saved_secret_dev}
+      POSTGRES_DB: ${SAVED_POSTGRES_DB:-saved_service_db}
+      POSTGRES_SSLMODE: ${SAVED_POSTGRES_SSLMODE:-disable}
+      PGSSLROOTCERT: ${SAVED_POSTGRES_SSL_ROOT_CERT:-}
+      POSTGRES_MAX_CONNS: 10
+      POSTGRES_MIN_CONNS: 1
+      POSTGRES_MAX_CONN_LIFETIME: 30m
+      POSTGRES_MAX_CONN_IDLE_TIME: 5m
+
+      LOG_LEVEL: ${SAVED_SERVICE_LOG_LEVEL:-debug}
+
+      # During a global permissive rollout, override Saved explicitly to disabled;
+      # its runtime currently supports only disabled/enforce.
+      MTLS_MODE: ${SAVED_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
+      MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
+      MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/saved-service/ca.crt
+      MTLS_SERVER_CERT_PATH: /opt/inflap/secrets/mtls/saved-service/server.crt
+      MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/saved-service/server.key
+      MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/saved-service/client.crt
+      MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/saved-service/client.key
+      MTLS_ALLOWED_SPIFFE_IDS: ${SAVED_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/user-service}
+      MTLS_ALLOWED_DNS_NAMES: ${SAVED_SERVICE_MTLS_ALLOWED_DNS_NAMES:-api-gateway,user-service}
+
+      TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
+      TOKEN_SERVICE_TLS_SERVER_NAME: ${TOKEN_SERVICE_TLS_SERVER_NAME:-token-service}
+      TOKEN_SERVICE_ID: saved-service
+      TOKEN_SERVICE_SECRET: ${SAVED_SERVICE_TOKEN_SERVICE_SECRET:-saved-service-secret}
+      TOKEN_SERVICE_CALL_TIMEOUT: 2s
+      TOKEN_SERVICE_REFRESH_BEFORE: 5m
+
+      GATEWAY_AUTH_ISSUER: ${SAVED_GATEWAY_AUTH_ISSUER:-tourism-inflap/token-service}
+      GATEWAY_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      GATEWAY_AUTH_EXPECTED_SUBJECT: api-gateway
+      GATEWAY_AUTH_REQUIRED_ROLE: saved:proxy
+      GATEWAY_AUTH_JWKS_CACHE_TTL: 5m
+      GATEWAY_AUTH_HTTP_TIMEOUT: 2s
+      GATEWAY_AUTH_ALLOW_INSECURE_HTTP: ${SAVED_SERVICE_GATEWAY_AUTH_ALLOW_INSECURE_HTTP:-true}
+
+      ATTRACTION_SOURCE_GRPC_TARGET: ${PLACE_SERVICE_INTERNAL_GRPC_TARGET:-dns:///place-service:9099}
+      ATTRACTION_SOURCE_TLS_SERVER_NAME: ${PLACE_SERVICE_TLS_SERVER_NAME:-place-service}
+      ACTIVITY_SOURCE_GRPC_TARGET: ${ACTIVITY_SERVICE_INTERNAL_GRPC_TARGET:-dns:///activity-service:9096}
+      ACTIVITY_SOURCE_TLS_SERVER_NAME: ${ACTIVITY_SERVICE_TLS_SERVER_NAME:-activity-service}
+      USER_SOURCE_GRPC_TARGET: ${USER_SERVICE_INTERNAL_GRPC_TARGET:-dns:///user-service:9094}
+      USER_SOURCE_TLS_SERVER_NAME: ${USER_SERVICE_TLS_SERVER_NAME:-user-service}
+      POST_SOURCE_GRPC_TARGET: ${FEED_SERVICE_INTERNAL_GRPC_TARGET:-dns:///feed-service:9098}
+      POST_SOURCE_TLS_SERVER_NAME: ${FEED_SERVICE_TLS_SERVER_NAME:-feed-service}
+      # Keep Saved's dependency credential isolated from unrelated services
+      # that also expose a generic INTERNAL_SERVICE_TOKEN in deploy/.env.
+      INTERNAL_SERVICE_TOKEN: ${SAVED_SERVICE_INTERNAL_SERVICE_TOKEN:-super-secret-internal-token}
+      CHAT_SERVICE_INTERNAL_HTTP_URL: ${CHAT_SERVICE_INTERNAL_HTTP_URL:-http://chat-service:8088}
+      USER_ACCESS_HTTP_TIMEOUT: 750ms
+      USER_ACCESS_MAX_RESPONSE_BYTES: 16384
+      USER_ACCESS_ALLOW_INSECURE_HTTP: ${SAVED_SERVICE_USER_ACCESS_ALLOW_INSECURE_HTTP:-true}
+
+      PLATFORM_POLICY_BASE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
+      PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN: ${PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN:-super-secret-internal-token}
+      PLATFORM_POLICY_HTTP_TIMEOUT: 750ms
+      PLATFORM_POLICY_REFRESH_TIMEOUT: 1s
+      PLATFORM_POLICY_MAX_RESPONSE_BYTES: 4096
+      PLATFORM_POLICY_ALLOW_INSECURE_HTTP: ${SAVED_SERVICE_PLATFORM_POLICY_ALLOW_INSECURE_HTTP:-true}
+
+      DEPENDENCY_GRPC_CONNECT_TIMEOUT: 2s
+      SOURCE_RPC_TIMEOUT: 2s
+      SESSION_RPC_TIMEOUT: 2s
+
+      NATS_URL: ${SAVED_SERVICE_NATS_URL:-nats://nats:4222}
+      NATS_CREDENTIALS_FILE: ${SAVED_SERVICE_NATS_CREDENTIALS_FILE:-}
+      NATS_CA_CERT_PATH: ${SAVED_SERVICE_NATS_CA_CERT_PATH:-}
+      NATS_CLIENT_CERT_PATH: ${SAVED_SERVICE_NATS_CLIENT_CERT_PATH:-}
+      NATS_CLIENT_KEY_PATH: ${SAVED_SERVICE_NATS_CLIENT_KEY_PATH:-}
+      NATS_TLS_SERVER_NAME: ${SAVED_SERVICE_NATS_TLS_SERVER_NAME:-}
+      NATS_CONNECT_TIMEOUT: 3s
+      NATS_RECONNECT_WAIT: 1s
+      NATS_MAX_RECONNECTS: 120
+      NATS_PING_INTERVAL: 20s
+      NATS_MAX_PINGS_OUT: 2
+      SAVED_DOMAIN_STREAM_REPLICAS: ${SAVED_DOMAIN_STREAM_REPLICAS:-1}
+
+      OPERATION_HMAC_CURRENT_VERSION: ${SAVED_OPERATION_HMAC_CURRENT_VERSION:-1}
+      OPERATION_HMAC_CURRENT_KEY_BASE64: ${SAVED_OPERATION_HMAC_CURRENT_KEY_BASE64:-aDgti5Ch63jcumjS9Q5Jg0lL8qM5IM1Jw9reiS4GjI8=}
+      OPERATION_HMAC_PREVIOUS_KEYS: "${SAVED_OPERATION_HMAC_PREVIOUS_KEYS:-}"
+      CURSOR_ACTIVE_KEY_ID: ${SAVED_CURSOR_ACTIVE_KEY_ID:-1}
+      CURSOR_ACTIVE_KEY_BASE64: ${SAVED_CURSOR_ACTIVE_KEY_BASE64:-aBgxyBMNbuACNw2q1qQUl/9b0BwEjppzPKC9Lw81pDE=}
+      CURSOR_PREVIOUS_KEYS: "${SAVED_CURSOR_PREVIOUS_KEYS:-}"
+      CURSOR_TTL: 15m
+
+      OWNER_MAX_ACTIVE_SAVES: 10000
+      OWNER_MAX_ACTIVE_COLLECTIONS: 200
+      OWNER_MAX_MEMBERSHIPS_PER_COLLECTION: 5000
+      OWNER_MAX_MEMBERSHIPS: 50000
+      OWNER_MAX_STATUS_BATCH_TARGETS: 100
+      SUBJECT_MAX_PENDING_OPERATIONS: 32
+      OWNER_MAX_DESIRED_COLLECTION_IDS: 200
+      SAVED_DEFAULT_PAGE_SIZE: 30
+      SAVED_MAX_PAGE_SIZE: 100
+      SAVED_MAX_SEARCH_CODE_POINTS: 200
+      SAVED_MAX_COLLECTION_TITLE_CODE_POINTS: 80
+
+      SAVED_CAPABILITY_REVISION: ${SAVED_CAPABILITY_REVISION:-saved-v2-search}
+      SAVED_PUBLIC_API_ORIGIN: ${SAVED_PUBLIC_API_ORIGIN:-http://localhost:8080}
+      SAVED_ITEMS_PRODUCT_ENABLED: ${SAVED_ITEMS_PRODUCT_ENABLED:-true}
+      SAVED_SEARCH_PRODUCT_ENABLED: ${SAVED_SEARCH_PRODUCT_ENABLED:-true}
+      SAVED_COLLECTIONS_PRODUCT_ENABLED: ${SAVED_COLLECTIONS_PRODUCT_ENABLED:-true}
+      SAVED_QUOTA_WARNING_REMAINING: ${SAVED_QUOTA_WARNING_REMAINING:-100}
+      SAVED_ROLLOUT_ANDROID_MIN_BUILD: ${SAVED_ROLLOUT_ANDROID_MIN_BUILD:-1}
+      SAVED_ROLLOUT_IOS_MIN_BUILD: ${SAVED_ROLLOUT_IOS_MIN_BUILD:-1}
+      SAVED_ROLLOUT_CORE_BASIS_POINTS: ${SAVED_ROLLOUT_CORE_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_SEARCH_BASIS_POINTS: ${SAVED_ROLLOUT_SEARCH_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_COLLECTIONS_BASIS_POINTS: ${SAVED_ROLLOUT_COLLECTIONS_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_ATTRACTION_BASIS_POINTS: ${SAVED_ROLLOUT_ATTRACTION_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_ACTIVITY_BASIS_POINTS: ${SAVED_ROLLOUT_ACTIVITY_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_USER_BASIS_POINTS: ${SAVED_ROLLOUT_USER_BASIS_POINTS:-10000}
+      SAVED_ROLLOUT_POST_BASIS_POINTS: ${SAVED_ROLLOUT_POST_BASIS_POINTS:-10000}
+      SAVED_COMPLIANCE_ALLOWED_CALLER_SPIFFE_ID: ${SAVED_COMPLIANCE_ALLOWED_CALLER_SPIFFE_ID:-spiffe://inflap/dev/user-service}
+    volumes: *mtls-saved-service-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8102/ready >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2464,7 +2766,6 @@ services:
       - "5441:5432"
     volumes:
       - place_postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/009_place_service.sh:/docker-entrypoint-initdb.d/009_place_service.sh
       - ../backend/services/place-service/migrations:/migrations/place-service:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U place_service -d place_service_db"]
@@ -2485,9 +2786,9 @@ services:
       POSTGRES_USER: place_service
       POSTGRES_PASSWORD: place_secret_dev
     volumes:
-      - ./init-scripts/009_place_service_migrate.sh:/usr/local/bin/009_place_service_migrate.sh:ro
+      - ./init-scripts/009_place_service_migrations.sh:/usr/local/bin/009_place_service_migrations.sh:ro
       - ../backend/services/place-service/migrations:/migrations/place-service:ro
-    entrypoint: ["/bin/sh", "/usr/local/bin/009_place_service_migrate.sh"]
+    entrypoint: ["/bin/sh", "/usr/local/bin/009_place_service_migrations.sh"]
     depends_on:
       place-postgres:
         condition: service_healthy
@@ -2696,15 +2997,19 @@ services:
         condition: service_healthy
       search-service:
         condition: service_started
+      nats:
+        condition: service_healthy
     ports:
       - "8090:8090"
     expose:
       - "${PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT:-9490}"
+      - "9099"
     environment:
       APP_NAME: place-service
       APP_ENV: development
 
       HTTP_PORT: 8090
+      GRPC_PORT: 9099
       INTERNAL_HTTP_TLS_PORT: ${PLACE_SERVICE_INTERNAL_HTTP_TLS_PORT:-0}
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
@@ -2729,6 +3034,14 @@ services:
       SEARCH_INDEXING_ENABLED: "true"
       SEARCH_SERVICE_HTTP_URL: ${SEARCH_SERVICE_INTERNAL_HTTP_URL:-http://search-service:8101}
       SEARCH_SERVICE_TIMEOUT: 800ms
+      SAVED_LIFECYCLE_EVENTS_ENABLED: ${PLACE_SAVED_LIFECYCLE_ENABLED:-true}
+      NATS_URL: ${PLACE_SAVED_NATS_URL:-${NATS_URL:-nats://nats:4222}}
+      NATS_CREDS_PATH: ${PLACE_SAVED_NATS_CREDS_PATH:-}
+      NATS_CA_CERT_PATH: ${PLACE_SAVED_NATS_CA_CERT_PATH:-}
+      NATS_CLIENT_CERT_PATH: ${PLACE_SAVED_NATS_CLIENT_CERT_PATH:-}
+      NATS_CLIENT_KEY_PATH: ${PLACE_SAVED_NATS_CLIENT_KEY_PATH:-}
+      NATS_TLS_SERVER_NAME: ${PLACE_SAVED_NATS_TLS_SERVER_NAME:-}
+      NATS_TLS_MIN_VERSION: "1.3"
       MTLS_MODE: ${PLACE_SERVICE_MTLS_MODE:-${MTLS_MODE:-disabled}}
       MTLS_MIN_VERSION: ${MTLS_MIN_VERSION:-1.3}
       MTLS_CA_CERT_PATH: /opt/inflap/secrets/mtls/place-service/ca.crt
@@ -2736,8 +3049,11 @@ services:
       MTLS_SERVER_KEY_PATH: /opt/inflap/secrets/mtls/place-service/server.key
       MTLS_CLIENT_CERT_PATH: /opt/inflap/secrets/mtls/place-service/client.crt
       MTLS_CLIENT_KEY_PATH: /opt/inflap/secrets/mtls/place-service/client.key
-      MTLS_ALLOWED_SPIFFE_IDS: ${PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service}
-      MTLS_ALLOWED_DNS_NAMES: ${PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service}
+      MTLS_ALLOWED_SPIFFE_IDS: ${PLACE_SERVICE_MTLS_ALLOWED_SPIFFE_IDS:-spiffe://inflap/dev/admin-panel,spiffe://inflap/dev/api-gateway,spiffe://inflap/dev/excursion-service,spiffe://inflap/dev/saved-service}
+      MTLS_ALLOWED_DNS_NAMES: ${PLACE_SERVICE_MTLS_ALLOWED_DNS_NAMES:-admin-panel,api-gateway,excursion-service,saved-service}
+      SERVICE_AUTH_ISSUER: tourism-inflap/token-service
+      SERVICE_AUTH_JWKS_URL: ${TOKEN_SERVICE_INTERNAL_JWKS_URL:-http://token-service:8081/.well-known/jwks.json}
+      SERVICE_AUTH_JWKS_CACHE_TTL: 5m
       TOKEN_SERVICE_GRPC_TARGET: ${TOKEN_SERVICE_INTERNAL_GRPC_TARGET:-dns:///token-service:50051}
       TOKEN_SERVICE_ID: place-service
       TOKEN_SERVICE_SECRET: ${PLACE_SERVICE_TOKEN_SERVICE_SECRET:-place-service-secret}
@@ -3336,11 +3652,15 @@ services:
   api-gateway:
     build:
       context: ..
-      dockerfile: ./backend/services/api-gateway/Dockerfile
+      dockerfile: ./deploy/dockerfiles/api-gateway.Dockerfile
     container_name: api-gateway
     depends_on:
       token-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
+      saved-service:
+        condition: service_healthy
       auth-service:
         condition: service_started
       file-manager-service:
@@ -3422,6 +3742,15 @@ services:
       PAYMENT_SERVICE_HTTP_URL: ${PAYMENT_SERVICE_INTERNAL_HTTP_URL:-http://payment-service:8091}
       ADMIN_PANEL_SERVICE_HTTP_URL: ${ADMIN_PANEL_INTERNAL_HTTP_URL:-http://admin-panel:8095}
 
+      SAVED_SERVICE_URL: ${SAVED_SERVICE_INTERNAL_HTTP_URL:-http://saved-service:8102}
+      SAVED_SERVICE_REQUEST_TIMEOUT: 10s
+      PLATFORM_POLICY_BASE_URL: ${SWITCHES_SERVICE_INTERNAL_HTTP_URL:-http://switches-service:8096}
+      PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN: ${PLATFORM_POLICY_INTERNAL_SERVICE_TOKEN:-super-secret-internal-token}
+      PLATFORM_POLICY_HTTP_TIMEOUT: 750ms
+      PLATFORM_POLICY_REFRESH_TIMEOUT: 1s
+      PLATFORM_POLICY_MAX_RESPONSE_BYTES: 4096
+      PLATFORM_POLICY_ALLOW_INSECURE_HTTP: ${API_GATEWAY_PLATFORM_POLICY_ALLOW_INSECURE_HTTP:-true}
+
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 3
       REDIS_CACHE_TTL: 1h
@@ -3439,7 +3768,7 @@ services:
 
       CORS_ALLOWED_ORIGINS: "*"
       CORS_ALLOWED_METHODS: GET,POST,PUT,PATCH,DELETE,OPTIONS
-      CORS_ALLOWED_HEADERS: Authorization,Content-Type,X-Request-Id
+      CORS_ALLOWED_HEADERS: Authorization,Content-Type,X-Request-Id,Operation-Id,Idempotency-Key,Saved-Source-Surface,X-Client-Platform,X-App-Build
       CORS_EXPOSE_HEADERS: X-Request-Id
       CORS_ALLOW_CREDENTIALS: "false"
       CORS_MAX_AGE_SECONDS: 600
@@ -3527,6 +3856,7 @@ volumes:
   notification_postgres_data:
   support_postgres_data:
   switches_postgres_data:
+  saved_postgres_data:
   checklist_postgres_data:
   user_route_postgres_data:
   nats_data:

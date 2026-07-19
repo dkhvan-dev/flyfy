@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -77,4 +78,60 @@ type GuideRepository interface {
 		limit int,
 		offset int,
 	) ([]*model.GuideVerificationRequest, error)
+}
+
+// SavedSourceRepository is intentionally narrower than GuideRepository so the
+// Saved resolver cannot access verification documents or mutable Saved state.
+type SavedSourceRepository interface {
+	GetSavedSourceGuide(
+		ctx context.Context,
+		userID uuid.UUID,
+	) (*model.SavedGuideSnapshot, error)
+}
+
+type SavedLifecycleOutboxRepository interface {
+	ClaimSavedLifecycleOutbox(
+		ctx context.Context,
+		now time.Time,
+		limit int,
+		leaseDuration time.Duration,
+	) ([]*model.SavedLifecycleOutboxMessage, error)
+	MarkSavedLifecycleDelivered(
+		ctx context.Context,
+		eventID uuid.UUID,
+		leaseToken uuid.UUID,
+		deliveredAt time.Time,
+		retention time.Duration,
+	) error
+	MarkSavedLifecycleFailed(
+		ctx context.Context,
+		eventID uuid.UUID,
+		leaseToken uuid.UUID,
+		failedAt time.Time,
+		nextAttemptAt time.Time,
+		errorCode string,
+		dead bool,
+		retention time.Duration,
+	) error
+	DeleteSavedLifecycleTerminal(ctx context.Context, now time.Time, limit int) (int64, error)
+}
+
+type SavedGuideUserReconciliationRepository interface {
+	ClaimSavedGuideUserReconciliations(
+		ctx context.Context,
+		now time.Time,
+		limit int,
+		leaseDuration time.Duration,
+	) ([]*model.SavedGuideUserReconcileLease, error)
+	ApplySavedGuideExternalUserState(
+		ctx context.Context,
+		lease model.SavedGuideUserReconcileLease,
+		state model.SavedGuideExternalUserState,
+		nextReconcileAt time.Time,
+	) error
+	MarkSavedGuideUserReconcileFailed(
+		ctx context.Context,
+		lease model.SavedGuideUserReconcileLease,
+		nextAttemptAt time.Time,
+	) error
 }

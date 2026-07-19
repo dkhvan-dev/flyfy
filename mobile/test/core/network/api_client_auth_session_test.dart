@@ -330,6 +330,26 @@ void main() {
     expect(adapter.requests.single.headers['X-Language'], 'kk');
   });
 
+  test('attaches bounded rollout metadata only to Saved requests', () async {
+    final adapter = _AuthAdapter();
+    final client = ApiClient(
+      dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+        ..httpClientAdapter = adapter,
+      secureStorage: _MemorySecureStorage(accessToken: 'access-token'),
+      authSessionEvents: AuthSessionEvents(),
+      clientPlatform: 'android',
+      appBuild: 42,
+    );
+
+    await client.dio.get('/users/me/saved-items/capabilities');
+    await client.dio.get('/users/me');
+
+    expect(adapter.requests.first.headers['X-Client-Platform'], 'android');
+    expect(adapter.requests.first.headers['X-App-Build'], '42');
+    expect(adapter.requests.last.headers['X-Client-Platform'], isNull);
+    expect(adapter.requests.last.headers['X-App-Build'], isNull);
+  });
+
   test('attaches debug network inspector only when enabled', () {
     final enabledDio = Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'));
     final disabledDio = Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'));

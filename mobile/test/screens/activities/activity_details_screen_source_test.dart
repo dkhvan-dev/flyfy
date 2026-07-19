@@ -262,6 +262,50 @@ void main() {
     },
   );
 
+  test(
+    'public details validate canonical ID before DETAIL bookmark beside share',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final targetStart = source.indexOf('final savedTarget =');
+      final targetEnd = source.indexOf('final appLanguageCode', targetStart);
+      final topBarStart = source.indexOf('class _DetailsTopBar');
+      final topBarEnd = source.indexOf('class _CircleIconButton', topBarStart);
+      expect(targetStart, isNonNegative);
+      expect(targetEnd, greaterThan(targetStart));
+      expect(topBarStart, isNonNegative);
+      expect(topBarEnd, greaterThan(topBarStart));
+
+      final targetSource = source.substring(targetStart, targetEnd);
+      final topBarSource = source.substring(topBarStart, topBarEnd);
+      expect(
+        targetSource,
+        contains('activity.visibility.trim().toUpperCase()'),
+      );
+      expect(targetSource, contains("== 'PUBLIC'"));
+      expect(targetSource, contains('SavedTarget.tryCreate('));
+      expect(targetSource, contains('entityType: SavedEntityType.activity'));
+      expect(targetSource, contains('entityId: activity.id'));
+      expect(targetSource, isNot(contains('entityId: widget.activityId')));
+      expect(targetSource, isNot(contains('? SavedTarget(')));
+      expect(topBarSource, contains('SavedTarget? savedTarget'));
+      expect(topBarSource, contains('Icons.share_outlined'));
+      expect(topBarSource, contains('if (savedTarget != null)'));
+      expect(topBarSource, contains('AppSavedBookmarkButton('));
+      expect(topBarSource, contains('target: savedTarget!'));
+      expect(
+        topBarSource,
+        contains('sourceSurface: SavedSourceSurface.detail'),
+      );
+      expect(
+        topBarSource.indexOf('Icons.share_outlined'),
+        lessThan(topBarSource.indexOf('AppSavedBookmarkButton(')),
+      );
+    },
+  );
+
   test('details screen does not look up providers from dispose', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',

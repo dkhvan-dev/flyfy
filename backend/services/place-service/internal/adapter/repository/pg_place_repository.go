@@ -333,6 +333,209 @@ func (r *PGPlaceRepository) GetPlaceByID(ctx context.Context, id uuid.UUID, loca
 	return item, nil
 }
 
+// GetSavedSourceAttraction reads the exact source snapshot used by the
+// authenticated Saved resolver. A repeatable-read transaction prevents a
+// projection assembled from different visibility or revision generations.
+func (r *PGPlaceRepository) GetSavedSourceAttraction(
+	ctx context.Context,
+	attractionID uuid.UUID,
+) (*model.SavedAttractionSnapshot, error) {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.RepeatableRead,
+		AccessMode: pgx.ReadOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("begin saved attraction snapshot: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	const snapshotQuery = `
+		SELECT
+			id,
+			default_locale,
+			country_code,
+			city_id,
+			rating,
+			review_count,
+			status,
+			deleted_at,
+			saved_source_revision,
+			saved_projection_revision,
+			saved_visibility_revision
+		FROM places
+		WHERE id = $1
+		LIMIT 1
+	`
+	var snapshot model.SavedAttractionSnapshot
+	var statusRaw string
+	err = tx.QueryRow(ctx, snapshotQuery, attractionID).Scan(
+		&snapshot.ID,
+		&snapshot.DefaultLocale,
+		&snapshot.CountryCode,
+		&snapshot.CityID,
+		&snapshot.Rating,
+		&snapshot.ReviewCount,
+		&statusRaw,
+		&snapshot.DeletedAt,
+		&snapshot.SourceRevision,
+		&snapshot.ProjectionRevision,
+		&snapshot.VisibilityRevision,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("select saved attraction snapshot: %w", err)
+	}
+	snapshot.Status = enum.PlaceStatus(statusRaw)
+
+	// Draft and deleted records deliberately cross no projection payload into
+	// the resolver layer.
+	if snapshot.DeletedAt == nil && snapshot.Status == enum.StatusPublished {
+		snapshot.Translations, err = getSavedAttractionTranslations(ctx, tx, attractionID)
+		if err != nil {
+			return nil, err
+		}
+		snapshot.Media, err = getSavedAttractionMedia(ctx, tx, attractionID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit saved attraction snapshot: %w", err)
+	}
+	return &snapshot, nil
+}
+
+// GetSavedAttractionCoverSnapshot performs the visibility, revision and cover
+// lookup in one PostgreSQL statement. The Saved projection revision is bumped
+// transactionally whenever the ordered media projection changes.
+func (r *PGPlaceRepository) GetSavedAttractionCoverSnapshot(
+	ctx context.Context,
+	attractionID uuid.UUID,
+) (*model.SavedAttractionCoverSnapshot, error) {
+	const query = `
+		SELECT
+			p.id,
+			p.status,
+			p.deleted_at,
+			p.saved_projection_revision,
+			COALESCE(cover.file_id, '00000000-0000-0000-0000-000000000000'::uuid),
+			COALESCE(cover.external_url, '')
+		FROM places AS p
+		LEFT JOIN LATERAL (
+			SELECT media.file_id, media.external_url
+			FROM place_media AS media
+			WHERE media.place_id = p.id
+			  AND media.media_type = 'PHOTO'
+			ORDER BY media.position, media.id
+			LIMIT 1
+		) AS cover ON p.status = 'PUBLISHED' AND p.deleted_at IS NULL
+		WHERE p.id = $1
+		LIMIT 1
+	`
+
+	var snapshot model.SavedAttractionCoverSnapshot
+	var statusRaw string
+	err := r.pool.QueryRow(ctx, query, attractionID).Scan(
+		&snapshot.ID,
+		&statusRaw,
+		&snapshot.DeletedAt,
+		&snapshot.ProjectionRevision,
+		&snapshot.FileID,
+		&snapshot.ExternalURL,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("select Saved attraction cover snapshot: %w", err)
+	}
+	snapshot.Status = enum.PlaceStatus(statusRaw)
+	return &snapshot, nil
+}
+
+func getSavedAttractionTranslations(
+	ctx context.Context,
+	tx pgx.Tx,
+	attractionID uuid.UUID,
+) (map[string]model.PlaceTranslation, error) {
+	const query = `
+		SELECT place_id, locale, title, description, created_at, updated_at
+		FROM place_translations
+		WHERE place_id = $1 AND locale IN ('en', 'ru', 'kk')
+		ORDER BY locale
+	`
+	rows, err := tx.Query(ctx, query, attractionID)
+	if err != nil {
+		return nil, fmt.Errorf("query saved attraction translations: %w", err)
+	}
+	defer rows.Close()
+
+	translations := make(map[string]model.PlaceTranslation, 3)
+	for rows.Next() {
+		var translation model.PlaceTranslation
+		if err = rows.Scan(
+			&translation.PlaceID,
+			&translation.Locale,
+			&translation.Title,
+			&translation.Description,
+			&translation.CreatedAt,
+			&translation.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan saved attraction translation: %w", err)
+		}
+		translations[translation.Locale] = translation
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate saved attraction translations: %w", err)
+	}
+	return translations, nil
+}
+
+func getSavedAttractionMedia(
+	ctx context.Context,
+	tx pgx.Tx,
+	attractionID uuid.UUID,
+) ([]model.PlaceMedia, error) {
+	const query = `
+		SELECT id, place_id, file_id, external_url, media_type, position, created_at
+		FROM place_media
+		WHERE place_id = $1 AND media_type = 'PHOTO'
+		ORDER BY position, id
+		LIMIT 8
+	`
+	rows, err := tx.Query(ctx, query, attractionID)
+	if err != nil {
+		return nil, fmt.Errorf("query saved attraction media: %w", err)
+	}
+	defer rows.Close()
+
+	media := make([]model.PlaceMedia, 0, 8)
+	for rows.Next() {
+		var item model.PlaceMedia
+		var mediaTypeRaw string
+		if err = rows.Scan(
+			&item.ID,
+			&item.PlaceID,
+			&item.FileID,
+			&item.ExternalURL,
+			&mediaTypeRaw,
+			&item.Position,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan saved attraction media: %w", err)
+		}
+		item.MediaType = enum.MediaType(mediaTypeRaw)
+		media = append(media, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate saved attraction media: %w", err)
+	}
+	return media, nil
+}
+
 func (r *PGPlaceRepository) ListPlaces(ctx context.Context, filter model.PlaceListFilter) ([]*model.Place, int, error) {
 	args := make([]any, 0, 16)
 	clauses := []string{"1=1"}

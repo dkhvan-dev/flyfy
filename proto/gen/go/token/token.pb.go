@@ -592,6 +592,58 @@ func (x *RevokeAllUserSessionsRequest) GetReason() string {
 	return ""
 }
 
+type ValidateUserSessionGenerationRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Subject           string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	SessionGeneration string                 `protobuf:"bytes,2,opt,name=session_generation,json=sessionGeneration,proto3" json:"session_generation,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ValidateUserSessionGenerationRequest) Reset() {
+	*x = ValidateUserSessionGenerationRequest{}
+	mi := &file_token_token_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateUserSessionGenerationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateUserSessionGenerationRequest) ProtoMessage() {}
+
+func (x *ValidateUserSessionGenerationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateUserSessionGenerationRequest.ProtoReflect.Descriptor instead.
+func (*ValidateUserSessionGenerationRequest) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ValidateUserSessionGenerationRequest) GetSubject() string {
+	if x != nil {
+		return x.Subject
+	}
+	return ""
+}
+
+func (x *ValidateUserSessionGenerationRequest) GetSessionGeneration() string {
+	if x != nil {
+		return x.SessionGeneration
+	}
+	return ""
+}
+
 type TokenPairResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -606,7 +658,7 @@ type TokenPairResponse struct {
 
 func (x *TokenPairResponse) Reset() {
 	*x = TokenPairResponse{}
-	mi := &file_token_token_proto_msgTypes[10]
+	mi := &file_token_token_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -618,7 +670,7 @@ func (x *TokenPairResponse) String() string {
 func (*TokenPairResponse) ProtoMessage() {}
 
 func (x *TokenPairResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[10]
+	mi := &file_token_token_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -631,7 +683,7 @@ func (x *TokenPairResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TokenPairResponse.ProtoReflect.Descriptor instead.
 func (*TokenPairResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{10}
+	return file_token_token_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TokenPairResponse) GetAccessToken() string {
@@ -686,7 +738,7 @@ type ServiceTokenResponse struct {
 
 func (x *ServiceTokenResponse) Reset() {
 	*x = ServiceTokenResponse{}
-	mi := &file_token_token_proto_msgTypes[11]
+	mi := &file_token_token_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -698,7 +750,7 @@ func (x *ServiceTokenResponse) String() string {
 func (*ServiceTokenResponse) ProtoMessage() {}
 
 func (x *ServiceTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[11]
+	mi := &file_token_token_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -711,7 +763,7 @@ func (x *ServiceTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceTokenResponse.ProtoReflect.Descriptor instead.
 func (*ServiceTokenResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{11}
+	return file_token_token_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ServiceTokenResponse) GetToken() string {
@@ -747,7 +799,7 @@ type ValidatedClaimsResponse struct {
 
 func (x *ValidatedClaimsResponse) Reset() {
 	*x = ValidatedClaimsResponse{}
-	mi := &file_token_token_proto_msgTypes[12]
+	mi := &file_token_token_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -759,7 +811,7 @@ func (x *ValidatedClaimsResponse) String() string {
 func (*ValidatedClaimsResponse) ProtoMessage() {}
 
 func (x *ValidatedClaimsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[12]
+	mi := &file_token_token_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -772,7 +824,7 @@ func (x *ValidatedClaimsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatedClaimsResponse.ProtoReflect.Descriptor instead.
 func (*ValidatedClaimsResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{12}
+	return file_token_token_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ValidatedClaimsResponse) GetValid() bool {
@@ -861,7 +913,7 @@ type RevokeTokenResponse struct {
 
 func (x *RevokeTokenResponse) Reset() {
 	*x = RevokeTokenResponse{}
-	mi := &file_token_token_proto_msgTypes[13]
+	mi := &file_token_token_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -873,7 +925,7 @@ func (x *RevokeTokenResponse) String() string {
 func (*RevokeTokenResponse) ProtoMessage() {}
 
 func (x *RevokeTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[13]
+	mi := &file_token_token_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -886,7 +938,7 @@ func (x *RevokeTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeTokenResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{13}
+	return file_token_token_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RevokeTokenResponse) GetRevoked() bool {
@@ -912,7 +964,7 @@ type UserSessionInfo struct {
 
 func (x *UserSessionInfo) Reset() {
 	*x = UserSessionInfo{}
-	mi := &file_token_token_proto_msgTypes[14]
+	mi := &file_token_token_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -924,7 +976,7 @@ func (x *UserSessionInfo) String() string {
 func (*UserSessionInfo) ProtoMessage() {}
 
 func (x *UserSessionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[14]
+	mi := &file_token_token_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,7 +989,7 @@ func (x *UserSessionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserSessionInfo.ProtoReflect.Descriptor instead.
 func (*UserSessionInfo) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{14}
+	return file_token_token_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UserSessionInfo) GetSessionId() string {
@@ -1005,7 +1057,7 @@ type ListUserSessionsResponse struct {
 
 func (x *ListUserSessionsResponse) Reset() {
 	*x = ListUserSessionsResponse{}
-	mi := &file_token_token_proto_msgTypes[15]
+	mi := &file_token_token_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +1069,7 @@ func (x *ListUserSessionsResponse) String() string {
 func (*ListUserSessionsResponse) ProtoMessage() {}
 
 func (x *ListUserSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[15]
+	mi := &file_token_token_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1082,7 @@ func (x *ListUserSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListUserSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{15}
+	return file_token_token_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListUserSessionsResponse) GetSessions() []*UserSessionInfo {
@@ -1049,7 +1101,7 @@ type RevokeSessionResponse struct {
 
 func (x *RevokeSessionResponse) Reset() {
 	*x = RevokeSessionResponse{}
-	mi := &file_token_token_proto_msgTypes[16]
+	mi := &file_token_token_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1061,7 +1113,7 @@ func (x *RevokeSessionResponse) String() string {
 func (*RevokeSessionResponse) ProtoMessage() {}
 
 func (x *RevokeSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[16]
+	mi := &file_token_token_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1074,7 +1126,7 @@ func (x *RevokeSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeSessionResponse.ProtoReflect.Descriptor instead.
 func (*RevokeSessionResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{16}
+	return file_token_token_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RevokeSessionResponse) GetRevoked() bool {
@@ -1093,7 +1145,7 @@ type RevokeAllUserSessionsResponse struct {
 
 func (x *RevokeAllUserSessionsResponse) Reset() {
 	*x = RevokeAllUserSessionsResponse{}
-	mi := &file_token_token_proto_msgTypes[17]
+	mi := &file_token_token_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1105,7 +1157,7 @@ func (x *RevokeAllUserSessionsResponse) String() string {
 func (*RevokeAllUserSessionsResponse) ProtoMessage() {}
 
 func (x *RevokeAllUserSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[17]
+	mi := &file_token_token_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1118,7 +1170,7 @@ func (x *RevokeAllUserSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeAllUserSessionsResponse.ProtoReflect.Descriptor instead.
 func (*RevokeAllUserSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{17}
+	return file_token_token_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RevokeAllUserSessionsResponse) GetRevokedCount() int32 {
@@ -1126,6 +1178,50 @@ func (x *RevokeAllUserSessionsResponse) GetRevokedCount() int32 {
 		return x.RevokedCount
 	}
 	return 0
+}
+
+type ValidateUserSessionGenerationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateUserSessionGenerationResponse) Reset() {
+	*x = ValidateUserSessionGenerationResponse{}
+	mi := &file_token_token_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateUserSessionGenerationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateUserSessionGenerationResponse) ProtoMessage() {}
+
+func (x *ValidateUserSessionGenerationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateUserSessionGenerationResponse.ProtoReflect.Descriptor instead.
+func (*ValidateUserSessionGenerationResponse) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ValidateUserSessionGenerationResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
 }
 
 var File_token_token_proto protoreflect.FileDescriptor
@@ -1176,7 +1272,10 @@ const file_token_token_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"O\n" +
 	"\x1cRevokeAllUserSessionsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason\"\x9e\x02\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"o\n" +
+	"$ValidateUserSessionGenerationRequest\x12\x18\n" +
+	"\asubject\x18\x01 \x01(\tR\asubject\x12-\n" +
+	"\x12session_generation\x18\x02 \x01(\tR\x11sessionGeneration\"\x9e\x02\n" +
 	"\x11TokenPairResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
@@ -1226,7 +1325,9 @@ const file_token_token_proto_rawDesc = "" +
 	"\x15RevokeSessionResponse\x12\x18\n" +
 	"\arevoked\x18\x01 \x01(\bR\arevoked\"D\n" +
 	"\x1dRevokeAllUserSessionsResponse\x12#\n" +
-	"\rrevoked_count\x18\x01 \x01(\x05R\frevokedCount2\xe3\a\n" +
+	"\rrevoked_count\x18\x01 \x01(\x05R\frevokedCount\"=\n" +
+	"%ValidateUserSessionGenerationResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid2\xe6\b\n" +
 	"\fTokenService\x12V\n" +
 	"\x12GenerateUserTokens\x12#.token.v1.GenerateUserTokensRequest\x1a\x1b.token.v1.TokenPairResponse\x12X\n" +
 	"\x13ValidateAccessToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12Y\n" +
@@ -1235,7 +1336,8 @@ const file_token_token_proto_rawDesc = "" +
 	"\vRevokeToken\x12\x1c.token.v1.RevokeTokenRequest\x1a\x1d.token.v1.RevokeTokenResponse\x12Y\n" +
 	"\x10ListUserSessions\x12!.token.v1.ListUserSessionsRequest\x1a\".token.v1.ListUserSessionsResponse\x12P\n" +
 	"\rRevokeSession\x12\x1e.token.v1.RevokeSessionRequest\x1a\x1f.token.v1.RevokeSessionResponse\x12h\n" +
-	"\x15RevokeAllUserSessions\x12&.token.v1.RevokeAllUserSessionsRequest\x1a'.token.v1.RevokeAllUserSessionsResponse\x12[\n" +
+	"\x15RevokeAllUserSessions\x12&.token.v1.RevokeAllUserSessionsRequest\x1a'.token.v1.RevokeAllUserSessionsResponse\x12\x80\x01\n" +
+	"\x1dValidateUserSessionGeneration\x12..token.v1.ValidateUserSessionGenerationRequest\x1a/.token.v1.ValidateUserSessionGenerationResponse\x12[\n" +
 	"\x13AuthenticateService\x12$.token.v1.AuthenticateServiceRequest\x1a\x1e.token.v1.ServiceTokenResponse\x12Y\n" +
 	"\x14ValidateServiceToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12]\n" +
 	"\x14GenerateServiceToken\x12%.token.v1.GenerateServiceTokenRequest\x1a\x1e.token.v1.ServiceTokenResponseB&Z$kz/inflap/proto/gen/go/token;tokenpbb\x06proto3"
@@ -1252,42 +1354,44 @@ func file_token_token_proto_rawDescGZIP() []byte {
 	return file_token_token_proto_rawDescData
 }
 
-var file_token_token_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_token_token_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_token_token_proto_goTypes = []any{
-	(*DeviceInfo)(nil),                    // 0: token.v1.DeviceInfo
-	(*GenerateUserTokensRequest)(nil),     // 1: token.v1.GenerateUserTokensRequest
-	(*ValidateTokenRequest)(nil),          // 2: token.v1.ValidateTokenRequest
-	(*RefreshTokensRequest)(nil),          // 3: token.v1.RefreshTokensRequest
-	(*RevokeTokenRequest)(nil),            // 4: token.v1.RevokeTokenRequest
-	(*AuthenticateServiceRequest)(nil),    // 5: token.v1.AuthenticateServiceRequest
-	(*GenerateServiceTokenRequest)(nil),   // 6: token.v1.GenerateServiceTokenRequest
-	(*ListUserSessionsRequest)(nil),       // 7: token.v1.ListUserSessionsRequest
-	(*RevokeSessionRequest)(nil),          // 8: token.v1.RevokeSessionRequest
-	(*RevokeAllUserSessionsRequest)(nil),  // 9: token.v1.RevokeAllUserSessionsRequest
-	(*TokenPairResponse)(nil),             // 10: token.v1.TokenPairResponse
-	(*ServiceTokenResponse)(nil),          // 11: token.v1.ServiceTokenResponse
-	(*ValidatedClaimsResponse)(nil),       // 12: token.v1.ValidatedClaimsResponse
-	(*RevokeTokenResponse)(nil),           // 13: token.v1.RevokeTokenResponse
-	(*UserSessionInfo)(nil),               // 14: token.v1.UserSessionInfo
-	(*ListUserSessionsResponse)(nil),      // 15: token.v1.ListUserSessionsResponse
-	(*RevokeSessionResponse)(nil),         // 16: token.v1.RevokeSessionResponse
-	(*RevokeAllUserSessionsResponse)(nil), // 17: token.v1.RevokeAllUserSessionsResponse
-	(*timestamppb.Timestamp)(nil),         // 18: google.protobuf.Timestamp
+	(*DeviceInfo)(nil),                            // 0: token.v1.DeviceInfo
+	(*GenerateUserTokensRequest)(nil),             // 1: token.v1.GenerateUserTokensRequest
+	(*ValidateTokenRequest)(nil),                  // 2: token.v1.ValidateTokenRequest
+	(*RefreshTokensRequest)(nil),                  // 3: token.v1.RefreshTokensRequest
+	(*RevokeTokenRequest)(nil),                    // 4: token.v1.RevokeTokenRequest
+	(*AuthenticateServiceRequest)(nil),            // 5: token.v1.AuthenticateServiceRequest
+	(*GenerateServiceTokenRequest)(nil),           // 6: token.v1.GenerateServiceTokenRequest
+	(*ListUserSessionsRequest)(nil),               // 7: token.v1.ListUserSessionsRequest
+	(*RevokeSessionRequest)(nil),                  // 8: token.v1.RevokeSessionRequest
+	(*RevokeAllUserSessionsRequest)(nil),          // 9: token.v1.RevokeAllUserSessionsRequest
+	(*ValidateUserSessionGenerationRequest)(nil),  // 10: token.v1.ValidateUserSessionGenerationRequest
+	(*TokenPairResponse)(nil),                     // 11: token.v1.TokenPairResponse
+	(*ServiceTokenResponse)(nil),                  // 12: token.v1.ServiceTokenResponse
+	(*ValidatedClaimsResponse)(nil),               // 13: token.v1.ValidatedClaimsResponse
+	(*RevokeTokenResponse)(nil),                   // 14: token.v1.RevokeTokenResponse
+	(*UserSessionInfo)(nil),                       // 15: token.v1.UserSessionInfo
+	(*ListUserSessionsResponse)(nil),              // 16: token.v1.ListUserSessionsResponse
+	(*RevokeSessionResponse)(nil),                 // 17: token.v1.RevokeSessionResponse
+	(*RevokeAllUserSessionsResponse)(nil),         // 18: token.v1.RevokeAllUserSessionsResponse
+	(*ValidateUserSessionGenerationResponse)(nil), // 19: token.v1.ValidateUserSessionGenerationResponse
+	(*timestamppb.Timestamp)(nil),                 // 20: google.protobuf.Timestamp
 }
 var file_token_token_proto_depIdxs = []int32{
 	0,  // 0: token.v1.GenerateUserTokensRequest.device:type_name -> token.v1.DeviceInfo
 	0,  // 1: token.v1.RefreshTokensRequest.device:type_name -> token.v1.DeviceInfo
-	18, // 2: token.v1.TokenPairResponse.expires_at:type_name -> google.protobuf.Timestamp
-	18, // 3: token.v1.TokenPairResponse.refresh_expires_at:type_name -> google.protobuf.Timestamp
-	18, // 4: token.v1.ServiceTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
-	18, // 5: token.v1.ValidatedClaimsResponse.issued_at:type_name -> google.protobuf.Timestamp
-	18, // 6: token.v1.ValidatedClaimsResponse.expires_at:type_name -> google.protobuf.Timestamp
+	20, // 2: token.v1.TokenPairResponse.expires_at:type_name -> google.protobuf.Timestamp
+	20, // 3: token.v1.TokenPairResponse.refresh_expires_at:type_name -> google.protobuf.Timestamp
+	20, // 4: token.v1.ServiceTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	20, // 5: token.v1.ValidatedClaimsResponse.issued_at:type_name -> google.protobuf.Timestamp
+	20, // 6: token.v1.ValidatedClaimsResponse.expires_at:type_name -> google.protobuf.Timestamp
 	0,  // 7: token.v1.UserSessionInfo.device:type_name -> token.v1.DeviceInfo
-	18, // 8: token.v1.UserSessionInfo.created_at:type_name -> google.protobuf.Timestamp
-	18, // 9: token.v1.UserSessionInfo.last_used_at:type_name -> google.protobuf.Timestamp
-	18, // 10: token.v1.UserSessionInfo.last_refreshed_at:type_name -> google.protobuf.Timestamp
-	18, // 11: token.v1.UserSessionInfo.refresh_expires_at:type_name -> google.protobuf.Timestamp
-	14, // 12: token.v1.ListUserSessionsResponse.sessions:type_name -> token.v1.UserSessionInfo
+	20, // 8: token.v1.UserSessionInfo.created_at:type_name -> google.protobuf.Timestamp
+	20, // 9: token.v1.UserSessionInfo.last_used_at:type_name -> google.protobuf.Timestamp
+	20, // 10: token.v1.UserSessionInfo.last_refreshed_at:type_name -> google.protobuf.Timestamp
+	20, // 11: token.v1.UserSessionInfo.refresh_expires_at:type_name -> google.protobuf.Timestamp
+	15, // 12: token.v1.ListUserSessionsResponse.sessions:type_name -> token.v1.UserSessionInfo
 	1,  // 13: token.v1.TokenService.GenerateUserTokens:input_type -> token.v1.GenerateUserTokensRequest
 	2,  // 14: token.v1.TokenService.ValidateAccessToken:input_type -> token.v1.ValidateTokenRequest
 	2,  // 15: token.v1.TokenService.ValidateRefreshToken:input_type -> token.v1.ValidateTokenRequest
@@ -1296,22 +1400,24 @@ var file_token_token_proto_depIdxs = []int32{
 	7,  // 18: token.v1.TokenService.ListUserSessions:input_type -> token.v1.ListUserSessionsRequest
 	8,  // 19: token.v1.TokenService.RevokeSession:input_type -> token.v1.RevokeSessionRequest
 	9,  // 20: token.v1.TokenService.RevokeAllUserSessions:input_type -> token.v1.RevokeAllUserSessionsRequest
-	5,  // 21: token.v1.TokenService.AuthenticateService:input_type -> token.v1.AuthenticateServiceRequest
-	2,  // 22: token.v1.TokenService.ValidateServiceToken:input_type -> token.v1.ValidateTokenRequest
-	6,  // 23: token.v1.TokenService.GenerateServiceToken:input_type -> token.v1.GenerateServiceTokenRequest
-	10, // 24: token.v1.TokenService.GenerateUserTokens:output_type -> token.v1.TokenPairResponse
-	12, // 25: token.v1.TokenService.ValidateAccessToken:output_type -> token.v1.ValidatedClaimsResponse
-	12, // 26: token.v1.TokenService.ValidateRefreshToken:output_type -> token.v1.ValidatedClaimsResponse
-	10, // 27: token.v1.TokenService.RefreshTokens:output_type -> token.v1.TokenPairResponse
-	13, // 28: token.v1.TokenService.RevokeToken:output_type -> token.v1.RevokeTokenResponse
-	15, // 29: token.v1.TokenService.ListUserSessions:output_type -> token.v1.ListUserSessionsResponse
-	16, // 30: token.v1.TokenService.RevokeSession:output_type -> token.v1.RevokeSessionResponse
-	17, // 31: token.v1.TokenService.RevokeAllUserSessions:output_type -> token.v1.RevokeAllUserSessionsResponse
-	11, // 32: token.v1.TokenService.AuthenticateService:output_type -> token.v1.ServiceTokenResponse
-	12, // 33: token.v1.TokenService.ValidateServiceToken:output_type -> token.v1.ValidatedClaimsResponse
-	11, // 34: token.v1.TokenService.GenerateServiceToken:output_type -> token.v1.ServiceTokenResponse
-	24, // [24:35] is the sub-list for method output_type
-	13, // [13:24] is the sub-list for method input_type
+	10, // 21: token.v1.TokenService.ValidateUserSessionGeneration:input_type -> token.v1.ValidateUserSessionGenerationRequest
+	5,  // 22: token.v1.TokenService.AuthenticateService:input_type -> token.v1.AuthenticateServiceRequest
+	2,  // 23: token.v1.TokenService.ValidateServiceToken:input_type -> token.v1.ValidateTokenRequest
+	6,  // 24: token.v1.TokenService.GenerateServiceToken:input_type -> token.v1.GenerateServiceTokenRequest
+	11, // 25: token.v1.TokenService.GenerateUserTokens:output_type -> token.v1.TokenPairResponse
+	13, // 26: token.v1.TokenService.ValidateAccessToken:output_type -> token.v1.ValidatedClaimsResponse
+	13, // 27: token.v1.TokenService.ValidateRefreshToken:output_type -> token.v1.ValidatedClaimsResponse
+	11, // 28: token.v1.TokenService.RefreshTokens:output_type -> token.v1.TokenPairResponse
+	14, // 29: token.v1.TokenService.RevokeToken:output_type -> token.v1.RevokeTokenResponse
+	16, // 30: token.v1.TokenService.ListUserSessions:output_type -> token.v1.ListUserSessionsResponse
+	17, // 31: token.v1.TokenService.RevokeSession:output_type -> token.v1.RevokeSessionResponse
+	18, // 32: token.v1.TokenService.RevokeAllUserSessions:output_type -> token.v1.RevokeAllUserSessionsResponse
+	19, // 33: token.v1.TokenService.ValidateUserSessionGeneration:output_type -> token.v1.ValidateUserSessionGenerationResponse
+	12, // 34: token.v1.TokenService.AuthenticateService:output_type -> token.v1.ServiceTokenResponse
+	13, // 35: token.v1.TokenService.ValidateServiceToken:output_type -> token.v1.ValidatedClaimsResponse
+	12, // 36: token.v1.TokenService.GenerateServiceToken:output_type -> token.v1.ServiceTokenResponse
+	25, // [25:37] is the sub-list for method output_type
+	13, // [13:25] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
 	13, // [13:13] is the sub-list for extension extendee
 	0,  // [0:13] is the sub-list for field type_name
@@ -1328,7 +1434,7 @@ func file_token_token_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_token_token_proto_rawDesc), len(file_token_token_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

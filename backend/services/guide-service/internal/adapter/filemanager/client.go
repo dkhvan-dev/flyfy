@@ -2,6 +2,7 @@ package filemanager
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -98,6 +99,21 @@ func (c *Client) ValidateGuideDocumentFile(ctx context.Context, fileID uuid.UUID
 }
 
 func (c *Client) CreateGuideDocumentDownloadURL(ctx context.Context, fileID uuid.UUID) (string, error) {
+	downloadURL, err := c.CreateDownloadURL(ctx, fileID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrFileManagerFileNotFound):
+			return "", app.ErrGuideDocumentFileNotFound
+		case errors.Is(err, app.ErrFileManagerRequestRejected):
+			return "", app.ErrGuideDocumentFileNotAllowed
+		default:
+			return "", err
+		}
+	}
+	return downloadURL, nil
+}
+
+func (c *Client) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (string, error) {
 	callCtx, cancel := context.WithTimeout(ctx, defaultDownloadURLTimeout)
 	defer cancel()
 	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
@@ -109,16 +125,16 @@ func (c *Client) CreateGuideDocumentDownloadURL(ctx context.Context, fileID uuid
 		if st, ok := status.FromError(err); ok {
 			switch st.Code() {
 			case codes.NotFound:
-				return "", app.ErrGuideDocumentFileNotFound
+				return "", app.ErrFileManagerFileNotFound
 			case codes.InvalidArgument:
-				return "", app.ErrGuideDocumentFileNotAllowed
+				return "", app.ErrFileManagerRequestRejected
 			default:
 				return "", err
 			}
 		}
 		return "", err
 	}
-	return strings.TrimSpace(resp.GetUrl()), nil
+	return app.ValidateFileManagerDownloadURL(resp.GetUrl())
 }
 
 func (c *Client) BindGuideDocumentToVerificationRequest(

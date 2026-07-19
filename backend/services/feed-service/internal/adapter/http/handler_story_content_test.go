@@ -2494,6 +2494,41 @@ func TestPublicPostDetailHidesDraftsFromNonOwners(t *testing.T) {
 	}
 }
 
+func TestPublicPostDetailAcceptsCanonicalIDForSavedRoute(t *testing.T) {
+	h := newPostHTTPTestHarness(t)
+	postID := uuid.New()
+	now := time.Now().UTC()
+	h.seedPost(&model.Post{
+		ID:               postID,
+		Slug:             "saved-route-post",
+		AuthorUserID:     h.ownerID,
+		Title:            "Saved route post",
+		Format:           enum.PostFormatArticle,
+		Category:         enum.PostCategoryJournal,
+		Status:           enum.PostStatusPublished,
+		ModerationStatus: enum.ModerationStatusApproved,
+		PublishedAt:      &now,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		Revision:         1,
+	})
+
+	rec := h.doJSON(http.MethodGet, "/v1/public/posts/"+postID.String(), "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var body struct {
+		Post struct {
+			ID string `json:"id"`
+		} `json:"post"`
+	}
+	decodeJSONResponse(t, rec, &body)
+	if body.Post.ID != postID.String() {
+		t.Fatalf("id = %q, want %q", body.Post.ID, postID)
+	}
+}
+
 func TestPublicPostDetailRanksRelatedPostsByRelevance(t *testing.T) {
 	h := newPostHTTPTestHarness(t)
 	authorID := h.ownerID

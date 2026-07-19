@@ -19,6 +19,7 @@ service TokenService {
   rpc ListUserSessions(ListUserSessionsRequest)        returns (ListUserSessionsResponse);
   rpc RevokeSession(RevokeSessionRequest)              returns (RevokeSessionResponse);
   rpc RevokeAllUserSessions(RevokeAllUserSessionsRequest) returns (RevokeAllUserSessionsResponse);
+  rpc ValidateUserSessionGeneration(ValidateUserSessionGenerationRequest) returns (ValidateUserSessionGenerationResponse);
 
   // Service-to-service tokens
   rpc AuthenticateService(AuthenticateServiceRequest)  returns (ServiceTokenResponse);
@@ -88,6 +89,11 @@ message RevokeAllUserSessionsRequest {
   string reason  = 2;
 }
 
+message ValidateUserSessionGenerationRequest {
+  string subject            = 1;
+  string session_generation = 2;
+}
+
 // --- Responses ---
 
 message TokenPairResponse {
@@ -143,4 +149,8 @@ message RevokeSessionResponse {
 
 message RevokeAllUserSessionsResponse {
   int32 revoked_count = 1;
+}
+
+message ValidateUserSessionGenerationResponse {
+  bool valid = 1;
 }

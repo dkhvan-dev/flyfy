@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,14 +14,20 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"kz/inflap/backend/pkg/natstransport"
 	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/transportauth"
 	cacheadapter "kz/inflap/backend/services/place-service/internal/adapter/cache"
+	filemanageradapter "kz/inflap/backend/services/place-service/internal/adapter/filemanager"
+	grpcadapter "kz/inflap/backend/services/place-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/place-service/internal/adapter/http"
+	natsadapter "kz/inflap/backend/services/place-service/internal/adapter/nats"
 	"kz/inflap/backend/services/place-service/internal/adapter/repository"
 	searchindexadapter "kz/inflap/backend/services/place-service/internal/adapter/searchindex"
 	userserviceadapter "kz/inflap/backend/services/place-service/internal/adapter/userservice"
@@ -54,6 +61,16 @@ func main() {
 	defer userClient.Close()
 
 	repo := repository.NewPGPlaceRepository(pool)
+	var (
+		savedLifecycleConnection *nats.Conn
+		savedLifecycleDone       chan error
+	)
+	if cfg.SavedLifecycle.Enabled {
+		savedLifecycleConnection, savedLifecycleDone, err = startSavedLifecycleDispatcher(ctx, pool, cfg)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to initialize Saved lifecycle dispatcher")
+		}
+	}
 	adminAuthorUserID, err := uuid.Parse(cfg.Admin.PlaceAuthorUserID)
 	if err != nil || adminAuthorUserID == uuid.Nil {
 		log.Fatal().Err(err).Str("admin_author_user_id", cfg.Admin.PlaceAuthorUserID).Msg("invalid admin place author user id")
@@ -82,6 +99,21 @@ func main() {
 	}
 
 	useCase := app.NewPlaceUseCase(repo, userClient, useCaseOptions...)
+	savedSourceUseCase := app.NewSavedSourceUseCase(repo)
+	savedSourceAuthorizer, err := newSavedSourceAuthorizer(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure Saved source service authentication")
+	}
+	savedSourceServer := grpcadapter.NewSavedSourceServer(savedSourceUseCase, savedSourceAuthorizer)
+	savedCoverFileManagerClient, err := newSavedCoverFileManagerClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize Saved cover file-manager client")
+	}
+	defer savedCoverFileManagerClient.Close()
+	savedCoverDeliveryUseCase := app.NewSavedAttractionCoverDeliveryUseCase(
+		repo,
+		savedCoverFileManagerClient,
+	)
 
 	mediaBackfillFileManagerClient, err := newMediaBackfillFileManagerHTTPClient(cfg)
 	if err != nil {
@@ -95,7 +127,7 @@ func main() {
 		RunTimeout:              cfg.MediaBackfill.RunTimeout,
 		CommonsMinMediaPerPlace: cfg.MediaBackfill.CommonsMinMediaPerPlace,
 	})
-	handler := httpadapter.NewHandler(useCase)
+	handler := httpadapter.NewHandler(useCase, savedCoverDeliveryUseCase)
 	handler.SetMediaBackfillStarter(mediaBackfillRunner)
 	mux := http.NewServeMux()
 	handler.Register(mux)
@@ -121,12 +153,21 @@ func main() {
 	if err := validatePlaceServiceMTLSPort(cfg, tlsConfig); err != nil {
 		log.Fatal().Err(err).Msg("invalid place-service mTLS listener configuration")
 	}
+	if err := validatePlaceServiceGRPCPort(cfg); err != nil {
+		log.Fatal().Err(err).Msg("invalid place-service gRPC listener configuration")
+	}
 	internalMTLSServer := newInternalPlaceMTLSServer(cfg, httpHandler, tlsConfig, readTimeout, writeTimeout, idleTimeout)
+	grpcOptions, err := transportauth.GRPCServerOptions(transportTLSConfig)
+	if err != nil {
+		log.Fatal().Err(err).Msg("configure place-service gRPC mTLS")
+	}
+	grpcServer := grpc.NewServer(grpcOptions...)
+	grpcadapter.RegisterSavedSourceServer(grpcServer, savedSourceServer)
 
 	go func() {
 		log.Info().Str("address", cfg.HTTP.Address()).Msg("http server started")
-		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal().Err(err).Msg("http server failed")
+		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			log.Fatal().Err(serveErr).Msg("http server failed")
 		}
 	}()
 	if internalMTLSServer != nil {
@@ -137,6 +178,13 @@ func main() {
 			}
 		}()
 	}
+	go func() {
+		log.Info().Str("address", cfg.GRPC.Address()).Msg("internal Saved gRPC server started")
+		if serveErr := servePlaceGRPCServer(cfg.GRPC.Address(), grpcServer); serveErr != nil &&
+			!errors.Is(serveErr, grpc.ErrServerStopped) {
+			log.Fatal().Err(serveErr).Msg("gRPC server failed")
+		}
+	}()
 
 	<-ctx.Done()
 	log.Info().Msg("shutdown signal received")
@@ -156,6 +204,160 @@ func main() {
 			log.Info().Msg("internal mTLS http server stopped")
 		}
 	}
+
+	grpcStopped := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(grpcStopped)
+	}()
+	select {
+	case <-grpcStopped:
+		log.Info().Msg("gRPC server stopped")
+	case <-time.After(10 * time.Second):
+		log.Warn().Msg("gRPC graceful stop timed out; forcing stop")
+		grpcServer.Stop()
+	}
+
+	if savedLifecycleDone != nil {
+		select {
+		case dispatcherErr := <-savedLifecycleDone:
+			if dispatcherErr != nil {
+				log.Error().Err(dispatcherErr).Msg("Saved lifecycle dispatcher stopped with error")
+			} else {
+				log.Info().Msg("Saved lifecycle dispatcher stopped")
+			}
+		case <-shutdownCtx.Done():
+			log.Warn().Msg("Saved lifecycle dispatcher shutdown timed out")
+		}
+	}
+	if savedLifecycleConnection != nil {
+		if err = natstransport.Drain(savedLifecycleConnection); err != nil {
+			log.Warn().Err(err).Msg("Saved lifecycle NATS drain failed")
+		}
+		savedLifecycleConnection.Close()
+	}
+}
+
+func startSavedLifecycleDispatcher(
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	cfg *config.Config,
+) (*nats.Conn, chan error, error) {
+	if pool == nil || cfg == nil {
+		return nil, nil, errors.New("Saved lifecycle dispatcher dependencies are required")
+	}
+	if err := cfg.SavedLifecycle.Validate(cfg.App.Env); err != nil {
+		return nil, nil, err
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		return nil, nil, err
+	}
+	connection, err := natstransport.Connect(
+		natsConfig,
+		"place-service-saved-lifecycle",
+		natstransport.Hooks{
+			Disconnected: func(disconnectErr error) {
+				log.Warn().Err(disconnectErr).Msg("Saved lifecycle NATS disconnected")
+			},
+			Reconnected: func() {
+				log.Info().Msg("Saved lifecycle NATS reconnected")
+			},
+			Closed: func(closeErr error) {
+				if closeErr == nil {
+					log.Info().Msg("Saved lifecycle NATS connection closed")
+					return
+				}
+				log.Warn().Err(closeErr).Msg("Saved lifecycle NATS connection closed unexpectedly")
+			},
+			AsyncError: func(asyncErr error) {
+				log.Warn().Err(asyncErr).Msg("Saved lifecycle NATS asynchronous error")
+			},
+		},
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("connect Saved lifecycle NATS: %w", err)
+	}
+
+	streamCtx, cancel := context.WithTimeout(ctx, natsConfig.ConnectTimeout)
+	defer cancel()
+	publisher, err := natsadapter.NewSavedLifecyclePublisher(
+		streamCtx,
+		connection,
+	)
+	if err != nil {
+		connection.Close()
+		return nil, nil, err
+	}
+	dispatcher, err := app.NewSavedLifecycleDispatcher(
+		repository.NewPGSavedLifecycleOutboxRepository(pool),
+		publisher,
+		app.SavedLifecycleDispatcherConfig{
+			BatchSize:       cfg.SavedLifecycle.BatchSize,
+			Concurrency:     cfg.SavedLifecycle.Concurrency,
+			PollInterval:    cfg.SavedLifecycle.PollInterval,
+			LeaseDuration:   cfg.SavedLifecycle.LeaseDuration,
+			PublishTimeout:  cfg.SavedLifecycle.PublishTimeout,
+			MaxAttempts:     cfg.SavedLifecycle.MaxAttempts,
+			RetryBase:       cfg.SavedLifecycle.RetryBase,
+			RetryMax:        cfg.SavedLifecycle.RetryMax,
+			CleanupInterval: cfg.SavedLifecycle.CleanupInterval,
+			CleanupBatch:    cfg.SavedLifecycle.CleanupBatch,
+		},
+	)
+	if err != nil {
+		connection.Close()
+		return nil, nil, err
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- dispatcher.Run(ctx)
+		close(done)
+	}()
+	log.Info().Msg("Saved lifecycle dispatcher started")
+	return connection, done, nil
+}
+
+func newSavedSourceAuthorizer(cfg *config.Config) (*serviceauth.JWTVerifier, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("place service config is required")
+	}
+	if !cfg.Security.ServiceAuthEnabled() {
+		if cfg.App.IsProduction() {
+			return nil, fmt.Errorf("SERVICE_AUTH_ISSUER and SERVICE_AUTH_JWKS_URL are required in production")
+		}
+		return nil, nil
+	}
+
+	jwksClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.Security.ServiceAuthJWKSURL)),
+		3*time.Second,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth JWKS client: %w", err)
+	}
+	verifier, err := serviceauth.NewJWTVerifier(serviceauth.VerifierConfig{
+		Issuer:   cfg.Security.ServiceAuthIssuer,
+		JWKSURL:  cfg.Security.ServiceAuthJWKSURL,
+		CacheTTL: cfg.Security.ServiceAuthCacheTTL,
+		Client:   jwksClient,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure service auth verifier: %w", err)
+	}
+	return verifier, nil
+}
+
+func servePlaceGRPCServer(address string, server *grpc.Server) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("listen on %s: %w", address, err)
+	}
+	if err = server.Serve(listener); err != nil {
+		return fmt.Errorf("serve on %s: %w", address, err)
+	}
+	return nil
 }
 
 func newSearchIndexOptions(cfg *config.Config) ([]searchindexadapter.Option, func()) {
@@ -224,6 +426,22 @@ func newUserServiceClient(cfg *config.Config) (*userserviceadapter.Client, error
 	)
 }
 
+func newSavedCoverFileManagerClient(cfg *config.Config) (*filemanageradapter.Client, error) {
+	grpcOptions, err := transportauth.GRPCDialOptions(
+		cfg.MTLS.ClientConfig(transportauth.ServerNameFromTarget(cfg.FileManager.GRPCTarget)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("initialize Saved cover file-manager mTLS transport: %w", err)
+	}
+	return filemanageradapter.New(
+		cfg.FileManager.GRPCTarget,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		cfg.FileManager.RequestTimeout,
+		grpcOptions...,
+	)
+}
+
 func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, mtls transportauth.EnvConfig, fallbackToken string, domainCode string) http.Handler {
 	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
 	middleware, err := switches.NewMaintenanceMiddleware(
@@ -256,6 +474,22 @@ func validatePlaceServiceMTLSPort(cfg *config.Config, tlsConfig *tls.Config) err
 	}
 	if cfg.HTTP.InternalTLSPort == cfg.HTTP.Port {
 		return fmt.Errorf("INTERNAL_HTTP_TLS_PORT must be different from HTTP_PORT")
+	}
+	return nil
+}
+
+func validatePlaceServiceGRPCPort(cfg *config.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("place service config is required")
+	}
+	if cfg.GRPC.Port <= 0 || cfg.GRPC.Port > 65535 {
+		return fmt.Errorf("GRPC_PORT must be between 1 and 65535")
+	}
+	if cfg.GRPC.Port == cfg.HTTP.Port {
+		return fmt.Errorf("GRPC_PORT must be different from HTTP_PORT")
+	}
+	if cfg.HTTP.InternalTLSPort > 0 && cfg.GRPC.Port == cfg.HTTP.InternalTLSPort {
+		return fmt.Errorf("GRPC_PORT must be different from INTERNAL_HTTP_TLS_PORT")
 	}
 	return nil
 }

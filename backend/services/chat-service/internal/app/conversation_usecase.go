@@ -166,6 +166,54 @@ func (u *ConversationUseCase) GetUserBlockStatus(ctx context.Context, actorUserI
 	}, nil
 }
 
+// ListSavedUserIDsDenyingAccess returns candidate users that have blocked the
+// Saved owner. Input order is preserved so transport adapters never need to
+// expose block-table details or infer identities from map iteration order.
+func (u *ConversationUseCase) ListSavedUserIDsDenyingAccess(
+	ctx context.Context,
+	ownerUserID uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) ([]uuid.UUID, error) {
+	if u == nil || u.repo == nil || ctx == nil || ownerUserID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(candidateUserIDs) == 0 {
+		return []uuid.UUID{}, nil
+	}
+	seen := make(map[uuid.UUID]struct{}, len(candidateUserIDs))
+	unique := make([]uuid.UUID, 0, len(candidateUserIDs))
+	for _, candidateUserID := range candidateUserIDs {
+		if candidateUserID == uuid.Nil {
+			return nil, ErrInvalidUserID
+		}
+		if _, duplicate := seen[candidateUserID]; duplicate {
+			continue
+		}
+		seen[candidateUserID] = struct{}{}
+		if candidateUserID != ownerUserID {
+			unique = append(unique, candidateUserID)
+		}
+	}
+	if len(unique) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	blocked, err := u.repo.ListUserIDsBlockingUser(ctx, ownerUserID, unique)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]uuid.UUID, 0, len(blocked))
+	for _, candidateUserID := range unique {
+		if blocked[candidateUserID] {
+			result = append(result, candidateUserID)
+		}
+	}
+	return result, nil
+}
+
 type CreateActivityConversationInput struct {
 	ActivityID              uuid.UUID
 	Title                   string

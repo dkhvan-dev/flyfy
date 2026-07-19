@@ -43,7 +43,11 @@ const activitySelectColumns = `
 	country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url,
 	author_country_code, author_city_id, author_city_name, author_location_captured_at, visibility_password_hash,
 	cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
-	revision, created_at, updated_at,
+	revision,
+	COALESCE(saved_source_revision, GREATEST(revision, 1)::bigint),
+	COALESCE(saved_projection_revision, GREATEST(revision, 1)::bigint),
+	COALESCE(saved_visibility_revision, GREATEST(revision, 1)::bigint),
+	created_at, updated_at,
 	source_language, translation_status, translations
 `
 
@@ -60,8 +64,27 @@ const qualifiedActivitySelectColumns = `
 	a.country_code, a.city_id, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url,
 	a.author_country_code, a.author_city_id, a.author_city_name, a.author_location_captured_at, a.visibility_password_hash,
 	a.cancellation_reason, a.cancellation_source, a.cancelled_by_user_id, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
-	a.revision, a.created_at, a.updated_at,
+	a.revision,
+	COALESCE(a.saved_source_revision, GREATEST(a.revision, 1)::bigint),
+	COALESCE(a.saved_projection_revision, GREATEST(a.revision, 1)::bigint),
+	COALESCE(a.saved_visibility_revision, GREATEST(a.revision, 1)::bigint),
+	a.created_at, a.updated_at,
 	a.source_language, a.translation_status, a.translations
+`
+
+const savedSourceActivitySelectQuery = `
+	SELECT
+` + activitySelectColumns + `
+	FROM activities
+	WHERE id = $1
+	LIMIT 1
+`
+
+const activityMediaSelectByActivityIDQuery = `
+	SELECT id, activity_id, file_id, media_type, sort_order, is_cover, created_at
+	FROM activity_media
+	WHERE activity_id = $1
+	ORDER BY sort_order ASC, created_at ASC
 `
 
 func (r *PGActivityRepository) WithTx(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
@@ -88,7 +111,30 @@ func (r *PGActivityRepository) WithTx(ctx context.Context, fn func(repo port.Act
 }
 
 func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.Activity) error {
-	return insertActivity(ctx, r.pool, item)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin create activity tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err = insertActivity(ctx, tx, item); err != nil {
+		return err
+	}
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		tx,
+		nil,
+		item,
+		nil,
+		nil,
+		item.UpdatedAt,
+	); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit create activity tx: %w", err)
+	}
+	return nil
 }
 
 func insertActivity(ctx context.Context, exec activityDBExecutor, item *model.Activity) error {
@@ -124,13 +170,17 @@ func insertActivity(ctx context.Context, exec activityDBExecutor, item *model.Ac
 			$54, $55, $56,
 			$57, $58, $59::jsonb
 		)
+		RETURNING
+			COALESCE(saved_source_revision, GREATEST(revision, 1)::bigint),
+			COALESCE(saved_projection_revision, GREATEST(revision, 1)::bigint),
+			COALESCE(saved_visibility_revision, GREATEST(revision, 1)::bigint)
 	`
 	translations, err := json.Marshal(model.NormalizeActivityTranslations(item.Translations))
 	if err != nil {
 		return fmt.Errorf("encode activity translations: %w", err)
 	}
 
-	_, err = exec.Exec(
+	err = exec.QueryRow(
 		ctx,
 		query,
 		item.ID, item.HostUserID, item.SourceActivityID,
@@ -147,6 +197,10 @@ func insertActivity(ctx context.Context, exec activityDBExecutor, item *model.Ac
 		item.CancellationReason, optionalActivityCancellationSourceString(item.CancellationSource), item.CancelledByUserID, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
 		item.SourceLanguage, string(item.TranslationStatus), translations,
+	).Scan(
+		&item.SavedSourceRevision,
+		&item.SavedProjectionRevision,
+		&item.SavedVisibilityRevision,
 	)
 	if err != nil {
 		return fmt.Errorf("insert activity: %w", err)
@@ -156,7 +210,41 @@ func insertActivity(ctx context.Context, exec activityDBExecutor, item *model.Ac
 }
 
 func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.Activity) error {
-	return updateActivity(ctx, r.pool, item)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin update activity tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	before, err := getActivityForUpdate(ctx, tx, item.ID)
+	if err != nil {
+		return err
+	}
+	if before == nil {
+		return nil
+	}
+	media, err := listActivityMediaByActivityID(ctx, tx, item.ID)
+	if err != nil {
+		return err
+	}
+	if err = updateActivity(ctx, tx, item); err != nil {
+		return err
+	}
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		tx,
+		before,
+		item,
+		media,
+		media,
+		item.UpdatedAt,
+	); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit update activity tx: %w", err)
+	}
+	return nil
 }
 
 func updateActivity(ctx context.Context, exec activityDBExecutor, item *model.Activity) error {
@@ -214,9 +302,13 @@ func updateActivity(ctx context.Context, exec activityDBExecutor, item *model.Ac
 			revision = $50,
 			updated_at = $51
 		WHERE id = $1
+		RETURNING
+			COALESCE(saved_source_revision, GREATEST(revision, 1)::bigint),
+			COALESCE(saved_projection_revision, GREATEST(revision, 1)::bigint),
+			COALESCE(saved_visibility_revision, GREATEST(revision, 1)::bigint)
 	`
 
-	tag, err := exec.Exec(
+	err := exec.QueryRow(
 		ctx,
 		query,
 		item.ID,
@@ -270,12 +362,16 @@ func updateActivity(ctx context.Context, exec activityDBExecutor, item *model.Ac
 		item.PublishedAt,
 		item.Revision,
 		item.UpdatedAt,
+	).Scan(
+		&item.SavedSourceRevision,
+		&item.SavedProjectionRevision,
+		&item.SavedVisibilityRevision,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
 		return fmt.Errorf("update activity: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return nil
 	}
 
 	return nil
@@ -300,6 +396,43 @@ func (r *PGActivityRepository) GetActivityByID(ctx context.Context, activityID u
 	}
 
 	return item, nil
+}
+
+func (r *PGActivityRepository) GetSavedSourceActivity(
+	ctx context.Context,
+	activityID uuid.UUID,
+) (*model.Activity, []*model.ActivityMedia, error) {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.RepeatableRead,
+		AccessMode: pgx.ReadOnly,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("begin saved source activity snapshot: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	item, err := scanActivity(tx.QueryRow(ctx, savedSourceActivitySelectQuery, activityID))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			if err = tx.Commit(ctx); err != nil {
+				return nil, nil, fmt.Errorf("commit missing saved source activity snapshot: %w", err)
+			}
+			return nil, nil, nil
+		}
+		return nil, nil, fmt.Errorf("get saved source activity: %w", err)
+	}
+
+	media, err := listActivityMediaByActivityID(ctx, tx, activityID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, nil, fmt.Errorf("commit saved source activity snapshot: %w", err)
+	}
+
+	return item, media, nil
 }
 
 func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.ActivityFilter) ([]*model.Activity, error) {
@@ -646,14 +779,15 @@ func (r *PGActivityRepository) ReplaceTags(ctx context.Context, activityID uuid.
 }
 
 func (r *PGActivityRepository) ListMediaByActivityID(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityMedia, error) {
-	const query = `
-		SELECT id, activity_id, file_id, media_type, sort_order, is_cover, created_at
-		FROM activity_media
-		WHERE activity_id = $1
-		ORDER BY sort_order ASC, created_at ASC
-	`
+	return listActivityMediaByActivityID(ctx, r.pool, activityID)
+}
 
-	rows, err := r.pool.Query(ctx, query, activityID)
+func listActivityMediaByActivityID(
+	ctx context.Context,
+	exec activityDBExecutor,
+	activityID uuid.UUID,
+) ([]*model.ActivityMedia, error) {
+	rows, err := exec.Query(ctx, activityMediaSelectByActivityIDQuery, activityID)
 	if err != nil {
 		return nil, fmt.Errorf("list activity media: %w", err)
 	}
@@ -679,6 +813,17 @@ func (r *PGActivityRepository) ReplaceMedia(ctx context.Context, activityID uuid
 	defer func() {
 		_ = tx.Rollback(ctx)
 	}()
+	before, err := getActivityForUpdate(ctx, tx, activityID)
+	if err != nil {
+		return err
+	}
+	if before == nil {
+		return nil
+	}
+	beforeMedia, err := listActivityMediaByActivityID(ctx, tx, activityID)
+	if err != nil {
+		return err
+	}
 
 	if _, err = tx.Exec(ctx, `DELETE FROM activity_media WHERE activity_id = $1`, activityID); err != nil {
 		return fmt.Errorf("delete activity media: %w", err)
@@ -708,11 +853,75 @@ func (r *PGActivityRepository) ReplaceMedia(ctx context.Context, activityID uuid
 		}
 	}
 
+	afterMedia, err := listActivityMediaByActivityID(ctx, tx, activityID)
+	if err != nil {
+		return err
+	}
+	if !activitySavedMediaEqual(beforeMedia, afterMedia) {
+		if _, err = tx.Exec(ctx, `
+			UPDATE activities
+			SET saved_source_revision = GREATEST(
+			        COALESCE(saved_source_revision, GREATEST(revision, 1)::BIGINT) + 1,
+			        nextval('activity_saved_source_revision_seq')
+			    ),
+			    saved_projection_revision = GREATEST(
+			        COALESCE(saved_projection_revision, GREATEST(revision, 1)::BIGINT) + 1,
+			        nextval('activity_saved_source_revision_seq')
+			    ),
+			    updated_at = NOW()
+			WHERE id = $1
+		`, activityID); err != nil {
+			return fmt.Errorf("bump activity Saved media revisions: %w", err)
+		}
+		after, loadErr := getActivityForUpdate(ctx, tx, activityID)
+		if loadErr != nil {
+			return loadErr
+		}
+		if after == nil {
+			return fmt.Errorf("activity disappeared while replacing media")
+		}
+		if err = enqueueActivitySavedLifecycleTransition(
+			ctx,
+			tx,
+			before,
+			after,
+			beforeMedia,
+			afterMedia,
+			after.UpdatedAt,
+		); err != nil {
+			return err
+		}
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit replace media tx: %w", err)
 	}
 
 	return nil
+}
+
+func activitySavedMediaEqual(left []*model.ActivityMedia, right []*model.ActivityMedia) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		leftItem := left[index]
+		rightItem := right[index]
+		if leftItem == nil || rightItem == nil {
+			if leftItem != rightItem {
+				return false
+			}
+			continue
+		}
+		if leftItem.ActivityID != rightItem.ActivityID ||
+			leftItem.FileID != rightItem.FileID ||
+			leftItem.MediaType != rightItem.MediaType ||
+			leftItem.SortOrder != rightItem.SortOrder ||
+			leftItem.IsCover != rightItem.IsCover {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *PGActivityRepository) CreateAttendanceQRIssue(ctx context.Context, item *model.AttendanceQRIssue) error {
@@ -1625,119 +1834,31 @@ func (r *PGActivityTxRepository) CreateActivityEvent(ctx context.Context, item *
 }
 
 func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model.Activity) error {
-	const query = `
-		UPDATE activities
-		SET
-			host_user_id = $2,
-			source_activity_id = $3,
-			title = $4,
-			description = $5,
-			format = $6,
-			status = $7,
-			visibility = $8,
-			join_mode = $9,
-			moderation_status = $10,
-			moderation_risk_score = $11,
-			moderation_reason_codes = $12,
-			moderation_triggered_at = $13,
-			moderation_reviewed_at = $14,
-			category_slug = $15,
-			language_code = $16,
-			timezone = $17,
-			start_at = $18,
-			end_at = $19,
-			registration_deadline = $20,
-			capacity_type = $21,
-			min_participants = $22,
-			max_participants = $23,
-			price_type = $24,
-			price_amount = $25,
-			currency = $26,
-			price_locked_at = $27,
-			requires_profile_completion = $28,
-			requires_attendance_confirmation = $29,
-			allows_participant_invites = $30,
-			confirmation_deadline = $31,
-			country_code = $32,
-			city_id = $33,
-			city_name = $34,
-			address_text = $35,
-			latitude = $36,
-			longitude = $37,
-			map_url = $38,
-			meeting_url = $39,
-			visibility_password_hash = $40,
-			cancellation_reason = $41,
-			cancellation_source = $42,
-			cancelled_by_user_id = $43,
-			cancelled_at = $44,
-			started_at = $45,
-			completed_at = $46,
-			completion_reason = $47,
-			published_at = $48,
-			revision = $49,
-			updated_at = $50
-		WHERE id = $1
-	`
-
-	_, err := r.tx.Exec(
-		ctx,
-		query,
-		item.ID,
-		item.HostUserID,
-		item.SourceActivityID,
-		item.Title,
-		item.Description,
-		string(item.Format),
-		string(item.Status),
-		string(item.Visibility),
-		string(item.JoinMode),
-		string(item.ModerationStatus),
-		item.ModerationRiskScore,
-		nonNilStringSlice(item.ModerationReasonCodes),
-		item.ModerationTriggeredAt,
-		item.ModerationReviewedAt,
-		item.CategorySlug,
-		item.LanguageCode,
-		item.Timezone,
-		item.StartAt,
-		item.EndAt,
-		item.RegistrationDeadline,
-		string(item.CapacityType),
-		item.MinParticipants,
-		item.MaxParticipants,
-		string(item.PriceType),
-		item.PriceAmount,
-		item.Currency,
-		item.PriceLockedAt,
-		item.RequiresProfileCompletion,
-		item.RequiresAttendanceConfirmation,
-		item.AllowsParticipantInvites,
-		item.ConfirmationDeadline,
-		item.CountryCode,
-		item.CityID,
-		item.CityName,
-		item.AddressText,
-		item.Latitude,
-		item.Longitude,
-		item.MapURL,
-		item.MeetingURL,
-		item.VisibilityPasswordHash,
-		item.CancellationReason,
-		optionalActivityCancellationSourceString(item.CancellationSource),
-		item.CancelledByUserID,
-		item.CancelledAt,
-		item.StartedAt,
-		item.CompletedAt,
-		item.CompletionReason,
-		item.PublishedAt,
-		item.Revision,
-		item.UpdatedAt,
-	)
+	before, err := getActivityForUpdate(ctx, r.tx, item.ID)
 	if err != nil {
+		return err
+	}
+	if before == nil {
+		return nil
+	}
+	media, err := listActivityMediaByActivityID(ctx, r.tx, item.ID)
+	if err != nil {
+		return err
+	}
+	if err := updateActivity(ctx, r.tx, item); err != nil {
 		return fmt.Errorf("update activity in tx: %w", err)
 	}
-
+	if err = enqueueActivitySavedLifecycleTransition(
+		ctx,
+		r.tx,
+		before,
+		item,
+		media,
+		media,
+		item.UpdatedAt,
+	); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -2227,6 +2348,9 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.PublishedAt,
 
 		&item.Revision,
+		&item.SavedSourceRevision,
+		&item.SavedProjectionRevision,
+		&item.SavedVisibilityRevision,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 

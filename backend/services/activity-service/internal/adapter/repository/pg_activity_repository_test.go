@@ -2,8 +2,26 @@ package repository
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
+
+func TestSavedSourceActivityQueryUsesCanonicalActivityID(t *testing.T) {
+	t.Parallel()
+
+	query := strings.ToLower(savedSourceActivitySelectQuery)
+	whereIndex := strings.Index(query, "where")
+	if whereIndex < 0 {
+		t.Fatal("saved source activity query has no WHERE clause")
+	}
+	predicate := strings.Join(strings.Fields(query[whereIndex:]), " ")
+	if !strings.HasPrefix(predicate, "where id = $1 limit 1") {
+		t.Fatalf("saved source activity predicate = %q, want exact activities.id lookup", predicate)
+	}
+	if strings.Contains(predicate, "source_activity_id") {
+		t.Fatalf("saved source activity predicate aliases source_activity_id: %q", predicate)
+	}
+}
 
 func TestActivityOrganizerRatingWithDefault(t *testing.T) {
 	tests := []struct {

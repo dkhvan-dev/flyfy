@@ -84,3 +84,50 @@ func TestPlaceListPerformanceMigrationAddsQueryShapeIndexes(t *testing.T) {
 		}
 	}
 }
+
+func TestSavedSourceRevisionMigrationOwnsMonotonicProjectionAndVisibilityChanges(t *testing.T) {
+	up, err := os.ReadFile("../../../migrations/214_saved_source_revisions.up.sql")
+	if err != nil {
+		t.Fatalf("read up migration: %v", err)
+	}
+	down, err := os.ReadFile("../../../migrations/214_saved_source_revisions.down.sql")
+	if err != nil {
+		t.Fatalf("read down migration: %v", err)
+	}
+
+	upSQL := string(up)
+	for _, required := range []string{
+		"place_saved_source_revision_seq",
+		"saved_source_revision BIGINT",
+		"saved_projection_revision BIGINT",
+		"saved_visibility_revision BIGINT",
+		"CHECK (saved_source_revision > 0)",
+		"CHECK (saved_projection_revision > 0)",
+		"CHECK (saved_visibility_revision > 0)",
+		"DROP CONSTRAINT IF EXISTS chk_places_saved_source_revision_positive",
+		"BEFORE UPDATE ON places",
+		"NEW.status IS DISTINCT FROM OLD.status",
+		"NEW.deleted_at IS DISTINCT FROM OLD.deleted_at",
+		"AFTER INSERT OR UPDATE OR DELETE ON place_translations",
+		"AFTER INSERT OR UPDATE OR DELETE ON place_media",
+	} {
+		if !strings.Contains(upSQL, required) {
+			t.Fatalf("up migration missing %q", required)
+		}
+	}
+
+	downSQL := string(down)
+	for _, required := range []string{
+		"DROP TRIGGER IF EXISTS trg_place_media_saved_source_revisions",
+		"DROP TRIGGER IF EXISTS trg_place_translations_saved_source_revisions",
+		"DROP TRIGGER IF EXISTS trg_places_saved_source_revisions",
+		"DROP COLUMN IF EXISTS saved_visibility_revision",
+		"DROP COLUMN IF EXISTS saved_projection_revision",
+		"DROP COLUMN IF EXISTS saved_source_revision",
+		"DROP SEQUENCE IF EXISTS place_saved_source_revision_seq",
+	} {
+		if !strings.Contains(downSQL, required) {
+			t.Fatalf("down migration missing %q", required)
+		}
+	}
+}

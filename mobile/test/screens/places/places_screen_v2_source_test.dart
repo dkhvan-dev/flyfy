@@ -34,22 +34,14 @@ void main() {
       final mustVisitStart = source.indexOf('class _MustVisitCard');
       final discoverStart = source.indexOf('class _DiscoverCard');
       final retryingStart = source.indexOf('class _RetryingPlaceCoverImage');
-      final discoverSaveButtonStart = source.indexOf(
-        'Widget _saveButton',
-        discoverStart,
-      );
       expect(helperStart, isNonNegative);
       expect(mustVisitStart, isNonNegative);
       expect(retryingStart, greaterThan(mustVisitStart));
       expect(discoverStart, greaterThan(retryingStart));
-      expect(discoverSaveButtonStart, greaterThan(discoverStart));
 
       final helperSource = source.substring(helperStart, mustVisitStart);
       final mustVisitSource = source.substring(mustVisitStart, retryingStart);
-      final discoverSource = source.substring(
-        discoverStart,
-        discoverSaveButtonStart,
-      );
+      final discoverSource = source.substring(discoverStart);
 
       expect(helperSource, contains('Brightness.light'));
       expect(helperSource, contains('return null;'));

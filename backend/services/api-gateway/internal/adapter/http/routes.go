@@ -1,6 +1,12 @@
 package http
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
+
+const savedMaxRequestBodyBytes int64 = 128 << 10
 
 type RouteAuthMode string
 
@@ -11,18 +17,24 @@ const (
 )
 
 type RoutePolicy struct {
-	Name               string
-	Method             string
-	Prefix             string
-	ExactPath          string
-	PathContains       string
-	PathSuffix         string
-	AuthMode           RouteAuthMode
-	RequiredRoles      []string
-	Upstream           string
-	RateLimitPerMinute *int
-	RewritePrefix      string
-	Cacheable          bool
+	Name                 string
+	Method               string
+	Prefix               string
+	ExactPath            string
+	PathContains         string
+	PathSuffix           string
+	AuthMode             RouteAuthMode
+	RequiredRoles        []string
+	Upstream             string
+	RateLimitPerMinute   *int
+	RewritePrefix        string
+	Cacheable            bool
+	SavedPersonal        bool
+	LogPathTemplate      string
+	MaxRequestBodyBytes  int64
+	RelativeSegmentCount int
+	RelativeSegmentUUID  bool
+	ExcludedPrefixes     []string
 }
 
 func routePolicies(apiPrefix string) []RoutePolicy {
@@ -57,8 +69,10 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	searchEventLimit := 60
 	helpReadLimit := 180
 	supportWriteLimit := 60
+	savedReadLimit := 180
+	savedWriteLimit := 60
 
-	return []RoutePolicy{
+	basePolicies := []RoutePolicy{
 		{
 			Name:               "admin-panel",
 			Prefix:             "/admin",
@@ -76,11 +90,12 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/api/v1/auth/",
 		},
 		{
-			Name:          "users",
-			Prefix:        apiPrefix + "/users/",
-			AuthMode:      RouteAuthAuthenticated,
-			Upstream:      "user",
-			RewritePrefix: "/v1/users/",
+			Name:             "users",
+			Prefix:           apiPrefix + "/users/",
+			AuthMode:         RouteAuthAuthenticated,
+			Upstream:         "user",
+			RewritePrefix:    "/v1/users/",
+			ExcludedPrefixes: savedPersonalRoutePrefixes(apiPrefix),
 		},
 		{
 			Name:          "public-users",
@@ -882,6 +897,198 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/reviews/",
 		},
 	}
+
+	savedPolicies := savedRoutePolicies(apiPrefix, &savedReadLimit, &savedWriteLimit)
+	policies := make([]RoutePolicy, 0, len(basePolicies)+len(savedPolicies))
+	policies = append(policies, basePolicies[:2]...)
+	policies = append(policies, savedPolicies...)
+	policies = append(policies, basePolicies[2:]...)
+	return policies
+}
+
+func savedPersonalRoutePrefixes(apiPrefix string) []string {
+	base := apiPrefix + "/users/me/"
+	return []string{
+		base + "saved-items",
+		base + "saved-operations",
+		base + "saved-collections",
+	}
+}
+
+func savedRoutePolicies(apiPrefix string, readLimit, writeLimit *int) []RoutePolicy {
+	prefixes := savedPersonalRoutePrefixes(apiPrefix)
+	itemsPrefix := prefixes[0]
+	operationsPrefix := prefixes[1]
+	collectionsPrefix := prefixes[2]
+
+	type routeSpec struct {
+		name                 string
+		method               string
+		prefix               string
+		exactPath            string
+		pathSuffix           string
+		rewritePrefix        string
+		logPathTemplate      string
+		relativeSegmentCount int
+		relativeSegmentUUID  bool
+		rateLimit            *int
+	}
+
+	specs := []routeSpec{
+		{
+			name:            "saved-read",
+			method:          "GET",
+			prefix:          itemsPrefix,
+			exactPath:       itemsPrefix,
+			rewritePrefix:   "/v1/users/me/saved-items",
+			logPathTemplate: itemsPrefix,
+			rateLimit:       readLimit,
+		},
+		{
+			name:            "saved-read",
+			method:          "POST",
+			prefix:          itemsPrefix,
+			exactPath:       itemsPrefix + "/query",
+			rewritePrefix:   "/v1/users/me/saved-items",
+			logPathTemplate: itemsPrefix + "/query",
+			rateLimit:       readLimit,
+		},
+		{
+			name:            "saved-read",
+			method:          "POST",
+			prefix:          itemsPrefix,
+			exactPath:       itemsPrefix + "/status:batch",
+			rewritePrefix:   "/v1/users/me/saved-items",
+			logPathTemplate: itemsPrefix + "/status:batch",
+			rateLimit:       readLimit,
+		},
+		{
+			name:            "saved-read",
+			method:          "GET",
+			prefix:          itemsPrefix,
+			exactPath:       itemsPrefix + "/capabilities",
+			rewritePrefix:   "/v1/users/me/saved-items",
+			logPathTemplate: itemsPrefix + "/capabilities",
+			rateLimit:       readLimit,
+		},
+		{
+			name:                 "saved-write",
+			method:               "PUT",
+			prefix:               itemsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-items",
+			logPathTemplate:      itemsPrefix + "/{entityType}/{entityKey}",
+			relativeSegmentCount: 2,
+			rateLimit:            writeLimit,
+		},
+		{
+			name:                 "saved-write",
+			method:               "DELETE",
+			prefix:               itemsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-items",
+			logPathTemplate:      itemsPrefix + "/{entityType}/{entityKey}",
+			relativeSegmentCount: 2,
+			rateLimit:            writeLimit,
+		},
+		{
+			name:                 "saved-read",
+			method:               "GET",
+			prefix:               itemsPrefix,
+			pathSuffix:           "/collections",
+			rewritePrefix:        "/v1/users/me/saved-items",
+			logPathTemplate:      itemsPrefix + "/{entityType}/{entityKey}/collections",
+			relativeSegmentCount: 3,
+			rateLimit:            readLimit,
+		},
+		{
+			name:                 "saved-write",
+			method:               "PUT",
+			prefix:               itemsPrefix,
+			pathSuffix:           "/collections",
+			rewritePrefix:        "/v1/users/me/saved-items",
+			logPathTemplate:      itemsPrefix + "/{entityType}/{entityKey}/collections",
+			relativeSegmentCount: 3,
+			rateLimit:            writeLimit,
+		},
+		{
+			name:                 "saved-read",
+			method:               "GET",
+			prefix:               operationsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-operations",
+			logPathTemplate:      operationsPrefix + "/{operationId}",
+			relativeSegmentCount: 1,
+			relativeSegmentUUID:  true,
+			rateLimit:            readLimit,
+		},
+		{
+			name:            "saved-write",
+			method:          "POST",
+			prefix:          collectionsPrefix,
+			exactPath:       collectionsPrefix,
+			rewritePrefix:   "/v1/users/me/saved-collections",
+			logPathTemplate: collectionsPrefix,
+			rateLimit:       writeLimit,
+		},
+		{
+			name:            "saved-read",
+			method:          "GET",
+			prefix:          collectionsPrefix,
+			exactPath:       collectionsPrefix,
+			rewritePrefix:   "/v1/users/me/saved-collections",
+			logPathTemplate: collectionsPrefix,
+			rateLimit:       readLimit,
+		},
+		{
+			name:                 "saved-read",
+			method:               "GET",
+			prefix:               collectionsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-collections",
+			logPathTemplate:      collectionsPrefix + "/{collectionId}",
+			relativeSegmentCount: 1,
+			relativeSegmentUUID:  true,
+			rateLimit:            readLimit,
+		},
+		{
+			name:                 "saved-write",
+			method:               "PATCH",
+			prefix:               collectionsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-collections",
+			logPathTemplate:      collectionsPrefix + "/{collectionId}",
+			relativeSegmentCount: 1,
+			relativeSegmentUUID:  true,
+			rateLimit:            writeLimit,
+		},
+		{
+			name:                 "saved-write",
+			method:               "DELETE",
+			prefix:               collectionsPrefix,
+			rewritePrefix:        "/v1/users/me/saved-collections",
+			logPathTemplate:      collectionsPrefix + "/{collectionId}",
+			relativeSegmentCount: 1,
+			relativeSegmentUUID:  true,
+			rateLimit:            writeLimit,
+		},
+	}
+
+	policies := make([]RoutePolicy, 0, len(specs))
+	for _, spec := range specs {
+		policies = append(policies, RoutePolicy{
+			Name:                 spec.name,
+			Method:               spec.method,
+			Prefix:               spec.prefix,
+			ExactPath:            spec.exactPath,
+			PathSuffix:           spec.pathSuffix,
+			AuthMode:             RouteAuthAuthenticated,
+			Upstream:             "saved",
+			RateLimitPerMinute:   spec.rateLimit,
+			RewritePrefix:        spec.rewritePrefix,
+			SavedPersonal:        true,
+			LogPathTemplate:      spec.logPathTemplate,
+			MaxRequestBodyBytes:  savedMaxRequestBodyBytes,
+			RelativeSegmentCount: spec.relativeSegmentCount,
+			RelativeSegmentUUID:  spec.relativeSegmentUUID,
+		})
+	}
+	return policies
 }
 
 func matchRoutePolicy(path string, apiPrefix string) *RoutePolicy {
@@ -903,6 +1110,11 @@ func pathMatchesPolicy(method string, path string, policy RoutePolicy) bool {
 		return false
 	}
 	cleanPath := strings.SplitN(path, "?", 2)[0]
+	for _, excludedPrefix := range policy.ExcludedPrefixes {
+		if pathMatchesPolicyPrefix(cleanPath, excludedPrefix) {
+			return false
+		}
+	}
 	if policy.ExactPath != "" && cleanPath != policy.ExactPath {
 		return false
 	}
@@ -915,7 +1127,36 @@ func pathMatchesPolicy(method string, path string, policy RoutePolicy) bool {
 	if policy.PathSuffix != "" && !strings.HasSuffix(cleanPath, policy.PathSuffix) {
 		return false
 	}
+	if policy.RelativeSegmentCount > 0 || policy.RelativeSegmentUUID {
+		segments, ok := relativePathSegments(cleanPath, policy.Prefix)
+		if !ok || (policy.RelativeSegmentCount > 0 && len(segments) != policy.RelativeSegmentCount) {
+			return false
+		}
+		if policy.RelativeSegmentUUID {
+			if len(segments) != 1 {
+				return false
+			}
+			id, err := uuid.Parse(segments[0])
+			if err != nil || id == uuid.Nil {
+				return false
+			}
+		}
+	}
 	return true
+}
+
+func relativePathSegments(path, prefix string) ([]string, bool) {
+	suffix := strings.TrimPrefix(path, prefix)
+	if suffix == path || suffix == "" || !strings.HasPrefix(suffix, "/") {
+		return nil, false
+	}
+	segments := strings.Split(strings.TrimPrefix(suffix, "/"), "/")
+	for _, segment := range segments {
+		if strings.TrimSpace(segment) == "" {
+			return nil, false
+		}
+	}
+	return segments, true
 }
 
 func pathMatchesPolicyPrefix(path string, prefix string) bool {

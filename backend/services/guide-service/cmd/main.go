@@ -8,13 +8,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"kz/inflap/backend/pkg/natstransport"
 	"kz/inflap/backend/pkg/serviceauth"
 	"kz/inflap/backend/pkg/transportauth"
 	excursionserviceadapter "kz/inflap/backend/services/guide-service/internal/adapter/excursionservice"
@@ -22,12 +25,14 @@ import (
 	fraudadapter "kz/inflap/backend/services/guide-service/internal/adapter/fraud"
 	grpcadapter "kz/inflap/backend/services/guide-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/guide-service/internal/adapter/http"
+	natsadapter "kz/inflap/backend/services/guide-service/internal/adapter/nats"
 	"kz/inflap/backend/services/guide-service/internal/adapter/repository"
 	searchindexadapter "kz/inflap/backend/services/guide-service/internal/adapter/searchindex"
 	userserviceadapter "kz/inflap/backend/services/guide-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/guide-service/internal/app"
 	"kz/inflap/backend/services/guide-service/internal/config"
 	"kz/inflap/backend/services/guide-service/internal/domain/port"
+	contentv1 "kz/inflap/proto/gen/go/content/v1"
 	guidev1 "kz/inflap/proto/gen/go/guide/v1"
 )
 
@@ -65,6 +70,10 @@ func main() {
 	defer fileClient.Close()
 
 	guideRepo := repository.NewPGGuideRepository(pool)
+	savedLifecycleRuntime, err := startSavedLifecycleRuntime(ctx, cfg, guideRepo, userClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize Saved guide lifecycle runtime")
+	}
 	excursionHTTPClient, err := newExcursionServiceHTTPClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize excursion-service client")
@@ -75,6 +84,12 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to initialize anti-fraud client")
 	}
 	guideUseCase := app.NewGuideUseCaseWithFraud(guideRepo, userClient, fileClient, fraudClient, excursionClient)
+	savedSourceUseCase := app.NewSavedGuideSourceUseCase(guideRepo, userClient)
+	savedAvatarDeliveryUseCase := app.NewSavedGuideAvatarDeliveryUseCase(savedSourceUseCase, fileClient)
+	savedSourceAuthorizer, err := newSavedGuideSourceAuthorizer(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to configure Saved source service authentication")
+	}
 	if cfg.SearchService.Enabled {
 		searchIndexOptions, closeSearchIndexAuth := newSearchIndexOptions(cfg)
 		defer closeSearchIndexAuth()
@@ -87,7 +102,7 @@ func main() {
 		guideUseCase.SetSearchIndexer(searchIndexer)
 	}
 
-	httpHandler := httpadapter.NewHandler(guideUseCase)
+	httpHandler := httpadapter.NewHandler(guideUseCase, savedAvatarDeliveryUseCase)
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)
 
@@ -109,10 +124,13 @@ func main() {
 	}
 	internalHTTPServer := newInternalGuideHTTPMTLSServer(cfg, httpServer.Handler, mtlsConfig)
 	grpcOptions := []grpc.ServerOption{
-		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg)),
+		grpc.UnaryInterceptor(grpcadapter.UnaryServerInterceptor(cfg, savedSourceAuthorizer)),
 	}
 
-	guideGRPCServer := grpcadapter.NewServer(guideUseCase)
+	guideGRPCServer := grpcadapter.NewServer(
+		guideUseCase,
+		grpcadapter.WithSavedSource(savedSourceUseCase),
+	)
 	grpcServer := newGuideGRPCServer(guideGRPCServer, grpcOptions...)
 	var internalGRPCServer *grpc.Server
 	if mtlsConfig != nil {
@@ -188,12 +206,200 @@ func main() {
 			log.Error().Err(err).Msg("internal mTLS http server shutdown failed")
 		}
 	}
+	if savedLifecycleRuntime != nil {
+		if err = savedLifecycleRuntime.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("Saved guide lifecycle runtime shutdown failed")
+		}
+	}
 }
 
-func newGuideGRPCServer(guideServer guidev1.GuideServiceServer, options ...grpc.ServerOption) *grpc.Server {
+type savedLifecycleRuntime struct {
+	connection *nats.Conn
+	cancel     context.CancelFunc
+	wait       sync.WaitGroup
+}
+
+func startSavedLifecycleRuntime(
+	ctx context.Context,
+	cfg *config.Config,
+	repo *repository.PGGuideRepository,
+	userSource app.SavedGuideUserSource,
+) (*savedLifecycleRuntime, error) {
+	if cfg == nil || repo == nil || userSource == nil {
+		return nil, fmt.Errorf("Saved lifecycle runtime dependencies are required")
+	}
+	if !cfg.SavedLifecycle.Enabled {
+		log.Info().Msg("Saved guide lifecycle delivery is disabled")
+		return nil, nil
+	}
+	if err := cfg.SavedLifecycle.Validate(cfg.App.Env); err != nil {
+		return nil, err
+	}
+	natsConfig, err := cfg.SavedLifecycle.NATSConfig(cfg.App.Env)
+	if err != nil {
+		return nil, err
+	}
+	connection, err := natstransport.Connect(
+		natsConfig,
+		"guide-service-saved-lifecycle",
+		natstransport.Hooks{
+			Disconnected: func(disconnectErr error) {
+				log.Warn().Err(disconnectErr).Msg("Saved lifecycle NATS connection interrupted")
+			},
+			Reconnected: func() {
+				log.Info().Msg("Saved lifecycle NATS connection restored")
+			},
+			Closed: func(closeErr error) {
+				if closeErr == nil {
+					log.Info().Msg("Saved lifecycle NATS connection closed")
+					return
+				}
+				log.Warn().Err(closeErr).Msg("Saved lifecycle NATS connection closed unexpectedly")
+			},
+			AsyncError: func(asyncErr error) {
+				log.Warn().Err(asyncErr).Msg("Saved lifecycle NATS asynchronous error")
+			},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("connect Saved lifecycle NATS: %w", err)
+	}
+	publisher, err := natsadapter.NewSavedLifecyclePublisher(
+		ctx,
+		connection,
+		cfg.SavedLifecycle.Subject,
+	)
+	if err != nil {
+		connection.Close()
+		return nil, err
+	}
+	dispatcher, err := app.NewSavedLifecycleDispatcher(
+		repo,
+		publisher,
+		app.SavedLifecycleDispatcherConfig{
+			BatchSize:          cfg.SavedLifecycle.BatchSize,
+			Concurrency:        cfg.SavedLifecycle.Concurrency,
+			PollInterval:       cfg.SavedLifecycle.PollInterval,
+			LeaseDuration:      cfg.SavedLifecycle.LeaseDuration,
+			PublishTimeout:     cfg.SavedLifecycle.PublishTimeout,
+			DeliveredRetention: cfg.SavedLifecycle.DeliveredRetention,
+			DeadRetention:      cfg.SavedLifecycle.DeadRetention,
+			CleanupInterval:    cfg.SavedLifecycle.CleanupInterval,
+			CleanupBatchSize:   200,
+		},
+	)
+	if err != nil {
+		connection.Close()
+		return nil, err
+	}
+	reconciler, err := app.NewSavedGuideUserReconciler(
+		repo,
+		userSource,
+		app.SavedGuideUserReconcilerConfig{
+			BatchSize:        cfg.SavedLifecycle.ReconcileBatchSize,
+			Concurrency:      cfg.SavedLifecycle.ReconcileConcurrency,
+			PollInterval:     cfg.SavedLifecycle.ReconcilePollInterval,
+			LeaseDuration:    cfg.SavedLifecycle.ReconcileLeaseDuration,
+			SourceTimeout:    cfg.SavedLifecycle.ReconcileSourceTimeout,
+			SuccessInterval:  cfg.SavedLifecycle.ReconcileInterval,
+			FailureBaseDelay: cfg.SavedLifecycle.ReconcileFailureBase,
+			FailureMaxDelay:  cfg.SavedLifecycle.ReconcileFailureMax,
+		},
+	)
+	if err != nil {
+		connection.Close()
+		return nil, err
+	}
+
+	workerCtx, cancelWorkers := context.WithCancel(ctx)
+	runtime := &savedLifecycleRuntime{connection: connection, cancel: cancelWorkers}
+	runtime.wait.Add(2)
+	go func() {
+		defer runtime.wait.Done()
+		if runErr := dispatcher.Run(workerCtx); runErr != nil {
+			log.Error().Err(runErr).Msg("Saved lifecycle dispatcher stopped")
+			runtime.cancel()
+		}
+	}()
+	go func() {
+		defer runtime.wait.Done()
+		if runErr := reconciler.Run(workerCtx); runErr != nil {
+			log.Error().Err(runErr).Msg("Saved guide user reconciler stopped")
+			runtime.cancel()
+		}
+	}()
+	log.Info().Msg("Saved guide lifecycle runtime started")
+	return runtime, nil
+}
+
+func (r *savedLifecycleRuntime) Shutdown(ctx context.Context) error {
+	if r == nil {
+		return nil
+	}
+	if r.cancel != nil {
+		r.cancel()
+	}
+	done := make(chan struct{})
+	go func() {
+		r.wait.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
+		if r.connection != nil {
+			r.connection.Close()
+		}
+		return ctx.Err()
+	}
+	if r.connection == nil {
+		return nil
+	}
+	if err := natstransport.Drain(r.connection); err != nil {
+		r.connection.Close()
+		return fmt.Errorf("drain Saved lifecycle NATS connection: %w", err)
+	}
+	return nil
+}
+
+func newGuideGRPCServer(guideServer *grpcadapter.Server, options ...grpc.ServerOption) *grpc.Server {
 	grpcServer := grpc.NewServer(options...)
 	guidev1.RegisterGuideServiceServer(grpcServer, guideServer)
+	contentv1.RegisterSavedSourceServiceServer(grpcServer, guideServer)
 	return grpcServer
+}
+
+func newSavedGuideSourceAuthorizer(cfg *config.Config) (*serviceauth.JWTVerifier, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("guide service config is required")
+	}
+	if !cfg.Security.SavedSourceAuthEnabled() {
+		if cfg.App.IsProduction() {
+			return nil, fmt.Errorf(
+				"SERVICE_AUTH_ISSUER, SERVICE_AUTH_JWKS_URL, and SAVED_SOURCE_ALLOWED_CALLER are required in production",
+			)
+		}
+		return nil, nil
+	}
+	jwksClient, err := transportauth.NewHTTPClient(
+		cfg.MTLS.ClientConfig(
+			transportauth.ServerNameFromTarget(cfg.Security.ServiceAuthJWKSURL),
+		),
+		3*time.Second,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure Saved source JWKS client: %w", err)
+	}
+	verifier, err := serviceauth.NewJWTVerifier(serviceauth.VerifierConfig{
+		Issuer:   cfg.Security.ServiceAuthIssuer,
+		JWKSURL:  cfg.Security.ServiceAuthJWKSURL,
+		CacheTTL: cfg.Security.ServiceAuthCacheTTL,
+		Client:   jwksClient,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure Saved source verifier: %w", err)
+	}
+	return verifier, nil
 }
 
 func serveGuideGRPCServer(address string, server *grpc.Server) error {

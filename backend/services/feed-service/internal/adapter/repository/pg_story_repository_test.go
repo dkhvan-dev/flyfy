@@ -1742,7 +1742,7 @@ func TestRepositoryEnqueuesPostFeedProjectionOutboxInPostWriteTransactions(t *te
 	for _, needle := range []string{
 		"enqueuePostFeedProjectionForPostTx(ctx, tx, post)",
 		"enqueuePostFeedProjectionDeleteTx(ctx, tx, post.ID, post.Revision",
-		"enqueuePostFeedProjectionDeleteTx(ctx, tx, postID, previousPost.Revision",
+		"enqueuePostFeedProjectionDeleteTx(ctx, tx, postID, deletedPost.Revision",
 		"INSERT INTO post_feed_projection_outbox",
 		"ON CONFLICT (post_id, post_revision, event_type) DO NOTHING",
 	} {

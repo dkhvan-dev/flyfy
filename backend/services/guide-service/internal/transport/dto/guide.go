@@ -204,10 +204,28 @@ type AdminGuideLanguageResponse struct {
 }
 
 type PublicGuideCardResponse struct {
-	GuideProfile    GuideProfileResponse          `json:"guideProfile"`
+	GuideProfile    PublicGuideProfileResponse    `json:"guideProfile"`
 	UserProfile     *PublicUserCard               `json:"userProfile,omitempty"`
 	Languages       []GuideLanguageResponse       `json:"languages"`
 	Specializations []GuideSpecializationResponse `json:"specializations"`
+}
+
+type PublicGuideProfileResponse struct {
+	ID                        string  `json:"id"`
+	UserID                    string  `json:"userId"`
+	Type                      string  `json:"type"`
+	Status                    string  `json:"status"`
+	Headline                  *string `json:"headline,omitempty"`
+	About                     *string `json:"about,omitempty"`
+	ExperienceYears           int     `json:"experienceYears"`
+	BaseCityID                *string `json:"baseCityId,omitempty"`
+	IsPrivateGuideAvailable   bool    `json:"isPrivateGuideAvailable"`
+	IsActivityHostAvailable   bool    `json:"isActivityHostAvailable"`
+	IsExcursionGuideAvailable bool    `json:"isExcursionGuideAvailable"`
+	RatingAvg                 float64 `json:"ratingAvg"`
+	ReviewsCount              int     `json:"reviewsCount"`
+	CreatedAt                 string  `json:"createdAt"`
+	UpdatedAt                 string  `json:"updatedAt"`
 }
 
 type PublicUserCard struct {

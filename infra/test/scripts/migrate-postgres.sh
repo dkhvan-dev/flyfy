@@ -34,6 +34,7 @@ DEFAULT_MIGRATION_SERVICE_MAP=(
   "user-route-service:user_route_service_db:021_user_route_service_migrate.sh"
   "search-service:search_service_db:-"
   "translation-service:translation_service_db:-"
+  "saved-service:saved_service_db:025_saved_service_migrate.sh"
 )
 
 cd "${APP_DIR}"
@@ -78,6 +79,7 @@ if [[ -f "${RUNTIME_ENV_FILE}" ]]; then
     FEED_SERVICE_TOKEN_SERVICE_SECRET \
     GUIDE_SERVICE_TOKEN_SERVICE_SECRET \
     PLACE_SERVICE_TOKEN_SERVICE_SECRET \
+    SAVED_SERVICE_TOKEN_SERVICE_SECRET \
     SUPPORT_SERVICE_TOKEN_SERVICE_SECRET \
     USER_SERVICE_TOKEN_SERVICE_SECRET
   do
@@ -104,6 +106,10 @@ for item in "${migration_services[@]}"; do
   IFS=":" read -r service database migration_script <<<"${item}"
   if [[ -z "${service}" || -z "${database}" ]]; then
     echo "Invalid migration service mapping: ${item}" >&2
+    exit 1
+  fi
+  if [[ ! "${database}" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    echo "Unsafe migration database name: ${database}" >&2
     exit 1
   fi
   migration_script="${migration_script:-}"
@@ -150,6 +156,22 @@ for item in "${migration_services[@]}"; do
   IFS=":" read -r service database migration_script <<<"${item}"
   migration_script="${migration_script:-}"
   echo "Migrating ${service} -> ${database}"
+  docker run --rm \
+    --network "container:${postgres_container_id}" \
+    --entrypoint /bin/sh \
+    -e "POSTGRES_USER=${POSTGRES_USER}" \
+    -e "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+    -e "PGHOST=127.0.0.1" \
+    -e "PGPORT=5432" \
+    -e "TARGET_DATABASE=${database}" \
+    "${MIGRATION_CLIENT_IMAGE}" \
+    -ec '
+      export PGPASSWORD="$POSTGRES_PASSWORD"
+      exists="$(psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '\''$TARGET_DATABASE'\''" | tr -d "[:space:]")"
+      if [ "$exists" != "1" ]; then
+        createdb -U "$POSTGRES_USER" --owner "$POSTGRES_USER" "$TARGET_DATABASE"
+      fi
+    '
   if [[ -n "${migration_script}" && "${migration_script}" != "-" ]]; then
     container_script="/migration-scripts/${migration_script}"
     script_mount=("${MIGRATION_SCRIPTS_DIR}:/migration-scripts:ro")
@@ -194,6 +216,7 @@ for item in "${migration_services[@]}"; do
       -e "FEED_SERVICE_TOKEN_SERVICE_SECRET=${FEED_SERVICE_TOKEN_SERVICE_SECRET:?FEED_SERVICE_TOKEN_SERVICE_SECRET is required}" \
       -e "GUIDE_SERVICE_TOKEN_SERVICE_SECRET=${GUIDE_SERVICE_TOKEN_SERVICE_SECRET:?GUIDE_SERVICE_TOKEN_SERVICE_SECRET is required}" \
       -e "PLACE_SERVICE_TOKEN_SERVICE_SECRET=${PLACE_SERVICE_TOKEN_SERVICE_SECRET:?PLACE_SERVICE_TOKEN_SERVICE_SECRET is required}" \
+      -e "SAVED_SERVICE_TOKEN_SERVICE_SECRET=${SAVED_SERVICE_TOKEN_SERVICE_SECRET:?SAVED_SERVICE_TOKEN_SERVICE_SECRET is required}" \
       -e "SUPPORT_SERVICE_TOKEN_SERVICE_SECRET=${SUPPORT_SERVICE_TOKEN_SERVICE_SECRET:?SUPPORT_SERVICE_TOKEN_SERVICE_SECRET is required}" \
       -e "USER_SERVICE_TOKEN_SERVICE_SECRET=${USER_SERVICE_TOKEN_SERVICE_SECRET:?USER_SERVICE_TOKEN_SERVICE_SECRET is required}" \
       -v "${seed_script}:/scripts/001_token_service_seed_services.sh:ro" \

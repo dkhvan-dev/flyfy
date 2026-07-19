@@ -24,8 +24,11 @@ import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/feed/widgets/feed_post_content_card.dart';
 import '../../features/feed/widgets/feed_post_card.dart';
 import '../../features/feed/widgets/quick_post_thread_card.dart';
+import '../../features/feed/widgets/post_saved_bookmark_button.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/saved/domain/saved_operation.dart';
+import '../../features/saved/domain/saved_target.dart';
 import '../../features/services/service_catalog.dart';
 import '../../features/services/widgets/service_grid.dart';
 import '../../features/stories/models/story_vm.dart';
@@ -39,6 +42,7 @@ import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
+import '../../shared/widgets/app_saved_bookmark_button.dart';
 import 'widgets/home_location_picker_sheet.dart';
 import 'package:inflap/core/ui/app_modal_templates.dart';
 
@@ -1855,6 +1859,10 @@ class _TopDestinationPlaceCard extends StatelessWidget {
     final coverMedia = place.coverMedia;
     final coverUrl = _resolveHomePlaceImageUrl(coverMedia);
     final categoryLabel = _homePlaceCategoryLabel(l10n, place);
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.attraction,
+      entityId: place.id,
+    );
     final imageScrimGradient = _homeBottomImageScrimGradient(
       context,
       darkEndAlpha: 0.58,
@@ -1903,11 +1911,18 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                               gradient: imageScrimGradient,
                             ),
                           ),
-                        const Positioned(
-                          top: 9,
-                          right: 9,
-                          child: _DestinationBookmarkBadge(),
-                        ),
+                        if (savedTarget != null)
+                          Positioned(
+                            top: 9,
+                            right: 9,
+                            child: AppSavedBookmarkButton(
+                              target: savedTarget,
+                              sourceSurface: SavedSourceSurface.card,
+                              previewTitle: place.title,
+                              previewSubtitle: categoryLabel,
+                              previewImageUrl: coverUrl,
+                            ),
+                          ),
                         Positioned(
                           left: isCompact ? 12 : 16,
                           right: isCompact ? 12 : 16,
@@ -1976,30 +1991,6 @@ class _TopDestinationPlaceCard extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DestinationBookmarkBadge extends StatelessWidget {
-  const _DestinationBookmarkBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: AppBoxDecoration(
-        shape: BoxShape.circle,
-        color: AppPalette.secondary.withValues(alpha: 0.24),
-        border: Border.all(color: AppPalette.secondary.withValues(alpha: 0.36)),
-      ),
-      child: const SizedBox(
-        width: 38,
-        height: 38,
-        child: Icon(
-          Icons.bookmark_border_rounded,
-          color: AppPalette.secondarySoft,
-          size: 23,
         ),
       ),
     );
@@ -2535,6 +2526,11 @@ class _TopPostCard extends StatelessWidget {
                               gradient: coverScrimGradient,
                             ),
                           ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: PostSavedBookmarkButton(post: post),
+                        ),
                         Positioned(
                           left: 12,
                           right: 12,
@@ -3129,6 +3125,10 @@ class _RecommendedActivityCard extends StatelessWidget {
     final buttonLabel = isJoined
         ? l10n.activityDetailsJoinedBadge
         : l10n.activityJoinSession;
+    final savedTarget = SavedTarget.tryCreate(
+      entityType: SavedEntityType.activity,
+      entityId: item.id,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3209,9 +3209,25 @@ class _RecommendedActivityCard extends StatelessWidget {
                   SizedBox(width: isCompact ? 8 : 12),
                   SizedBox(
                     width: buttonWidth,
-                    child: _ActivityJoinButton(
-                      label: buttonLabel,
-                      onTap: onTap,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (savedTarget != null) ...[
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AppSavedBookmarkButton(
+                              target: savedTarget,
+                              sourceSurface: SavedSourceSurface.card,
+                              previewTitle: localizedCopy.title,
+                              previewSubtitle: _categoryLabel(),
+                              previewImageUrl: resolveActivityCoverUrl(item),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        _ActivityJoinButton(label: buttonLabel, onTap: onTap),
+                      ],
                     ),
                   ),
                 ],

@@ -2,6 +2,182 @@ package http
 
 import "testing"
 
+func TestSavedRoutesPrecedeGenericUsersAndPreserveMethods(t *testing.T) {
+	const (
+		collectionID = "17882988-667b-42e6-831c-9e79bbf52075"
+		operationID  = "53d73301-23ea-4503-b3e0-91bfc9d5d9e2"
+	)
+
+	tests := map[string]struct {
+		method    string
+		path      string
+		name      string
+		rateLimit int
+		template  string
+	}{
+		"list items": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-items?limit=30&cursor=secret",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-items",
+		},
+		"search items": {
+			method:    "POST",
+			path:      "/api/v1/users/me/saved-items/query",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-items/query",
+		},
+		"batch status": {
+			method:    "POST",
+			path:      "/api/v1/users/me/saved-items/status:batch",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-items/status:batch",
+		},
+		"capabilities": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-items/capabilities",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-items/capabilities",
+		},
+		"save item": {
+			method:    "PUT",
+			path:      "/api/v1/users/me/saved-items/activity/activity-123",
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-items/{entityType}/{entityKey}",
+		},
+		"remove item": {
+			method:    "DELETE",
+			path:      "/api/v1/users/me/saved-items/activity/activity-123",
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-items/{entityType}/{entityKey}",
+		},
+		"get item collections": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-items/activity/activity-123/collections",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-items/{entityType}/{entityKey}/collections",
+		},
+		"replace item collections": {
+			method:    "PUT",
+			path:      "/api/v1/users/me/saved-items/activity/activity-123/collections",
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-items/{entityType}/{entityKey}/collections",
+		},
+		"get operation": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-operations/" + operationID,
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-operations/{operationId}",
+		},
+		"create collection": {
+			method:    "POST",
+			path:      "/api/v1/users/me/saved-collections",
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-collections",
+		},
+		"list collections": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-collections",
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-collections",
+		},
+		"get collection": {
+			method:    "GET",
+			path:      "/api/v1/users/me/saved-collections/" + collectionID,
+			name:      "saved-read",
+			rateLimit: 180,
+			template:  "/api/v1/users/me/saved-collections/{collectionId}",
+		},
+		"rename collection": {
+			method:    "PATCH",
+			path:      "/api/v1/users/me/saved-collections/" + collectionID,
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-collections/{collectionId}",
+		},
+		"delete collection": {
+			method:    "DELETE",
+			path:      "/api/v1/users/me/saved-collections/" + collectionID,
+			name:      "saved-write",
+			rateLimit: 60,
+			template:  "/api/v1/users/me/saved-collections/{collectionId}",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected Saved route policy")
+			}
+			if policy.Name != tc.name || policy.Upstream != "saved" {
+				t.Fatalf("policy = %+v, want %s Saved policy", policy, tc.name)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated || !policy.SavedPersonal {
+				t.Fatalf("Saved auth policy = %+v", policy)
+			}
+			if policy.LogPathTemplate != tc.template {
+				t.Fatalf("log template = %q, want %q", policy.LogPathTemplate, tc.template)
+			}
+			if policy.MaxRequestBodyBytes != savedMaxRequestBodyBytes {
+				t.Fatalf("body limit = %d, want %d", policy.MaxRequestBodyBytes, savedMaxRequestBodyBytes)
+			}
+			assertRouteLimit(t, policy, tc.rateLimit)
+		})
+	}
+
+	policies := routePolicies("/api/v1")
+	savedIndex, usersIndex := -1, -1
+	for i, policy := range policies {
+		if savedIndex < 0 && policy.SavedPersonal {
+			savedIndex = i
+		}
+		if policy.Name == "users" {
+			usersIndex = i
+		}
+	}
+	if savedIndex < 0 || usersIndex < 0 || savedIndex >= usersIndex {
+		t.Fatalf("Saved policy index = %d, users index = %d", savedIndex, usersIndex)
+	}
+}
+
+func TestSavedNamespaceRejectsUnsupportedMethodsAndSpecialRoutes(t *testing.T) {
+	const collectionID = "17882988-667b-42e6-831c-9e79bbf52075"
+
+	tests := map[string]struct {
+		method string
+		path   string
+	}{
+		"mass item mutation":      {method: "POST", path: "/api/v1/users/me/saved-items"},
+		"item detail read":        {method: "GET", path: "/api/v1/users/me/saved-items/activity/activity-123"},
+		"bulk route":              {method: "POST", path: "/api/v1/users/me/saved-items/bulk"},
+		"reconcile route":         {method: "POST", path: "/api/v1/users/me/saved-items/reconcile"},
+		"removal commit route":    {method: "POST", path: "/api/v1/users/me/saved-items/removal:commit"},
+		"sharing route":           {method: "GET", path: "/api/v1/users/me/saved-collections/sharing"},
+		"collection child create": {method: "POST", path: "/api/v1/users/me/saved-collections/" + collectionID},
+		"operation reconcile":     {method: "GET", path: "/api/v1/users/me/saved-operations/reconcile"},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1"); policy != nil {
+				t.Fatalf("unsupported Saved request matched policy: %+v", policy)
+			}
+		})
+	}
+}
+
 func TestAdminPanelRouteProxiesToAdminPanelService(t *testing.T) {
 	policy := matchRoutePolicy("/admin/dashboard", "/api/v1")
 

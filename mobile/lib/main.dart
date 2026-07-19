@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import 'core/auth/auth_session_events.dart';
 import 'core/network/api_client.dart';
+import 'core/storage/secure_storage.dart';
 import 'firebase_options.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'features/notifications/data/firebase_messaging_push_token_provider.dart';
@@ -18,6 +19,11 @@ import 'features/notifications/data/notification_api.dart';
 import 'features/notifications/data/push_registration_service.dart';
 import 'features/notifications/presentation/push_notification_banner.dart';
 import 'features/notifications/presentation/push_notification_coordinator.dart';
+import 'features/saved/data/saved_api.dart';
+import 'features/saved/data/saved_browse_api.dart';
+import 'features/saved/data/saved_feature_repository.dart';
+import 'features/saved/data/saved_repository.dart';
+import 'features/saved/presentation/state/saved_screen_controller.dart';
 import 'features/trust/providers/trust_access_provider.dart';
 import 'core/ui/app_asset_licenses.dart';
 import 'core/ui/app_design_system.dart';
@@ -74,6 +80,7 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
   late final HomeLocationProvider _homeLocationProvider;
   late final NotificationBadgeProvider _notificationBadgeProvider;
   late final TrustAccessProvider _trustAccessProvider;
+  late final SavedScreenController _savedScreenController;
   late final FirebaseMessagingPushTokenProvider _pushTokenProvider;
   late final InitialNotificationPermissionService _notificationPermissions;
   late final PushRegistrationService _pushRegistrationService;
@@ -100,6 +107,15 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
     _homeLocationProvider = HomeLocationProvider();
     _notificationBadgeProvider = NotificationBadgeProvider();
     _trustAccessProvider = TrustAccessProvider();
+    final savedApiClient = ApiClient(authSessionEvents: _authSessionEvents);
+    _savedScreenController = SavedScreenController(
+      repository: SavedFeatureRepositoryImpl(
+        browseApi: SavedBrowseApi(apiClient: savedApiClient),
+        itemsRepository: SavedRepository(
+          api: SavedApi(apiClient: savedApiClient),
+        ),
+      ),
+    );
     _pushTokenProvider = FirebaseMessagingPushTokenProvider(
       firebaseReady: _firebaseReady,
     );
@@ -142,6 +158,7 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
     _homeLocationProvider.dispose();
     _notificationBadgeProvider.dispose();
     _trustAccessProvider.dispose();
+    _savedScreenController.dispose();
     unawaited(_pushNotificationCoordinator.dispose());
     unawaited(_pushNotificationBannerController.dispose());
     super.dispose();
@@ -173,6 +190,9 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
         ChangeNotifierProvider<TrustAccessProvider>.value(
           value: _trustAccessProvider,
         ),
+        ChangeNotifierProvider<SavedScreenController>.value(
+          value: _savedScreenController,
+        ),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],
       child: Consumer2<LocaleProvider, ThemeModeProvider>(
@@ -189,14 +209,17 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
                 controller: _pushNotificationBannerController,
                 child: _DismissKeyboardOnTap(
                   child: AppKeyboardDismissOnScroll(
-                    child: _TrustAccessSessionBridge(
-                      provider: _trustAccessProvider,
-                      child: _PushRegistrationBridge(
-                        registrationService: _pushRegistrationService,
-                        initialPermissionsReady: _initialPermissionsReady,
-                        child: _PresenceHeartbeatBridge(
-                          child: _AttendanceSyncBridge(
-                            child: child ?? const SizedBox.shrink(),
+                    child: _SavedSessionBridge(
+                      controller: _savedScreenController,
+                      child: _TrustAccessSessionBridge(
+                        provider: _trustAccessProvider,
+                        child: _PushRegistrationBridge(
+                          registrationService: _pushRegistrationService,
+                          initialPermissionsReady: _initialPermissionsReady,
+                          child: _PresenceHeartbeatBridge(
+                            child: _AttendanceSyncBridge(
+                              child: child ?? const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                       ),
@@ -353,6 +376,164 @@ class _SuperAppState extends State<SuperApp> with WidgetsBindingObserver {
       await _sessionProvider.restoreSession();
       await _authProvider.checkAuthStatus();
     }
+  }
+}
+
+class _SavedSessionBridge extends StatefulWidget {
+  const _SavedSessionBridge({required this.controller, required this.child});
+
+  final SavedScreenController controller;
+  final Widget child;
+
+  @override
+  State<_SavedSessionBridge> createState() => _SavedSessionBridgeState();
+}
+
+class _SavedSessionBridgeState extends State<_SavedSessionBridge> {
+  final SecureStorage _secureStorage = SecureStorage();
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  String? _activeBinding;
+  bool _probeScheduled = false;
+  bool _probeInFlight = false;
+  bool _probeAgain = false;
+  bool _clearScheduled = false;
+  int _bindingEpoch = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+        _handleConnectivityChanged,
+        onError: (_) {},
+      );
+      unawaited(_checkInitialConnectivity());
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = context.watch<AuthProvider>().state;
+    final session = context.watch<SessionProvider>();
+    final userId = session.profile?.userId.trim() ?? '';
+    final authenticated =
+        authState == AuthState.authenticated &&
+        session.isAuthenticated &&
+        userId.isNotEmpty;
+
+    if (authenticated) {
+      _scheduleProbe(userId);
+    } else if (_activeBinding != null || widget.controller.initialized) {
+      _activeBinding = null;
+      _bindingEpoch++;
+      _scheduleClear();
+    }
+    return widget.child;
+  }
+
+  void _scheduleProbe(String userId) {
+    if (_probeInFlight) {
+      _probeAgain = true;
+      return;
+    }
+    if (_probeScheduled) return;
+    _probeScheduled = true;
+    final epoch = _bindingEpoch;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _probeScheduled = false;
+      if (!mounted || epoch != _bindingEpoch) return;
+      unawaited(_probeBinding(userId, epoch));
+    });
+  }
+
+  Future<void> _probeBinding(String userId, int epoch) async {
+    _probeInFlight = true;
+    try {
+      final sessionId = (await _secureStorage.getSessionId())?.trim() ?? '';
+      if (!mounted || epoch != _bindingEpoch) return;
+      final session = context.read<SessionProvider>();
+      final currentUserId = session.profile?.userId.trim() ?? '';
+      if (!session.isAuthenticated || currentUserId != userId) return;
+      if (sessionId.isEmpty) {
+        _activeBinding = '$userId:<missing-session-id>';
+        widget.controller.clearForLogout();
+        return;
+      }
+      final nextBinding = '$userId:$sessionId';
+      if (_activeBinding != null && _activeBinding != nextBinding) {
+        widget.controller.clearForLogout();
+      }
+      _activeBinding = nextBinding;
+      if (widget.controller.isOnline) {
+        await widget.controller.ensureCapabilities();
+      }
+    } on Object {
+      if (mounted && epoch == _bindingEpoch) {
+        _activeBinding = '$userId:<unavailable-session-id>';
+        widget.controller.clearForLogout();
+      }
+    } finally {
+      _probeInFlight = false;
+      if (_probeAgain && mounted) {
+        _probeAgain = false;
+        final session = context.read<SessionProvider>();
+        final currentUserId = session.profile?.userId.trim() ?? '';
+        if (session.isAuthenticated && currentUserId.isNotEmpty) {
+          _scheduleProbe(currentUserId);
+        }
+      }
+    }
+  }
+
+  void _scheduleClear() {
+    if (_clearScheduled) return;
+    _clearScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _clearScheduled = false;
+      if (!mounted || _activeBinding != null) return;
+      widget.controller.clearForLogout();
+    });
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    try {
+      _handleConnectivityChanged(await _connectivity.checkConnectivity());
+    } on Object {
+      // Connectivity is advisory; request errors remain the source of truth.
+    }
+  }
+
+  void _handleConnectivityChanged(List<ConnectivityResult> results) {
+    if (_hasUsableConnectivity(results)) {
+      unawaited(widget.controller.handleConnectivityRestored());
+    } else {
+      widget.controller.handleConnectivityLost();
+    }
+  }
+
+  bool _hasUsableConnectivity(List<ConnectivityResult> results) {
+    return results.any((result) {
+      switch (result) {
+        case ConnectivityResult.mobile:
+        case ConnectivityResult.wifi:
+        case ConnectivityResult.ethernet:
+        case ConnectivityResult.vpn:
+        case ConnectivityResult.bluetooth:
+        case ConnectivityResult.satellite:
+        case ConnectivityResult.other:
+          return true;
+        case ConnectivityResult.none:
+          return false;
+      }
+    });
   }
 }
 

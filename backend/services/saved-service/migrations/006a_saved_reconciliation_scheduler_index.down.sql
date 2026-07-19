@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_saved_content_projections_reconciliation_due_v1;

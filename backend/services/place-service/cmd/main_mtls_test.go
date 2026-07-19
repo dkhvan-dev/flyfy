@@ -74,3 +74,60 @@ func TestNewInternalPlaceMTLSServerUsesDedicatedPort(t *testing.T) {
 		t.Fatalf("server timeouts = %s/%s/%s, want 2s/3s/4s", server.ReadTimeout, server.WriteTimeout, server.IdleTimeout)
 	}
 }
+
+func TestValidatePlaceServiceGRPCPort(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		config  *config.Config
+		wantErr string
+	}{
+		{
+			name: "valid",
+			config: &config.Config{
+				HTTP: config.HTTPConfig{Port: 8090, InternalTLSPort: 9490},
+				GRPC: config.GRPCConfig{Port: 9099},
+			},
+		},
+		{
+			name: "missing",
+			config: &config.Config{
+				HTTP: config.HTTPConfig{Port: 8090},
+			},
+			wantErr: "GRPC_PORT must be between",
+		},
+		{
+			name: "http collision",
+			config: &config.Config{
+				HTTP: config.HTTPConfig{Port: 8090},
+				GRPC: config.GRPCConfig{Port: 8090},
+			},
+			wantErr: "different from HTTP_PORT",
+		},
+		{
+			name: "internal tls collision",
+			config: &config.Config{
+				HTTP: config.HTTPConfig{Port: 8090, InternalTLSPort: 9099},
+				GRPC: config.GRPCConfig{Port: 9099},
+			},
+			wantErr: "different from INTERNAL_HTTP_TLS_PORT",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validatePlaceServiceGRPCPort(test.config)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatalf("validatePlaceServiceGRPCPort() error = %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("error = %v, want containing %q", err, test.wantErr)
+			}
+		})
+	}
+}
