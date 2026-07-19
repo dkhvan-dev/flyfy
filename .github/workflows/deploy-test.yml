@@ -234,6 +234,7 @@ jobs:
           bash -n \
             infra/test/scripts/deploy.sh \
             infra/test/scripts/backup-postgres.sh \
+            infra/test/scripts/generate-mtls-certs.sh \
             infra/test/scripts/migrate-postgres.sh \
             infra/test/scripts/preflight-mtls-certs.sh \
             infra/test/scripts/smoke-check.sh
@@ -324,6 +325,7 @@ jobs:
           MTLS_MODE: ${{ vars.MTLS_MODE || 'enforce' }}
           MTLS_MIN_VERSION: ${{ vars.MTLS_MIN_VERSION || '1.3' }}
           MTLS_CERT_GROUP_ID: ${{ vars.MTLS_CERT_GROUP_ID || '1001' }}
+          MTLS_AUTO_PROVISION_CERTS: ${{ vars.MTLS_AUTO_PROVISION_CERTS || 'true' }}
           ADMIN_PANEL_MTLS_MODE: ${{ vars.ADMIN_PANEL_MTLS_MODE || '' }}
           ANTI_FRAUD_SERVICE_MTLS_MODE: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_MODE || '' }}
           API_GATEWAY_MTLS_MODE: ${{ vars.API_GATEWAY_MTLS_MODE || '' }}
@@ -521,6 +523,7 @@ jobs:
             EXCURSION_TRANSLATION_LOCK_TIMEOUT \
             MTLS_MODE \
             MTLS_MIN_VERSION \
+            MTLS_AUTO_PROVISION_CERTS \
             MTLS_SECRETS_DIR \
             MTLS_CA_CERT_PATH \
             AUTH_SERVICE_INTERNAL_HTTP_TLS_PORT \
@@ -663,7 +666,8 @@ jobs:
             ACTIVITY_ASYNC_TRANSLATION_ENABLED \
             ACTIVITY_TRANSLATION_WORKER_ENABLED \
             EXCURSION_ASYNC_TRANSLATION_ENABLED \
-            EXCURSION_TRANSLATION_WORKER_ENABLED
+            EXCURSION_TRANSLATION_WORKER_ENABLED \
+            MTLS_AUTO_PROVISION_CERTS
           do
             if [[ "${!name}" != "true" && "${!name}" != "false" ]]; then
               echo "${name} must be true or false." >&2
@@ -803,6 +807,7 @@ jobs:
           MTLS_MODE: ${{ vars.MTLS_MODE || 'enforce' }}
           MTLS_MIN_VERSION: ${{ vars.MTLS_MIN_VERSION || '1.3' }}
           MTLS_CERT_GROUP_ID: ${{ vars.MTLS_CERT_GROUP_ID || '1001' }}
+          MTLS_AUTO_PROVISION_CERTS: ${{ vars.MTLS_AUTO_PROVISION_CERTS || 'true' }}
           ADMIN_PANEL_MTLS_MODE: ${{ vars.ADMIN_PANEL_MTLS_MODE || '' }}
           ANTI_FRAUD_SERVICE_MTLS_MODE: ${{ vars.ANTI_FRAUD_SERVICE_MTLS_MODE || '' }}
           API_GATEWAY_MTLS_MODE: ${{ vars.API_GATEWAY_MTLS_MODE || '' }}
@@ -1212,4 +1217,4 @@ jobs:
           fi
 
           ssh "${ssh_opts[@]}" "${TEST_DEPLOY_USER}@${TEST_DEPLOY_HOST}" \
-            "REQUIRE_GHCR_AUTH=true IMAGE_REGISTRY='${IMAGE_REGISTRY}' IMAGE_NAMESPACE='${IMAGE_NAMESPACE}' IMAGE_PREFIX='${IMAGE_PREFIX}' IMAGE_TAG='${IMAGE_TAG}' MTLS_MODE='${MTLS_MODE}' MTLS_CERT_GROUP_ID='${MTLS_CERT_GROUP_ID}' MTLS_SECRETS_DIR='${MTLS_SECRETS_DIR}' MTLS_CA_CERT_PATH='${MTLS_CA_CERT_PATH}' /opt/inflap/scripts/deploy.sh"
+            "REQUIRE_GHCR_AUTH=true IMAGE_REGISTRY='${IMAGE_REGISTRY}' IMAGE_NAMESPACE='${IMAGE_NAMESPACE}' IMAGE_PREFIX='${IMAGE_PREFIX}' IMAGE_TAG='${IMAGE_TAG}' MTLS_MODE='${MTLS_MODE}' MTLS_CERT_GROUP_ID='${MTLS_CERT_GROUP_ID}' MTLS_AUTO_PROVISION_CERTS='${MTLS_AUTO_PROVISION_CERTS}' MTLS_SECRETS_DIR='${MTLS_SECRETS_DIR}' MTLS_CA_CERT_PATH='${MTLS_CA_CERT_PATH}' /opt/inflap/scripts/deploy.sh"

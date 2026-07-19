@@ -21,6 +21,7 @@ REQUESTED_MTLS_MODE="${MTLS_MODE:-}"
 REQUESTED_MTLS_CERT_GROUP_ID="${MTLS_CERT_GROUP_ID:-}"
 REQUESTED_MTLS_SECRETS_DIR="${MTLS_SECRETS_DIR:-}"
 REQUESTED_MTLS_CA_CERT_PATH="${MTLS_CA_CERT_PATH:-}"
+REQUESTED_MTLS_AUTO_PROVISION_CERTS="${MTLS_AUTO_PROVISION_CERTS:-}"
 REQUIRE_GHCR_AUTH="${REQUIRE_GHCR_AUTH:-false}"
 
 restore_prepared_files_on_early_failure() {
@@ -77,6 +78,7 @@ MTLS_MODE="${REQUESTED_MTLS_MODE:-${MTLS_MODE:-disabled}}"
 MTLS_CERT_GROUP_ID="${REQUESTED_MTLS_CERT_GROUP_ID:-${MTLS_CERT_GROUP_ID:-1001}}"
 MTLS_SECRETS_DIR="${REQUESTED_MTLS_SECRETS_DIR:-${MTLS_SECRETS_DIR:-${APP_DIR}/secrets/mtls}}"
 MTLS_CA_CERT_PATH="${REQUESTED_MTLS_CA_CERT_PATH:-${MTLS_CA_CERT_PATH:-${MTLS_SECRETS_DIR}/ca.crt}}"
+MTLS_AUTO_PROVISION_CERTS="${REQUESTED_MTLS_AUTO_PROVISION_CERTS:-${MTLS_AUTO_PROVISION_CERTS:-false}}"
 RUN_PRE_DEPLOY_BACKUP="${RUN_PRE_DEPLOY_BACKUP:-true}"
 ROLLBACK_ON_FAILURE="${ROLLBACK_ON_FAILURE:-true}"
 DEPLOY_SMOKE_RETRIES="${DEPLOY_SMOKE_RETRIES:-36}"
@@ -88,7 +90,7 @@ for name in DEPLOY_SMOKE_RETRIES DEPLOY_SMOKE_RETRY_DELAY_SECONDS; do
     exit 1
   fi
 done
-for name in RUN_PRE_DEPLOY_BACKUP ROLLBACK_ON_FAILURE; do
+for name in RUN_PRE_DEPLOY_BACKUP ROLLBACK_ON_FAILURE MTLS_AUTO_PROVISION_CERTS; do
   if [[ "${!name}" != "true" && "${!name}" != "false" ]]; then
     echo "${name} must be true or false." >&2
     exit 1
@@ -265,6 +267,33 @@ if [[ "${MTLS_MODE}" != "disabled" ]]; then
   mkdir -p "${MTLS_SECRETS_DIR}"
   chgrp "${MTLS_CERT_GROUP_ID}" "${MTLS_SECRETS_DIR}"
   chmod 750 "${MTLS_SECRETS_DIR}"
+  if [[ "${MTLS_AUTO_PROVISION_CERTS}" == "true" ]]; then
+    bundle_ca_cert="${MTLS_SECRETS_DIR}/ca.crt"
+    bundle_ca_key="${MTLS_SECRETS_DIR}/ca.key"
+    generator="${APP_DIR}/scripts/generate-mtls-certs.sh"
+
+    if [[ ! -r "${bundle_ca_cert}" || ! -r "${bundle_ca_key}" ]]; then
+      echo "Automatic mTLS certificate provisioning requires an existing readable CA certificate and private key in ${MTLS_SECRETS_DIR}; refusing to create or replace the CA during deploy." >&2
+      false
+    fi
+    if [[ ! -x "${generator}" ]]; then
+      echo "Missing executable mTLS certificate generator: ${generator}" >&2
+      false
+    fi
+    if [[ "${MTLS_CA_CERT_PATH}" != "${bundle_ca_cert}" ]]; then
+      if [[ ! -r "${MTLS_CA_CERT_PATH}" ]] || ! cmp -s "${bundle_ca_cert}" "${MTLS_CA_CERT_PATH}"; then
+        echo "Automatic mTLS certificate provisioning requires MTLS_CA_CERT_PATH to match ${bundle_ca_cert}." >&2
+        false
+      fi
+    fi
+
+    echo "Reconciling the test mTLS certificate inventory with the existing CA."
+    INFLAP_ENV="${INFLAP_ENV:-test}" \
+      MTLS_CERT_GROUP_ID="${MTLS_CERT_GROUP_ID}" \
+      "${generator}" \
+      --out-dir "${MTLS_SECRETS_DIR}" \
+      --env "${INFLAP_ENV:-test}"
+  fi
   INFLAP_ENV="${INFLAP_ENV:-test}" \
     MTLS_CERT_GROUP_ID="${MTLS_CERT_GROUP_ID}" \
     MTLS_MIN_VALID_DAYS=1 \

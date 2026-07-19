@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 compose_file="${repo_root}/infra/test/docker-compose.test.yml"
 preflight_file="${repo_root}/infra/test/scripts/preflight-mtls-certs.sh"
 workflow_file="${repo_root}/.github/workflows/deploy-test.yml"
+deploy_script_file="${repo_root}/infra/test/scripts/deploy.sh"
 saved_migrator_file="${repo_root}/deploy/init-scripts/025_saved_service_migrate.sh"
 saved_entity_scope_dir="${repo_root}/backend/services/saved-service/migrations"
 place_migrator_file="${repo_root}/deploy/init-scripts/009_place_service_migrations.sh"
@@ -208,9 +209,22 @@ grep -Fq '  saved-service' <<<"${generator_services}" || {
 }
 
 for expected in \
+  'MTLS_AUTO_PROVISION_CERTS' \
+  'generate-mtls-certs.sh' \
+  'refusing to create or replace the CA during deploy' \
+  'Reconciling the test mTLS certificate inventory with the existing CA.'
+do
+  grep -Fq -- "${expected}" "${deploy_script_file}" || {
+    echo "deploy script is missing safe mTLS certificate reconciliation: ${expected}" >&2
+    exit 1
+  }
+done
+
+for expected in \
   '/opt/inflap/docker-compose.test.yml.previous' \
   '/opt/inflap/env/runtime.env.previous' \
   "MTLS_MODE='\${MTLS_MODE}'" \
+  "MTLS_AUTO_PROVISION_CERTS='\${MTLS_AUTO_PROVISION_CERTS}'" \
   '/opt/inflap/scripts/deploy.sh'
 do
   grep -Fq -- "${expected}" "${workflow_file}" || {
@@ -236,6 +250,7 @@ for expected in \
   'SAVED_SERVICE_TOKEN_SERVICE_SECRET: ${{ secrets.SAVED_SERVICE_TOKEN_SERVICE_SECRET }}' \
   'SAVED_OPERATION_HMAC_CURRENT_KEY_BASE64: ${{ secrets.SAVED_OPERATION_HMAC_CURRENT_KEY_BASE64 }}' \
   'SAVED_CURSOR_ACTIVE_KEY_BASE64: ${{ secrets.SAVED_CURSOR_ACTIVE_KEY_BASE64 }}' \
+  "MTLS_AUTO_PROVISION_CERTS: \${{ vars.MTLS_AUTO_PROVISION_CERTS || 'true' }}" \
   'SAVED_SERVICE_INTERNAL_HTTP_URL: ${{ vars.SAVED_SERVICE_INTERNAL_HTTP_URL'
 do
   grep -Fq -- "${expected}" "${workflow_file}" || {

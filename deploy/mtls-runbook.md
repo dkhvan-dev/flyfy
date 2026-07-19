@@ -44,6 +44,13 @@ For the test server, generate a non-production bundle on the server:
   --ca-days 365
 ```
 
+The test deploy workflow sets `MTLS_AUTO_PROVISION_CERTS=true`. Before its mTLS
+preflight, `deploy.sh` runs the same generator idempotently to issue leaf
+certificates for newly added services and refresh their CA copies. Automatic
+provisioning requires the existing bundle's readable `ca.crt` and `ca.key`; it
+fails closed instead of creating or replacing a CA. Set the variable to `false`
+when certificate issuance is managed by an external PKI.
+
 Then validate it before switching `MTLS_MODE` away from `disabled`:
 
 ```bash

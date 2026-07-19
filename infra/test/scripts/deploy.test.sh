@@ -85,8 +85,23 @@ printf 'release: new\n' >"${tmp_dir}/docker-compose.test.yml"
 printf 'release: old\n' >"${tmp_dir}/docker-compose.test.yml.previous"
 : >"${fake_docker_log}"
 
+mkdir -p "${tmp_dir}/secrets/mtls"
+printf 'test-ca-certificate\n' >"${tmp_dir}/secrets/mtls/ca.crt"
+printf 'test-ca-private-key\n' >"${tmp_dir}/secrets/mtls/ca.key"
+provision_marker="${tmp_dir}/mtls-provisioned"
+
+cat >"${tmp_dir}/scripts/generate-mtls-certs.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+: "${MTLS_PROVISION_MARKER:?}"
+touch "${MTLS_PROVISION_MARKER}"
+EOF
+chmod +x "${tmp_dir}/scripts/generate-mtls-certs.sh"
+
 cat >"${tmp_dir}/scripts/preflight-mtls-certs.sh" <<'EOF'
 #!/usr/bin/env bash
+set -euo pipefail
+test -f "${MTLS_PROVISION_MARKER:?}"
 echo "simulated mTLS preflight failure" >&2
 exit 1
 EOF
@@ -108,9 +123,11 @@ if PATH="${tmp_dir}/bin:${PATH}" \
   IMAGE_PREFIX=inflap- \
   IMAGE_TAG=new \
   MTLS_MODE=enforce \
+  MTLS_AUTO_PROVISION_CERTS=true \
   MTLS_CERT_GROUP_ID="$(id -g)" \
   MTLS_SECRETS_DIR="${tmp_dir}/secrets/mtls" \
   MTLS_CA_CERT_PATH="${tmp_dir}/secrets/mtls/ca.crt" \
+  MTLS_PROVISION_MARKER="${provision_marker}" \
   RUN_POSTGRES_MIGRATIONS=false \
   "${script}" >"${preflight_output_file}" 2>&1; then
   echo "deploy test expected mTLS preflight to fail" >&2
@@ -120,9 +137,54 @@ fi
 grep -Fq 'release: old' "${tmp_dir}/docker-compose.test.yml"
 grep -Fq 'RELEASE=old' "${tmp_dir}/env/runtime.env"
 grep -Fq 'IMAGE_TAG=old' "${tmp_dir}/env/deploy.env"
+test -f "${provision_marker}"
 grep -Fq 'Previous deployment files restored; running containers were not changed.' "${preflight_output_file}"
 if grep -Fq ' up -d --remove-orphans' "${fake_docker_log}"; then
   echo "compose up must not run after a failed preflight" >&2
+  cat "${fake_docker_log}" >&2
+  exit 1
+fi
+
+printf 'RELEASE=new\n' >"${tmp_dir}/env/runtime.env"
+printf 'RELEASE=old\n' >"${tmp_dir}/env/runtime.env.previous"
+printf 'release: new\n' >"${tmp_dir}/docker-compose.test.yml"
+printf 'release: old\n' >"${tmp_dir}/docker-compose.test.yml.previous"
+: >"${fake_docker_log}"
+rm -f "${tmp_dir}/secrets/mtls/ca.key" "${provision_marker}"
+
+missing_ca_key_output_file="${tmp_dir}/deploy-missing-ca-key.out"
+if PATH="${tmp_dir}/bin:${PATH}" \
+  FAKE_DOCKER_LOG="${fake_docker_log}" \
+  APP_DIR="${tmp_dir}" \
+  ENV_FILE="${tmp_dir}/env/test.env" \
+  RUNTIME_ENV_FILE="${tmp_dir}/env/runtime.env" \
+  DEPLOY_ENV_FILE="${tmp_dir}/env/deploy.env" \
+  COMPOSE_FILE="${tmp_dir}/docker-compose.test.yml" \
+  PREVIOUS_RUNTIME_ENV_FILE="${tmp_dir}/env/runtime.env.previous" \
+  PREVIOUS_DEPLOY_ENV_FILE="${tmp_dir}/env/deploy.env.previous" \
+  PREVIOUS_COMPOSE_FILE="${tmp_dir}/docker-compose.test.yml.previous" \
+  IMAGE_REGISTRY=registry.example \
+  IMAGE_NAMESPACE=inflap \
+  IMAGE_PREFIX=inflap- \
+  IMAGE_TAG=new \
+  MTLS_MODE=enforce \
+  MTLS_AUTO_PROVISION_CERTS=true \
+  MTLS_CERT_GROUP_ID="$(id -g)" \
+  MTLS_SECRETS_DIR="${tmp_dir}/secrets/mtls" \
+  MTLS_CA_CERT_PATH="${tmp_dir}/secrets/mtls/ca.crt" \
+  MTLS_PROVISION_MARKER="${provision_marker}" \
+  RUN_POSTGRES_MIGRATIONS=false \
+  "${script}" >"${missing_ca_key_output_file}" 2>&1; then
+  echo "deploy test expected automatic provisioning without a CA key to fail" >&2
+  exit 1
+fi
+
+grep -Fq 'release: old' "${tmp_dir}/docker-compose.test.yml"
+grep -Fq 'RELEASE=old' "${tmp_dir}/env/runtime.env"
+grep -Fq 'refusing to create or replace the CA during deploy' "${missing_ca_key_output_file}"
+test ! -e "${provision_marker}"
+if grep -Fq ' up -d --remove-orphans' "${fake_docker_log}"; then
+  echo "compose up must not run when automatic mTLS provisioning lacks the existing CA key" >&2
   cat "${fake_docker_log}" >&2
   exit 1
 fi
